@@ -13,7 +13,7 @@ import net.minecraft.network.chat.Component;
 public class JobWidgetEditScreen extends Screen {
 	private static final int TEXT = 0xFFFFFFFF;
 	private static final int HINT = 0xFFAAAAAA;
-	private static final int OUTLINE = 0xFFFFC040;
+	private static final int OUTLINE = 0xFFE23B3B;
 	private static final int OUTLINE_HOVER = 0xFFFFFFFF;
 
 	private final Screen parent;

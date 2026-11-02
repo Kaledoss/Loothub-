@@ -36,18 +36,15 @@ import de.loothub.client.Tabs;
  * Kennzahl-Kacheln, ein Verlaufsdiagramm (Klick auf einen Balken springt dorthin), Karten für alle Jobs mit
  * Level und Fortschritt (Klick filtert auf den Job) und darunter die Sitzungen des Zeitraums.
  */
-public class JobHistoryScreen extends Screen {
+public class JobHistoryScreen extends LoothubScreen {
 	// Farben
-	private static final int CARD = 0xE0161A22;
-	private static final int CARD_HOVER = 0xE0202632;
-	private static final int CARD_EDGE = 0xFF2A3140;
-	private static final int TEXT = 0xFFFFFFFF;
-	private static final int MUTED = 0xFFA8B0C0;
-	private static final int FAINT = 0xFF687080;
+	private static final int CARD = 0xE01C1315;
+	private static final int CARD_HOVER = 0xE02A1A1E;
+	private static final int CARD_EDGE = 0xFF3A1F23;
 	private static final int GOLD = 0xFFFFC040;
 	private static final int GREEN = 0xFF5BD68A;
 	private static final int BLUE = 0xFF6AB0FF;
-	private static final int TRACK = 0xFF262C38;
+	private static final int TRACK = 0xFF2E1B1F;
 	private static final int ROW_HOVER = 0x22FFFFFF;
 
 	private static final int PAD = 8;
@@ -117,7 +114,6 @@ public class JobHistoryScreen extends Screen {
 	private static String jobFilter;
 
 	private final List<Button> periodButtons = new ArrayList<>();
-	private Button updateButton;
 	private Button prevButton;
 	private Button nextButton;
 	private Button nowButton;
@@ -145,21 +141,19 @@ public class JobHistoryScreen extends Screen {
 	private int navY, kpiY, kpiH, chartX, chartY, chartW, chartH, tilesY, tileW, tileH, tileCols, listY, listH;
 
 	public JobHistoryScreen() {
-		super(Component.translatable("loothub.history.title"));
+		super(Page.HISTORY);
 	}
 
 	// ------------------------------------------------------------------ Aufbau
 
 	@Override
-	protected void init() {
-		Tabs.create(Tabs.Tab.HISTORY, width, 4).forEach(this::addRenderableWidget);
-		updateButton = addRenderableWidget(Tabs.updateButton(4));
+	protected void initPage() {
 
 		// Zeile 1: Zeitraum-Art links, Geld/XP rechts
-		int y = 24;
+		int y = ct;
 		Period[] periods = Period.values();
-		int pw = Mth.clamp((width * 3 / 5 - PAD - 4 * 4) / periods.length, 44, 76);
-		int x = PAD;
+		int pw = Mth.clamp((cw * 3 / 5 - 4 * 4) / periods.length, 44, 76);
+		int x = cl;
 		periodButtons.clear();
 		for (Period p : periods) {
 			periodButtons.add(addRenderableWidget(Button.builder(Component.translatable(p.translationKey), b -> {
@@ -174,11 +168,11 @@ public class JobHistoryScreen extends Screen {
 		xpButton = addRenderableWidget(Button.builder(Component.translatable("loothub.history.metric.xp"), b -> {
 			showXp = true;
 			invalidate();
-		}).bounds(width - PAD - mw, y, mw, 16).build());
+		}).bounds(cr - mw, y, mw, 16).build());
 		moneyButton = addRenderableWidget(Button.builder(Component.translatable("loothub.history.metric.money"), b -> {
 			showXp = false;
 			invalidate();
-		}).bounds(width - PAD - 2 * mw - 4, y, mw, 16).build());
+		}).bounds(cr - 2 * mw - 4, y, mw, 16).build());
 
 		// Zeile 2: ◀ Zeitraum ▶ Jetzt … Verlauf löschen
 		navY = y + 20;
@@ -186,35 +180,35 @@ public class JobHistoryScreen extends Screen {
 			offset--;
 			scroll = 0;
 			invalidate();
-		}).bounds(PAD, navY, 20, 16).build());
+		}).bounds(cl, navY, 20, 16).build());
 		nextButton = addRenderableWidget(Button.builder(Component.literal("▶"), b -> {
 			offset = Math.min(0, offset + 1);
 			scroll = 0;
 			invalidate();
-		}).bounds(PAD + 24 + 150 + 4, navY, 20, 16).build());
+		}).bounds(cl + 24 + 150 + 4, navY, 20, 16).build());
 		nowButton = addRenderableWidget(Button.builder(Component.translatable("loothub.history.now"), b -> {
 			offset = 0;
 			scroll = 0;
 			invalidate();
-		}).bounds(PAD + 24 + 150 + 28, navY, 50, 16).build());
+		}).bounds(cl + 24 + 150 + 28, navY, 50, 16).build());
 		clearButton = addRenderableWidget(Button.builder(Component.translatable("loothub.history.clear"), b -> onClear())
-				.bounds(width - PAD - 110, navY, 110, 16).build());
+				.bounds(cr - 110, navY, 110, 16).build());
 
 		// Layout der Inhalte
 		kpiY = navY + 22;
 		kpiH = 30;
-		chartX = PAD;
+		chartX = cl;
 		chartY = kpiY + kpiH + GAP;
-		chartW = width - 2 * PAD;
-		int freeH = height - chartY - PAD;
+		chartW = cw;
+		int freeH = cb - chartY;
 		chartH = Mth.clamp(freeH / 4, 46, 80);
-		tileCols = width >= 520 ? 4 : 2;
-		tileW = (width - 2 * PAD - (tileCols - 1) * GAP) / tileCols;
+		tileCols = cw >= 400 ? 4 : 2;
+		tileW = (cw - (tileCols - 1) * GAP) / tileCols;
 		tileH = 34;
 		tilesY = chartY + chartH + GAP;
 		int tileRows = (JOBS.size() + tileCols - 1) / tileCols;
 		listY = tilesY + tileRows * (tileH + GAP);
-		listH = Math.max(30, height - listY - PAD);
+		listH = Math.max(30, cb - listY);
 
 		invalidate();
 	}
@@ -242,7 +236,6 @@ public class JobHistoryScreen extends Screen {
 	@Override
 	public void tick() {
 		super.tick();
-		Tabs.refreshUpdateButton(updateButton);
 		if (clearArmedUntil > 0 && System.currentTimeMillis() > clearArmedUntil) {
 			clearArmedUntil = 0;
 			clearButton.setMessage(Component.translatable("loothub.history.clear"));
@@ -514,7 +507,7 @@ public class JobHistoryScreen extends Screen {
 		super.render(g, mouseX, mouseY, delta);
 
 		// Zeitraum-Beschriftung zwischen ◀ und ▶
-		int labelX = period == Period.ALLTIME ? PAD : PAD + 24;
+		int labelX = period == Period.ALLTIME ? cl : cl + 24;
 		g.drawString(font, unitLabel, labelX + 4, navY + 4, TEXT, false);
 
 		renderKpis(g, mouseX, mouseY);
@@ -531,7 +524,7 @@ public class JobHistoryScreen extends Screen {
 	}
 
 	private void renderKpis(GuiGraphics g, int mx, int my) {
-		int cw = (width - 2 * PAD - 3 * GAP) / 4;
+		int kw = (cw - 3 * GAP) / 4;
 		String metricSuffix = showXp ? " XP" : " $";
 
 		// Stärkster Job im Zeitraum
@@ -549,21 +542,21 @@ public class JobHistoryScreen extends Screen {
 		double rate = totalActive >= MIN_ACTIVE_FOR_RATE_MS ? totalMoney / (totalActive / 3_600_000.0) : Double.NaN;
 		double xpRate = totalActive >= MIN_ACTIVE_FOR_RATE_MS ? totalXp / (totalActive / 3_600_000.0) : Double.NaN;
 
-		kpi(g, PAD, cw, GOLD, Items.GOLD_INGOT, "loothub.history.kpi.money",
+		kpi(g, cl, kw, GOLD, Items.GOLD_INGOT, "loothub.history.kpi.money",
 				Fmt.money(totalMoney), "+" + Fmt.compact(totalXp) + " XP", GOLD);
-		kpi(g, PAD + (cw + GAP), cw, GREEN, Items.EMERALD, "loothub.history.kpi.rate",
+		kpi(g, cl + (kw + GAP), kw, GREEN, Items.EMERALD, "loothub.history.kpi.rate",
 				Double.isNaN(rate) ? "–" : Fmt.compact(rate) + " $/h",
 				Double.isNaN(xpRate) ? "" : Fmt.compact(xpRate) + " XP/h", GREEN);
-		kpi(g, PAD + 2 * (cw + GAP), cw, BLUE, Items.CLOCK, "loothub.history.kpi.active",
+		kpi(g, cl + 2 * (kw + GAP), kw, BLUE, Items.CLOCK, "loothub.history.kpi.active",
 				Fmt.longDuration(totalActive),
 				Component.translatable("loothub.history.kpi.sessions", unitSessions.size()).getString(), TEXT);
 		if (best != null) {
 			String share = sumAll > 0 ? Math.round(bestValue / sumAll * 100) + " %" : "";
-			kpi(g, PAD + 3 * (cw + GAP), cw, best.info.color(), best.info.icon(), "loothub.history.kpi.best",
+			kpi(g, cl + 3 * (kw + GAP), kw, best.info.color(), best.info.icon(), "loothub.history.kpi.best",
 					best.info.name(), Fmt.compact(bestValue) + metricSuffix + (share.isEmpty() ? "" : " · " + share),
 					best.info.color());
 		} else {
-			kpi(g, PAD + 3 * (cw + GAP), cw, FAINT, Items.BOOK, "loothub.history.kpi.best", "–", "", MUTED);
+			kpi(g, cl + 3 * (kw + GAP), kw, FAINT, Items.BOOK, "loothub.history.kpi.best", "–", "", MUTED);
 		}
 	}
 
@@ -664,7 +657,7 @@ public class JobHistoryScreen extends Screen {
 		for (int i = 0; i < JOBS.size(); i++) {
 			JobInfo j = JOBS.get(i);
 			JobSum s = jobSums.get(j.name());
-			int x = PAD + (i % tileCols) * (tileW + GAP);
+			int x = cl + (i % tileCols) * (tileW + GAP);
 			int y = tilesY + (i / tileCols) * (tileH + GAP);
 			boolean hover = mx >= x && mx < x + tileW && my >= y && my < y + tileH;
 			boolean selected = j.name().equals(jobFilter);
@@ -703,8 +696,8 @@ public class JobHistoryScreen extends Screen {
 	}
 
 	private void renderList(GuiGraphics g, int mx, int my) {
-		int listX = PAD;
-		int listW = width - 2 * PAD;
+		int listX = cl;
+		int listW = cw;
 		card(g, listX, listY, listW, listH, CARD_EDGE, false);
 
 		boolean showLevel = listW >= 470;
@@ -858,7 +851,7 @@ public class JobHistoryScreen extends Screen {
 
 		// Klick auf eine Job-Karte: auf diesen Job filtern (nochmal klicken = alle)
 		for (int i = 0; i < JOBS.size(); i++) {
-			int x = PAD + (i % tileCols) * (tileW + GAP);
+			int x = cl + (i % tileCols) * (tileW + GAP);
 			int y = tilesY + (i / tileCols) * (tileH + GAP);
 			if (mx >= x && mx < x + tileW && my >= y && my < y + tileH) {
 				String name = JOBS.get(i).name();
@@ -887,7 +880,7 @@ public class JobHistoryScreen extends Screen {
 
 	@Override
 	public boolean mouseScrolled(double mx, double my, double horizontal, double vertical) {
-		if (mx >= PAD && mx < width - PAD && my >= listY && my < listY + listH) {
+		if (mx >= cl && mx < cr && my >= listY && my < listY + listH) {
 			scroll -= vertical * ROW_H * 3;
 			clampScroll();
 			return true;
@@ -895,11 +888,6 @@ public class JobHistoryScreen extends Screen {
 		return super.mouseScrolled(mx, my, horizontal, vertical);
 	}
 
-	@Override
-	public void renderBackground(GuiGraphics g, int mouseX, int mouseY, float delta) {
-		g.nextStratum();
-		g.fill(0, 0, width, height, 0xE00B0D12);
-	}
 
 	@Override
 	public boolean isPauseScreen() {

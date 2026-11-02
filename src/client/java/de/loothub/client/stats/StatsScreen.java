@@ -32,12 +32,9 @@ import de.loothub.client.stats.StatsStore.Range;
  * Reiter „Statistik“: eigene Statistik wie bei Vanilla (Allgemein, Blöcke, Items, Mobs),
  * wahlweise für heute, die letzten 7 Tage oder gesamt.
  */
-public class StatsScreen extends Screen {
-	private static final int PANEL = 0xD0101018;
-	private static final int BORDER = 0xFF3C3C4C;
-	private static final int TEXT = 0xFFFFFFFF;
-	private static final int MUTED = 0xFFB0B0C0;
-	private static final int FAINT = 0xFF707080;
+public class StatsScreen extends LoothubScreen {
+	private static final int PANEL = 0xE01C1315;
+	private static final int BORDER = 0xFF3A1F23;
 	private static final int GOLD = 0xFFFFC040;
 	private static final int ROW_HOVER = 0x22FFFFFF;
 	private static final int PAD = 8;
@@ -71,7 +68,6 @@ public class StatsScreen extends Screen {
 	private static final Map<String, ItemStack> ICONS = new HashMap<>();
 	private static final Map<String, String> NAMES = new HashMap<>();
 
-	private Button updateButton;
 	private Button clearButton;
 	private long clearArmedUntil;
 	private final List<Button> categoryButtons = new ArrayList<>();
@@ -85,21 +81,19 @@ public class StatsScreen extends Screen {
 	private int tableX, tableY, tableW, tableH;
 
 	public StatsScreen() {
-		super(Component.translatable("loothub.stats.title"));
+		super(Page.STATS);
 	}
 
 	// ------------------------------------------------------------------ Aufbau
 
 	@Override
-	protected void init() {
-		Tabs.create(Tabs.Tab.STATS, width, 4).forEach(this::addRenderableWidget);
-		updateButton = addRenderableWidget(Tabs.updateButton(4));
+	protected void initPage() {
 
-		int y = 24;
+		int y = ct;
 		// Links: Kategorien, rechts: Zeitraum
 		categoryButtons.clear();
-		int cw = Mth.clamp((width / 2 - PAD - 12) / 4, 46, 78);
-		int x = PAD;
+		int catW = Mth.clamp((cw / 2 - 12) / 4, 46, 78);
+		int x = cl;
 		for (Category c : Category.values()) {
 			categoryButtons.add(addRenderableWidget(Button.builder(Component.translatable(c.translationKey), b -> {
 				category = c;
@@ -108,12 +102,12 @@ public class StatsScreen extends Screen {
 				scroll = 0;
 				clearWidgets();
 				init();
-			}).bounds(x, y, cw, 16).build()));
-			x += cw + 4;
+			}).bounds(x, y, catW, 16).build()));
+			x += catW + 4;
 		}
 		rangeButtons.clear();
-		int rw = Mth.clamp((width / 2 - PAD - 8) / 3, 46, 70);
-		x = width - PAD - 3 * rw - 8;
+		int rw = Mth.clamp((cw / 2 - 8) / 3, 46, 70);
+		x = cr - 3 * rw - 8;
 		for (Range r : Range.values()) {
 			rangeButtons.add(addRenderableWidget(Button.builder(Component.translatable(
 					"loothub.stats.range." + r.name().toLowerCase(Locale.ROOT)), b -> {
@@ -128,7 +122,7 @@ public class StatsScreen extends Screen {
 
 		int y2 = y + 20;
 		if (category != Category.GENERAL) {
-			EditBox box = new EditBox(font, PAD, y2, Math.min(220, width / 2), 16, Component.translatable("loothub.screen.search"));
+			EditBox box = new EditBox(font, cl, y2, Math.min(220, cw / 2), 16, Component.translatable("loothub.screen.search"));
 			box.setHint(Component.translatable("loothub.screen.search_hint").withStyle(ChatFormatting.DARK_GRAY));
 			box.setValue(search);
 			box.setResponder(t -> {
@@ -141,12 +135,12 @@ public class StatsScreen extends Screen {
 			setFocused(box);
 		}
 		clearButton = addRenderableWidget(Button.builder(Component.translatable("loothub.stats.clear"), b -> onClear())
-				.bounds(width - PAD - 130, y2, 130, 16).build());
+				.bounds(cr - 130, y2, 130, 16).build());
 
-		tableX = PAD;
+		tableX = cl;
 		tableY = y2 + 22;
-		tableW = width - 2 * PAD;
-		tableH = height - tableY - PAD;
+		tableW = cw;
+		tableH = cb - tableY;
 
 		seenVersion = -1;
 		refresh();
@@ -166,7 +160,6 @@ public class StatsScreen extends Screen {
 	@Override
 	public void tick() {
 		super.tick();
-		Tabs.refreshUpdateButton(updateButton);
 		if (clearArmedUntil > 0 && System.currentTimeMillis() > clearArmedUntil) {
 			clearArmedUntil = 0;
 			clearButton.setMessage(Component.translatable("loothub.stats.clear"));
@@ -428,11 +421,6 @@ public class StatsScreen extends Screen {
 		return super.mouseScrolled(mx, my, horizontal, vertical);
 	}
 
-	@Override
-	public void renderBackground(GuiGraphics g, int mouseX, int mouseY, float delta) {
-		g.nextStratum();
-		g.fill(0, 0, width, height, 0xE00B0D12);
-	}
 
 	@Override
 	public boolean isPauseScreen() {

@@ -34,10 +34,10 @@ import de.loothub.client.MarketPrices.Side;
  * die Preise und das Diagramm mit Durchschnittspreis (Linie) sowie Tiefst- bis Höchstpreis je Zeitabschnitt (Balken).
  * Öffnen mit Taste L (änderbar in der Steuerung), Reiter „Markt“.
  */
-public class MarketScreen extends Screen {
+public class MarketScreen extends LoothubScreen {
 	// Farben (ARGB – Alpha muss gesetzt sein)
-	private static final int PANEL = 0xD0101018;
-	private static final int BORDER = 0xFF3C3C4C;
+	private static final int PANEL = 0xE01C1315;
+	private static final int BORDER = 0xFF3A1F23;
 	private static final int TEXT = 0xFFFFFFFF;
 	private static final int MUTED = 0xFFB0B0C0;
 	private static final int FAINT = 0xFF707080;
@@ -51,10 +51,10 @@ public class MarketScreen extends Screen {
 	private static final int PAD = 8;
 	private static final int ROW_H = 22;   // Höhe eines Item-Knopfs
 	private static final int ROW_STEP = 24; // inkl. Abstand
-	private static final int ITEM_BG = 0x50000000;
-	private static final int ITEM_BG_HOVER = 0x60FFFFFF;
-	private static final int ITEM_BORDER = 0xFF5A5A6A;
-	private static final int ITEM_BORDER_HOVER = 0xFFFFFFFF;
+	private static final int ITEM_BG = 0xC0181012;
+	private static final int ITEM_BG_HOVER = 0xD0301A1E;
+	private static final int ITEM_BORDER = 0xFF3E2226;
+	private static final int ITEM_BORDER_HOVER = 0xFFE23B3B;
 
 	// Bleibt zwischen zwei Öffnungen des Menüs erhalten
 	private static String search = "";
@@ -67,7 +67,6 @@ public class MarketScreen extends Screen {
 
 	private final List<Button> intervalButtons = new ArrayList<>();
 	private Button categoryButton;
-	private Button updateButton;
 	/** false = Item-Liste, true = Diagramm des gewählten Items. */
 	private boolean detail;
 	private List<Listing> filtered = List.of();
@@ -80,17 +79,15 @@ public class MarketScreen extends Screen {
 	private int chartX, chartY, chartW, chartH;
 
 	public MarketScreen() {
-		super(Component.translatable("loothub.screen.title"));
+		super(Page.MARKET);
 	}
 
 	// ------------------------------------------------------------------ Aufbau
 
 	@Override
-	protected void init() {
+	protected void initPage() {
 		MarketPrices.refreshIfStale();
 
-		Tabs.create(Tabs.Tab.MARKET, width, 4).forEach(this::addRenderableWidget);
-		updateButton = addRenderableWidget(Tabs.updateButton(4));
 		intervalButtons.clear();
 		categoryButton = null;
 
@@ -104,9 +101,9 @@ public class MarketScreen extends Screen {
 
 	/** Ansicht 1: Liste mit Item-Knöpfen in der Bildschirmmitte. */
 	private void initList() {
-		int top = 24;
-		listW = Mth.clamp(width - 2 * PAD, 200, 300);
-		listX = (width - listW) / 2;
+		int top = ct;
+		listW = Mth.clamp(cw, 200, 300);
+		listX = cl + (cw - listW) / 2;
 
 		EditBox searchBox = new EditBox(font, listX, top, listW, 16, Component.translatable("loothub.screen.search"));
 		searchBox.setHint(Component.translatable("loothub.screen.search_hint").withStyle(ChatFormatting.DARK_GRAY));
@@ -123,7 +120,7 @@ public class MarketScreen extends Screen {
 				.build());
 
 		listY = top + 40;
-		listH = height - listY - PAD;
+		listH = cb - listY;
 
 		seenVersion = -1; // erzwingt Neuaufbau der Liste
 		refreshData();
@@ -133,13 +130,13 @@ public class MarketScreen extends Screen {
 	/** Ansicht 2: Preise und Diagramm des angeklickten Items, mit „Zurück“ zur Liste. */
 	private void initDetail() {
 		addRenderableWidget(Button.builder(Component.translatable("loothub.screen.back"), b -> showList())
-				.bounds(PAD, 24, 80, 16)
+				.bounds(cl, ct, 80, 16)
 				.build());
 
-		detailX = PAD;
-		detailY = 44;
-		detailW = width - 2 * PAD;
-		detailH = height - detailY - PAD;
+		detailX = cl;
+		detailY = ct + 20;
+		detailW = cw;
+		detailH = cb - detailY;
 
 		Interval[] values = Interval.values();
 		int gap = 4;
@@ -188,7 +185,6 @@ public class MarketScreen extends Screen {
 	@Override
 	public void tick() {
 		super.tick();
-		Tabs.refreshUpdateButton(updateButton);
 		MarketPrices.refreshIfStale();
 		refreshData();
 	}
@@ -282,27 +278,19 @@ public class MarketScreen extends Screen {
 			// Hintergrund zuerst, damit die Zeitraum-Knöpfe darüber liegen
 			panel(g, detailX, detailY, detailW, detailH);
 			super.render(g, mouseX, mouseY, delta);
-			renderStatus(g);
 			renderDetail(g, mouseX, mouseY);
 		} else {
 			super.render(g, mouseX, mouseY, delta);
-			renderStatus(g);
 			renderList(g, mouseX, mouseY);
 		}
 	}
 
-	private void renderStatus(GuiGraphics g) {
-		Component status;
-		int color = FAINT;
+	@Override
+	protected Component headerRight() {
 		if (MarketPrices.hasData()) {
-			status = Component.translatable("loothub.screen.status", Fmt.time(MarketPrices.lastUpdate()));
-		} else if (MarketPrices.lastAttemptFailed()) {
-			status = Component.translatable("loothub.tooltip.error");
-			color = RED;
-		} else {
-			status = Component.translatable("loothub.tooltip.loading");
+			return Component.translatable("loothub.screen.status", Fmt.time(MarketPrices.lastUpdate()));
 		}
-		g.drawString(font, status, width - PAD - font.width(status), 8, color, false);
+		return Component.translatable(MarketPrices.lastAttemptFailed() ? "loothub.tooltip.error" : "loothub.tooltip.loading");
 	}
 
 	private void renderList(GuiGraphics g, int mx, int my) {
@@ -669,15 +657,6 @@ public class MarketScreen extends Screen {
 		return super.mouseScrolled(mx, my, horizontal, vertical);
 	}
 
-	/**
-	 * Eigener, fast deckender Hintergrund in einer eigenen Ebene – so scheinen HUD-Anzeigen anderer Mods
-	 * (Scoreboard, Uhr, LabyMod-Widgets …) nicht mehr durch das Menü.
-	 */
-	@Override
-	public void renderBackground(GuiGraphics g, int mouseX, int mouseY, float delta) {
-		g.nextStratum();
-		g.fill(0, 0, width, height, 0xE00B0D12);
-	}
 
 	@Override
 	public boolean isPauseScreen() {

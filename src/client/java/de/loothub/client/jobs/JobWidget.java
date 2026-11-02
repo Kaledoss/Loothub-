@@ -22,12 +22,12 @@ public final class JobWidget {
 	private static final int LINE_H = 10;
 	private static final int BAR_H = 5;
 
-	private static final int BACKGROUND = 0xB0000000;
-	private static final int BORDER = 0x40FFFFFF;
+	private static final int BACKGROUND = 0xC0120A0C;
+	private static final int BORDER = 0xFFB3262E;
 	private static final int TEXT = 0xFFFFFFFF;
 	private static final int MUTED = 0xFFAAAAAA;
-	private static final int BAR_BG = 0x50FFFFFF;
-	private static final int BAR_FG = 0xFF55DD77;
+	private static final int BAR_BG = 0x60FFFFFF;
+	private static final int BAR_FG = 0xFFE23B3B;
 
 	/** Fertig aufbereitete Zeilen – einmal berechnet, damit Größe und Zeichnen übereinstimmen. */
 	public record Layout(Component title, String progressText, double progress, List<Component> lines, int width, int height) {

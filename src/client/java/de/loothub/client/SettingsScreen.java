@@ -1,200 +1,227 @@
 package de.loothub.client;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.function.BooleanSupplier;
 import java.util.function.Consumer;
 
 import net.minecraft.ChatFormatting;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.Button;
-import net.minecraft.client.gui.components.Tooltip;
-import net.minecraft.client.gui.screens.Screen;
+import net.minecraft.client.input.MouseButtonEvent;
 import net.minecraft.network.chat.Component;
-import net.minecraft.util.Mth;
+import net.minecraft.util.FormattedCharSequence;
 
 import de.loothub.client.jobs.JobTracker;
 import de.loothub.client.jobs.JobWidgetEditScreen;
 import de.loothub.client.jobs.WidgetConfig;
 
 /**
- * Einstellungen von Loothub+ – öffnen mit {@code /loothub} oder dem ⚙-Knopf im Loothub+-Menü.
- * Enthält das Job-Widget (an/aus, verschieben, Sitzung zurücksetzen), Tooltip-Preise, Statistik und Updates.
+ * Seite „Einstellungen“ (auch über {@code /loothub}): oben Version und Update-Stand, darunter Karten mit
+ * Schalter links und Beschreibung rechts – Auto-Update, Preise im Tooltip, Statistik und Job-Widget.
  */
-public class SettingsScreen extends Screen {
-	private static final int PANEL = 0xD0101018;
-	private static final int BORDER = 0xFF3C3C4C;
-	private static final int TEXT = 0xFFFFFFFF;
-	private static final int MUTED = 0xFFB0B0C0;
-	private static final int FAINT = 0xFF808090;
+public class SettingsScreen extends LoothubScreen {
+	private static final int CARD = 0xE01C1315;
+	private static final int CARD_EDGE = 0xFF3A1F23;
+	private static final int TRACK_OFF = 0xFF3A2A2C;
+	private static final int GREEN = 0xFF5BD68A;
 	private static final int GOLD = 0xFFFFC040;
+	private static final int GAP = 6;
 
-	private static final int BUTTON_H = 20;
-	private static final int ROW_GAP = 4;
-	private static final int SECTION_GAP = 14;
+	/** Ein Schalter auf einer Karte. */
+	private record Toggle(int x, int y, BooleanSupplier get, Consumer<Boolean> set) {
+		static final int W = 30;
+		static final int H = 12;
 
+		boolean contains(double mx, double my) {
+			return mx >= x && mx < x + W && my >= y && my < y + H;
+		}
+	}
+
+	/** Eine Karte: Titel + optionaler Schalter links, Beschreibung rechts. */
+	private record Card(int y, int h, String titleKey, String descKey, Toggle toggle) {
+	}
+
+	private final List<Card> cards = new ArrayList<>();
 	private Button resetButton;
-	private Button updateButton;
 	private long resetFeedbackUntil;
-
-	private int panelX, panelY, panelW, panelH;
-	/** Überschriften der Abschnitte mit ihrer y-Position. */
-	private final java.util.List<Object[]> headers = new java.util.ArrayList<>();
-	private int updateInfoY;
+	private int versionY;
+	private int labelW;
 
 	public SettingsScreen() {
-		super(Component.translatable("loothub.settings.title"));
+		super(Page.SETTINGS);
 	}
 
 	@Override
-	protected void init() {
-		headers.clear();
+	protected void initPage() {
+		cards.clear();
 		WidgetConfig c = WidgetConfig.get();
-		updateButton = addRenderableWidget(Tabs.updateButton(4));
+		labelW = Math.min(130, cw / 3);
 
-		panelW = Mth.clamp(width - 40, 260, 340);
-		panelX = (width - panelW) / 2;
-		int inner = panelW - 24;
-		int half = (inner - ROW_GAP) / 2;
-		int x = panelX + 12;
+		// Versionsblock
+		versionY = ct;
+		int bw = 100;
+		addRenderableWidget(Button.builder(Component.translatable("loothub.settings.update_now"), b -> Updater.checkAgain())
+				.bounds(cr - 8 - bw, versionY + 24, bw, 16).build());
 
-		// Gesamthöhe vorab: 4 Abschnitte
-		int contentH = 4 * (10 + 4) + 4 * BUTTON_H + 3 * ROW_GAP + 3 * SECTION_GAP + 14 + 10;
-		panelH = contentH + 24;
-		panelY = Math.max(24, (height - panelH - BUTTON_H - 10) / 2);
-		int y = panelY + 10;
+		int y = versionY + 50;
+		y = card(y, 40, "loothub.settings.update_check", "loothub.settings.update_check.tooltip",
+				() -> c.updateCheck, v -> c.updateCheck = v);
+		y = card(y, 40, "loothub.settings.tooltip_prices", "loothub.settings.tooltip_prices.tooltip",
+				() -> c.tooltipPrices, v -> c.tooltipPrices = v);
+		y = card(y, 40, "loothub.settings.stats", "loothub.settings.stats.tooltip",
+				() -> c.statsEnabled, v -> c.statsEnabled = v);
 
-		// --- Job-Widget
-		y = header(y, "loothub.settings.section.job_widget");
-		addRenderableWidget(toggle(x, y, half, "loothub.settings.job_widget",
-				() -> c.jobWidgetEnabled, v -> c.jobWidgetEnabled = v,
-				"loothub.settings.job_widget.tooltip"));
+		// Job-Widget: Schalter + zwei Knöpfe unter der Beschreibung
+		int jobY = y;
+		card(jobY, 58, "loothub.settings.section.job_widget", "loothub.settings.job_widget.tooltip",
+				() -> c.jobWidgetEnabled, v -> c.jobWidgetEnabled = v);
+		int descX = cl + labelW + 12;
+		int half = (cr - 8 - descX - 4) / 2;
 		addRenderableWidget(Button.builder(Component.translatable("loothub.settings.job_widget.move"),
 						b -> minecraft.setScreen(new JobWidgetEditScreen(this)))
-				.bounds(x + half + ROW_GAP, y, half, BUTTON_H)
-				.tooltip(Tooltip.create(Component.translatable("loothub.settings.job_widget.move.tooltip")))
-				.build());
-		y += BUTTON_H + ROW_GAP;
+				.bounds(descX, jobY + 36, half, 16).build());
 		resetButton = addRenderableWidget(Button.builder(Component.translatable("loothub.settings.job_session.reset"), b -> {
 					JobTracker.reset();
 					resetFeedbackUntil = System.currentTimeMillis() + 2000;
 					b.setMessage(Component.translatable("loothub.settings.job_session.reset.done").withStyle(ChatFormatting.GREEN));
 				})
-				.bounds(x, y, inner, BUTTON_H)
-				.tooltip(Tooltip.create(Component.translatable("loothub.settings.job_session.reset.tooltip")))
-				.build());
-		y += BUTTON_H + SECTION_GAP;
-
-		// --- Marktpreise
-		y = header(y, "loothub.settings.section.market");
-		addRenderableWidget(toggle(x, y, inner, "loothub.settings.tooltip_prices",
-				() -> c.tooltipPrices, v -> c.tooltipPrices = v, "loothub.settings.tooltip_prices.tooltip"));
-		y += BUTTON_H + SECTION_GAP;
-
-		// --- Statistik
-		y = header(y, "loothub.settings.section.stats");
-		addRenderableWidget(toggle(x, y, inner, "loothub.settings.stats",
-				() -> c.statsEnabled, v -> c.statsEnabled = v, "loothub.settings.stats.tooltip"));
-		y += BUTTON_H + SECTION_GAP;
-
-		// --- Updates
-		y = header(y, "loothub.settings.section.updates");
-		addRenderableWidget(toggle(x, y, half, "loothub.settings.update_check",
-				() -> c.updateCheck, v -> c.updateCheck = v, "loothub.settings.update_check.tooltip"));
-		addRenderableWidget(Button.builder(Component.translatable("loothub.settings.update_now"), b -> Updater.checkAgain())
-				.bounds(x + half + ROW_GAP, y, half, BUTTON_H).build());
-		y += BUTTON_H + 4;
-		updateInfoY = y;
-
-		// --- Unten: Menü öffnen und Fertig
-		int by = panelY + panelH + 8;
-		int bw = (panelW - ROW_GAP) / 2;
-		addRenderableWidget(Button.builder(Component.translatable("loothub.settings.open_menu"),
-						b -> Tabs.open(Tabs.Tab.HISTORY))
-				.bounds(panelX, by, bw, BUTTON_H).build());
-		addRenderableWidget(Button.builder(Component.translatable("loothub.settings.done"), b -> onClose())
-				.bounds(panelX + bw + ROW_GAP, by, bw, BUTTON_H).build());
+				.bounds(descX + half + 4, jobY + 36, half, 16).build());
 	}
 
-	private int header(int y, String key) {
-		headers.add(new Object[]{Component.translatable(key), y});
-		return y + 14;
-	}
-
-	/** Ein-/Aus-Knopf, der die Einstellung sofort speichert. */
-	private Button toggle(int x, int y, int w, String labelKey, BooleanSupplier get, Consumer<Boolean> set, String tooltipKey) {
-		Button b = Button.builder(toggleLabel(labelKey, get.getAsBoolean()), btn -> {
-					set.accept(!get.getAsBoolean());
-					WidgetConfig.get().save();
-					btn.setMessage(toggleLabel(labelKey, get.getAsBoolean()));
-				})
-				.bounds(x, y, w, BUTTON_H)
-				.tooltip(Tooltip.create(Component.translatable(tooltipKey)))
-				.build();
-		return b;
-	}
-
-	private static Component toggleLabel(String labelKey, boolean on) {
-		return Component.translatable(labelKey).append(": ")
-				.append(Component.translatable(on ? "loothub.settings.on" : "loothub.settings.off")
-						.withStyle(on ? ChatFormatting.GREEN : ChatFormatting.RED));
+	private int card(int y, int h, String titleKey, String descKey, BooleanSupplier get, Consumer<Boolean> set) {
+		int tx = cl + 8 + (labelW - Toggle.W) / 2;
+		Toggle t = new Toggle(tx, y + 20, get, set);
+		cards.add(new Card(y, h, titleKey, descKey, t));
+		return y + h + GAP;
 	}
 
 	@Override
 	public void tick() {
 		super.tick();
-		Tabs.refreshUpdateButton(updateButton);
 		if (resetFeedbackUntil > 0 && System.currentTimeMillis() > resetFeedbackUntil) {
 			resetFeedbackUntil = 0;
 			resetButton.setMessage(Component.translatable("loothub.settings.job_session.reset"));
 		}
 	}
 
-	@Override
-	public void render(GuiGraphics g, int mouseX, int mouseY, float delta) {
-		// Panel zuerst, damit die Knöpfe darüber liegen
-		g.fill(panelX, panelY, panelX + panelW, panelY + panelH, PANEL);
-		g.fill(panelX, panelY, panelX + panelW, panelY + 1, BORDER);
-		g.fill(panelX, panelY + panelH - 1, panelX + panelW, panelY + panelH, BORDER);
-		g.fill(panelX, panelY, panelX + 1, panelY + panelH, BORDER);
-		g.fill(panelX + panelW - 1, panelY, panelX + panelW, panelY + panelH, BORDER);
-
-		super.render(g, mouseX, mouseY, delta);
-
-		Component t = getTitle();
-		g.drawString(font, t, (width - font.width(t)) / 2, Math.max(4, panelY - 14), TEXT, true);
-		for (Object[] h : headers) {
-			g.drawString(font, (Component) h[0], panelX + 12, (int) h[1], GOLD, false);
-		}
-
-		// Update-Stand
-		String current = Updater.currentVersion();
-		String latest = Updater.latestVersion();
-		Component info = switch (Updater.state()) {
-			case CHECKING -> Component.translatable("loothub.settings.update.checking", current);
-			case UP_TO_DATE -> Component.translatable("loothub.settings.update.up_to_date", current);
-			case AVAILABLE, DOWNLOADING, INSTALLED -> Component.translatable("loothub.settings.update.available", current, latest);
-			case ERROR -> Component.translatable("loothub.settings.update.error", current, Updater.errorReason());
-			default -> Component.translatable("loothub.settings.update.idle", current);
-		};
-		g.drawString(font, info, panelX + 12, updateInfoY, Updater.state() == Updater.State.AVAILABLE ? GOLD : MUTED, false);
-
-		Component hint = Component.translatable("loothub.settings.hint");
-		g.drawString(font, hint, (width - font.width(hint)) / 2, height - 12, FAINT, false);
-	}
+	// ------------------------------------------------------------------ Zeichnen
 
 	@Override
 	public void renderBackground(GuiGraphics g, int mouseX, int mouseY, float delta) {
-		g.nextStratum();
-		g.fill(0, 0, width, height, 0xE00B0D12);
+		super.renderBackground(g, mouseX, mouseY, delta);
+		// Karten-Hintergründe unter den Knöpfen
+		box(g, cl, versionY, cw, 44);
+		for (Card card : cards) {
+			box(g, cl, card.y(), cw, card.h());
+			g.fill(cl + labelW + 6, card.y() + 5, cl + labelW + 7, card.y() + card.h() - 5, CARD_EDGE);
+		}
+	}
+
+	@Override
+	public void render(GuiGraphics g, int mouseX, int mouseY, float delta) {
+		super.render(g, mouseX, mouseY, delta);
+		renderVersion(g);
+		for (Card card : cards) {
+			Component title = Component.translatable(card.titleKey());
+			g.drawString(font, title, cl + 8 + (labelW - font.width(title)) / 2, card.y() + 6, TEXT, false);
+			drawToggle(g, card.toggle(), mouseX, mouseY);
+
+			int descX = cl + labelW + 12;
+			int y = card.y() + 6;
+			for (FormattedCharSequence line : font.split(Component.translatable(card.descKey()), cr - 8 - descX)) {
+				g.drawString(font, line, descX, y, MUTED, false);
+				y += 10;
+			}
+		}
+	}
+
+	private void renderVersion(GuiGraphics g) {
+		Component name = Component.literal("Loothub+ ").withStyle(ChatFormatting.BOLD)
+				.append(Component.literal(Updater.currentVersion()).withStyle(ChatFormatting.BOLD))
+				.withStyle(s -> s.withColor(RED & 0xFFFFFF));
+		g.drawString(font, name, cl + 10, versionY + 8, TEXT, true);
+		g.drawString(font, Component.translatable("loothub.settings.version.sub"), cl + 10, versionY + 22, FAINT, false);
+
+		// Status-Kästchen oben rechts
+		Component status;
+		int color;
+		switch (Updater.state()) {
+			case CHECKING -> {
+				status = Component.translatable("loothub.settings.status.checking");
+				color = MUTED;
+			}
+			case UP_TO_DATE -> {
+				status = Component.translatable("loothub.settings.status.up_to_date");
+				color = GREEN;
+			}
+			case AVAILABLE, DOWNLOADING -> {
+				status = Component.translatable("loothub.settings.status.available", Updater.latestVersion());
+				color = GOLD;
+			}
+			case INSTALLED -> {
+				status = Component.translatable("loothub.update.restart.tooltip");
+				color = GREEN;
+			}
+			case ERROR -> {
+				status = Updater.errorReason();
+				color = RED;
+			}
+			default -> {
+				status = Component.translatable("loothub.settings.status.idle");
+				color = MUTED;
+			}
+		}
+		int sw = font.width(status) + 10;
+		int sx = cr - 8 - Math.max(sw, 100);
+		int sy = versionY + 5;
+		int w = Math.max(sw, 100);
+		g.fill(sx, sy, sx + w, sy + 15, color);
+		g.fill(sx + 1, sy + 1, sx + w - 1, sy + 14, 0xFF0F0A0B);
+		g.drawString(font, status, sx + (w - font.width(status)) / 2, sy + 4, color, false);
+	}
+
+	private void drawToggle(GuiGraphics g, Toggle t, int mx, int my) {
+		boolean on = t.get().getAsBoolean();
+		boolean hover = t.contains(mx, my);
+		int track = on ? RED : TRACK_OFF;
+		g.fill(t.x(), t.y(), t.x() + Toggle.W, t.y() + Toggle.H, hover ? 0xFFFFFFFF : 0xFF000000);
+		g.fill(t.x() + 1, t.y() + 1, t.x() + Toggle.W - 1, t.y() + Toggle.H - 1, track);
+		int knobX = on ? t.x() + Toggle.W - 11 : t.x() + 1;
+		g.fill(knobX, t.y() + 1, knobX + 10, t.y() + Toggle.H - 1, 0xFFE8E0E0);
+		Component state = Component.translatable(on ? "loothub.settings.on" : "loothub.settings.off");
+		g.drawString(font, state, t.x() + Toggle.W + 5, t.y() + 2, on ? TEXT : FAINT, false);
+	}
+
+	private static void box(GuiGraphics g, int x, int y, int w, int h) {
+		g.fill(x, y, x + w, y + h, CARD);
+		g.fill(x, y + h - 1, x + w, y + h, CARD_EDGE);
+		g.fill(x, y, x + w, y + 1, 0xFF2A171A);
+	}
+
+	// ------------------------------------------------------------------ Eingabe
+
+	@Override
+	public boolean mouseClicked(MouseButtonEvent event, boolean doubleClick) {
+		if (super.mouseClicked(event, doubleClick)) {
+			return true;
+		}
+		if (event.button() == 0) {
+			for (Card card : cards) {
+				Toggle t = card.toggle();
+				if (t.contains(event.x(), event.y())) {
+					t.set().accept(!t.get().getAsBoolean());
+					WidgetConfig.get().save();
+					return true;
+				}
+			}
+		}
+		return false;
 	}
 
 	@Override
 	public void onClose() {
 		WidgetConfig.get().save();
 		super.onClose();
-	}
-
-	@Override
-	public boolean isPauseScreen() {
-		return false;
 	}
 }

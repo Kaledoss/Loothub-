@@ -13,8 +13,9 @@ Marktplatz
 
 ## Loothub+-Menü (Taste L)
 
-**L** öffnet das Loothub+-Menü mit drei Reitern oben in der Mitte: **Verlauf** (öffnet zuerst), **Markt** und **Statistik**, daneben **⚙** für die Einstellungen
-(Taste änderbar unter Optionen → Steuerung → „Loothub+“).
+**L** öffnet das Loothub+-Fenster (schwarz-rot): oben die Titelleiste, links die **Kategorien**
+**Verlauf**, **Markt**, **Statistik** und **Einstellungen**, rechts der Inhalt. Bei schmalem Fenster zeigt die
+Kategorie-Leiste nur Icons. Ist ein Update verfügbar, erscheint rechts in der Titelleiste ein Installieren-Knopf.
 
 > **Wichtig:** In Minecraft liegt L standardmäßig auf „Fortschritte“. Diese Taste bitte unter
 > Optionen → Steuerung → Tastenbelegung auf eine andere Taste legen, sonst öffnen sich die Fortschritte statt Loothub+.
@@ -61,7 +62,8 @@ zusätzlich abbaut (z. B. Timber-Axt), und Items, die direkt ins Inventar gelegt
 
 ## Einstellungen (/loothub)
 
-**/loothub** im Chat (oder **⚙** im Loothub+-Menü) öffnet die Einstellungen:
+**/loothub** im Chat (oder die Kategorie **Einstellungen**) öffnet die Einstellungen – oben Version und
+Update-Stand mit „Erneut prüfen“, darunter Karten mit Schalter links und Beschreibung rechts:
 
 - **Job-Widget:** an/aus, Position ändern, Job-Sitzung zurücksetzen
 - **Marktpreise:** Preise im Item-Tooltip an/aus
@@ -153,7 +155,8 @@ Fabric-Unterstützung in LabyMod ist laut LabyMod experimentell; manche Mods sin
 | `src/client/java/de/loothub/client/PriceTooltip.java` | Schreibt die Preise in den Tooltip |
 | `src/client/java/de/loothub/client/MarketHistory.java` | Lädt den Preisverlauf |
 | `src/client/java/de/loothub/client/MarketScreen.java` | Reiter „Markt“ mit Liste und Diagramm |
-| `src/client/java/de/loothub/client/Tabs.java` | Die Reiter oben mittig und der ⚙-Knopf |
+| `src/client/java/de/loothub/client/LoothubScreen.java` | Gemeinsames Fenster: Titelleiste, Kategorien, Farben |
+| `src/client/java/de/loothub/client/Tabs.java` | Update-Knopf in der Titelleiste |
 | `src/client/java/de/loothub/client/jobs/JobParser.java` | Erkennt die Job-Zeile in der Actionbar |
 | `src/client/java/de/loothub/client/jobs/JobTracker.java` | Sitzungswerte, XP/h, $/h, Level-Up-Zeit |
 | `src/client/java/de/loothub/client/jobs/JobWidget.java` | Zeichnet das Widget |
