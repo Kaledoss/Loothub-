@@ -96,6 +96,15 @@ public class LoothubClient implements ClientModInitializer {
 		HudElementRegistry.attachElementBefore(VanillaHudElements.CHAT,
 				Identifier.fromNamespaceAndPath(Loothub.MOD_ID, "job_widget"), JobWidget::renderHud);
 
+		// Pokémon Community Game: Spawn-Anzeige oben rechts, Knöpfe über dem Inventar, Twitch-Chat im Hintergrund
+		HudElementRegistry.attachElementBefore(VanillaHudElements.CHAT,
+				Identifier.fromNamespaceAndPath(Loothub.MOD_ID, "pcg"), de.loothub.client.pcg.PcgOverlay::renderHud);
+		de.loothub.client.pcg.PcgPanel.register();
+		{
+			de.loothub.client.jobs.WidgetConfig wc = de.loothub.client.jobs.WidgetConfig.get();
+			de.loothub.client.pcg.TwitchChat.ensure(wc.pcgEnabled, wc.pcgChannel, wc.pcgUser);
+		}
+
 		// Beim Verlassen des Servers beginnt eine neue Job-Sitzung
 		ClientPlayConnectionEvents.DISCONNECT.register((handler, client) -> {
 			JobTracker.reset();
@@ -103,6 +112,7 @@ public class LoothubClient implements ClientModInitializer {
 		});
 		// Beim Beenden des Spiels die laufende Sitzung noch im Verlauf speichern
 		ClientLifecycleEvents.CLIENT_STOPPING.register(client -> {
+			de.loothub.client.pcg.TwitchChat.stop();
 			JobTracker.reset();
 			StatsStore.saveIfDirty(true);
 		});

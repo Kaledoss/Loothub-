@@ -36,6 +36,12 @@ public final class WidgetConfig {
 	public boolean pulseBorders = true;
 	/** In Markt-Menüs des Servers alle am Marktplatz gehandelten Items grün hinterlegen. */
 	public boolean sellHighlight = true;
+	/** Pokémon Community Game (Twitch): Spawn-Anzeige und Knöpfe über dem Inventar. */
+	public boolean pcgEnabled = false;
+	/** Twitch-Kanal, in dem gespielt wird. */
+	public String pcgChannel = "";
+	/** Eigener Twitch-Name (nur zum Senden nötig; der Token liegt in config/loothub-twitch-token.txt). */
+	public String pcgUser = "";
 	/** Befehls-Leiste gesperrt: Knöpfe und Feld lassen sich nicht verschieben. */
 	public boolean quickPanelLocked = false;
 	/** Verschiebung des Feldes gegenüber der Standardposition unter dem Inventar. */
@@ -67,6 +73,12 @@ public final class WidgetConfig {
 				if (c != null) {
 					c.jobWidgetX = clamp01(c.jobWidgetX);
 					c.jobWidgetY = clamp01(c.jobWidgetY);
+					if (c.pcgChannel == null) {
+						c.pcgChannel = "";
+					}
+					if (c.pcgUser == null) {
+						c.pcgUser = "";
+					}
 					if (c.jobWidgetHiddenRows == null) {
 						c.jobWidgetHiddenRows = new java.util.ArrayList<>();
 					}

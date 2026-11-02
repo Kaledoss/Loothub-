@@ -52,12 +52,15 @@ public class SettingsScreen extends LoothubScreen {
 
 	private final List<Card> cards = new ArrayList<>();
 	private final List<Check> checks = new ArrayList<>();
-	private final List<Button> buttons = new ArrayList<>();
+	private final List<net.minecraft.client.gui.components.AbstractWidget> buttons = new ArrayList<>();
 	/** Scroll-Position bleibt beim Neuaufbau (Fenstergröße, Scrollen) erhalten. */
 	private static int scroll;
 	private int contentH;
 	private boolean needsRebuild;
 	private int rowsLabelY;
+	private int pcgLabelY;
+	private int pcgFieldX;
+	private int pcgFieldW;
 	private Button resetButton;
 	private long resetFeedbackUntil;
 	private int versionY;
@@ -123,6 +126,48 @@ public class SettingsScreen extends LoothubScreen {
 			checks.add(new Check(descX + col * colW, jobY + 60 + row * 14, colW - 4, ids.get(i)));
 		}
 
+		// Pokémon Community Game (Twitch): Schalter, Kanal, Twitch-Name, Token-Datei
+		int pcgY = end;
+		end = card(pcgY, 100, "loothub.settings.pcg", "loothub.settings.pcg.tooltip",
+				() -> c.pcgEnabled, v -> {
+					c.pcgEnabled = v;
+					de.loothub.client.pcg.TwitchChat.ensure(v, c.pcgChannel, c.pcgUser);
+				});
+		int fieldW = (cr - 8 - descX - 4) / 2;
+		pcgLabelY = pcgY + 36;
+		net.minecraft.client.gui.components.EditBox channelBox = new net.minecraft.client.gui.components.EditBox(
+				font, descX, pcgY + 46, fieldW, 16, Component.translatable("loothub.settings.pcg.channel"));
+		channelBox.setMaxLength(40);
+		channelBox.setValue(c.pcgChannel == null ? "" : c.pcgChannel);
+		channelBox.setResponder(t -> c.pcgChannel = t.strip());
+		buttons.add(addRenderableWidget(channelBox));
+		net.minecraft.client.gui.components.EditBox userBox = new net.minecraft.client.gui.components.EditBox(
+				font, descX + fieldW + 4, pcgY + 46, fieldW, 16, Component.translatable("loothub.settings.pcg.user"));
+		userBox.setMaxLength(40);
+		userBox.setValue(c.pcgUser == null ? "" : c.pcgUser);
+		userBox.setResponder(t -> c.pcgUser = t.strip());
+		buttons.add(addRenderableWidget(userBox));
+		buttons.add(addRenderableWidget(Button.builder(Component.translatable("loothub.settings.pcg.token"), b -> {
+					java.nio.file.Path file = de.loothub.client.pcg.TwitchChat.tokenFile();
+					try {
+						if (!java.nio.file.Files.exists(file)) {
+							java.nio.file.Files.writeString(file, "");
+						}
+					} catch (java.io.IOException ignored) {
+						// Ordner wird trotzdem geöffnet
+					}
+					net.minecraft.Util.getPlatform().openPath(file.getParent());
+				})
+				.bounds(descX, pcgY + 70, fieldW, 16).build()));
+		buttons.add(addRenderableWidget(Button.builder(Component.translatable("loothub.settings.pcg.connect"), b -> {
+					WidgetConfig.get().save();
+					de.loothub.client.pcg.TwitchChat.stop();
+					de.loothub.client.pcg.TwitchChat.ensure(c.pcgEnabled, c.pcgChannel, c.pcgUser);
+				})
+				.bounds(descX + fieldW + 4, pcgY + 70, fieldW, 16).build()));
+		pcgFieldX = descX;
+		pcgFieldW = fieldW;
+
 		// Scrollen: Inhalt höher als der sichtbare Bereich?
 		contentH = end - GAP - versionY;
 		int max = maxScroll();
@@ -130,7 +175,7 @@ public class SettingsScreen extends LoothubScreen {
 			scroll = max;
 			needsRebuild = true;
 		}
-		for (Button b : buttons) {
+		for (net.minecraft.client.gui.components.AbstractWidget b : buttons) {
 			b.visible = b.getY() >= ct && b.getY() + b.getHeight() <= cb;
 		}
 	}
@@ -212,6 +257,12 @@ public class SettingsScreen extends LoothubScreen {
 			}
 			g.drawString(font, rowLabel(ch.id()), ch.x() + 12, ch.y() + 1, on ? TEXT : FAINT, false);
 		}
+		// Pokémon Community Game: Feldbeschriftungen und Status
+		g.drawString(font, Component.translatable("loothub.settings.pcg.channel"), pcgFieldX, pcgLabelY, MUTED, false);
+		g.drawString(font, Component.translatable("loothub.settings.pcg.user"), pcgFieldX + pcgFieldW + 4, pcgLabelY, MUTED, false);
+		Component pcgStatus = Component.translatable("loothub.settings.pcg.status."
+				+ de.loothub.client.pcg.TwitchChat.status().name().toLowerCase(java.util.Locale.ROOT));
+		g.drawString(font, pcgStatus, cl + 8 + (labelW - font.width(pcgStatus)) / 2, pcgLabelY + 14, FAINT, false);
 		g.disableScissor();
 
 		// Scrollleiste
@@ -332,6 +383,8 @@ public class SettingsScreen extends LoothubScreen {
 	@Override
 	public void onClose() {
 		WidgetConfig.get().save();
+		WidgetConfig c = WidgetConfig.get();
+		de.loothub.client.pcg.TwitchChat.ensure(c.pcgEnabled, c.pcgChannel, c.pcgUser);
 		super.onClose();
 	}
 }

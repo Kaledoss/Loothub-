@@ -170,5 +170,16 @@
 	"loothub.stats.col.tool_mined": "Abgebaut",
 	"loothub.stats.col.tool_hits": "Treffer",
 	"loothub.stats.col.tool_used": "Benutzt",
-	"loothub.stats.general.tool_uses": "Werkzeug-Einsätze"
+	"loothub.stats.general.tool_uses": "Werkzeug-Einsätze",
+	"loothub.settings.pcg": "Pokémon Community Game",
+	"loothub.settings.pcg.tooltip": "Liest den Twitch-Chat mit und zeigt oben rechts das wilde Pokémon samt Fangzeit. Über dem Inventar gibt es Knöpfe zum Werfen und Kaufen von Bällen (Senden nur mit Token).",
+	"loothub.settings.pcg.channel": "Twitch-Kanal",
+	"loothub.settings.pcg.user": "Dein Twitch-Name",
+	"loothub.settings.pcg.token": "Token-Datei öffnen",
+	"loothub.settings.pcg.connect": "Neu verbinden",
+	"loothub.settings.pcg.status.off": "Aus",
+	"loothub.settings.pcg.status.connecting": "Verbinde …",
+	"loothub.settings.pcg.status.read_only": "Nur lesen",
+	"loothub.settings.pcg.status.connected": "Verbunden",
+	"loothub.settings.pcg.status.error": "Token falsch"
 }
