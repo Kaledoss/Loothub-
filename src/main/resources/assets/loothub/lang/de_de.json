@@ -149,5 +149,6 @@
 	"loothub.settings.status.available": "Update %s verfügbar",
 	"loothub.history.kpi.session": "%s Sitzung",
 	"loothub.settings.quick_panel": "Befehls-Leiste",
-	"loothub.settings.quick_panel.tooltip": "Zeigt unter dem Inventar (Taste E) Knöpfe für wichtige Befehle. Ein Klick schickt den Befehl, als hätten Sie ihn eingetippt."
+	"loothub.settings.quick_panel.tooltip": "Zeigt unter dem Inventar (Taste E) Knöpfe für wichtige Befehle. Knöpfe per Ziehen umsortieren, das Feld an der Kopfleiste verschieben; „Sperren“ hält alles fest.",
+	"loothub.quick.lock": "Sperren"
 }

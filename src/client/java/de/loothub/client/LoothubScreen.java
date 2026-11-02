@@ -136,7 +136,7 @@ public abstract class LoothubScreen extends Screen {
 		Component title = Component.literal("LOOTHUB").withStyle(ChatFormatting.BOLD)
 				.append(Component.literal("+").withStyle(ChatFormatting.BOLD))
 				.withStyle(s -> s.withColor(RED & 0xFFFFFF))
-				.append(Component.literal("  by Kaledoss").withStyle(s -> s.withColor(FAINT & 0xFFFFFF).withBold(false)));
+				.append(Component.literal("  von Kaledoss").withStyle(s -> s.withColor(FAINT & 0xFFFFFF).withBold(false)));
 		int titleW = 16 + font.width(title);
 		int tx = frameX + (frameW - titleW) / 2;
 		g.blit(RenderPipelines.GUI_TEXTURED, ICON, tx, frameY + 3, 0f, 0f, 13, 13, 128, 128, 128, 128);

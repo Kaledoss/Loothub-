@@ -16,13 +16,19 @@ public final class QuickCommand {
 		this.command = command;
 	}
 
-	/** Platzhalter – werden noch gemeinsam festgelegt. */
+	/** Standard-Knöpfe (Reihenfolge lässt sich im Spiel per Drag &amp; Drop ändern). */
 	public static List<QuickCommand> defaults() {
 		List<QuickCommand> list = new ArrayList<>();
 		list.add(new QuickCommand("Markt", "markt"));
 		list.add(new QuickCommand("Verkaufen", "sell"));
+		list.add(new QuickCommand("Auktionshaus", "ah"));
 		list.add(new QuickCommand("Jobs", "jobs"));
 		list.add(new QuickCommand("Fischerei", "fischerei"));
+		list.add(new QuickCommand("Jäger", "hunter"));
+		list.add(new QuickCommand("Farmer", "farmer"));
+		list.add(new QuickCommand("Clan", "clan"));
+		list.add(new QuickCommand("Quests", "quest"));
+		list.add(new QuickCommand("Erfolge", "achievement"));
 		return list;
 	}
 }

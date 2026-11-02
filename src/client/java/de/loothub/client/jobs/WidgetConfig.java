@@ -32,6 +32,11 @@ public final class WidgetConfig {
 	public boolean updateCheck = true;
 	/** Befehls-Leiste unter dem Inventar anzeigen. */
 	public boolean quickPanelEnabled = true;
+	/** Befehls-Leiste gesperrt: Knöpfe und Feld lassen sich nicht verschieben. */
+	public boolean quickPanelLocked = false;
+	/** Verschiebung des Feldes gegenüber der Standardposition unter dem Inventar. */
+	public int quickPanelOffsetX = 0;
+	public int quickPanelOffsetY = 0;
 	/** Knöpfe der Befehls-Leiste (Beschriftung + Befehl). */
 	public java.util.List<de.loothub.client.quick.QuickCommand> quickCommands = de.loothub.client.quick.QuickCommand.defaults();
 	public double jobWidgetX = 0.0;

@@ -62,10 +62,15 @@ zusätzlich abbaut (z. B. Timber-Axt), und Items, die direkt ins Inventar gelegt
 
 ## Befehls-Leiste im Inventar
 
-Unter dem Inventar (Taste **E**) erscheint ein Feld mit Knöpfen für wichtige Befehle (bei offenem Rezeptbuch
-reicht es unter beides). Ein Klick schickt genau einen Befehl – wie selbst eingetippt, keine Automatisierung.
-Die Knöpfe stehen in `config/loothub.json` unter `quickCommands` (Beschriftung + Befehl) und lassen sich in den
-Einstellungen ein- und ausschalten. Passen nicht alle Knöpfe unter das Inventar, werden die übrigen ausgeblendet.
+Unter dem Inventar (Taste **E**) erscheint ein Feld mit Knöpfen für wichtige Befehle:
+Markt (`/markt`), Verkaufen (`/sell`), Auktionshaus (`/ah`), Jobs (`/jobs`), Fischerei (`/fischerei`),
+Jäger (`/hunter`), Farmer (`/farmer`), Clan (`/clan`), Quests (`/quest`), Erfolge (`/achievement`).
+
+- **Klick** schickt genau einen Befehl – wie selbst eingetippt, keine Automatisierung.
+- **Knöpfe ziehen** sortiert sie um; **Kopfleiste ziehen** („⠿ Loothub+“) verschiebt das ganze Feld.
+- **Häkchen „Sperren“** oben rechts im Feld: dann lässt sich nichts mehr verschieben.
+- Reihenfolge, Position und Sperre werden in `config/loothub.json` gespeichert (`quickCommands` usw.);
+  dort lassen sich auch Beschriftungen und Befehle ändern. In den Einstellungen ein-/ausschaltbar.
 
 ## Einstellungen (/loothub)
 
@@ -134,6 +139,10 @@ vor der Nutzung auf dem Server beim OPSUCHT-Support nachfragen (§5.10.4).
 
 Ergebnis: `build/libs/loothub-1.0.0.jar` (die `-sources`-Datei brauchen Sie nicht).
 Diese Datei zusammen mit der Fabric API für 1.21.11 in den `mods`-Ordner legen.
+
+## Sprache
+
+Alle Texte von Loothub+ sind deutsch – unabhängig von der Spielsprache.
 
 ## Updates im Spiel
 
