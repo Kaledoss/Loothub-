@@ -313,7 +313,7 @@ public class StatsScreen extends LoothubScreen {
 
 	private void renderGeneral(GuiGraphics g) {
 		long walked = get("general.walk") + get("general.sprint") + get("general.crouch");
-		List<String[]> entries = new ArrayList<>();
+		List<GeneralEntry> entries = new ArrayList<>();
 		entries.add(entry("play_time", Fmt.longDuration(get("general.play_time"))));
 		entries.add(entry("walk_total", distance(walked)));
 		entries.add(entry("walk", distance(get("general.walk"))));
@@ -334,6 +334,11 @@ public class StatsScreen extends LoothubScreen {
 		entries.add(entry("damage_dealt", hearts(get("general.damage_dealt"))));
 		entries.add(entry("damage_taken", hearts(get("general.damage_taken"))));
 		entries.add(entry("deaths", Fmt.whole(get("general.deaths"))));
+		// Spitzenreiter im gewählten Zeitraum
+		entries.add(top("top_mined", Kind.BLOCK, "mined."));
+		entries.add(top("top_placed", Kind.BLOCK, "placed."));
+		entries.add(top("top_tool", Kind.ITEM, "tool_mined.", "tool_hits.", "tool_used."));
+		entries.add(top("top_killed", Kind.MOB, "killed."));
 
 		// Zwei Spalten, wenn genug Platz ist
 		int columns = tableW >= 420 ? 2 : 1;
@@ -350,16 +355,54 @@ public class StatsScreen extends LoothubScreen {
 			if (row % 2 == 0) {
 				g.fill(x - 2, y - 2, x + colW + 2, y + GENERAL_ROW_H - 2, 0x14FFFFFF);
 			}
-			g.drawString(font, entries.get(i)[0], x, y, MUTED, false);
-			String value = entries.get(i)[1];
-			g.drawString(font, value, x + colW - font.width(value), y, TEXT, false);
+			GeneralEntry e = entries.get(i);
+			g.drawString(font, e.label(), x, y, MUTED, false);
+			int vx = x + colW - font.width(e.value());
+			g.drawString(font, e.value(), vx, y, e.icon().isEmpty() ? TEXT : GOLD, false);
+			if (!e.icon().isEmpty()) {
+				g.renderItem(e.icon(), vx - 19, y - 4);
+			}
 		}
 		Component note = Component.translatable("loothub.stats.note");
 		g.drawString(font, note, tableX + 5, tableY + tableH - 12, FAINT, false);
 	}
 
-	private String[] entry(String key, String value) {
-		return new String[]{Component.translatable("loothub.stats.general." + key).getString(), value};
+	/** Eine Zeile unter „Allgemein“; {@code icon} nur bei den Spitzenreitern. */
+	private record GeneralEntry(String label, String value, ItemStack icon) {
+	}
+
+	private GeneralEntry entry(String key, String value) {
+		return new GeneralEntry(Component.translatable("loothub.stats.general." + key).getString(), value, ItemStack.EMPTY);
+	}
+
+	/** Spitzenreiter: höchster Zähler über die Präfixe (gleiche ID wird zusammengezählt), im gewählten Zeitraum. */
+	private GeneralEntry top(String key, Kind kind, String... prefixes) {
+		Map<String, Long> byId = new HashMap<>();
+		boolean blocks = kind == Kind.BLOCK;
+		for (Map.Entry<String, Long> e : sums.entrySet()) {
+			for (String prefix : prefixes) {
+				if (e.getKey().startsWith(prefix)) {
+					String id = e.getKey().substring(prefix.length());
+					if (!blocks || isRealBlock(id)) {
+						byId.merge(id, e.getValue(), Long::sum);
+					}
+				}
+			}
+		}
+		String bestId = null;
+		long best = 0;
+		for (Map.Entry<String, Long> e : byId.entrySet()) {
+			if (e.getValue() > best) {
+				best = e.getValue();
+				bestId = e.getKey();
+			}
+		}
+		String label = Component.translatable("loothub.stats.general." + key).getString();
+		if (bestId == null) {
+			return new GeneralEntry(label, "–", ItemStack.EMPTY);
+		}
+		String name = ellipsize(name(bestId, kind), 150);
+		return new GeneralEntry(label, name + " · " + Fmt.whole(best), icon(bestId, kind));
 	}
 
 	private List<String> columnKeys() {
