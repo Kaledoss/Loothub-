@@ -36,6 +36,8 @@ public final class WidgetConfig {
 	public boolean pulseBorders = true;
 	/** In Markt-Menüs des Servers verkaufbare Items grün hinterlegen. */
 	public boolean sellHighlight = true;
+	/** Fortschrittsbalken oben (Bossleisten) nach Fortschritt einfärben. */
+	public boolean colorProgressBars = true;
 	/** Befehls-Leiste gesperrt: Knöpfe und Feld lassen sich nicht verschieben. */
 	public boolean quickPanelLocked = false;
 	/** Verschiebung des Feldes gegenüber der Standardposition unter dem Inventar. */
