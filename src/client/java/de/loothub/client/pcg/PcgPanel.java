@@ -69,6 +69,8 @@ public final class PcgPanel {
 				return;
 			}
 			ScreenEvents.afterBackground(screen).register((s, g, mx, my, delta) -> render(s, g, mx, my));
+			// Rückmeldung zuletzt zeichnen, damit sie über dem Inventar lesbar bleibt
+			ScreenEvents.afterRender(screen).register((s, g, mx, my, delta) -> renderFeedback(s, g));
 			ScreenMouseEvents.allowMouseClick(screen).register((s, e) -> !click(s, e));
 			ScreenMouseEvents.allowMouseDrag(screen).register((s, e, dx, dy) -> !drag(s, e));
 			ScreenMouseEvents.allowMouseRelease(screen).register((s, e) -> !release());
@@ -195,10 +197,21 @@ public final class PcgPanel {
 		int sx = buttonX(x, 3) - SEP / 2 - 1;
 		g.fill(sx, by + 3, sx + 1, by + BTN - 3, BTN_EDGE);
 
-		if (now < feedbackUntil) {
-			// Rückmeldung über der Leiste (darunter läge sie im Inventar)
-			g.drawString(font, feedback, x + PAD, y - 11, 0xFF55E06A, true);
+	}
+
+	/** „Gesendet: …“ direkt unter der Leiste, auf eigenem dunklen Streifen. */
+	private static void renderFeedback(Screen s, GuiGraphics g) {
+		if (System.currentTimeMillis() >= feedbackUntil) {
+			return;
 		}
+		Font font = Minecraft.getInstance().font;
+		int[] o = origin(s, font);
+		int x = o[0];
+		int y = o[1] + panelH() + 2;
+		int w = font.width(feedback) + 2 * PAD;
+		g.fill(x, y, x + w, y + 12, 0xF0140B0D);
+		g.fill(x, y + 11, x + w, y + 12, 0xFF55E06A);
+		g.drawString(font, feedback, x + PAD, y + 2, 0xFF55E06A, false);
 	}
 
 	// ------------------------------------------------------------------ Maus
