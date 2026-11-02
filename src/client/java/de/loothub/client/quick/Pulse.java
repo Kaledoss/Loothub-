@@ -26,12 +26,23 @@ public final class Pulse {
 		return 0xFF000000 | (r << 16) | (gr << 8) | b;
 	}
 
-	/** 1 px breiter Rahmen direkt außen um das Rechteck (x, y, w, h). */
+	/** Deckkraft der drei Glüh-Ringe von innen nach außen. */
+	private static final int[] GLOW_ALPHA = {0xC8, 0x5A, 0x22};
+
+	/**
+	 * Weicher Schein außen um das Rechteck (x, y, w, h): drei Ringe mit abnehmender Deckkraft und
+	 * abgerundeten Ecken. Sollte vor dem Inhalt gezeichnet werden, damit z. B. Rezeptbuch-Reiter darüber liegen.
+	 */
 	public static void outline(GuiGraphics g, int x, int y, int w, int h) {
-		int c = color();
-		g.fill(x - 1, y - 1, x + w + 1, y, c);
-		g.fill(x - 1, y + h, x + w + 1, y + h + 1, c);
-		g.fill(x - 1, y, x, y + h, c);
-		g.fill(x + w, y, x + w + 1, y + h, c);
+		int rgb = color() & 0xFFFFFF;
+		for (int i = 0; i < GLOW_ALPHA.length; i++) {
+			int d = i + 1;
+			int c = (GLOW_ALPHA[i] << 24) | rgb;
+			// Ecken auslassen → runde Kanten wie bei den Texturen
+			g.fill(x - d + 1, y - d, x + w + d - 1, y - d + 1, c);
+			g.fill(x - d + 1, y + h + d - 1, x + w + d - 1, y + h + d, c);
+			g.fill(x - d, y - d + 1, x - d + 1, y + h + d - 1, c);
+			g.fill(x + w + d - 1, y - d + 1, x + w + d, y + h + d - 1, c);
+		}
 	}
 }

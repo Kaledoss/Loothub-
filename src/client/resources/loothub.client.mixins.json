@@ -6,7 +6,9 @@
 		"GuiMixin",
 		"BlockItemMixin",
 		"ClientPacketListenerMixin",
-		"AbstractContainerScreenAccessor"
+		"AbstractContainerScreenAccessor",
+		"InventoryScreenMixin",
+		"ContainerLabelMixin"
 	],
 	"injectors": {
 		"defaultRequire": 0

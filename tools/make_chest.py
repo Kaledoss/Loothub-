@@ -36,15 +36,11 @@ def slot(x, y):
 
 # Oberer Teil: Kopf + 6 Reihen (Items bei 8+18j, 18+18i)
 section(0, 126, True, False)
-d.rectangle([5, 4, W - 6, 14], fill=(206, 186, 190, 255))     # helles Schild für den Menü-Titel
-d.line([(5, 15), (W - 6, 15)], fill=RED)
 for i in range(6):
     for j in range(9):
         slot(7 + 18 * j, 17 + 18 * i)
 # Unterer Teil: Spieler-Inventar (Items bei 14+18i bzw. 72 relativ zum Anschluss)
 section(126, 96, False, True)
-# helles Schild für die Überschrift „Inventar“ (Minecraft schreibt sie dunkelgrau bei y=Bereich+2)
-d.rectangle([5, 127, 80, 136], fill=(206, 186, 190, 255))
 for i in range(3):
     for j in range(9):
         slot(7 + 18 * j, 126 + 13 + 18 * i)

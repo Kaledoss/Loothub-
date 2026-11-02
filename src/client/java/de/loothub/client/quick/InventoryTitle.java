@@ -19,9 +19,6 @@ import de.loothub.client.mixin.AbstractContainerScreenAccessor;
  * Rezeptbuch-Knopf – Werkbank ({@code /werkbank}) und Amboss ({@code /anvil}). Ein Klick schickt den Befehl.
  */
 public final class InventoryTitle {
-	/** Gleiche Fläche wie das helle Schild in der Inventar-Textur. */
-	private static final int X1 = 95, Y1 = 5, X2 = 161, Y2 = 15;
-
 	/**
 	 * Feste Knöpfe in der Zeile des Zweithand-Slots, rechts neben dem Rezeptbuch-Knopf
 	 * (Rezeptbuch: x=104–124, y=61 – darf nicht überdeckt werden).
@@ -42,9 +39,11 @@ public final class InventoryTitle {
 
 	public static void register() {
 		ScreenEvents.AFTER_INIT.register((client, screen, w, h) -> {
-			// Kisten und Server-Menüs (z. B. OPSUCHT): nur der pulsierende Rand
-			if (screen instanceof net.minecraft.client.gui.screens.inventory.ContainerScreen) {
-				ScreenEvents.afterRender(screen).register((s, g, mx, my, delta) -> {
+			// Kisten, Server-Menüs (z. B. OPSUCHT), Werkbank und Amboss: nur der pulsierende Rand
+			if (screen instanceof net.minecraft.client.gui.screens.inventory.ContainerScreen
+					|| screen instanceof net.minecraft.client.gui.screens.inventory.CraftingScreen
+					|| screen instanceof net.minecraft.client.gui.screens.inventory.AnvilScreen) {
+				ScreenEvents.afterBackground(screen).register((s, g, mx, my, delta) -> {
 					AbstractContainerScreenAccessor acc = (AbstractContainerScreenAccessor) s;
 					Pulse.outline(g, acc.loothub$leftPos(), acc.loothub$topPos(), acc.loothub$imageWidth(), acc.loothub$imageHeight());
 				});
@@ -53,22 +52,16 @@ public final class InventoryTitle {
 			if (!(screen instanceof InventoryScreen)) {
 				return;
 			}
-			ScreenEvents.afterRender(screen).register((s, g, mx, my, delta) -> {
+			// Pulsierender Schein um Inventar und – falls offen – Rezeptbuch (liegt 149 px links, 147×166 groß).
+			// Im Hintergrund gezeichnet, damit die Rezeptbuch-Reiter darüber liegen.
+			ScreenEvents.afterBackground(screen).register((s, g, mx, my, delta) -> {
 				AbstractContainerScreenAccessor acc = (AbstractContainerScreenAccessor) s;
 				int left = acc.loothub$leftPos();
-				int top = acc.loothub$topPos();
-				Font font = Minecraft.getInstance().font;
-				// Pulsierender Rand um Inventar und – falls offen – Rezeptbuch (liegt 149 px links, 147×166 groß)
 				int imgW = acc.loothub$imageWidth();
-				int imgH = acc.loothub$imageHeight();
-				Pulse.outline(g, left, top, imgW, imgH);
+				Pulse.outline(g, left, acc.loothub$topPos(), imgW, acc.loothub$imageHeight());
 				if (left > (s.width - imgW) / 2 + 10) {
-					Pulse.outline(g, left - 149, top, 147, 166);
+					Pulse.outline(g, left - 149, acc.loothub$topPos(), 147, 166);
 				}
-				g.fill(left + X1, top + Y1, left + X2, top + Y2, 0xFFCEBABE);
-				g.fill(left + X1, top + Y2, left + X2, top + Y2 + 1, LoothubScreen.RED);
-				g.drawString(font, "Loothub+", left + 97, top + 6, LoothubScreen.RED_DARK, false);
-				drawButtons(g, font, left, top, mx, my);
 			});
 			ScreenMouseEvents.allowMouseClick(screen).register((s, e) -> {
 				if (e.button() != 0) {
@@ -87,6 +80,19 @@ public final class InventoryTitle {
 				return true;
 			});
 		});
+	}
+
+	/** Aufgerufen von {@code InventoryScreenMixin} direkt nach der Inventar-Textur (unter Items und Tooltips). */
+	public static void drawOverlay(InventoryScreen screen, GuiGraphics g, int mx, int my) {
+		AbstractContainerScreenAccessor acc = (AbstractContainerScreenAccessor) screen;
+		int left = acc.loothub$leftPos();
+		int top = acc.loothub$topPos();
+		drawButtons(g, Minecraft.getInstance().font, left, top, mx, my);
+	}
+
+	/** Überschrift im Inventar (Koordinaten relativ zum Inventar, wie in renderLabels). */
+	public static void drawLabel(GuiGraphics g) {
+		g.drawString(Minecraft.getInstance().font, "Loothub+", 97, 8, LoothubScreen.RED, false);
 	}
 
 	private static void drawButtons(GuiGraphics g, Font font, int left, int top, int mx, int my) {

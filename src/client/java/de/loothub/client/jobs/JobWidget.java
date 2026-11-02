@@ -18,13 +18,16 @@ import de.loothub.client.Fmt;
  * verschoben wird es im {@link JobWidgetEditScreen} (Einstellungen /loothub → „Position ändern“).
  */
 public final class JobWidget {
-	private static final int PADDING = 5;
+	private static final int PADDING = 6;
 	private static final int LINE_H = 10;
 	private static final int JOB_ROW_H = 17;
 	private static final int ICON_W = 18;
 
 	private static final int BACKGROUND = 0xC0120A0C;
 	private static final int BORDER = 0xFFB3262E;
+	private static final int EDGE = 0xE0000000;
+	private static final int BEVEL_HI = 0x905C262C;
+	private static final int BEVEL_SH = 0x90080405;
 	private static final int LABEL = 0xFFE07A7A;
 	private static final int VALUE = 0xFFFFD66B;
 	private static final int JOB = 0xFFFFAA33;
@@ -122,10 +125,39 @@ public final class JobWidget {
 		return new int[]{x, y};
 	}
 
+	/**
+	 * Rahmen im Stil des Ressourcenpakets: abgerundete Ecken, dunkle Außenlinie, weiche Innenkante
+	 * und ein schmaler roter Streifen oben.
+	 */
+	private static void frame(GuiGraphics g, int x, int y, int w, int h) {
+		int r = x + w;
+		int b = y + h;
+		// Fläche ohne die Eckpixel
+		g.fill(x + 1, y, r - 1, b, BACKGROUND);
+		g.fill(x, y + 1, x + 1, b - 1, BACKGROUND);
+		g.fill(r - 1, y + 1, r, b - 1, BACKGROUND);
+		// Außenlinie, Ecken frei → rund
+		g.fill(x + 2, y, r - 2, y + 1, EDGE);
+		g.fill(x + 2, b - 1, r - 2, b, EDGE);
+		g.fill(x, y + 2, x + 1, b - 2, EDGE);
+		g.fill(r - 1, y + 2, r, b - 2, EDGE);
+		g.fill(x + 1, y + 1, x + 2, y + 2, EDGE);
+		g.fill(r - 2, y + 1, r - 1, y + 2, EDGE);
+		g.fill(x + 1, b - 2, x + 2, b - 1, EDGE);
+		g.fill(r - 2, b - 2, r - 1, b - 1, EDGE);
+		// Innenkante: oben/links etwas heller, unten/rechts dunkler
+		g.fill(x + 2, y + 1, r - 2, y + 2, BEVEL_HI);
+		g.fill(x + 1, y + 2, x + 2, b - 2, BEVEL_HI);
+		g.fill(x + 2, b - 2, r - 2, b - 1, BEVEL_SH);
+		g.fill(r - 2, y + 2, r - 1, b - 2, BEVEL_SH);
+		// roter Streifen oben, mit weichen Enden
+		g.fill(x + 4, y + 2, r - 4, y + 3, BORDER);
+		g.fill(x + 3, y + 2, x + 4, y + 3, 0x80B3262E);
+		g.fill(r - 4, y + 2, r - 3, y + 3, 0x80B3262E);
+	}
+
 	public static void draw(GuiGraphics g, Font font, Layout l, int x, int y) {
-		g.fill(x, y, x + l.width(), y + l.height(), BACKGROUND);
-		g.fill(x, y, x + 1, y + l.height(), BORDER);
-		g.fill(x, y, x + l.width(), y + 1, BORDER);
+		frame(g, x, y, l.width(), l.height());
 
 		int lx = x + PADDING;
 		int vx = lx + l.labelW();

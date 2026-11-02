@@ -52,7 +52,8 @@ public final class QuickCommandPanel {
 				return;
 			}
 			Panel panel = new Panel(screen);
-			ScreenEvents.afterRender(screen).register((s, g, mx, my, delta) -> panel.render(g, mx, my));
+			// Im Hintergrund zeichnen, damit Item-Tooltips über der Leiste liegen
+			ScreenEvents.afterBackground(screen).register((s, g, mx, my, delta) -> panel.render(g, mx, my));
 			ScreenMouseEvents.allowMouseClick(screen).register((s, e) -> !panel.mouseClicked(e));
 			ScreenMouseEvents.allowMouseDrag(screen).register((s, e, dx, dy) -> !panel.mouseDragged(e));
 			ScreenMouseEvents.allowMouseRelease(screen).register((s, e) -> !panel.mouseReleased(e));

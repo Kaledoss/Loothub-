@@ -59,9 +59,7 @@ d.rectangle([ax, ay + 4, ax + 5, ay + 8], fill=SLOT_LIGHT)
 d.polygon([(ax + 6, ay), (ax + 11, ay + 6), (ax + 6, ay + 12)], fill=SLOT_LIGHT)
 # Ergebnis (Item bei 154,28): normaler Slot wie im Vanilla-Inventar
 slot(153, 27)
-# helles Schild hinter der Überschrift „Handwerk“ (Vanilla-Text ist dunkelgrau, bei 97,6)
-d.rectangle([95, 5, 160, 14], fill=(206, 186, 190, 255))
-d.line([(95, 15), (160, 15)], fill=RED)
+# Überschrift „Loothub+“ schreibt die Mod selbst (InventoryScreenMixin), kein Schild mehr
 # Inventar 3x9 (Items bei 8+18j, 84+18i) und Schnellleiste (y=142)
 for i in range(3):
     for j in range(9):
