@@ -84,6 +84,10 @@ public final class QuickCommandPanel {
 
 	private static void run(String command) {
 		Minecraft mc = Minecraft.getInstance();
+		if (QuickCommand.MERCHANT.equals(command)) {
+			de.loothub.client.LoothubScreen.open(de.loothub.client.LoothubScreen.Page.MERCHANT);
+			return;
+		}
 		if (mc.player != null && mc.getConnection() != null) {
 			mc.getConnection().sendCommand(command.strip().replaceFirst("^/", ""));
 		}

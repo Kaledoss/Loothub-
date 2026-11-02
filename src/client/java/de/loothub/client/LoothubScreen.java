@@ -44,6 +44,7 @@ public abstract class LoothubScreen extends Screen {
 	public enum Page {
 		HISTORY("loothub.tab.history", Items.WRITABLE_BOOK),
 		MARKET("loothub.tab.market", Items.EMERALD),
+		MERCHANT("loothub.tab.merchant", Items.COMPOSTER),
 		STATS("loothub.tab.stats", Items.FILLED_MAP),
 		SETTINGS("loothub.tab.settings", Items.COMPARATOR);
 
@@ -73,6 +74,7 @@ public abstract class LoothubScreen extends Screen {
 		Minecraft.getInstance().setScreen(switch (page) {
 			case HISTORY -> new JobHistoryScreen();
 			case MARKET -> new MarketScreen();
+			case MERCHANT -> new MerchantScreen();
 			case STATS -> new StatsScreen();
 			case SETTINGS -> new SettingsScreen();
 		});

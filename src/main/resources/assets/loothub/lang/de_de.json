@@ -181,5 +181,15 @@
 	"loothub.settings.pcg.status.connecting": "Verbinde …",
 	"loothub.settings.pcg.status.read_only": "Nur lesen",
 	"loothub.settings.pcg.status.connected": "Verbunden",
-	"loothub.settings.pcg.status.error": "Token falsch"
+	"loothub.settings.pcg.status.error": "Token falsch",
+	"loothub.tab.merchant": "Wertstoffhändler",
+	"loothub.tab.merchant.header": "Was der Wertstoffhändler gerade annimmt",
+	"loothub.merchant.updated": "Stand %s",
+	"loothub.merchant.loading": "Lade Kurse …",
+	"loothub.merchant.error": "Kurse konnten nicht geladen werden – später erneut versuchen.",
+	"loothub.merchant.empty": "Der Händler nimmt gerade nichts an.",
+	"loothub.merchant.col.item": "Item",
+	"loothub.merchant.col.change": "Trend",
+	"loothub.merchant.col.base": "Grundkurs",
+	"loothub.merchant.col.rate": "Aktueller Kurs"
 }

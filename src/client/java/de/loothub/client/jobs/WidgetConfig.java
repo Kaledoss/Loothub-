@@ -49,6 +49,8 @@ public final class WidgetConfig {
 	public int quickPanelOffsetY = 0;
 	/** Knöpfe der Befehls-Leiste (Beschriftung + Befehl). */
 	public java.util.List<de.loothub.client.quick.QuickCommand> quickCommands = de.loothub.client.quick.QuickCommand.defaults();
+	/** Stand der Standard-Knöpfe; ältere Einstellungen bekommen neue Knöpfe hinten angehängt. */
+	public int quickCommandsVersion = de.loothub.client.quick.QuickCommand.DEFAULTS_VERSION;
 	/** Ausgeblendete Zeilen des Job-Widgets (IDs aus {@link JobWidget#ROW_IDS}). */
 	public java.util.List<String> jobWidgetHiddenRows = new java.util.ArrayList<>();
 	public double jobWidgetX = 0.0;
@@ -73,6 +75,19 @@ public final class WidgetConfig {
 				if (c != null) {
 					c.jobWidgetX = clamp01(c.jobWidgetX);
 					c.jobWidgetY = clamp01(c.jobWidgetY);
+					if (c.quickCommands != null && c.quickCommandsVersion < de.loothub.client.quick.QuickCommand.DEFAULTS_VERSION) {
+						java.util.Set<String> have = new java.util.HashSet<>();
+						for (de.loothub.client.quick.QuickCommand q : c.quickCommands) {
+							have.add(q.command == null ? "" : q.command.strip().replaceFirst("^/", ""));
+						}
+						for (de.loothub.client.quick.QuickCommand d : de.loothub.client.quick.QuickCommand.defaults()) {
+							if (!have.contains(d.command)) {
+								c.quickCommands.add(d);
+							}
+						}
+						c.quickCommandsVersion = de.loothub.client.quick.QuickCommand.DEFAULTS_VERSION;
+						c.save();
+					}
 					if (c.pcgChannel == null) {
 						c.pcgChannel = "";
 					}
