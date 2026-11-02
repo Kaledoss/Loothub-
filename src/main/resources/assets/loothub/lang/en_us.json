@@ -146,5 +146,6 @@
 	"loothub.settings.status.idle": "Not checked",
 	"loothub.settings.status.checking": "Checking …",
 	"loothub.settings.status.up_to_date": "Up to date",
-	"loothub.settings.status.available": "Update %s available"
+	"loothub.settings.status.available": "Update %s available",
+	"loothub.history.kpi.session": "%s session"
 }

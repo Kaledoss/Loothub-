@@ -550,7 +550,7 @@ public class JobHistoryScreen extends LoothubScreen {
 				Double.isNaN(xpRate) ? "" : Fmt.compact(xpRate) + " XP/h", GREEN);
 		kpi(g, cl + 2 * (kw + GAP), kw, BLUE, Items.CLOCK, "loothub.history.kpi.active",
 				Fmt.longDuration(totalActive),
-				Component.translatable("loothub.history.kpi.sessions", unitSessions.size()).getString(), TEXT);
+				Component.translatable(unitSessions.size() == 1 ? "loothub.history.kpi.session" : "loothub.history.kpi.sessions", unitSessions.size()).getString(), TEXT);
 		if (best != null) {
 			String share = sumAll > 0 ? Math.round(bestValue / sumAll * 100) + " %" : "";
 			kpi(g, cl + 3 * (kw + GAP), kw, best.info.color(), best.info.icon(), "loothub.history.kpi.best",
