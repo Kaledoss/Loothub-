@@ -16,13 +16,16 @@ import de.loothub.client.mixin.AbstractContainerScreenAccessor;
 
 /**
  * Spieler-Inventar: Überschrift „Loothub+“ statt „Crafting/Handwerk“ und zwei feste Knöpfe rechts neben dem
- * Zweithand-Slot – Werkbank ({@code /werkbank}) und Amboss ({@code /anvil}). Ein Klick schickt den Befehl.
+ * Rezeptbuch-Knopf – Werkbank ({@code /werkbank}) und Amboss ({@code /anvil}). Ein Klick schickt den Befehl.
  */
 public final class InventoryTitle {
 	/** Gleiche Fläche wie das helle Schild in der Inventar-Textur. */
 	private static final int X1 = 95, Y1 = 5, X2 = 161, Y2 = 15;
 
-	/** Feste Knöpfe neben dem Zweithand-Slot (dieser liegt bei x=77, y=62). */
+	/**
+	 * Feste Knöpfe in der Zeile des Zweithand-Slots, rechts neben dem Rezeptbuch-Knopf
+	 * (Rezeptbuch: x=104–124, y=61 – darf nicht überdeckt werden).
+	 */
 	private record IconButton(int x, int y, ItemStack icon, String command) {
 		boolean contains(double mx, double my, int left, int top) {
 			return mx >= left + x - 1 && mx < left + x + 17 && my >= top + y - 1 && my < top + y + 17;
@@ -30,8 +33,8 @@ public final class InventoryTitle {
 	}
 
 	private static final IconButton[] BUTTONS = {
-			new IconButton(97, 62, new ItemStack(Items.CRAFTING_TABLE), "werkbank"),
-			new IconButton(117, 62, new ItemStack(Items.ANVIL), "anvil"),
+			new IconButton(130, 62, new ItemStack(Items.CRAFTING_TABLE), "werkbank"),
+			new IconButton(150, 62, new ItemStack(Items.ANVIL), "anvil"),
 	};
 
 	private InventoryTitle() {
