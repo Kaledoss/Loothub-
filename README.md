@@ -14,7 +14,7 @@ Marktplatz
 ## Loothub+-Menü (Taste L)
 
 **L** öffnet das Loothub+-Fenster (schwarz-rot): oben die Titelleiste, links die **Kategorien**
-**Verlauf**, **Markt**, **Statistik** und **Einstellungen**, rechts der Inhalt. Bei schmalem Fenster zeigt die
+**Job Verlauf**, **Markt**, **Statistik** und **Einstellungen**, rechts der Inhalt. Bei schmalem Fenster zeigt die
 Kategorie-Leiste nur Icons. Ist ein Update verfügbar, erscheint rechts in der Titelleiste ein Installieren-Knopf.
 
 > **Wichtig:** In Minecraft liegt L standardmäßig auf „Fortschritte“. Diese Taste bitte unter
@@ -32,7 +32,7 @@ Kategorie-Leiste nur Icons. Ist ein Update verfügbar, erscheint rechts in der T
   - Maus über das Diagramm → Details (Ø, Hoch, Tief, gehandelte Stück, Transaktionen)
 - **„← Zurück“** oder **Esc** führt zurück zum Raster.
 
-### Reiter „Verlauf“ (Job-Dashboard)
+### Kategorie „Job Verlauf“ (Job-Dashboard)
 
 Jede Job-Sitzung wird gespeichert (`config/loothub-jobs.json`, bis zu 1000 Sitzungen) – auch beim Verlassen
 des Servers und beim Beenden des Spiels. Das Dashboard zeigt einen **Zeitraum**:

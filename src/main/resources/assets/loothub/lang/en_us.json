@@ -49,7 +49,7 @@
 	"loothub.update.restart.tooltip": "Minecraft neu starten, dann ist die neue Version aktiv",
 	"loothub.update.failed": "Update fehlgeschlagen",
 	"loothub.update.notice": "[Loothub+] Update %s verfügbar – im Loothub+-Menü (Taste L) installieren.",
-	"loothub.tab.history": "Verlauf",
+	"loothub.tab.history": "Job Verlauf",
 	"loothub.history.today": "Heute",
 	"loothub.history.clear": "Verlauf löschen",
 	"loothub.history.clear.confirm": "Wirklich löschen?",
