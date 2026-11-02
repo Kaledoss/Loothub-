@@ -55,7 +55,7 @@ was auf Ihrem PC passiert – nur auf Servern, ab der Installation – und speic
 - **Allgemein:** Spielzeit, Strecken (gelaufen, gesprintet, geschlichen, geschwommen, geklettert, Elytren,
   geflogen, geritten), Sprünge, Blöcke abgebaut/platziert, Items aufgesammelt, Nahrung gegessen, Mobs getötet,
   Schaden ausgeteilt/erlitten, Tode.
-- **Blöcke:** je Blockart abgebaut, platziert und aufgesammelt (ohne Gras, Pflanzen & Co.) · **Items:** nur echte Items (keine Blöcke), aufgesammelt und gegessen · **Mobs:** getötet.
+- **Blöcke:** je Blockart abgebaut, platziert und aufgesammelt (ohne Gras, Pflanzen & Co.) · **Items:** nur echte Items (keine Blöcke), aufgesammelt und gegessen · **Tools:** je Werkzeug/Waffe (alles, was sich abnutzt) abgebaute Blöcke, Treffer und Rechtsklick-Einsätze · **Mobs:** getötet.
   Mit Suche; Klick auf eine Spaltenüberschrift sortiert (nochmal klicken = umgekehrt).
 
 Grenzen: Getötete Mobs sind geschätzt (Tod innerhalb von 5 s nach Ihrem Treffer). Blöcke, die der Server

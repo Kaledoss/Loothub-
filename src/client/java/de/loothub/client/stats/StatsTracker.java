@@ -51,8 +51,41 @@ public final class StatsTracker {
 	// ------------------------------------------------------------------ Ereignisse
 
 	public static void onBlockBroken(BlockState state) {
-		if (tracking(Minecraft.getInstance()) && isRealBlock(state.getBlock())) {
+		Minecraft mc = Minecraft.getInstance();
+		if (!tracking(mc)) {
+			return;
+		}
+		if (isRealBlock(state.getBlock())) {
 			StatsStore.add("mined." + BuiltInRegistries.BLOCK.getKey(state.getBlock()), 1);
+		}
+		toolStat("tool_mined.", mc.player.getMainHandItem());
+	}
+
+	/** Rechtsklick mit einem Werkzeug (Bogen, Angel, Hacke, Schere, Feuerzeug …). */
+	public static void onToolUse(ItemStack stack) {
+		Minecraft mc = Minecraft.getInstance();
+		if (!tracking(mc)) {
+			return;
+		}
+		// Ein Rechtsklick kann sowohl „auf Block“ als auch „in die Luft“ melden – pro Tick nur einmal zählen
+		long tick = mc.level.getGameTime();
+		if (tick == lastToolUseTick) {
+			return;
+		}
+		lastToolUseTick = tick;
+		toolStat("tool_used.", stack);
+	}
+
+	private static long lastToolUseTick = -1;
+
+	/** Werkzeuge = alles, was sich abnutzt (Spitzhacken, Äxte, Schwerter, Bögen, Angeln, Scheren …). */
+	public static boolean isTool(ItemStack stack) {
+		return !stack.isEmpty() && stack.isDamageableItem();
+	}
+
+	private static void toolStat(String prefix, ItemStack stack) {
+		if (isTool(stack)) {
+			StatsStore.add(prefix + BuiltInRegistries.ITEM.getKey(stack.getItem()), 1);
 		}
 	}
 
@@ -85,7 +118,11 @@ public final class StatsTracker {
 
 	/** Treffer auf ein Lebewesen merken: für ausgeteilten Schaden und Kills. */
 	public static void onAttack(Entity entity) {
-		if (entity instanceof LivingEntity living && tracking(Minecraft.getInstance())) {
+		Minecraft mc = Minecraft.getInstance();
+		if (tracking(mc)) {
+			toolStat("tool_hits.", mc.player.getMainHandItem());
+		}
+		if (entity instanceof LivingEntity living && tracking(mc)) {
 			TARGETS.put(entity.getId(), new Target(entity.getType(), living.getHealth(), System.currentTimeMillis()));
 		}
 	}

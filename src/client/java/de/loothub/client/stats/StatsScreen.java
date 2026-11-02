@@ -46,6 +46,7 @@ public class StatsScreen extends LoothubScreen {
 		GENERAL("loothub.stats.cat.general"),
 		BLOCKS("loothub.stats.cat.blocks"),
 		ITEMS("loothub.stats.cat.items"),
+		TOOLS("loothub.stats.cat.tools"),
 		MOBS("loothub.stats.cat.mobs");
 
 		final String translationKey;
@@ -93,7 +94,7 @@ public class StatsScreen extends LoothubScreen {
 		int y = ct;
 		// Links: Kategorien, rechts: Zeitraum
 		categoryButtons.clear();
-		int catW = Mth.clamp((cw / 2 - 12) / 4, 46, 78);
+		int catW = Mth.clamp((cw * 3 / 5 - 16) / Category.values().length, 44, 76);
 		int x = cl;
 		for (Category c : Category.values()) {
 			categoryButtons.add(addRenderableWidget(Button.builder(Component.translatable(c.translationKey), b -> {
@@ -193,6 +194,7 @@ public class StatsScreen extends LoothubScreen {
 			case GENERAL -> List.of();
 			case BLOCKS -> buildRows(new String[]{"mined.", "placed.", "picked."}, Kind.BLOCK);
 			case ITEMS -> buildRows(new String[]{"picked.", "eaten."}, Kind.ITEM);
+			case TOOLS -> buildRows(new String[]{"tool_mined.", "tool_hits.", "tool_used."}, Kind.ITEM);
 			case MOBS -> buildRows(new String[]{"killed."}, Kind.MOB);
 		};
 		clampScroll();
@@ -310,6 +312,7 @@ public class StatsScreen extends LoothubScreen {
 		entries.add(entry("picked", Fmt.whole(total("picked."))));
 		entries.add(entry("eaten", Fmt.whole(total("eaten."))));
 		entries.add(entry("killed", Fmt.whole(total("killed."))));
+		entries.add(entry("tool_uses", Fmt.whole(total("tool_mined.") + total("tool_hits.") + total("tool_used."))));
 		entries.add(entry("damage_dealt", hearts(get("general.damage_dealt"))));
 		entries.add(entry("damage_taken", hearts(get("general.damage_taken"))));
 		entries.add(entry("deaths", Fmt.whole(get("general.deaths"))));
@@ -345,6 +348,7 @@ public class StatsScreen extends LoothubScreen {
 		return switch (category) {
 			case BLOCKS -> List.of("loothub.stats.col.mined", "loothub.stats.col.placed", "loothub.stats.col.picked");
 			case ITEMS -> List.of("loothub.stats.col.picked", "loothub.stats.col.eaten");
+			case TOOLS -> List.of("loothub.stats.col.tool_mined", "loothub.stats.col.tool_hits", "loothub.stats.col.tool_used");
 			case MOBS -> List.of("loothub.stats.col.killed");
 			case GENERAL -> List.of();
 		};

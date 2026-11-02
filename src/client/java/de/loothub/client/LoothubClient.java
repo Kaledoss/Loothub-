@@ -20,6 +20,8 @@ import net.fabricmc.fabric.api.client.keybinding.v1.KeyBindingHelper;
 import net.fabricmc.fabric.api.client.networking.v1.ClientPlayConnectionEvents;
 import net.fabricmc.fabric.api.event.client.player.ClientPlayerBlockBreakEvents;
 import net.fabricmc.fabric.api.event.player.AttackEntityCallback;
+import net.fabricmc.fabric.api.event.player.UseBlockCallback;
+import net.fabricmc.fabric.api.event.player.UseItemCallback;
 import net.fabricmc.fabric.api.client.rendering.v1.hud.HudElementRegistry;
 import net.fabricmc.fabric.api.client.rendering.v1.hud.VanillaHudElements;
 
@@ -52,6 +54,19 @@ public class LoothubClient implements ClientModInitializer {
 		// Eigene Statistik
 		ClientTickEvents.END_CLIENT_TICK.register(StatsTracker::tick);
 		ClientPlayerBlockBreakEvents.AFTER.register((world, player, pos, state) -> StatsTracker.onBlockBroken(state));
+		// Werkzeug-Einsätze per Rechtsklick (in die Luft bzw. auf einen Block, z. B. Hacke, Axt, Schaufel)
+		UseItemCallback.EVENT.register((player, world, hand) -> {
+			if (world.isClientSide() && player == net.minecraft.client.Minecraft.getInstance().player) {
+				StatsTracker.onToolUse(player.getItemInHand(hand));
+			}
+			return InteractionResult.PASS;
+		});
+		UseBlockCallback.EVENT.register((player, world, hand, hit) -> {
+			if (world.isClientSide() && player == net.minecraft.client.Minecraft.getInstance().player) {
+				StatsTracker.onToolUse(player.getItemInHand(hand));
+			}
+			return InteractionResult.PASS;
+		});
 		AttackEntityCallback.EVENT.register((player, world, hand, entity, hit) -> {
 			if (world.isClientSide()) {
 				StatsTracker.onAttack(entity);
