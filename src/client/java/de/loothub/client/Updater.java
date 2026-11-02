@@ -28,12 +28,13 @@ import net.fabricmc.loader.api.metadata.ModOrigin;
 import de.loothub.Loothub;
 
 /**
- * Update-Funktion: prüft das GitHub-Release „latest“ von Kaledoss/Loothub- auf eine neuere Version,
+ * Update-Funktion: prüft das GitHub-Release „latest“ im öffentlichen Repository Kaledoss/Loothub-Releases
+ * (dort liegt nur die fertige Mod, der Quellcode bleibt privat) auf eine neuere Version,
  * lädt sie auf Wunsch in den Mods-Ordner und entfernt die alte Datei nach dem Beenden des Spiels.
  * Die neue Version ist nach einem Neustart aktiv.
  */
 public final class Updater {
-	private static final String RELEASE_API = "https://api.github.com/repos/Kaledoss/Loothub-/releases/tags/latest";
+	private static final String RELEASE_API = "https://api.github.com/repos/Kaledoss/Loothub-Releases/releases/tags/latest";
 	private static final Pattern ASSET = Pattern.compile("^" + Loothub.MOD_ID + "-(\\d+(?:\\.\\d+)*)\\.jar$");
 
 	public enum State {
@@ -63,6 +64,16 @@ public final class Updater {
 
 	public static String errorMessage() {
 		return errorMessage;
+	}
+
+	/** Verständlicher Grund für die Anzeige: not_found, rate_limited, no_file, offline oder HTTP-Code. */
+	public static net.minecraft.network.chat.Component errorReason() {
+		String e = errorMessage == null ? "offline" : errorMessage;
+		return switch (e) {
+			case "not_found", "rate_limited", "no_file", "offline" ->
+					net.minecraft.network.chat.Component.translatable("loothub.update.reason." + e);
+			default -> net.minecraft.network.chat.Component.literal(e);
+		};
 	}
 
 	public static String currentVersion() {
@@ -110,6 +121,12 @@ public final class Updater {
 						if (error != null) {
 							throw error;
 						}
+						if (response.statusCode() == 404) {
+							throw new IllegalStateException("not_found");
+						}
+						if (response.statusCode() == 403 || response.statusCode() == 429) {
+							throw new IllegalStateException("rate_limited");
+						}
 						if (response.statusCode() != 200) {
 							throw new IllegalStateException("HTTP " + response.statusCode());
 						}
@@ -124,13 +141,13 @@ public final class Updater {
 							}
 						}
 						if (latestVersion == null) {
-							throw new IllegalStateException("Keine Mod-Datei im Release gefunden");
+							throw new IllegalStateException("no_file");
 						}
 						boolean newer = compare(latestVersion, currentVersion()) > 0;
 						state = newer ? State.AVAILABLE : State.UP_TO_DATE;
 						Loothub.LOGGER.info("Update-Prüfung: installiert {}, verfügbar {}", currentVersion(), latestVersion);
 					} catch (Throwable t) {
-						errorMessage = t.getMessage();
+						errorMessage = t instanceof IllegalStateException ? t.getMessage() : "offline";
 						state = State.ERROR;
 						Loothub.LOGGER.warn("Update-Prüfung fehlgeschlagen: {}", t.toString());
 					}

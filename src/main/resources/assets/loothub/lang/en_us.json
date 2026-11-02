@@ -140,8 +140,12 @@
 	"loothub.settings.update.checking": "Installed: %s · Checking for updates …",
 	"loothub.settings.update.up_to_date": "Installed: %s · Up to date",
 	"loothub.settings.update.available": "Installed: %s · New: %s – button top left",
-	"loothub.settings.update.error": "Installed: %s · Check failed",
+	"loothub.settings.update.error": "Installed: %s · Check failed: %s",
 	"loothub.settings.open_menu": "Open Loothub+ menu",
 	"loothub.settings.done": "Done",
-	"loothub.settings.hint": "Open with /loothub or ⚙ in the Loothub+ menu (key L)"
+	"loothub.settings.hint": "Open with /loothub or ⚙ in the Loothub+ menu (key L)",
+	"loothub.update.reason.not_found": "Update repository not found or private",
+	"loothub.update.reason.rate_limited": "GitHub limit reached, try again later",
+	"loothub.update.reason.no_file": "No mod file in the release",
+	"loothub.update.reason.offline": "No connection to GitHub"
 }

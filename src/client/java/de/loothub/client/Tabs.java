@@ -93,8 +93,7 @@ public final class Tabs {
 				b.visible = version != null;
 				b.active = false;
 				b.setMessage(Component.translatable("loothub.update.failed"));
-				String msg = Updater.errorMessage();
-				b.setTooltip(Tooltip.create(Component.literal(msg == null ? "" : msg)));
+				b.setTooltip(Tooltip.create(Updater.errorReason()));
 			}
 			default -> b.visible = false;
 		}

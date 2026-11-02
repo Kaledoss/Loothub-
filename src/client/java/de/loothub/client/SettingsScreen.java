@@ -172,7 +172,7 @@ public class SettingsScreen extends Screen {
 			case CHECKING -> Component.translatable("loothub.settings.update.checking", current);
 			case UP_TO_DATE -> Component.translatable("loothub.settings.update.up_to_date", current);
 			case AVAILABLE, DOWNLOADING, INSTALLED -> Component.translatable("loothub.settings.update.available", current, latest);
-			case ERROR -> Component.translatable("loothub.settings.update.error", current);
+			case ERROR -> Component.translatable("loothub.settings.update.error", current, Updater.errorReason());
 			default -> Component.translatable("loothub.settings.update.idle", current);
 		};
 		g.drawString(font, info, panelX + 12, updateInfoY, Updater.state() == Updater.State.AVAILABLE ? GOLD : MUTED, false);
