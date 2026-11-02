@@ -1,0 +1,33 @@
+{
+	"schemaVersion": 1,
+	"id": "loothub",
+	"version": "${version}",
+	"name": "Loothub+",
+	"description": "Loothub+ – OPSUCHT-Helfer: Marktpreise im Item-Tooltip, Menü mit Preisdiagramm und verschiebbarem Job-Widget (Taste L). Inoffiziell, nicht mit OPSUCHT verbunden.",
+	"authors": [
+		"kaledoss"
+	],
+	"license": "All-Rights-Reserved",
+	"icon": "assets/loothub/icon.png",
+	"environment": "client",
+	"entrypoints": {
+		"main": [
+			"de.loothub.Loothub"
+		],
+		"client": [
+			"de.loothub.client.LoothubClient"
+		]
+	},
+	"mixins": [
+		{
+			"config": "loothub.client.mixins.json",
+			"environment": "client"
+		}
+	],
+	"depends": {
+		"fabricloader": ">=0.16.10",
+		"minecraft": "~1.21.11",
+		"java": ">=21",
+		"fabric-api": "*"
+	}
+}

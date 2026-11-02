@@ -1,0 +1,14 @@
+{
+	"required": true,
+	"package": "de.loothub.client.mixin",
+	"compatibilityLevel": "JAVA_21",
+	"client": [
+		"GuiMixin"
+	],
+	"injectors": {
+		"defaultRequire": 0
+	},
+	"overwrites": {
+		"requireAnnotations": true
+	}
+}
