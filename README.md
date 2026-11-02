@@ -13,7 +13,7 @@ Marktplatz
 
 ## Loothub+-Menü (Taste L)
 
-**L** öffnet das Loothub+-Menü mit zwei Reitern oben in der Mitte: **Markt** und **Job-Widget**
+**L** öffnet das Loothub+-Menü mit drei Reitern oben in der Mitte: **Markt**, **Job-Widget** und **Verlauf**
 (Taste änderbar unter Optionen → Steuerung → „Loothub+“).
 
 > **Wichtig:** In Minecraft liegt L standardmäßig auf „Fortschritte“. Diese Taste bitte unter
@@ -83,6 +83,17 @@ vor der Nutzung auf dem Server beim OPSUCHT-Support nachfragen (§5.10.4).
 Ergebnis: `build/libs/loothub-1.0.0.jar` (die `-sources`-Datei brauchen Sie nicht).
 Diese Datei zusammen mit der Fabric API für 1.21.11 in den `mods`-Ordner legen.
 
+### Reiter „Verlauf“
+
+Jede Job-Sitzung wird gespeichert (`config/loothub-jobs.json`, bis zu 1000 Sitzungen) – auch beim Verlassen
+des Servers und beim Beenden des Spiels:
+
+- **Summen** für heute, die letzten 7 Tage und gesamt: Geld, XP, aktive Zeit und $/h.
+- **Balkendiagramm** mit dem Verdienst pro Tag der letzten 14 Tage (Maus drüber für Details).
+- **Liste aller Sitzungen**, neueste oben, die laufende Sitzung grün: Beginn, Job, aktive Zeit, XP, $, $/h
+  und (bei breitem Fenster) Level. Maus über eine Zeile zeigt alle Jobs der Sitzung mit Level-Fortschritt.
+- **Job-Filter** (z. B. nur Holzfäller) und **Verlauf löschen** (zweimal klicken zur Bestätigung).
+
 ## Updates im Spiel
 
 Loothub+ prüft beim Start, ob auf GitHub (Release „latest“ von Kaledoss/Loothub-) eine neuere Version liegt.
@@ -114,6 +125,8 @@ Fabric-Unterstützung in LabyMod ist laut LabyMod experimentell; manche Mods sin
 | `src/client/java/de/loothub/client/jobs/JobParser.java` | Erkennt die Job-Zeile in der Actionbar |
 | `src/client/java/de/loothub/client/jobs/JobTracker.java` | Sitzungswerte, XP/h, $/h, Level-Up-Zeit |
 | `src/client/java/de/loothub/client/jobs/JobWidget.java` | Zeichnet das Widget |
+| `src/client/java/de/loothub/client/jobs/JobHistory.java` | Speichert die Sitzungen |
+| `src/client/java/de/loothub/client/jobs/JobHistoryScreen.java` | Reiter „Verlauf“ |
 | `src/client/java/de/loothub/client/jobs/JobWidgetEditScreen.java` | Reiter „Job-Widget“: Editor zum Verschieben |
 | `src/client/java/de/loothub/client/mixin/GuiMixin.java` | Liest Actionbar-Nachrichten mit |
 | `src/main/resources/assets/loothub/lang/*.json` | Texte (Deutsch/Englisch) |

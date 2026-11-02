@@ -7,13 +7,15 @@ import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.components.Tooltip;
 import net.minecraft.network.chat.Component;
 
+import de.loothub.client.jobs.JobHistoryScreen;
 import de.loothub.client.jobs.JobWidgetEditScreen;
 
-/** Reiter oben mittig im Loothub+-Menü: „Markt“ und „Job-Widget“. */
+/** Reiter oben mittig im Loothub+-Menü: „Markt“, „Job-Widget“ und „Verlauf“. */
 public final class Tabs {
 	public enum Tab {
 		MARKET("loothub.tab.market"),
-		JOBS("loothub.tab.jobs");
+		JOBS("loothub.tab.jobs"),
+		HISTORY("loothub.tab.history");
 
 		private final String translationKey;
 
@@ -23,7 +25,7 @@ public final class Tabs {
 	}
 
 	public static final int HEIGHT = 16;
-	private static final int WIDTH = 72;
+	private static final int WIDTH = 64;
 	private static final int GAP = 4;
 
 	private Tabs() {
@@ -52,7 +54,7 @@ public final class Tabs {
 	/** Knopf oben links: erscheint nur, wenn ein Update verfügbar ist. */
 	public static Button updateButton(int y) {
 		Button b = Button.builder(Component.empty(), btn -> Updater.installAsync())
-				.bounds(8, y, 130, HEIGHT)
+				.bounds(8, y, 100, HEIGHT)
 				.build();
 		refreshUpdateButton(b);
 		return b;
@@ -94,6 +96,10 @@ public final class Tabs {
 
 	public static void open(Tab tab) {
 		Minecraft mc = Minecraft.getInstance();
-		mc.setScreen(tab == Tab.MARKET ? new MarketScreen() : new JobWidgetEditScreen());
+		mc.setScreen(switch (tab) {
+			case MARKET -> new MarketScreen();
+			case JOBS -> new JobWidgetEditScreen();
+			case HISTORY -> new JobHistoryScreen();
+		});
 	}
 }

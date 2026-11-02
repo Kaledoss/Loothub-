@@ -53,5 +53,21 @@
 	"loothub.update.restart": "✔ %s ready – restart",
 	"loothub.update.restart.tooltip": "Restart Minecraft to use the new version",
 	"loothub.update.failed": "Update failed",
-	"loothub.update.notice": "[Loothub+] Update %s available – install it in the Loothub+ menu (key L)."
+	"loothub.update.notice": "[Loothub+] Update %s available – install it in the Loothub+ menu (key L).",
+	"loothub.tab.history": "History",
+	"loothub.history.title": "Loothub+ · Job History",
+	"loothub.history.today": "Today",
+	"loothub.history.week": "7 days",
+	"loothub.history.total": "Total",
+	"loothub.history.filter": "Job: %s",
+	"loothub.history.filter.all": "All",
+	"loothub.history.clear": "Clear history",
+	"loothub.history.clear.confirm": "Really clear?",
+	"loothub.history.chart": "Earnings per day (last %s days)",
+	"loothub.history.col.date": "Start",
+	"loothub.history.col.job": "Job",
+	"loothub.history.col.time": "Active",
+	"loothub.history.empty": "No job sessions yet – enable the display with /job toggle",
+	"loothub.history.live": "(running)",
+	"loothub.history.tip.active": "Active time: %s"
 }

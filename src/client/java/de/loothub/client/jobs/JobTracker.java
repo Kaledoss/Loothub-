@@ -24,6 +24,9 @@ public final class JobTracker {
 		long activeMs;
 		int level = -1;
 		double progress = Double.NaN;
+		int firstLevel = -1;
+		double firstProgress = Double.NaN;
+		boolean seen;
 		double levelStartProgress = Double.NaN;
 		double xpSinceLevelStart;
 	}
@@ -35,6 +38,7 @@ public final class JobTracker {
 
 	private static final Map<String, JobStats> JOBS = new HashMap<>();
 	private static String currentJob;
+	private static long sessionStart;
 	private static long lastGain;
 	private static double totalMoney;
 	private static long totalActiveMs;
@@ -60,8 +64,16 @@ public final class JobTracker {
 		long gap = lastGain == 0 ? 0 : now - lastGain;
 		long active = gap <= PAUSE_AFTER_MS ? gap : 0;
 
+		if (sessionStart == 0) {
+			sessionStart = now;
+		}
 		String job = gain.job() != null ? gain.job() : currentJob != null ? currentJob : "Job";
 		JobStats s = JOBS.computeIfAbsent(job, k -> new JobStats());
+		if (!s.seen) {
+			s.seen = true;
+			s.firstLevel = gain.level();
+			s.firstProgress = gain.progress();
+		}
 		s.xp += gain.xp();
 		s.money += gain.money();
 		s.activeMs += active;
@@ -89,9 +101,19 @@ public final class JobTracker {
 		lastGain = now;
 	}
 
+	/** Beendet die Sitzung: speichert sie im Verlauf (falls etwas verdient wurde) und beginnt von vorn. */
 	public static synchronized void reset() {
+		try {
+			JobHistory.Session session = buildSession();
+			if (session != null && (session.money() > 0 || session.xp() > 0)) {
+				JobHistory.add(session);
+			}
+		} catch (RuntimeException e) {
+			Loothub.LOGGER.warn("Job-Sitzung konnte nicht gespeichert werden", e);
+		}
 		JOBS.clear();
 		currentJob = null;
+		sessionStart = 0;
 		lastGain = 0;
 		totalMoney = 0;
 		totalActiveMs = 0;
@@ -126,6 +148,42 @@ public final class JobTracker {
 
 		return new Snapshot(currentJob, s.level, s.progress, s.xp, totalMoney, xpPerHour, moneyPerHour, eta,
 				now - lastGain > PAUSE_AFTER_MS, false);
+	}
+
+	/** Die laufende Sitzung für die Anzeige im Verlauf, oder null. Wird nicht gespeichert. */
+	public static synchronized JobHistory.Session liveSession() {
+		if (currentJob == null || System.currentTimeMillis() - lastGain > SESSION_TIMEOUT_MS) {
+			return null;
+		}
+		JobHistory.Session session = buildSession();
+		if (session != null) {
+			session.live = true;
+		}
+		return session;
+	}
+
+	private static JobHistory.Session buildSession() {
+		if (currentJob == null || JOBS.isEmpty()) {
+			return null;
+		}
+		JobHistory.Session session = new JobHistory.Session();
+		session.start = sessionStart;
+		session.end = lastGain;
+		session.activeMs = totalActiveMs;
+		for (Map.Entry<String, JobStats> e : JOBS.entrySet()) {
+			JobStats st = e.getValue();
+			JobHistory.JobEntry entry = new JobHistory.JobEntry();
+			entry.job = e.getKey();
+			entry.xp = st.xp;
+			entry.money = st.money;
+			entry.activeMs = st.activeMs;
+			entry.levelStart = st.firstLevel;
+			entry.levelEnd = st.level;
+			entry.progressStart = Double.isNaN(st.firstProgress) ? -1 : st.firstProgress;
+			entry.progressEnd = Double.isNaN(st.progress) ? -1 : st.progress;
+			session.jobs.add(entry);
+		}
+		return session;
 	}
 
 	/** Beispieldaten für den Editor, solange noch keine echten Daten vorliegen. */

@@ -53,5 +53,21 @@
 	"loothub.update.restart": "✔ %s geladen – Neustart",
 	"loothub.update.restart.tooltip": "Minecraft neu starten, dann ist die neue Version aktiv",
 	"loothub.update.failed": "Update fehlgeschlagen",
-	"loothub.update.notice": "[Loothub+] Update %s verfügbar – im Loothub+-Menü (Taste L) installieren."
+	"loothub.update.notice": "[Loothub+] Update %s verfügbar – im Loothub+-Menü (Taste L) installieren.",
+	"loothub.tab.history": "Verlauf",
+	"loothub.history.title": "Loothub+ · Job-Verlauf",
+	"loothub.history.today": "Heute",
+	"loothub.history.week": "7 Tage",
+	"loothub.history.total": "Gesamt",
+	"loothub.history.filter": "Job: %s",
+	"loothub.history.filter.all": "Alle",
+	"loothub.history.clear": "Verlauf löschen",
+	"loothub.history.clear.confirm": "Wirklich löschen?",
+	"loothub.history.chart": "Verdienst pro Tag (letzte %s Tage)",
+	"loothub.history.col.date": "Beginn",
+	"loothub.history.col.job": "Job",
+	"loothub.history.col.time": "Aktiv",
+	"loothub.history.empty": "Noch keine Job-Sitzungen – Anzeige mit /job toggle einschalten",
+	"loothub.history.live": "(läuft)",
+	"loothub.history.tip.active": "Aktive Zeit: %s"
 }
