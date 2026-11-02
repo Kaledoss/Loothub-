@@ -65,7 +65,7 @@ vor der Nutzung auf dem Server beim OPSUCHT-Support nachfragen (§5.10.4).
 
 ## Voraussetzungen
 
-- **JDK 21** (z. B. Eclipse Temurin 21)
+- **JDK 25** zum Bauen (z. B. Eclipse Temurin 25) – die fertige Mod läuft mit dem Java 21 von Minecraft
 - Empfohlen: IntelliJ IDEA mit dem Plugin „Minecraft Development“
 
 ## Testen

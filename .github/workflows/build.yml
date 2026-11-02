@@ -20,7 +20,7 @@ jobs:
       - name: JDK einrichten
         uses: actions/setup-java@v5
         with:
-          java-version: '21'
+          java-version: '25'  # Loom braucht Java 25 zum Bauen; die Mod selbst zielt weiter auf Java 21
           distribution: 'temurin'
       - name: Gradle-Wrapper ausführbar machen
         run: chmod +x ./gradlew
