@@ -17,9 +17,9 @@ public final class JobParser {
 	public record JobGain(String job, int level, double xp, double money, double progress) {
 	}
 
-	/** Job-Namen laut OPSUCHT-Wiki. */
+	/** Job-Namen laut OPSUCHT-Wiki und wie sie im Spiel erscheinen (z. B. „Miner“, „Fischer“). */
 	private static final List<String> JOBS = List.of(
-			"Minenarbeiter", "Holzfäller", "Gräber", "Jäger", "Angler", "Farmer", "Builder");
+			"Minenarbeiter", "Miner", "Holzfäller", "Gräber", "Jäger", "Angler", "Fischer", "Farmer", "Builder");
 
 	private static final Pattern FORMATTING = Pattern.compile("§.");
 	private static final Pattern XP = Pattern.compile(

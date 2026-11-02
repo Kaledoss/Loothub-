@@ -2,55 +2,64 @@ package de.loothub.client.jobs;
 
 import java.time.DayOfWeek;
 import java.time.Instant;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.YearMonth;
-import java.time.temporal.ChronoUnit;
-import java.time.temporal.WeekFields;
-import java.time.LocalDate;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
+import java.time.temporal.ChronoUnit;
+import java.time.temporal.WeekFields;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.LinkedHashMap;
 import java.util.List;
-import java.util.Set;
-import java.util.TreeSet;
+import java.util.Locale;
+import java.util.Map;
 
 import net.minecraft.ChatFormatting;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.screens.Screen;
+import net.minecraft.client.input.MouseButtonEvent;
 import net.minecraft.network.chat.Component;
 import net.minecraft.util.FormattedCharSequence;
 import net.minecraft.util.Mth;
+import net.minecraft.world.item.Item;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.Items;
 
 import de.loothub.client.Fmt;
 import de.loothub.client.Tabs;
 
 /**
- * Reiter „Verlauf“: alle gespeicherten Job-Sitzungen mit Summen (heute, 7 Tage, gesamt),
- * Tagesverdienst der letzten 14 Tage als Balkendiagramm und einer Liste aller Sitzungen.
+ * Reiter „Verlauf“ als Dashboard: ein Zeitraum (Stunde, Tag, Woche, Jahr oder alles) mit ◀/▶ zum Blättern,
+ * Kennzahl-Kacheln, ein Verlaufsdiagramm (Klick auf einen Balken springt dorthin), Karten für alle Jobs mit
+ * Level und Fortschritt (Klick filtert auf den Job) und darunter die Sitzungen des Zeitraums.
  */
 public class JobHistoryScreen extends Screen {
-	private static final int PANEL = 0xD0101018;
-	private static final int BORDER = 0xFF3C3C4C;
+	// Farben
+	private static final int CARD = 0xE0161A22;
+	private static final int CARD_HOVER = 0xE0202632;
+	private static final int CARD_EDGE = 0xFF2A3140;
 	private static final int TEXT = 0xFFFFFFFF;
-	private static final int MUTED = 0xFFB0B0C0;
-	private static final int FAINT = 0xFF707080;
+	private static final int MUTED = 0xFFA8B0C0;
+	private static final int FAINT = 0xFF687080;
 	private static final int GOLD = 0xFFFFC040;
-	private static final int GREEN = 0xFF55DD77;
-	private static final int BLUE = 0xFF66AAFF;
-	private static final int BAR = 0xCCFFC040;
-	private static final int BAR_HOVER = 0xFFFFE080;
+	private static final int GREEN = 0xFF5BD68A;
+	private static final int BLUE = 0xFF6AB0FF;
+	private static final int TRACK = 0xFF262C38;
 	private static final int ROW_HOVER = 0x22FFFFFF;
 
 	private static final int PAD = 8;
+	private static final int GAP = 6;
 	private static final int ROW_H = 12;
 	private static final long MIN_ACTIVE_FOR_RATE_MS = 20_000;
+	private static final DateTimeFormatter DATE = DateTimeFormatter.ofPattern("dd.MM.yyyy");
 	private static final DateTimeFormatter DAY = DateTimeFormatter.ofPattern("dd.MM.");
 	private static final DateTimeFormatter HOUR = DateTimeFormatter.ofPattern("HH:mm");
 	private static final DateTimeFormatter MONTH = DateTimeFormatter.ofPattern("MM.yy");
 
-	/** Zeitraum für Diagramm und Liste. */
+	/** Zeitraum-Art. */
 	public enum Period {
 		HOURLY("loothub.history.period.hourly"),
 		DAILY("loothub.history.period.daily"),
@@ -65,79 +74,169 @@ public class JobHistoryScreen extends Screen {
 		}
 	}
 
-	/** Ein Balken im Diagramm: Zeitraum [start, end) mit kurzer Beschriftung und Tooltip-Text. */
-	private record Bucket(long start, long end, String label, String title) {
+	/** Bekannte Jobs: Anzeigename, weitere Schreibweisen, Farbe und Icon (eigene Palette). */
+	private record JobInfo(String name, List<String> aliases, int color, Item icon) {
 	}
 
-	/** Gewählter Job-Filter; null = alle. Bleibt zwischen zwei Öffnungen erhalten. */
-	private static String jobFilter;
-	private static Period period = Period.DAILY;
-	private final List<Button> periodButtons = new ArrayList<>();
-	private List<Bucket> buckets = List.of();
+	private static final List<JobInfo> JOBS = List.of(
+			new JobInfo("Miner", List.of("Minenarbeiter"), 0xFF8FA3B8, Items.DIAMOND_PICKAXE),
+			new JobInfo("Holzfäller", List.of(), 0xFF6FBF5A, Items.IRON_AXE),
+			new JobInfo("Gräber", List.of(), 0xFFC9A26B, Items.IRON_SHOVEL),
+			new JobInfo("Jäger", List.of(), 0xFFE0645A, Items.BOW),
+			new JobInfo("Fischer", List.of("Angler"), 0xFF4FB3D9, Items.FISHING_ROD),
+			new JobInfo("Farmer", List.of(), 0xFFE8C547, Items.WHEAT),
+			new JobInfo("Builder", List.of(), 0xFFB57EDC, Items.BRICKS));
 
+	/** Ein Balken im Diagramm. */
+	private record Bucket(long start, long end, String label, String title, int unitOffset) {
+	}
+
+	/** Summen eines Jobs im gewählten Zeitraum plus letzter bekannter Level-Stand. */
+	private static final class JobSum {
+		final JobInfo info;
+		double money;
+		double xp;
+		long activeMs;
+		int level = -1;
+		double progress = -1;
+		long levelTime;
+
+		JobSum(JobInfo info) {
+			this.info = info;
+		}
+
+		double metric() {
+			return showXp ? xp : money;
+		}
+	}
+
+	// Zustand (bleibt zwischen zwei Öffnungen erhalten)
+	private static Period period = Period.DAILY;
+	private static int offset; // 0 = aktuell, -1 = vorheriger Zeitraum …
+	private static boolean showXp;
+	private static String jobFilter;
+
+	private final List<Button> periodButtons = new ArrayList<>();
 	private Button updateButton;
-	private Button filterButton;
+	private Button prevButton;
+	private Button nextButton;
+	private Button nowButton;
+	private Button moneyButton;
+	private Button xpButton;
 	private Button clearButton;
 	private long clearArmedUntil;
 
-	private List<JobHistory.Session> rows = List.of(); // neueste zuerst, gefiltert
-	private List<String> jobNames = List.of();
+	// Berechnete Daten
+	private long unitStart;
+	private long unitEnd;
+	private String unitLabel = "";
+	private List<JobHistory.Session> unitSessions = List.of();
+	private List<Bucket> buckets = List.of();
+	private double[] bucketValues = new double[0];
+	private int selectedBucket = -1;
+	private final Map<String, JobSum> jobSums = new LinkedHashMap<>();
+	private double totalMoney;
+	private double totalXp;
+	private long totalActive;
 	private int lastSignature = -1;
 	private double scroll;
 
-	private int cardsY, chartX, chartY, chartW, chartH, listX, listY, listW, listH;
-
-	/** Werte einer Sitzung unter Berücksichtigung des Job-Filters. */
-	private record Values(double xp, double money, long activeMs) {
-	}
+	// Layout
+	private int navY, kpiY, kpiH, chartX, chartY, chartW, chartH, tilesY, tileW, tileH, tileCols, listY, listH;
 
 	public JobHistoryScreen() {
 		super(Component.translatable("loothub.history.title"));
 	}
+
+	// ------------------------------------------------------------------ Aufbau
 
 	@Override
 	protected void init() {
 		Tabs.create(Tabs.Tab.HISTORY, width, 4).forEach(this::addRenderableWidget);
 		updateButton = addRenderableWidget(Tabs.updateButton(4));
 
-		cardsY = 24;
-		int controlsY = cardsY + 38;
-		// Zeitraum-Reiter nebeneinander, daneben Job-Filter, rechts „Verlauf löschen“
-		int sideW = width >= 560 ? 120 : 90;
+		// Zeile 1: Zeitraum-Art links, Geld/XP rechts
+		int y = 24;
 		Period[] periods = Period.values();
-		int gap = 4;
-		int tabW = Mth.clamp((width - 2 * PAD - 2 * sideW - 2 * 8 - gap * (periods.length - 1)) / periods.length, 44, 80);
-		int bx = PAD;
+		int pw = Mth.clamp((width * 3 / 5 - PAD - 4 * 4) / periods.length, 44, 76);
+		int x = PAD;
 		periodButtons.clear();
 		for (Period p : periods) {
-			Button b = Button.builder(Component.translatable(p.translationKey), btn -> {
+			periodButtons.add(addRenderableWidget(Button.builder(Component.translatable(p.translationKey), b -> {
 				period = p;
-				updatePeriodButtons();
+				offset = 0;
 				scroll = 0;
-				lastSignature = -1;
-				refresh();
-			}).bounds(bx, controlsY, tabW, 16).build();
-			periodButtons.add(addRenderableWidget(b));
-			bx += tabW + gap;
+				invalidate();
+			}).bounds(x, y, pw, 16).build()));
+			x += pw + 4;
 		}
-		updatePeriodButtons();
-		filterButton = addRenderableWidget(Button.builder(filterLabel(), b -> cycleFilter())
-				.bounds(bx - gap + 8, controlsY, sideW, 16).build());
+		int mw = 56;
+		xpButton = addRenderableWidget(Button.builder(Component.translatable("loothub.history.metric.xp"), b -> {
+			showXp = true;
+			invalidate();
+		}).bounds(width - PAD - mw, y, mw, 16).build());
+		moneyButton = addRenderableWidget(Button.builder(Component.translatable("loothub.history.metric.money"), b -> {
+			showXp = false;
+			invalidate();
+		}).bounds(width - PAD - 2 * mw - 4, y, mw, 16).build());
+
+		// Zeile 2: ◀ Zeitraum ▶ Jetzt … Verlauf löschen
+		navY = y + 20;
+		prevButton = addRenderableWidget(Button.builder(Component.literal("◀"), b -> {
+			offset--;
+			scroll = 0;
+			invalidate();
+		}).bounds(PAD, navY, 20, 16).build());
+		nextButton = addRenderableWidget(Button.builder(Component.literal("▶"), b -> {
+			offset = Math.min(0, offset + 1);
+			scroll = 0;
+			invalidate();
+		}).bounds(PAD + 24 + 150 + 4, navY, 20, 16).build());
+		nowButton = addRenderableWidget(Button.builder(Component.translatable("loothub.history.now"), b -> {
+			offset = 0;
+			scroll = 0;
+			invalidate();
+		}).bounds(PAD + 24 + 150 + 28, navY, 50, 16).build());
 		clearButton = addRenderableWidget(Button.builder(Component.translatable("loothub.history.clear"), b -> onClear())
-				.bounds(width - PAD - sideW, controlsY, sideW, 16).build());
+				.bounds(width - PAD - 110, navY, 110, 16).build());
 
+		// Layout der Inhalte
+		kpiY = navY + 22;
+		kpiH = 30;
 		chartX = PAD;
-		chartY = controlsY + 22;
+		chartY = kpiY + kpiH + GAP;
 		chartW = width - 2 * PAD;
-		chartH = Mth.clamp((height - chartY) / 3, 50, 80);
+		int freeH = height - chartY - PAD;
+		chartH = Mth.clamp(freeH / 4, 46, 80);
+		tileCols = width >= 520 ? 4 : 2;
+		tileW = (width - 2 * PAD - (tileCols - 1) * GAP) / tileCols;
+		tileH = 34;
+		tilesY = chartY + chartH + GAP;
+		int tileRows = (JOBS.size() + tileCols - 1) / tileCols;
+		listY = tilesY + tileRows * (tileH + GAP);
+		listH = Math.max(30, height - listY - PAD);
 
-		listX = PAD;
-		listY = chartY + chartH + 6;
-		listW = width - 2 * PAD;
-		listH = height - listY - PAD;
+		invalidate();
+	}
 
+	private void invalidate() {
 		lastSignature = -1;
 		refresh();
+	}
+
+	private void updateButtons() {
+		Period[] periods = Period.values();
+		for (int i = 0; i < periodButtons.size(); i++) {
+			periodButtons.get(i).active = periods[i] != period;
+		}
+		boolean nav = period != Period.ALLTIME;
+		prevButton.visible = nav;
+		nextButton.visible = nav;
+		nowButton.visible = nav;
+		nextButton.active = offset < 0;
+		nowButton.active = offset < 0;
+		moneyButton.active = showXp;
+		xpButton.active = !showXp;
 	}
 
 	@Override
@@ -151,16 +250,22 @@ public class JobHistoryScreen extends Screen {
 		refresh();
 	}
 
-	// ------------------------------------------------------------------ Daten
-
-	private void updatePeriodButtons() {
-		Period[] periods = Period.values();
-		for (int i = 0; i < periodButtons.size(); i++) {
-			periodButtons.get(i).active = periods[i] != period;
+	private void onClear() {
+		long now = System.currentTimeMillis();
+		if (clearArmedUntil > now) {
+			JobHistory.clear();
+			clearArmedUntil = 0;
+			clearButton.setMessage(Component.translatable("loothub.history.clear"));
+			invalidate();
+		} else {
+			clearArmedUntil = now + 3000;
+			clearButton.setMessage(Component.translatable("loothub.history.clear.confirm").withStyle(ChatFormatting.RED));
 		}
 	}
 
-	private List<JobHistory.Session> allSessions() {
+	// ------------------------------------------------------------------ Daten
+
+	private static List<JobHistory.Session> allSessions() {
 		List<JobHistory.Session> list = JobHistory.all();
 		JobHistory.Session live = JobTracker.liveSession();
 		if (live != null) {
@@ -169,96 +274,237 @@ public class JobHistoryScreen extends Screen {
 		return list;
 	}
 
+	/** Gleicher Job unter verschiedenen Namen (z. B. Angler/Fischer) → ein Eintrag. */
+	private static JobInfo info(String name) {
+		for (JobInfo j : JOBS) {
+			if (j.name().equalsIgnoreCase(name)) {
+				return j;
+			}
+			for (String a : j.aliases()) {
+				if (a.equalsIgnoreCase(name)) {
+					return j;
+				}
+			}
+		}
+		return new JobInfo(name, List.of(), 0xFF9AA4B4, Items.BOOK);
+	}
+
+	private boolean matchesFilter(JobHistory.JobEntry e) {
+		return jobFilter == null || info(e.job).name().equals(jobFilter);
+	}
+
 	private void refresh() {
 		List<JobHistory.Session> all = allSessions();
-		// Nur neu aufbauen, wenn sich etwas geändert hat
-		int sig = all.size() * 31 + (all.isEmpty() ? 0 : (int) (all.get(all.size() - 1).end ^ Double.hashCode(all.get(all.size() - 1).money())));
-		sig = sig * 31 + (jobFilter == null ? 0 : jobFilter.hashCode());
+		int sig = all.size() * 31 + (all.isEmpty() ? 0
+				: (int) (all.get(all.size() - 1).end ^ Double.hashCode(all.get(all.size() - 1).money())));
 		sig = sig * 31 + period.ordinal();
-		// Zeitfenster rollt weiter (z. B. neue Stunde) – auch dann neu aufbauen
+		sig = sig * 31 + offset;
+		sig = sig * 31 + (showXp ? 1 : 0);
+		sig = sig * 31 + (jobFilter == null ? 0 : jobFilter.hashCode());
 		sig = sig * 31 + (int) (System.currentTimeMillis() / 60_000);
 		if (sig == lastSignature) {
 			return;
 		}
 		lastSignature = sig;
 
-		Set<String> names = new TreeSet<>(String.CASE_INSENSITIVE_ORDER);
+		ZoneId zone = ZoneId.systemDefault();
+		long first = Long.MAX_VALUE;
 		for (JobHistory.Session s : all) {
-			for (JobHistory.JobEntry j : s.jobs) {
-				names.add(j.job);
-			}
+			first = Math.min(first, s.start);
 		}
-		jobNames = new ArrayList<>(names);
-		if (jobFilter != null && !jobNames.contains(jobFilter)) {
-			jobFilter = null;
-		}
-		filterButton.setMessage(filterLabel());
+		computeUnit(zone, first);
+		buckets = buildBuckets(zone, first);
 
-		buckets = buildBuckets(all);
-		long periodStart = period == Period.ALLTIME || buckets.isEmpty() ? Long.MIN_VALUE : buckets.get(0).start();
-		List<JobHistory.Session> out = new ArrayList<>();
+		// Sitzungen im Zeitraum
+		List<JobHistory.Session> inUnit = new ArrayList<>();
 		for (JobHistory.Session s : all) {
-			if ((jobFilter == null || s.job(jobFilter) != null) && s.start >= periodStart) {
-				out.add(s);
+			if (s.start >= unitStart && s.start < unitEnd) {
+				inUnit.add(s);
 			}
 		}
-		Collections.reverse(out);
-		rows = out;
+
+		// Summen je Job (gefiltert für Kennzahlen, ungefiltert für die Karten)
+		jobSums.clear();
+		for (JobInfo j : JOBS) {
+			jobSums.put(j.name(), new JobSum(j));
+		}
+		totalMoney = 0;
+		totalXp = 0;
+		totalActive = 0;
+		for (JobHistory.Session s : inUnit) {
+			for (JobHistory.JobEntry e : s.jobs) {
+				JobInfo ji = info(e.job);
+				JobSum sum = jobSums.computeIfAbsent(ji.name(), k -> new JobSum(ji));
+				sum.money += e.money;
+				sum.xp += e.xp;
+				sum.activeMs += e.activeMs;
+				if (matchesFilter(e)) {
+					totalMoney += e.money;
+					totalXp += e.xp;
+					totalActive += jobFilter == null ? 0 : e.activeMs;
+				}
+			}
+			if (jobFilter == null) {
+				totalActive += s.activeMs;
+			}
+		}
+		// Letzter bekannter Level-Stand je Job (aus allen Sitzungen)
+		for (JobHistory.Session s : all) {
+			for (JobHistory.JobEntry e : s.jobs) {
+				JobInfo ji = info(e.job);
+				JobSum sum = jobSums.computeIfAbsent(ji.name(), k -> new JobSum(ji));
+				if (e.levelEnd >= 0 && s.end >= sum.levelTime) {
+					sum.level = e.levelEnd;
+					sum.progress = e.progressEnd;
+					sum.levelTime = s.end;
+				}
+			}
+		}
+
+		// Diagramm-Werte
+		bucketValues = new double[buckets.size()];
+		for (JobHistory.Session s : all) {
+			int i = bucketIndex(s.start);
+			if (i < 0) {
+				continue;
+			}
+			for (JobHistory.JobEntry e : s.jobs) {
+				if (matchesFilter(e)) {
+					bucketValues[i] += showXp ? e.xp : e.money;
+				}
+			}
+		}
+
+		// Liste: neueste zuerst, Job-Filter beachten
+		List<JobHistory.Session> rows = new ArrayList<>();
+		for (JobHistory.Session s : inUnit) {
+			if (jobFilter == null || s.jobs.stream().anyMatch(this::matchesFilter)) {
+				rows.add(s);
+			}
+		}
+		Collections.reverse(rows);
+		unitSessions = rows;
 		clampScroll();
+		updateButtons();
 	}
 
-	/** Für die Karten (heute / 7 Tage / gesamt): alle Sitzungen, nur der Job-Filter gilt. */
-	private List<JobHistory.Session> cardSessions() {
-		List<JobHistory.Session> out = new ArrayList<>();
-		for (JobHistory.Session s : allSessions()) {
-			if (jobFilter == null || s.job(jobFilter) != null) {
-				out.add(s);
+	/** Start/Ende und Beschriftung des gewählten Zeitraums. */
+	private void computeUnit(ZoneId zone, long first) {
+		LocalDate today = LocalDate.now();
+		switch (period) {
+			case HOURLY -> {
+				LocalDateTime h = LocalDateTime.now().truncatedTo(ChronoUnit.HOURS).plusHours(offset);
+				unitStart = millis(h, zone);
+				unitEnd = millis(h.plusHours(1), zone);
+				unitLabel = DATE.format(h) + " · " + HOUR.format(h) + "–" + HOUR.format(h.plusHours(1));
+			}
+			case DAILY -> {
+				LocalDate d = today.plusDays(offset);
+				unitStart = millis(d.atStartOfDay(), zone);
+				unitEnd = millis(d.plusDays(1).atStartOfDay(), zone);
+				String prefix = offset == 0 ? Component.translatable("loothub.history.today").getString() + " · "
+						: offset == -1 ? Component.translatable("loothub.history.yesterday").getString() + " · " : "";
+				unitLabel = prefix + DATE.format(d);
+			}
+			case WEEKLY -> {
+				LocalDate monday = today.with(DayOfWeek.MONDAY).plusWeeks(offset);
+				unitStart = millis(monday.atStartOfDay(), zone);
+				unitEnd = millis(monday.plusWeeks(1).atStartOfDay(), zone);
+				unitLabel = "KW " + monday.get(WeekFields.ISO.weekOfWeekBasedYear()) + " · "
+						+ DAY.format(monday) + "–" + DATE.format(monday.plusDays(6));
+			}
+			case YEARLY -> {
+				int year = today.getYear() + offset;
+				unitStart = millis(LocalDate.of(year, 1, 1).atStartOfDay(), zone);
+				unitEnd = millis(LocalDate.of(year + 1, 1, 1).atStartOfDay(), zone);
+				unitLabel = String.valueOf(year);
+			}
+			case ALLTIME -> {
+				unitStart = Long.MIN_VALUE;
+				unitEnd = Long.MAX_VALUE;
+				unitLabel = first == Long.MAX_VALUE
+						? Component.translatable("loothub.history.alltime.empty").getString()
+						: Component.translatable("loothub.history.alltime.since",
+						DATE.format(Instant.ofEpochMilli(first).atZone(zone))).getString();
+			}
+		}
+	}
+
+	/** Diagramm-Balken: Verlauf bis zum gewählten Zeitraum (Jahr: seine 12 Monate, Alltime: alle Monate/Jahre). */
+	private List<Bucket> buildBuckets(ZoneId zone, long first) {
+		List<Bucket> out = new ArrayList<>();
+		selectedBucket = -1;
+		switch (period) {
+			case HOURLY -> {
+				LocalDateTime end = LocalDateTime.now().truncatedTo(ChronoUnit.HOURS).plusHours(offset);
+				for (int i = 23; i >= 0; i--) {
+					LocalDateTime h = end.minusHours(i);
+					out.add(new Bucket(millis(h, zone), millis(h.plusHours(1), zone), HOUR.format(h),
+							DAY.format(h) + " " + HOUR.format(h) + "–" + HOUR.format(h.plusHours(1)), offset - i));
+				}
+				selectedBucket = out.size() - 1;
+			}
+			case DAILY -> {
+				LocalDate end = LocalDate.now().plusDays(offset);
+				for (int i = 13; i >= 0; i--) {
+					LocalDate d = end.minusDays(i);
+					out.add(new Bucket(millis(d.atStartOfDay(), zone), millis(d.plusDays(1).atStartOfDay(), zone),
+							DAY.format(d), DATE.format(d), offset - i));
+				}
+				selectedBucket = out.size() - 1;
+			}
+			case WEEKLY -> {
+				LocalDate end = LocalDate.now().with(DayOfWeek.MONDAY).plusWeeks(offset);
+				for (int i = 11; i >= 0; i--) {
+					LocalDate w = end.minusWeeks(i);
+					int kw = w.get(WeekFields.ISO.weekOfWeekBasedYear());
+					out.add(new Bucket(millis(w.atStartOfDay(), zone), millis(w.plusWeeks(1).atStartOfDay(), zone),
+							"KW " + kw, "KW " + kw + " · " + DAY.format(w) + "–" + DATE.format(w.plusDays(6)), offset - i));
+				}
+				selectedBucket = out.size() - 1;
+			}
+			case YEARLY -> {
+				int year = LocalDate.now().getYear() + offset;
+				for (int m = 1; m <= 12; m++) {
+					out.add(monthBucket(YearMonth.of(year, m), zone));
+				}
+			}
+			case ALLTIME -> {
+				YearMonth now = YearMonth.now();
+				YearMonth start = first == Long.MAX_VALUE ? now : YearMonth.from(Instant.ofEpochMilli(first).atZone(zone));
+				if (ChronoUnit.MONTHS.between(start, now) < 24) {
+					for (YearMonth m = start; !m.isAfter(now); m = m.plusMonths(1)) {
+						out.add(monthBucket(m, zone));
+					}
+				} else {
+					for (int y = start.getYear(); y <= now.getYear(); y++) {
+						out.add(new Bucket(millis(LocalDate.of(y, 1, 1).atStartOfDay(), zone),
+								millis(LocalDate.of(y + 1, 1, 1).atStartOfDay(), zone),
+								String.valueOf(y), String.valueOf(y), Integer.MIN_VALUE));
+					}
+				}
 			}
 		}
 		return out;
 	}
 
-	private Values values(JobHistory.Session s) {
-		if (jobFilter != null) {
-			JobHistory.JobEntry j = s.job(jobFilter);
-			return j == null ? new Values(0, 0, 0) : new Values(j.xp, j.money, j.activeMs);
-		}
-		return new Values(s.xp(), s.money(), s.activeMs);
+	private static Bucket monthBucket(YearMonth m, ZoneId zone) {
+		String label = MONTH.format(m);
+		return new Bucket(millis(m.atDay(1).atStartOfDay(), zone), millis(m.plusMonths(1).atDay(1).atStartOfDay(), zone),
+				label, label, Integer.MIN_VALUE);
 	}
 
-	private void cycleFilter() {
-		if (jobNames.isEmpty()) {
-			jobFilter = null;
-		} else if (jobFilter == null) {
-			jobFilter = jobNames.get(0);
-		} else {
-			int i = jobNames.indexOf(jobFilter);
-			jobFilter = i < 0 || i + 1 >= jobNames.size() ? null : jobNames.get(i + 1);
+	private int bucketIndex(long time) {
+		for (int i = 0; i < buckets.size(); i++) {
+			if (time >= buckets.get(i).start() && time < buckets.get(i).end()) {
+				return i;
+			}
 		}
-		scroll = 0;
-		refresh();
+		return -1;
 	}
 
-	private Component filterLabel() {
-		Component value = jobFilter == null
-				? Component.translatable("loothub.history.filter.all")
-				: Component.literal(jobFilter);
-		return Component.translatable("loothub.history.filter", value);
-	}
-
-	/** Erster Klick: nachfragen. Zweiter Klick innerhalb von 3 Sekunden: wirklich löschen. */
-	private void onClear() {
-		long now = System.currentTimeMillis();
-		if (clearArmedUntil > now) {
-			JobHistory.clear();
-			clearArmedUntil = 0;
-			clearButton.setMessage(Component.translatable("loothub.history.clear"));
-			lastSignature = -1;
-			refresh();
-		} else {
-			clearArmedUntil = now + 3000;
-			clearButton.setMessage(Component.translatable("loothub.history.clear.confirm").withStyle(ChatFormatting.RED));
-		}
+	private static long millis(LocalDateTime t, ZoneId zone) {
+		return t.atZone(zone).toInstant().toEpochMilli();
 	}
 
 	// ------------------------------------------------------------------ Zeichnen
@@ -266,81 +512,104 @@ public class JobHistoryScreen extends Screen {
 	@Override
 	public void render(GuiGraphics g, int mouseX, int mouseY, float delta) {
 		super.render(g, mouseX, mouseY, delta);
-		renderCards(g);
+
+		// Zeitraum-Beschriftung zwischen ◀ und ▶
+		int labelX = period == Period.ALLTIME ? PAD : PAD + 24;
+		g.drawString(font, unitLabel, labelX + 4, navY + 4, TEXT, false);
+
+		renderKpis(g, mouseX, mouseY);
 		renderChart(g, mouseX, mouseY);
+		renderTiles(g, mouseX, mouseY);
 		renderList(g, mouseX, mouseY);
 	}
 
-	private void renderCards(GuiGraphics g) {
-		LocalDate today = LocalDate.now();
-		LocalDate weekStart = today.minusDays(6);
-		double[] xp = new double[3];
-		double[] money = new double[3];
-		long[] active = new long[3];
-		for (JobHistory.Session s : cardSessions()) {
-			LocalDate day = day(s.start);
-			Values v = values(s);
-			for (int i = 0; i < 3; i++) {
-				boolean in = i == 2 || (i == 1 ? !day.isBefore(weekStart) : day.equals(today));
-				if (in) {
-					xp[i] += v.xp();
-					money[i] += v.money();
-					active[i] += v.activeMs();
-				}
+	/** Karte mit farbiger Akzentleiste links. */
+	private static void card(GuiGraphics g, int x, int y, int w, int h, int accent, boolean hover) {
+		g.fill(x, y, x + w, y + h, hover ? CARD_HOVER : CARD);
+		g.fill(x, y + h - 1, x + w, y + h, CARD_EDGE);
+		g.fill(x, y, x + 2, y + h, accent);
+	}
+
+	private void renderKpis(GuiGraphics g, int mx, int my) {
+		int cw = (width - 2 * PAD - 3 * GAP) / 4;
+		String metricSuffix = showXp ? " XP" : " $";
+
+		// Stärkster Job im Zeitraum
+		JobSum best = null;
+		double bestValue = 0;
+		double sumAll = 0;
+		for (JobSum s : jobSums.values()) {
+			sumAll += s.metric();
+			if (s.metric() > bestValue) {
+				bestValue = s.metric();
+				best = s;
 			}
 		}
-		String[] labels = {"loothub.history.today", "loothub.history.week", "loothub.history.total"};
-		int gap = 6;
-		int cw = (width - 2 * PAD - 2 * gap) / 3;
-		for (int i = 0; i < 3; i++) {
-			int x = PAD + i * (cw + gap);
-			panel(g, x, cardsY, cw, 34);
-			g.drawString(font, Component.translatable(labels[i]), x + 5, cardsY + 4, MUTED, false);
-			String line1 = Fmt.money(money[i]) + " · " + Fmt.compact(xp[i]) + " XP";
-			g.drawString(font, ellipsize(line1, cw - 10), x + 5, cardsY + 14, GOLD, false);
-			String rate = active[i] >= MIN_ACTIVE_FOR_RATE_MS ? Fmt.compact(money[i] / (active[i] / 3_600_000.0)) + " $/h" : "–";
-			String line2 = Fmt.duration(active[i]) + " · " + rate;
-			g.drawString(font, ellipsize(line2, cw - 10), x + 5, cardsY + 24, FAINT, false);
+
+		double rate = totalActive >= MIN_ACTIVE_FOR_RATE_MS ? totalMoney / (totalActive / 3_600_000.0) : Double.NaN;
+		double xpRate = totalActive >= MIN_ACTIVE_FOR_RATE_MS ? totalXp / (totalActive / 3_600_000.0) : Double.NaN;
+
+		kpi(g, PAD, cw, GOLD, Items.GOLD_INGOT, "loothub.history.kpi.money",
+				Fmt.money(totalMoney), "+" + Fmt.compact(totalXp) + " XP", GOLD);
+		kpi(g, PAD + (cw + GAP), cw, GREEN, Items.EMERALD, "loothub.history.kpi.rate",
+				Double.isNaN(rate) ? "–" : Fmt.compact(rate) + " $/h",
+				Double.isNaN(xpRate) ? "" : Fmt.compact(xpRate) + " XP/h", GREEN);
+		kpi(g, PAD + 2 * (cw + GAP), cw, BLUE, Items.CLOCK, "loothub.history.kpi.active",
+				Fmt.longDuration(totalActive),
+				Component.translatable("loothub.history.kpi.sessions", unitSessions.size()).getString(), TEXT);
+		if (best != null) {
+			String share = sumAll > 0 ? Math.round(bestValue / sumAll * 100) + " %" : "";
+			kpi(g, PAD + 3 * (cw + GAP), cw, best.info.color(), best.info.icon(), "loothub.history.kpi.best",
+					best.info.name(), Fmt.compact(bestValue) + metricSuffix + (share.isEmpty() ? "" : " · " + share),
+					best.info.color());
+		} else {
+			kpi(g, PAD + 3 * (cw + GAP), cw, FAINT, Items.BOOK, "loothub.history.kpi.best", "–", "", MUTED);
+		}
+	}
+
+	private void kpi(GuiGraphics g, int x, int w, int accent, Item icon, String labelKey, String value, String sub, int valueColor) {
+		card(g, x, kpiY, w, kpiH, accent, false);
+		g.renderItem(new ItemStack(icon), x + 6, kpiY + 7);
+		int tx = x + 26;
+		int maxW = w - 30;
+		g.drawString(font, ellipsize(Component.translatable(labelKey).getString(), maxW), tx, kpiY + 4, MUTED, false);
+		g.drawString(font, ellipsize(value, maxW), tx, kpiY + 14, valueColor, false);
+		if (!sub.isEmpty()) {
+			String s = ellipsize(sub, maxW - font.width(value) - 6);
+			g.drawString(font, s, x + w - 5 - font.width(s), kpiY + 14, FAINT, false);
 		}
 	}
 
 	private void renderChart(GuiGraphics g, int mx, int my) {
-		panel(g, chartX, chartY, chartW, chartH);
-		g.drawString(font, Component.translatable("loothub.history.chart." + period.name().toLowerCase(java.util.Locale.ROOT)),
-				chartX + 5, chartY + 4, MUTED, false);
+		card(g, chartX, chartY, chartW, chartH, showXp ? BLUE : GOLD, false);
+		String title = Component.translatable(showXp ? "loothub.history.chart.xp" : "loothub.history.chart.money").getString();
+		if (jobFilter != null) {
+			title += " · " + jobFilter;
+		}
+		g.drawString(font, title, chartX + 8, chartY + 4, MUTED, false);
 
 		int n = buckets.size();
 		if (n == 0) {
 			return;
 		}
-		double[] money = new double[n];
-		double[] xp = new double[n];
-		for (JobHistory.Session s : rows) {
-			int i = bucketIndex(s.start);
-			if (i >= 0) {
-				Values v = values(s);
-				money[i] += v.money();
-				xp[i] += v.xp();
-			}
-		}
 		double max = 0;
-		for (double m : money) {
-			max = Math.max(max, m);
+		for (double v : bucketValues) {
+			max = Math.max(max, v);
 		}
 		if (max > 0) {
-			String maxLabel = Fmt.compact(max) + " $";
-			g.drawString(font, maxLabel, chartX + chartW - 5 - font.width(maxLabel), chartY + 4, FAINT, false);
+			String maxLabel = "max " + Fmt.compact(max) + (showXp ? " XP" : " $");
+			g.drawString(font, maxLabel, chartX + chartW - 6 - font.width(maxLabel), chartY + 4, FAINT, false);
 		}
 
-		int left = chartX + 5;
-		int right = chartX + chartW - 5;
+		int left = chartX + 8;
+		int right = chartX + chartW - 6;
 		int top = chartY + 15;
 		int bottom = chartY + chartH - 12;
 		double slot = (right - left) / (double) n;
-		int barW = Math.max(2, (int) (slot * 0.7));
-		g.fill(left, bottom, right, bottom + 1, 0x44FFFFFF);
+		int barW = Math.max(2, (int) (slot * 0.62));
+		int barColor = showXp ? BLUE : GOLD;
+		g.fill(left, bottom, right, bottom + 1, 0x33FFFFFF);
 
-		// Nur so viele Beschriftungen, wie nebeneinander passen (die letzte immer)
 		int labelW = 0;
 		for (Bucket b : buckets) {
 			labelW = Math.max(labelW, font.width(b.label()));
@@ -355,125 +624,98 @@ public class JobHistoryScreen extends Screen {
 			if (hovered) {
 				hover = i;
 			}
-			if (money[i] > 0 && max > 0) {
-				int h = Math.max(1, (int) Math.round((bottom - top) * money[i] / max));
-				g.fill(x1, bottom - h, x1 + barW, bottom, hovered ? BAR_HOVER : BAR);
+			boolean selected = i == selectedBucket;
+			if (selected) {
+				g.fill(left + (int) (slot * i), top - 2, left + (int) (slot * (i + 1)), bottom, 0x18FFFFFF);
+			}
+			// leere Spur, damit auch Null-Werte sichtbar sind
+			g.fill(x1, bottom - 1, x1 + barW, bottom, TRACK);
+			if (bucketValues[i] > 0 && max > 0) {
+				int h = Math.max(1, (int) Math.round((bottom - top) * bucketValues[i] / max));
+				int color = selected || hovered ? barColor : (barColor & 0x00FFFFFF) | 0x99000000;
+				g.fill(x1, bottom - h, x1 + barW, bottom, color);
 			}
 			if ((n - 1 - i) % every == 0) {
 				String label = buckets.get(i).label();
 				int lw = font.width(label);
-				g.drawString(font, label, Mth.clamp(cx - lw / 2, left, right - lw), bottom + 3, FAINT, false);
+				g.drawString(font, label, Mth.clamp(cx - lw / 2, left, right - lw), bottom + 3,
+						selected ? TEXT : FAINT, false);
 			}
 		}
 
 		if (hover >= 0) {
+			Bucket b = buckets.get(hover);
 			List<FormattedCharSequence> tip = new ArrayList<>();
-			tip.add(Component.literal(buckets.get(hover).title()).withStyle(ChatFormatting.WHITE).getVisualOrderText());
-			tip.add(Component.literal(Fmt.money(money[hover])).withStyle(ChatFormatting.GOLD).getVisualOrderText());
-			tip.add(Component.literal(Fmt.compact(xp[hover]) + " XP").withStyle(ChatFormatting.GRAY).getVisualOrderText());
+			tip.add(Component.literal(b.title()).withStyle(ChatFormatting.WHITE).getVisualOrderText());
+			tip.add(Component.literal(showXp ? Fmt.compact(bucketValues[hover]) + " XP" : Fmt.money(bucketValues[hover]))
+					.withStyle(showXp ? ChatFormatting.AQUA : ChatFormatting.GOLD).getVisualOrderText());
+			if (b.unitOffset() != Integer.MIN_VALUE && hover != selectedBucket) {
+				tip.add(Component.translatable("loothub.history.chart.click").withStyle(ChatFormatting.DARK_GRAY).getVisualOrderText());
+			}
 			g.setTooltipForNextFrame(font, tip, mx, my);
 		}
 	}
 
-	private int bucketIndex(long time) {
-		for (int i = 0; i < buckets.size(); i++) {
-			if (time >= buckets.get(i).start() && time < buckets.get(i).end()) {
-				return i;
+	private void renderTiles(GuiGraphics g, int mx, int my) {
+		double max = 0;
+		for (JobInfo j : JOBS) {
+			max = Math.max(max, jobSums.get(j.name()).metric());
+		}
+		for (int i = 0; i < JOBS.size(); i++) {
+			JobInfo j = JOBS.get(i);
+			JobSum s = jobSums.get(j.name());
+			int x = PAD + (i % tileCols) * (tileW + GAP);
+			int y = tilesY + (i / tileCols) * (tileH + GAP);
+			boolean hover = mx >= x && mx < x + tileW && my >= y && my < y + tileH;
+			boolean selected = j.name().equals(jobFilter);
+			boolean dimmed = jobFilter != null && !selected;
+			card(g, x, y, tileW, tileH, dimmed ? (j.color() & 0x00FFFFFF) | 0x55000000 : j.color(), hover || selected);
+			if (selected) {
+				g.fill(x, y, x + tileW, y + 1, j.color());
+			}
+
+			g.renderItem(new ItemStack(j.icon()), x + 6, y + 4);
+			g.drawString(font, j.name(), x + 26, y + 4, dimmed ? FAINT : j.color(), false);
+			String level = s.level >= 0 ? "Lv. " + s.level : "Lv. –";
+			g.drawString(font, level, x + tileW - 6 - font.width(level), y + 4, dimmed ? FAINT : TEXT, false);
+
+			// Level-Fortschritt
+			int barX = x + 26;
+			int barW = tileW - 26 - 6 - 34;
+			int barY = y + 15;
+			g.fill(barX, barY, barX + barW, barY + 3, TRACK);
+			if (s.progress >= 0) {
+				g.fill(barX, barY, barX + (int) Math.round(barW * Math.min(100, s.progress) / 100.0), barY + 3, j.color());
+				String pct = Fmt.compactPlain(s.progress) + " %";
+				g.drawString(font, pct, x + tileW - 6 - font.width(pct), barY - 2, FAINT, false);
+			}
+
+			// Wert im Zeitraum + Anteil am stärksten Job
+			String value = s.metric() > 0 ? Fmt.compact(s.metric()) + (showXp ? " XP" : " $") : "–";
+			String rate = s.activeMs >= MIN_ACTIVE_FOR_RATE_MS && !showXp
+					? " · " + Fmt.compact(s.money / (s.activeMs / 3_600_000.0)) + " $/h" : "";
+			g.drawString(font, ellipsize(value + rate, tileW - 32), x + 26, y + 22, s.metric() > 0 ? TEXT : FAINT, false);
+			if (max > 0 && s.metric() > 0) {
+				int w = (int) Math.round((tileW - 2) * s.metric() / max);
+				g.fill(x + 2, y + tileH - 2, x + 2 + w, y + tileH - 1, j.color());
 			}
 		}
-		return -1;
-	}
-
-	/** Zeitabschnitte je nach gewähltem Zeitraum. Ältester zuerst. */
-	private static List<Bucket> buildBuckets(List<JobHistory.Session> sessions) {
-		ZoneId zone = ZoneId.systemDefault();
-		List<Bucket> out = new ArrayList<>();
-		switch (period) {
-			case HOURLY -> {
-				// letzte 24 Stunden, je Stunde
-				LocalDateTime hour = LocalDateTime.now().truncatedTo(ChronoUnit.HOURS);
-				for (int i = 23; i >= 0; i--) {
-					LocalDateTime h = hour.minusHours(i);
-					out.add(new Bucket(millis(h, zone), millis(h.plusHours(1), zone),
-							HOUR.format(h), DAY.format(h) + " " + HOUR.format(h) + "–" + HOUR.format(h.plusHours(1))));
-				}
-			}
-			case DAILY -> {
-				// letzte 14 Tage, je Tag
-				LocalDate today = LocalDate.now();
-				for (int i = 13; i >= 0; i--) {
-					LocalDate d = today.minusDays(i);
-					out.add(new Bucket(millis(d.atStartOfDay(), zone), millis(d.plusDays(1).atStartOfDay(), zone),
-							i == 0 ? Component.translatable("loothub.history.today").getString() : DAY.format(d),
-							DAY.format(d) + d.getYear()));
-				}
-			}
-			case WEEKLY -> {
-				// letzte 12 Wochen, Montag bis Sonntag
-				LocalDate monday = LocalDate.now().with(DayOfWeek.MONDAY);
-				for (int i = 11; i >= 0; i--) {
-					LocalDate w = monday.minusWeeks(i);
-					int kw = w.get(WeekFields.ISO.weekOfWeekBasedYear());
-					out.add(new Bucket(millis(w.atStartOfDay(), zone), millis(w.plusWeeks(1).atStartOfDay(), zone),
-							"KW " + kw, "KW " + kw + " · " + DAY.format(w) + " – " + DAY.format(w.plusDays(6))));
-				}
-			}
-			case YEARLY -> {
-				// letzte 12 Monate, je Monat
-				YearMonth now = YearMonth.now();
-				for (int i = 11; i >= 0; i--) {
-					out.add(monthBucket(now.minusMonths(i), zone));
-				}
-			}
-			case ALLTIME -> {
-				// alles: je Monat seit der ersten Sitzung, bei mehr als 24 Monaten je Jahr
-				long first = Long.MAX_VALUE;
-				for (JobHistory.Session s : sessions) {
-					first = Math.min(first, s.start);
-				}
-				YearMonth now = YearMonth.now();
-				YearMonth start = first == Long.MAX_VALUE ? now
-						: YearMonth.from(Instant.ofEpochMilli(first).atZone(zone));
-				long months = ChronoUnit.MONTHS.between(start, now) + 1;
-				if (months <= 24) {
-					for (YearMonth m = start; !m.isAfter(now); m = m.plusMonths(1)) {
-						out.add(monthBucket(m, zone));
-					}
-				} else {
-					for (int y = start.getYear(); y <= now.getYear(); y++) {
-						out.add(new Bucket(millis(LocalDate.of(y, 1, 1).atStartOfDay(), zone),
-								millis(LocalDate.of(y + 1, 1, 1).atStartOfDay(), zone),
-								String.valueOf(y), String.valueOf(y)));
-					}
-				}
-			}
-		}
-		return out;
-	}
-
-	private static Bucket monthBucket(YearMonth m, ZoneId zone) {
-		String label = MONTH.format(m);
-		return new Bucket(millis(m.atDay(1).atStartOfDay(), zone), millis(m.plusMonths(1).atDay(1).atStartOfDay(), zone),
-				label, label);
-	}
-
-	private static long millis(LocalDateTime t, ZoneId zone) {
-		return t.atZone(zone).toInstant().toEpochMilli();
 	}
 
 	private void renderList(GuiGraphics g, int mx, int my) {
-		panel(g, listX, listY, listW, listH);
+		int listX = PAD;
+		int listW = width - 2 * PAD;
+		card(g, listX, listY, listW, listH, CARD_EDGE, false);
 
-		// Spalten (rechtsbündig für Zahlen); die Level-Spalte nur, wenn genug Platz ist
 		boolean showLevel = listW >= 470;
-		int colDate = listX + 5;
+		int colDate = listX + 8;
 		int colJob = colDate + 68;
 		int colLevelR = listX + listW - 9;
 		int colRateR = showLevel ? colLevelR - 64 : colLevelR;
 		int colMoneyR = colRateR - 58;
 		int colXpR = colMoneyR - 66;
 		int colTimeR = colXpR - 52;
-		int jobW = colTimeR - 72 - colJob; // Platz für die rechtsbündige Dauer lassen
+		int jobW = colTimeR - 72 - colJob;
 
 		int hy = listY + 4;
 		g.drawString(font, Component.translatable("loothub.history.col.date"), colDate, hy, FAINT, false);
@@ -485,60 +727,75 @@ public class JobHistoryScreen extends Screen {
 		if (showLevel) {
 			right(g, "Level", colLevelR, hy, FAINT);
 		}
-		g.fill(listX + 1, listY + 14, listX + listW - 1, listY + 15, BORDER);
+		g.fill(listX + 2, listY + 14, listX + listW, listY + 15, CARD_EDGE);
 
 		int top = listY + 16;
 		int bottom = listY + listH - 1;
-		if (rows.isEmpty()) {
-			Component msg = Component.translatable("loothub.history.empty");
-			g.drawString(font, msg, listX + (listW - font.width(msg)) / 2, top + 8, FAINT, false);
+		if (unitSessions.isEmpty()) {
+			Component msg = Component.translatable(JobHistory.all().isEmpty() && JobTracker.liveSession() == null
+					? "loothub.history.empty" : "loothub.history.empty.period");
+			g.drawString(font, msg, listX + (listW - font.width(msg)) / 2, top + 6, FAINT, false);
 			return;
 		}
 
 		JobHistory.Session hovered = null;
-		g.enableScissor(listX + 1, top, listX + listW - 1, bottom);
-		for (int i = Math.max(0, (int) (scroll / ROW_H)); i < rows.size(); i++) {
+		g.enableScissor(listX + 2, top, listX + listW, bottom);
+		for (int i = Math.max(0, (int) (scroll / ROW_H)); i < unitSessions.size(); i++) {
 			int ry = top + 1 + i * ROW_H - (int) scroll;
 			if (ry > bottom) {
 				break;
 			}
-			JobHistory.Session s = rows.get(i);
-			Values v = values(s);
+			JobHistory.Session s = unitSessions.get(i);
 			boolean over = mx >= listX && mx < listX + listW && my >= Math.max(ry, top) && my < Math.min(ry + ROW_H, bottom);
 			if (over) {
 				hovered = s;
-				g.fill(listX + 1, ry - 1, listX + listW - 1, ry + ROW_H - 1, ROW_HOVER);
+				g.fill(listX + 2, ry - 1, listX + listW, ry + ROW_H - 1, ROW_HOVER);
+			}
+			double xp = 0;
+			double money = 0;
+			long active = jobFilter == null ? s.activeMs : 0;
+			JobHistory.JobEntry main = null;
+			for (JobHistory.JobEntry e : s.jobs) {
+				if (matchesFilter(e)) {
+					xp += e.xp;
+					money += e.money;
+					if (jobFilter != null) {
+						active += e.activeMs;
+					}
+					if (main == null || e.money > main.money) {
+						main = e;
+					}
+				}
 			}
 			int ty = ry + 1;
-			g.drawString(font, Fmt.date(s.start, true), colDate, ty, s.live ? GREEN : TEXT, false);
-
-			JobHistory.JobEntry main = jobFilter != null ? s.job(jobFilter) : s.mainJob();
-			String job = main == null ? "?" : main.job;
+			int color = s.live ? GREEN : TEXT;
+			g.drawString(font, Fmt.date(s.start, true), colDate, ty, color, false);
+			String job = main == null ? "?" : info(main.job).name();
 			if (jobFilter == null && s.jobs.size() > 1) {
 				job += " +" + (s.jobs.size() - 1);
 			}
 			if (s.live) {
 				job += " " + Component.translatable("loothub.history.live").getString();
 			}
-			g.drawString(font, ellipsize(job, jobW), colJob, ty, s.live ? GREEN : TEXT, false);
-			right(g, Fmt.duration(v.activeMs()), colTimeR, ty, MUTED);
-			right(g, Fmt.compact(v.xp()), colXpR, ty, BLUE);
-			right(g, Fmt.compact(v.money()), colMoneyR, ty, GOLD);
-			right(g, v.activeMs() >= MIN_ACTIVE_FOR_RATE_MS ? Fmt.compact(v.money() / (v.activeMs() / 3_600_000.0)) : "–",
-					colRateR, ty, MUTED);
+			int jobColor = s.live ? GREEN : (main == null ? TEXT : info(main.job).color());
+			g.drawString(font, ellipsize(job, jobW), colJob, ty, jobColor, false);
+			right(g, Fmt.duration(active), colTimeR, ty, MUTED);
+			right(g, Fmt.compact(xp), colXpR, ty, BLUE);
+			right(g, Fmt.compact(money), colMoneyR, ty, GOLD);
+			right(g, active >= MIN_ACTIVE_FOR_RATE_MS ? Fmt.compact(money / (active / 3_600_000.0)) : "–", colRateR, ty, MUTED);
 			if (showLevel && main != null) {
 				right(g, levelText(main), colLevelR, ty, MUTED);
 			}
 		}
 		g.disableScissor();
 
-		int contentH = rows.size() * ROW_H;
+		int contentH = unitSessions.size() * ROW_H;
 		int viewH = bottom - top;
 		if (contentH > viewH) {
 			int thumbH = Math.max(10, viewH * viewH / contentH);
 			int thumbY = top + (int) ((viewH - thumbH) * (scroll / Math.max(1, contentH - viewH)));
-			g.fill(listX + listW - 4, top, listX + listW - 1, bottom, 0x33FFFFFF);
-			g.fill(listX + listW - 4, thumbY, listX + listW - 1, thumbY + thumbH, 0xAAFFFFFF);
+			g.fill(listX + listW - 3, top, listX + listW, bottom, 0x33FFFFFF);
+			g.fill(listX + listW - 3, thumbY, listX + listW, thumbY + thumbH, 0xAAFFFFFF);
 		}
 
 		if (hovered != null) {
@@ -548,12 +805,11 @@ public class JobHistoryScreen extends Screen {
 
 	private List<FormattedCharSequence> tooltip(JobHistory.Session s) {
 		List<FormattedCharSequence> tip = new ArrayList<>();
-		String range = Fmt.date(s.start, true) + " – " + Fmt.time(s.end);
-		tip.add(Component.literal(range).withStyle(ChatFormatting.WHITE).getVisualOrderText());
+		tip.add(Component.literal(Fmt.date(s.start, true) + " – " + Fmt.time(s.end)).withStyle(ChatFormatting.WHITE).getVisualOrderText());
 		tip.add(Component.translatable("loothub.history.tip.active", Fmt.duration(s.activeMs))
 				.withStyle(ChatFormatting.GRAY).getVisualOrderText());
 		for (JobHistory.JobEntry j : s.jobs) {
-			tip.add(Component.literal(j.job).withStyle(ChatFormatting.GOLD)
+			tip.add(Component.literal(info(j.job).name()).withStyle(st -> st.withColor(info(j.job).color() & 0xFFFFFF))
 					.append(Component.literal(": +" + Fmt.compact(j.xp) + " XP · +" + Fmt.money(j.money)).withStyle(ChatFormatting.WHITE))
 					.getVisualOrderText());
 			String level = levelDetail(j);
@@ -564,7 +820,6 @@ public class JobHistoryScreen extends Screen {
 		return tip;
 	}
 
-	/** Kurz für die Spalte: "58 → 59" oder "58". */
 	private static String levelText(JobHistory.JobEntry j) {
 		if (j.levelEnd < 0) {
 			return "–";
@@ -575,7 +830,6 @@ public class JobHistoryScreen extends Screen {
 		return String.valueOf(j.levelEnd);
 	}
 
-	/** Ausführlich für den Tooltip: "Level 58 (13,8 %) → 59 (2,1 %)". */
 	private static String levelDetail(JobHistory.JobEntry j) {
 		if (j.levelEnd < 0) {
 			return "";
@@ -586,14 +840,54 @@ public class JobHistoryScreen extends Screen {
 	}
 
 	private static String percent(double p) {
-		return p < 0 ? "" : " (" + Fmt.compact(p) + " %)";
+		return p < 0 ? "" : " (" + Fmt.compactPlain(p) + " %)";
 	}
 
 	// ------------------------------------------------------------------ Eingabe
 
 	@Override
+	public boolean mouseClicked(MouseButtonEvent event, boolean doubleClick) {
+		if (super.mouseClicked(event, doubleClick)) {
+			return true;
+		}
+		if (event.button() != 0) {
+			return false;
+		}
+		double mx = event.x();
+		double my = event.y();
+
+		// Klick auf eine Job-Karte: auf diesen Job filtern (nochmal klicken = alle)
+		for (int i = 0; i < JOBS.size(); i++) {
+			int x = PAD + (i % tileCols) * (tileW + GAP);
+			int y = tilesY + (i / tileCols) * (tileH + GAP);
+			if (mx >= x && mx < x + tileW && my >= y && my < y + tileH) {
+				String name = JOBS.get(i).name();
+				jobFilter = name.equals(jobFilter) ? null : name;
+				scroll = 0;
+				invalidate();
+				return true;
+			}
+		}
+
+		// Klick auf einen Balken: in diesen Zeitraum springen
+		if (my >= chartY && my < chartY + chartH && mx >= chartX && mx < chartX + chartW && !buckets.isEmpty()) {
+			int left = chartX + 8;
+			int right = chartX + chartW - 6;
+			double slot = (right - left) / (double) buckets.size();
+			int i = (int) ((mx - left) / slot);
+			if (i >= 0 && i < buckets.size() && buckets.get(i).unitOffset() != Integer.MIN_VALUE) {
+				offset = Math.min(0, buckets.get(i).unitOffset());
+				scroll = 0;
+				invalidate();
+				return true;
+			}
+		}
+		return false;
+	}
+
+	@Override
 	public boolean mouseScrolled(double mx, double my, double horizontal, double vertical) {
-		if (mx >= listX && mx < listX + listW && my >= listY && my < listY + listH) {
+		if (mx >= PAD && mx < width - PAD && my >= listY && my < listY + listH) {
 			scroll -= vertical * ROW_H * 3;
 			clampScroll();
 			return true;
@@ -601,10 +895,6 @@ public class JobHistoryScreen extends Screen {
 		return super.mouseScrolled(mx, my, horizontal, vertical);
 	}
 
-	/**
-	 * Eigener, fast deckender Hintergrund in einer eigenen Ebene – so scheinen HUD-Anzeigen anderer Mods
-	 * (Scoreboard, Uhr, LabyMod-Widgets …) nicht mehr durch das Menü.
-	 */
 	@Override
 	public void renderBackground(GuiGraphics g, int mouseX, int mouseY, float delta) {
 		g.nextStratum();
@@ -620,11 +910,7 @@ public class JobHistoryScreen extends Screen {
 
 	private void clampScroll() {
 		int viewH = listH - 17;
-		scroll = Mth.clamp(scroll, 0, Math.max(0, rows.size() * ROW_H - viewH));
-	}
-
-	private static LocalDate day(long epochMillis) {
-		return Instant.ofEpochMilli(epochMillis).atZone(ZoneId.systemDefault()).toLocalDate();
+		scroll = Mth.clamp(scroll, 0, Math.max(0, unitSessions.size() * ROW_H - viewH));
 	}
 
 	private void right(GuiGraphics g, String s, int rightX, int y, int color) {
@@ -643,13 +929,5 @@ public class JobHistoryScreen extends Screen {
 			end--;
 		}
 		return s.substring(0, end) + "…";
-	}
-
-	private static void panel(GuiGraphics g, int x, int y, int w, int h) {
-		g.fill(x, y, x + w, y + h, PANEL);
-		g.fill(x, y, x + w, y + 1, BORDER);
-		g.fill(x, y + h - 1, x + w, y + h, BORDER);
-		g.fill(x, y, x + 1, y + h, BORDER);
-		g.fill(x + w - 1, y, x + w, y + h, BORDER);
 	}
 }

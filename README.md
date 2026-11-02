@@ -30,18 +30,19 @@ Marktplatz
   - Maus über das Diagramm → Details (Ø, Hoch, Tief, gehandelte Stück, Transaktionen)
 - **„← Zurück“** oder **Esc** führt zurück zur Item-Liste.
 
-### Reiter „Verlauf“
+### Reiter „Verlauf“ (Job-Dashboard)
 
 Jede Job-Sitzung wird gespeichert (`config/loothub-jobs.json`, bis zu 1000 Sitzungen) – auch beim Verlassen
-des Servers und beim Beenden des Spiels:
+des Servers und beim Beenden des Spiels. Das Dashboard zeigt einen **Zeitraum**:
 
-- **Summen** für heute, die letzten 7 Tage und gesamt: Geld, XP, aktive Zeit und $/h.
-- **Zeitraum-Reiter** nebeneinander: **Stündlich** (letzte 24 Stunden), **Täglich** (14 Tage), **Wöchentlich**
-  (12 Wochen), **Jährlich** (12 Monate, je Monat) und **Alltime** (seit der ersten Sitzung). Der Zeitraum steuert
-  das Balkendiagramm (Maus drüber für Details) und die Sitzungsliste.
-- **Liste aller Sitzungen**, neueste oben, die laufende Sitzung grün: Beginn, Job, aktive Zeit, XP, $, $/h
-  und (bei breitem Fenster) Level. Maus über eine Zeile zeigt alle Jobs der Sitzung mit Level-Fortschritt.
-- **Job-Filter** neben den Zeitraum-Reitern (z. B. nur Holzfäller) und **Verlauf löschen** (zweimal klicken zur Bestätigung).
+- **Stündlich · Täglich · Wöchentlich · Jährlich · Alltime** wählen, mit **◀ ▶** blättern, **Jetzt** springt zurück.
+- **Kennzahlen:** Verdient (+XP), pro Stunde, aktive Zeit und Anzahl Sitzungen, bester Job mit Anteil.
+- **Diagramm:** Verlauf bis zum gewählten Zeitraum (Jährlich: die 12 Monate des Jahres). **Geld/Job-XP**
+  umschaltbar; Klick auf einen Balken springt in diesen Zeitraum.
+- **Job-Karten** für alle 7 Jobs: letztes Level mit Fortschritt, Wert im Zeitraum, $/h und Anteil.
+  **Klick auf eine Karte filtert** Kennzahlen, Diagramm und Liste auf diesen Job (nochmal klicken = alle).
+- **Sitzungsliste** des Zeitraums, laufende Sitzung grün; Maus drüber zeigt alle Jobs mit Level-Fortschritt.
+- **Verlauf löschen** (zweimal klicken zur Bestätigung).
 
 ### Reiter „Statistik“
 
