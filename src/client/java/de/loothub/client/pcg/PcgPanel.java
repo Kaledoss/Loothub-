@@ -196,7 +196,8 @@ public final class PcgPanel {
 		g.fill(sx, by + 3, sx + 1, by + BTN - 3, BTN_EDGE);
 
 		if (now < feedbackUntil) {
-			g.drawString(font, feedback, x + PAD, y + h + 3, 0xFF55E06A, true);
+			// Rückmeldung über der Leiste (darunter läge sie im Inventar)
+			g.drawString(font, feedback, x + PAD, y - 11, 0xFF55E06A, true);
 		}
 	}
 
