@@ -12,6 +12,7 @@ public final class Fmt {
 	private static final DecimalFormatSymbols DE = DecimalFormatSymbols.getInstance(Locale.GERMANY);
 	private static final ThreadLocal<DecimalFormat> MONEY = ThreadLocal.withInitial(() -> new DecimalFormat("#,##0.##", DE));
 	private static final ThreadLocal<DecimalFormat> ONE = ThreadLocal.withInitial(() -> new DecimalFormat("#,##0.#", DE));
+	private static final ThreadLocal<DecimalFormat> TWO = ThreadLocal.withInitial(() -> new DecimalFormat("#,##0.00", DE));
 	private static final ThreadLocal<DecimalFormat> WHOLE = ThreadLocal.withInitial(() -> new DecimalFormat("#,##0", DE));
 	private static final DateTimeFormatter DATE = DateTimeFormatter.ofPattern("dd.MM.yy");
 	private static final DateTimeFormatter DATE_TIME = DateTimeFormatter.ofPattern("dd.MM. HH:mm");
@@ -92,5 +93,19 @@ public final class Fmt {
 
 	public static String time(long epochMillis) {
 		return TIME.format(Instant.ofEpochMilli(epochMillis).atZone(ZoneId.systemDefault()));
+	}
+
+	/** Genaue Zahl mit zwei Nachkommastellen: 1.378,95 */
+	public static String exact(double v) {
+		return TWO.get().format(v);
+	}
+
+	/** Uhrzeit-Dauer: 49:55 oder 1:02:07 */
+	public static String clock(long ms) {
+		long sec = Math.max(0, ms) / 1000;
+		long h = sec / 3600;
+		long m = (sec % 3600) / 60;
+		long s = sec % 60;
+		return h > 0 ? String.format(Locale.ROOT, "%d:%02d:%02d", h, m, s) : String.format(Locale.ROOT, "%02d:%02d", m, s);
 	}
 }

@@ -268,6 +268,11 @@ public class JobHistoryScreen extends LoothubScreen {
 		return list;
 	}
 
+	/** Symbol eines Jobs (auch für das Job-Widget). */
+	public static Item jobIcon(String name) {
+		return info(name).icon();
+	}
+
 	/** Gleicher Job unter verschiedenen Namen (z. B. Angler/Fischer) → ein Eintrag. */
 	private static JobInfo info(String name) {
 		for (JobInfo j : JOBS) {

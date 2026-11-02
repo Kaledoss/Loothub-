@@ -34,7 +34,7 @@ public final class JobTracker {
 
 	/** Momentaufnahme für die Anzeige. Werte, die (noch) nicht bekannt sind, sind NaN bzw. -1. */
 	public record Snapshot(String job, int level, double progress, double sessionXp, double sessionMoney,
-						   double xpPerHour, double moneyPerHour, long etaMs, boolean paused, boolean demo) {
+						   double xpPerHour, double moneyPerHour, long etaMs, long trackingMs, boolean paused, boolean demo) {
 	}
 
 	private static final Map<String, JobStats> JOBS = new HashMap<>();
@@ -148,7 +148,7 @@ public final class JobTracker {
 		}
 
 		return new Snapshot(currentJob, s.level, s.progress, s.xp, totalMoney, xpPerHour, moneyPerHour, eta,
-				now - lastGain > PAUSE_AFTER_MS, false);
+				now - sessionStart, now - lastGain > PAUSE_AFTER_MS, false);
 	}
 
 	/** Die laufende Sitzung für die Anzeige im Verlauf, oder null. Wird nicht gespeichert. */
@@ -189,6 +189,6 @@ public final class JobTracker {
 
 	/** Beispieldaten für den Editor, solange noch keine echten Daten vorliegen. */
 	public static Snapshot demo() {
-		return new Snapshot("Holzfäller", 58, 13.85, 1240, 6320.5, 4100, 21000, 38 * 60_000L, false, true);
+		return new Snapshot("Holzfäller", 58, 13.85, 1240, 6320.5, 4100, 21000, 38 * 60_000L, 49 * 60_000L + 55_000L, false, true);
 	}
 }

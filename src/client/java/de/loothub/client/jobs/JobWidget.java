@@ -3,34 +3,39 @@ package de.loothub.client.jobs;
 import java.util.ArrayList;
 import java.util.List;
 
-import net.minecraft.ChatFormatting;
 import net.minecraft.client.DeltaTracker;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.network.chat.Component;
+import net.minecraft.world.item.ItemStack;
 
 import de.loothub.client.Fmt;
 
 /**
- * Das Job-Widget im HUD. Position und Sichtbarkeit kommen aus {@link WidgetConfig};
+ * Das Job-Widget im HUD: eine Liste „Bezeichnung: Wert“.
+ * Position und Sichtbarkeit kommen aus {@link WidgetConfig};
  * verschoben wird es im {@link JobWidgetEditScreen} (Einstellungen /loothub → „Position ändern“).
  */
 public final class JobWidget {
-	private static final int MIN_WIDTH = 150;
 	private static final int PADDING = 5;
 	private static final int LINE_H = 10;
-	private static final int BAR_H = 5;
+	private static final int JOB_ROW_H = 17;
+	private static final int ICON_W = 18;
 
 	private static final int BACKGROUND = 0xC0120A0C;
 	private static final int BORDER = 0xFFB3262E;
-	private static final int TEXT = 0xFFFFFFFF;
+	private static final int LABEL = 0xFFE07A7A;
+	private static final int VALUE = 0xFFFFD66B;
+	private static final int JOB = 0xFFFFAA33;
 	private static final int MUTED = 0xFFAAAAAA;
-	private static final int BAR_BG = 0x60FFFFFF;
-	private static final int BAR_FG = 0xFFE23B3B;
 
-	/** Fertig aufbereitete Zeilen – einmal berechnet, damit Größe und Zeichnen übereinstimmen. */
-	public record Layout(Component title, String progressText, double progress, List<Component> lines, int width, int height) {
+	/** Eine Zeile des Widgets. */
+	public record Row(String label, String value, int color) {
+	}
+
+	/** Fertig aufbereitete Anzeige – einmal berechnet, damit Größe und Zeichnen übereinstimmen. */
+	public record Layout(ItemStack icon, String job, String state, List<Row> rows, int labelW, int width, int height) {
 	}
 
 	private JobWidget() {
@@ -54,39 +59,46 @@ public final class JobWidget {
 		draw(g, mc.font, layout, pos[0], pos[1]);
 	}
 
+	private static String tr(String key) {
+		return Component.translatable(key).getString();
+	}
+
+	private static String orDash(double v) {
+		return Double.isNaN(v) ? "–" : Fmt.exact(v);
+	}
+
 	public static Layout layout(Font font, JobTracker.Snapshot s) {
-		Component title = Component.literal(s.job()).withStyle(ChatFormatting.GOLD);
-		if (s.level() >= 0) {
-			title = Component.empty().append(title)
-					.append(Component.translatable("loothub.job.level", s.level()).withStyle(ChatFormatting.WHITE));
-		}
-		if (s.paused()) {
-			title = Component.empty().append(title)
-					.append(Component.translatable("loothub.job.paused").withStyle(ChatFormatting.GRAY));
-		}
+		String state = "";
 		if (s.demo()) {
-			title = Component.empty().append(title)
-					.append(Component.translatable("loothub.job.demo").withStyle(ChatFormatting.GRAY));
+			state = tr("loothub.job.demo");
+		} else if (s.paused()) {
+			state = tr("loothub.job.paused");
 		}
 
-		String progressText = Double.isNaN(s.progress()) ? "" : Fmt.compact(s.progress()) + " %";
+		List<Row> rows = new ArrayList<>();
+		rows.add(new Row(tr("loothub.job.row.level"), s.level() >= 0 ? String.valueOf(s.level()) : "–", VALUE));
+		rows.add(new Row(tr("loothub.job.row.progress"),
+				Double.isNaN(s.progress()) ? "–" : Fmt.exact(s.progress()) + " %", VALUE));
+		rows.add(new Row(tr("loothub.job.row.time"), Fmt.clock(s.trackingMs()), VALUE));
+		rows.add(new Row(tr("loothub.job.row.money"), Fmt.exact(s.sessionMoney()), VALUE));
+		rows.add(new Row(tr("loothub.job.row.money_rate"), orDash(s.moneyPerHour()), VALUE));
+		rows.add(new Row(tr("loothub.job.row.xp"), Fmt.exact(s.sessionXp()), VALUE));
+		rows.add(new Row(tr("loothub.job.row.xp_rate"), orDash(s.xpPerHour()), VALUE));
 
-		List<Component> lines = new ArrayList<>();
-		lines.add(Component.translatable("loothub.job.session",
-				Fmt.compact(s.sessionXp()), Fmt.compact(s.sessionMoney())).withStyle(ChatFormatting.WHITE));
-		String xpRate = Double.isNaN(s.xpPerHour()) ? "–" : Fmt.compact(s.xpPerHour());
-		String moneyRate = Double.isNaN(s.moneyPerHour()) ? "–" : Fmt.compact(s.moneyPerHour());
-		lines.add(Component.translatable("loothub.job.rate", xpRate, moneyRate).withStyle(ChatFormatting.WHITE));
-		String eta = s.etaMs() < 0 ? "–" : "~" + Fmt.duration(s.etaMs());
-		lines.add(Component.translatable("loothub.job.eta", eta).withStyle(ChatFormatting.GREEN));
-
-		int width = MIN_WIDTH;
-		width = Math.max(width, font.width(title) + 2 * PADDING);
-		for (Component line : lines) {
-			width = Math.max(width, font.width(line) + 2 * PADDING);
+		int labelW = font.width(tr("loothub.job.row.job"));
+		for (Row r : rows) {
+			labelW = Math.max(labelW, font.width(r.label()));
 		}
-		int height = PADDING + LINE_H + (BAR_H + 4) + lines.size() * LINE_H + PADDING - 2;
-		return new Layout(title, progressText, s.progress(), lines, width, height);
+		labelW += 4;
+
+		int contentW = labelW + ICON_W + font.width(s.job()) + font.width(state);
+		for (Row r : rows) {
+			contentW = Math.max(contentW, labelW + font.width(r.value()));
+		}
+		int width = contentW + 2 * PADDING;
+		int height = PADDING + JOB_ROW_H + rows.size() * LINE_H + PADDING - 1;
+		ItemStack icon = new ItemStack(JobHistoryScreen.jobIcon(s.job()));
+		return new Layout(icon, s.job(), state, rows, labelW, width, height);
 	}
 
 	/** Bildschirmposition aus der relativen Position in der Config. */
@@ -99,27 +111,25 @@ public final class JobWidget {
 
 	public static void draw(GuiGraphics g, Font font, Layout l, int x, int y) {
 		g.fill(x, y, x + l.width(), y + l.height(), BACKGROUND);
+		g.fill(x, y, x + 1, y + l.height(), BORDER);
 		g.fill(x, y, x + l.width(), y + 1, BORDER);
 
+		int lx = x + PADDING;
+		int vx = lx + l.labelW();
 		int cy = y + PADDING;
-		g.drawString(font, l.title(), x + PADDING, cy, TEXT, true);
-		cy += LINE_H;
 
-		// Fortschrittsbalken mit Prozentzahl
-		int textW = l.progressText().isEmpty() ? 0 : font.width(l.progressText()) + 4;
-		int barX = x + PADDING;
-		int barW = l.width() - 2 * PADDING - textW;
-		int barY = cy + 1;
-		g.fill(barX, barY, barX + barW, barY + BAR_H, BAR_BG);
-		if (!Double.isNaN(l.progress())) {
-			int filled = (int) Math.round(barW * Math.max(0, Math.min(100, l.progress())) / 100.0);
-			g.fill(barX, barY, barX + filled, barY + BAR_H, BAR_FG);
-			g.drawString(font, l.progressText(), barX + barW + 4, cy, MUTED, true);
+		// Job-Zeile mit Symbol
+		g.drawString(font, tr("loothub.job.row.job"), lx, cy + 4, LABEL, true);
+		g.renderItem(l.icon(), vx, cy - 1);
+		g.drawString(font, l.job(), vx + ICON_W, cy + 4, JOB, true);
+		if (!l.state().isEmpty()) {
+			g.drawString(font, l.state(), vx + ICON_W + font.width(l.job()), cy + 4, MUTED, true);
 		}
-		cy += BAR_H + 4;
+		cy += JOB_ROW_H;
 
-		for (Component line : l.lines()) {
-			g.drawString(font, line, x + PADDING, cy, TEXT, true);
+		for (Row r : l.rows()) {
+			g.drawString(font, r.label(), lx, cy, LABEL, true);
+			g.drawString(font, r.value(), vx, cy, r.color(), true);
 			cy += LINE_H;
 		}
 	}
