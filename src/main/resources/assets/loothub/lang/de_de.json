@@ -11,7 +11,7 @@
 	"loothub.tooltip.loading": "Marktpreise werden geladen …",
 	"loothub.tooltip.error": "Marktpreise nicht erreichbar",
 	"loothub.screen.title": "Loothub+ · Marktpreise",
-	"loothub.screen.status": "Stand: %s Uhr · api.opsucht.net",
+	"loothub.screen.status": "Stand: %s Uhr",
 	"loothub.screen.search": "Suche",
 	"loothub.screen.search_hint": "Item suchen …",
 	"loothub.screen.category": "Kategorie: %s",
@@ -46,5 +46,12 @@
 	"loothub.job.editor.reset": "Sitzung zurücksetzen",
 	"loothub.job.editor.done": "Fertig",
 	"loothub.tab.market": "Markt",
-	"loothub.tab.jobs": "Job-Widget"
+	"loothub.tab.jobs": "Job-Widget",
+	"loothub.update.install": "⬇ Update %s installieren",
+	"loothub.update.install.tooltip": "Installiert: %s · Neu: %s – wird nach einem Neustart aktiv",
+	"loothub.update.downloading": "Update wird geladen …",
+	"loothub.update.restart": "✔ %s geladen – Neustart",
+	"loothub.update.restart.tooltip": "Minecraft neu starten, dann ist die neue Version aktiv",
+	"loothub.update.failed": "Update fehlgeschlagen",
+	"loothub.update.notice": "[Loothub+] Update %s verfügbar – im Loothub+-Menü (Taste L) installieren."
 }

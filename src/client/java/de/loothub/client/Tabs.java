@@ -4,6 +4,7 @@ import java.util.List;
 
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.components.Button;
+import net.minecraft.client.gui.components.Tooltip;
 import net.minecraft.network.chat.Component;
 
 import de.loothub.client.jobs.JobWidgetEditScreen;
@@ -41,6 +42,49 @@ public final class Tabs {
 			buttons[i] = b;
 		}
 		return List.of(buttons);
+	}
+
+	/** Knopf rechts neben den Reitern: erscheint nur, wenn ein Update verfügbar ist. */
+	public static Button updateButton(int y) {
+		Button b = Button.builder(Component.empty(), btn -> Updater.installAsync())
+				.bounds(8 + Tab.values().length * (WIDTH + GAP), y, 150, HEIGHT)
+				.build();
+		refreshUpdateButton(b);
+		return b;
+	}
+
+	/** Beschriftung und Sichtbarkeit an den Update-Zustand anpassen (jeden Tick aufrufen). */
+	public static void refreshUpdateButton(Button b) {
+		String version = Updater.latestVersion();
+		switch (Updater.state()) {
+			case AVAILABLE -> {
+				b.visible = true;
+				b.active = true;
+				b.setMessage(Component.translatable("loothub.update.install", version));
+				b.setTooltip(Tooltip.create(Component.translatable("loothub.update.install.tooltip",
+						Updater.currentVersion(), version)));
+			}
+			case DOWNLOADING -> {
+				b.visible = true;
+				b.active = false;
+				b.setMessage(Component.translatable("loothub.update.downloading"));
+			}
+			case INSTALLED -> {
+				b.visible = true;
+				b.active = false;
+				b.setMessage(Component.translatable("loothub.update.restart", version));
+				b.setTooltip(Tooltip.create(Component.translatable("loothub.update.restart.tooltip")));
+			}
+			case ERROR -> {
+				// Nur anzeigen, wenn ein Update gefunden, aber nicht installiert werden konnte
+				b.visible = version != null;
+				b.active = false;
+				b.setMessage(Component.translatable("loothub.update.failed"));
+				String msg = Updater.errorMessage();
+				b.setTooltip(Tooltip.create(Component.literal(msg == null ? "" : msg)));
+			}
+			default -> b.visible = false;
+		}
 	}
 
 	public static void open(Tab tab) {

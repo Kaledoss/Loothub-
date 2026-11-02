@@ -11,7 +11,7 @@
 	"loothub.tooltip.loading": "Loading market prices …",
 	"loothub.tooltip.error": "Market prices unavailable",
 	"loothub.screen.title": "Loothub+ · Market Prices",
-	"loothub.screen.status": "Updated: %s · api.opsucht.net",
+	"loothub.screen.status": "Updated: %s",
 	"loothub.screen.search": "Search",
 	"loothub.screen.search_hint": "Search items …",
 	"loothub.screen.category": "Category: %s",
@@ -46,5 +46,12 @@
 	"loothub.job.editor.reset": "Reset session",
 	"loothub.job.editor.done": "Done",
 	"loothub.tab.market": "Market",
-	"loothub.tab.jobs": "Job Widget"
+	"loothub.tab.jobs": "Job Widget",
+	"loothub.update.install": "⬇ Install update %s",
+	"loothub.update.install.tooltip": "Installed: %s · New: %s – active after a restart",
+	"loothub.update.downloading": "Downloading update …",
+	"loothub.update.restart": "✔ %s ready – restart",
+	"loothub.update.restart.tooltip": "Restart Minecraft to use the new version",
+	"loothub.update.failed": "Update failed",
+	"loothub.update.notice": "[Loothub+] Update %s available – install it in the Loothub+ menu (key L)."
 }

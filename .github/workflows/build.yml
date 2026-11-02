@@ -25,7 +25,9 @@ jobs:
       - name: Gradle-Wrapper ausführbar machen
         run: chmod +x ./gradlew
       - name: Bauen
-        run: ./gradlew build --stacktrace
+        # Jede Version bekommt die Laufnummer als dritte Stelle (1.0.3, 1.0.4 …) –
+        # daran erkennt die Update-Funktion im Spiel, dass es etwas Neues gibt.
+        run: ./gradlew build --stacktrace -Pversion=1.0.${{ github.run_number }}
       - name: Mod-Datei bereitstellen (ohne -sources)
         run: |
           mkdir -p dist
@@ -43,6 +45,6 @@ jobs:
         run: |
           gh release delete latest --yes --cleanup-tag || true
           gh release create latest dist/*.jar \
-            --title "Loothub+ – neueste Version" \
+            --title "Loothub+ 1.0.${{ github.run_number }}" \
             --notes "Automatisch gebaut aus Commit ${GITHUB_SHA::7}. Für Minecraft 1.21.11 (Fabric). Benötigt Fabric API 0.141.6+1.21.11." \
             --target "$GITHUB_SHA"

@@ -2,7 +2,9 @@ package de.loothub.client;
 
 import com.mojang.blaze3d.platform.InputConstants;
 
+import net.minecraft.ChatFormatting;
 import net.minecraft.client.KeyMapping;
+import net.minecraft.network.chat.Component;
 import net.minecraft.resources.Identifier;
 
 import net.fabricmc.api.ClientModInitializer;
@@ -24,6 +26,7 @@ public class LoothubClient implements ClientModInitializer {
 			KeyMapping.Category.register(Identifier.fromNamespaceAndPath(Loothub.MOD_ID, "main"));
 
 	private static KeyMapping menuKey;
+	private static boolean updateNoticeShown;
 
 	@Override
 	public void onInitializeClient() {
@@ -33,6 +36,12 @@ public class LoothubClient implements ClientModInitializer {
 				"key.loothub.open", InputConstants.Type.KEYSYM, GLFW.GLFW_KEY_L, CATEGORY));
 
 		ClientTickEvents.END_CLIENT_TICK.register(client -> {
+			// Einmal pro Spielstart im Chat auf ein verfügbares Update hinweisen
+			if (!updateNoticeShown && client.player != null && Updater.state() == Updater.State.AVAILABLE) {
+				updateNoticeShown = true;
+				client.player.displayClientMessage(Component.translatable("loothub.update.notice",
+						Updater.latestVersion()).withStyle(ChatFormatting.GOLD), false);
+			}
 			while (menuKey.consumeClick()) {
 				if (client.screen == null) {
 					client.setScreen(new MarketScreen());
@@ -47,6 +56,7 @@ public class LoothubClient implements ClientModInitializer {
 		// Beim Verlassen des Servers beginnt eine neue Job-Sitzung
 		ClientPlayConnectionEvents.DISCONNECT.register((handler, client) -> JobTracker.reset());
 
+		Updater.checkAsync();
 		PriceTooltip.register();
 		// Preise gleich beim Start im Hintergrund laden, damit der erste Tooltip schon Daten hat
 		MarketPrices.refreshIfStale();

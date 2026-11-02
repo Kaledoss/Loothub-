@@ -83,6 +83,13 @@ vor der Nutzung auf dem Server beim OPSUCHT-Support nachfragen (§5.10.4).
 Ergebnis: `build/libs/loothub-1.0.0.jar` (die `-sources`-Datei brauchen Sie nicht).
 Diese Datei zusammen mit der Fabric API für 1.21.11 in den `mods`-Ordner legen.
 
+## Updates im Spiel
+
+Loothub+ prüft beim Start, ob auf GitHub (Release „latest“ von Kaledoss/Loothub-) eine neuere Version liegt.
+Falls ja, erscheint ein Hinweis im Chat und im Loothub+-Menü (Taste L) der Knopf **„Update … installieren“**.
+Die neue Datei wird in denselben Mods-Ordner geladen, die alte nach dem Beenden entfernt –
+nach einem **Neustart** ist die neue Version aktiv. Funktioniert nur, solange das Repository öffentlich ist.
+
 ## Mit LabyMod nutzen
 
 LabyMod lädt Fabric-Mods nur über ein **Modpack im LabyMod Launcher** – der normale `.minecraft/mods`-Ordner wird ignoriert.

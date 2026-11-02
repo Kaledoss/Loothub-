@@ -64,6 +64,7 @@ public class MarketScreen extends Screen {
 
 	private final List<Button> intervalButtons = new ArrayList<>();
 	private Button categoryButton;
+	private Button updateButton;
 	private List<Listing> filtered = List.of();
 	private List<String> categories = List.of();
 	private int seenVersion = -1;
@@ -84,6 +85,7 @@ public class MarketScreen extends Screen {
 		MarketPrices.refreshIfStale();
 
 		Tabs.create(Tabs.Tab.MARKET, PAD, 4).forEach(this::addRenderableWidget);
+		updateButton = addRenderableWidget(Tabs.updateButton(4));
 
 		int top = 24;
 		listX = PAD;
@@ -140,6 +142,7 @@ public class MarketScreen extends Screen {
 	@Override
 	public void tick() {
 		super.tick();
+		Tabs.refreshUpdateButton(updateButton);
 		MarketPrices.refreshIfStale();
 		refreshData();
 	}

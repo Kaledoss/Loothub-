@@ -19,6 +19,7 @@ public class JobWidgetEditScreen extends Screen {
 	private static final int OUTLINE_HOVER = 0xFFFFFFFF;
 
 	private Button toggleButton;
+	private Button updateButton;
 	private boolean dragging;
 	private double grabX;
 	private double grabY;
@@ -33,6 +34,7 @@ public class JobWidgetEditScreen extends Screen {
 	@Override
 	protected void init() {
 		Tabs.create(Tabs.Tab.JOBS, 8, 4).forEach(this::addRenderableWidget);
+		updateButton = addRenderableWidget(Tabs.updateButton(4));
 
 		int bw = 120;
 		int gap = 6;
@@ -52,6 +54,12 @@ public class JobWidgetEditScreen extends Screen {
 
 		addRenderableWidget(Button.builder(Component.translatable("loothub.job.editor.done"), b -> onClose())
 				.bounds(bx + 2 * (bw + gap), by, bw, 20).build());
+	}
+
+	@Override
+	public void tick() {
+		super.tick();
+		Tabs.refreshUpdateButton(updateButton);
 	}
 
 	private Component toggleLabel() {
