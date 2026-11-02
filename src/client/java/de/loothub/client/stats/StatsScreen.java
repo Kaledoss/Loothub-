@@ -191,7 +191,7 @@ public class StatsScreen extends LoothubScreen {
 		sums = StatsStore.sum(range);
 		rows = switch (category) {
 			case GENERAL -> List.of();
-			case BLOCKS -> buildRows(new String[]{"mined.", "placed."}, Kind.BLOCK);
+			case BLOCKS -> buildRows(new String[]{"mined.", "placed.", "picked."}, Kind.BLOCK);
 			case ITEMS -> buildRows(new String[]{"picked.", "eaten."}, Kind.ITEM);
 			case MOBS -> buildRows(new String[]{"killed."}, Kind.MOB);
 		};
@@ -208,6 +208,10 @@ public class StatsScreen extends LoothubScreen {
 			for (int i = 0; i < prefixes.length; i++) {
 				if (e.getKey().startsWith(prefixes[i])) {
 					String id = e.getKey().substring(prefixes[i].length());
+					// Aufgesammelte Blöcke (Erde, Stein …) gehören zu „Blöcke“, echte Items zu „Items“
+					if (prefixes[i].equals("picked.") && (kind == Kind.BLOCK) != isBlockItem(id)) {
+						continue;
+					}
 					byId.computeIfAbsent(id, k -> new long[prefixes.length])[i] += e.getValue();
 				}
 			}
@@ -244,6 +248,13 @@ public class StatsScreen extends LoothubScreen {
 			}
 		}
 		return sum;
+	}
+
+	/** Ist das Item ein Block (Erde, Stein, Holz …)? */
+	private static boolean isBlockItem(String id) {
+		Identifier identifier = Identifier.tryParse(id);
+		Item item = identifier == null ? null : BuiltInRegistries.ITEM.getOptional(identifier).orElse(null);
+		return item instanceof net.minecraft.world.item.BlockItem;
 	}
 
 	/** Für ältere Einträge: Pflanzen wie Gras nicht als Block zählen. */
@@ -322,7 +333,7 @@ public class StatsScreen extends LoothubScreen {
 
 	private List<String> columnKeys() {
 		return switch (category) {
-			case BLOCKS -> List.of("loothub.stats.col.mined", "loothub.stats.col.placed");
+			case BLOCKS -> List.of("loothub.stats.col.mined", "loothub.stats.col.placed", "loothub.stats.col.picked");
 			case ITEMS -> List.of("loothub.stats.col.picked", "loothub.stats.col.eaten");
 			case MOBS -> List.of("loothub.stats.col.killed");
 			case GENERAL -> List.of();
