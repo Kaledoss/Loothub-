@@ -49,7 +49,7 @@ public final class PcgOverlay {
 
 	/** Breite und Höhe der Anzeige. */
 	public static int[] size(Font font, PcgState.Spawn s) {
-		int w = Math.max(font.width(title()) + 8 + font.width("Entkommen"), font.width(s.name())) + 14;
+		int w = Math.max(font.width(title()) + 8 + font.width("Entkommen"), font.width(GermanNames.of(s.name()))) + 14;
 		return new int[]{w, 32};
 	}
 
@@ -82,7 +82,7 @@ public final class PcgOverlay {
 
 		g.drawString(font, title(), x + 7, y + 7, LABEL, true);
 		g.drawString(font, time, x + w - 7 - font.width(time), y + 7, timeColor, true);
-		g.drawString(font, s.name(), x + 7, y + 19, NAME, true);
+		g.drawString(font, GermanNames.of(s.name()), x + 7, y + 19, NAME, true);
 
 		// Restzeit-Balken unten
 		if (s.result() == null) {

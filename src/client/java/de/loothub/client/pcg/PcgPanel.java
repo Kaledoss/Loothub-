@@ -82,7 +82,7 @@ public final class PcgPanel {
 	private static String headText() {
 		PcgState.Spawn spawn = PcgState.current();
 		if (spawn != null && spawn.result() == null) {
-			return spawn.name() + " · " + Fmt.clock(spawn.remainingMs());
+			return GermanNames.of(spawn.name()) + " · " + Fmt.clock(spawn.remainingMs());
 		}
 		long next = PcgState.untilNextMs();
 		if (next < 0) {
@@ -95,7 +95,7 @@ public final class PcgPanel {
 		int buttons = 2 * PAD + 6 * BTN + 4 * GAP + SEP;
 		// Breite ohne die laufende Uhr berechnen, damit die Leiste nicht im Sekundentakt zappelt
 		PcgState.Spawn spawn = PcgState.current();
-		String sample = spawn != null && spawn.result() == null ? spawn.name() + " · 00:00" : "Nächstes: warte auf Spawn";
+		String sample = spawn != null && spawn.result() == null ? GermanNames.of(spawn.name()) + " · 00:00" : "Nächstes: warte auf Spawn";
 		int head = 2 * PAD + font.width("⠿ " + sample) + 8 + font.width("Verbinde …") + 8 + lockW(font);
 		return Math.max(buttons, head);
 	}

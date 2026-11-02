@@ -67,6 +67,7 @@ public final class PcgState {
 			long now = System.currentTimeMillis();
 			current = new Spawn(name, now, now + window, null, 0);
 			lastSpawnStart = now;
+			GermanNames.of(name); // deutschen Namen schon mal nachschlagen
 			Minecraft mc = Minecraft.getInstance();
 			mc.execute(() -> mc.getSoundManager().play(SimpleSoundInstance.forUI(SoundEvents.NOTE_BLOCK_PLING, 1.6f)));
 			return;
