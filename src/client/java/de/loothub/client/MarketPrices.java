@@ -32,7 +32,10 @@ public final class MarketPrices {
 		}
 	}
 
-	/** Kaufaufträge (BUY) und Verkaufsangebote (SELL) eines Items. */
+	/**
+	 * Preise eines Items: {@code buy} = was man beim Kaufen zahlt (günstigstes Angebot),
+	 * {@code sell} = was man beim Verkaufen bekommt (bester Kaufauftrag, z. B. per /sell).
+	 */
 	public record Entry(Side buy, Side sell) {
 	}
 

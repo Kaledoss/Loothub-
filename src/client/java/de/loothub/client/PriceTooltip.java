@@ -57,8 +57,9 @@ public final class PriceTooltip {
 		int count = stack.getCount();
 		lines.add(Component.empty());
 		lines.add(Component.translatable("loothub.tooltip.header").withStyle(ChatFormatting.GOLD));
-		lines.add(sideLine("loothub.tooltip.buy", entry.buy(), count, ChatFormatting.GREEN));
-		lines.add(sideLine("loothub.tooltip.sell", entry.sell(), count, ChatFormatting.YELLOW));
+		// Laut API: BUY = Preis beim Kaufen (günstigstes Angebot), SELL = Preis beim Verkaufen (bester Kaufauftrag)
+		lines.add(sideLine("loothub.tooltip.buy", entry.buy(), count, ChatFormatting.GOLD));
+		lines.add(sideLine("loothub.tooltip.sell", entry.sell(), count, ChatFormatting.GREEN));
 		lines.add(ageLine());
 	}
 
