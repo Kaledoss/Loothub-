@@ -88,7 +88,10 @@ public final class JobWidget {
 		boolean showJob = c.jobRowVisible("job");
 		List<Row> rows = new ArrayList<>();
 		addRow(rows, c, "level", s.level() >= 0 ? String.valueOf(s.level()) : "–");
-		addRow(rows, c, "progress", Double.isNaN(s.progress()) ? "–" : Fmt.exact(s.progress()) + " %");
+		if (c.jobRowVisible("progress")) {
+			rows.add(new Row(tr("loothub.job.row.progress"),
+					Double.isNaN(s.progress()) ? "–" : Fmt.exact(s.progress()) + " %", progressColor(s.progress())));
+		}
 		addRow(rows, c, "time", Fmt.clock(s.trackingMs()));
 		addRow(rows, c, "money", Fmt.exact(s.sessionMoney()) + " $");
 		addRow(rows, c, "money_rate", orDash(s.moneyPerHour(), " $"));
@@ -109,6 +112,24 @@ public final class JobWidget {
 		int height = PADDING + (showJob ? JOB_ROW_H : 0) + rows.size() * LINE_H + PADDING - 1;
 		ItemStack icon = new ItemStack(JobHistoryScreen.jobIcon(s.job()));
 		return new Layout(showJob, icon, s.job(), state, rows, labelW, width, height);
+	}
+
+	/** Farbe für den Fortschritt: 0 % orange → 50 % gelb → 100 % grün, fließend. */
+	static int progressColor(double percent) {
+		if (Double.isNaN(percent)) {
+			return VALUE;
+		}
+		double t = Math.max(0, Math.min(100, percent)) / 100.0;
+		int[] orange = {0xFF, 0x8A, 0x2A};
+		int[] yellow = {0xFF, 0xE0, 0x40};
+		int[] green = {0x55, 0xE0, 0x6A};
+		int[] a = t < 0.5 ? orange : yellow;
+		int[] b = t < 0.5 ? yellow : green;
+		double k = t < 0.5 ? t / 0.5 : (t - 0.5) / 0.5;
+		int r = (int) Math.round(a[0] + (b[0] - a[0]) * k);
+		int g = (int) Math.round(a[1] + (b[1] - a[1]) * k);
+		int bl = (int) Math.round(a[2] + (b[2] - a[2]) * k);
+		return 0xFF000000 | (r << 16) | (g << 8) | bl;
 	}
 
 	private static void addRow(List<Row> rows, WidgetConfig c, String id, String value) {
