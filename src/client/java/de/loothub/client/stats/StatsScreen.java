@@ -250,11 +250,21 @@ public class StatsScreen extends LoothubScreen {
 		return sum;
 	}
 
-	/** Ist das Item ein Block (Erde, Stein, Holz …)? */
+	/**
+	 * Ist das Item selbst ein echter Block (Erde, Stein, Holz …)? Samen u. Ä. sind zwar technisch Block-Items
+	 * (sie pflanzen etwas an), haben aber eine andere ID als der Block und zählen als Item.
+	 */
 	private static boolean isBlockItem(String id) {
 		Identifier identifier = Identifier.tryParse(id);
-		Item item = identifier == null ? null : BuiltInRegistries.ITEM.getOptional(identifier).orElse(null);
-		return item instanceof net.minecraft.world.item.BlockItem;
+		if (identifier == null) {
+			return false;
+		}
+		Item item = BuiltInRegistries.ITEM.getOptional(identifier).orElse(null);
+		if (!(item instanceof net.minecraft.world.item.BlockItem blockItem)) {
+			return false;
+		}
+		Block block = blockItem.getBlock();
+		return BuiltInRegistries.BLOCK.getKey(block).equals(identifier) && StatsTracker.isRealBlock(block);
 	}
 
 	/** Für ältere Einträge: Pflanzen wie Gras nicht als Block zählen. */

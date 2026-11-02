@@ -69,11 +69,18 @@ public final class StatsTracker {
 	}
 
 	/**
-	 * Nur „echte“ Blöcke zählen: Pflanzen und Ähnliches, das man einfach überbauen kann (Gras, hohes Gras, Farn,
-	 * toter Busch, Seegras, Ranken, Schneeschicht …), gehört nicht in die Block-Statistik.
+	 * Nur „echte“ Blöcke zählen. Nicht dazu gehören:
+	 * <ul>
+	 *   <li>Überbaubares wie Gras, hohes Gras, Farn, Seegras, Ranken, Schneeschicht,</li>
+	 *   <li>sofort abbaubare Dinge ohne Kollision wie Getreide, Blumen, Setzlinge, Fackeln.</li>
+	 * </ul>
 	 */
 	public static boolean isRealBlock(Block block) {
-		return !block.defaultBlockState().canBeReplaced();
+		BlockState state = block.defaultBlockState();
+		if (state.canBeReplaced()) {
+			return false;
+		}
+		return state.blocksMotion() || block.defaultDestroyTime() > 0;
 	}
 
 	/** Treffer auf ein Lebewesen merken: für ausgeteilten Schaden und Kills. */
