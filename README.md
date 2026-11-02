@@ -22,9 +22,8 @@ Kategorie-Leiste nur Icons. Ist ein Update verfügbar, erscheint rechts in der T
 
 ### Seite „Markt“
 
-- **Raster wie im Inventar:** alle Items vom Marktplatz als Slots, mittig; darüber Suchfeld und
-  Kategorie-Filter. Maus über einen Slot zeigt Name, **Kaufen** (was Sie zahlen) und **Verkaufen**
-  (was Sie z. B. per `/sell` bekommen).
+- **Raster über die ganze Breite:** jedes Item als Feld mit Icon, Name, **Kaufen** (gold, was Sie zahlen)
+  und **Verkaufen** (grün, was Sie z. B. per `/sell` bekommen). Darüber Suchfeld und Kategorie in einer Zeile.
 - **Klick auf ein Item** öffnet seine Preise und das Diagramm für Stunden, Tage, Wochen oder Monate:
   - **Goldene Linie:** Durchschnittspreis
   - **Blaue Balken:** Spanne vom Tiefst- bis zum Höchstpreis je Zeitabschnitt

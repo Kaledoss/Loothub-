@@ -30,7 +30,7 @@ import de.loothub.client.MarketPrices.Listing;
 import de.loothub.client.MarketPrices.Side;
 
 /**
- * Seite „Markt“: in der Mitte alle Items als Raster wie im Inventar (Suche + Kategorie). Ein Klick öffnet
+ * Seite „Markt“: alle Items als Raster aus Feldern über die ganze Breite (Name, Kauf- und Verkaufspreis). Ein Klick öffnet
  * die Preise und das Diagramm mit Durchschnittspreis (Linie) sowie Tiefst- bis Höchstpreis je Zeitabschnitt (Balken).
  * Öffnen mit Taste L (änderbar in der Steuerung), Reiter „Markt“.
  */
@@ -49,11 +49,12 @@ public class MarketScreen extends LoothubScreen {
 	private static final int BAND_HOVER = 0x9966AAFF;
 
 	private static final int PAD = 8;
-	private static final int SLOT = 20;      // Raster: 18 px Slot + 2 px Abstand
-	private static final int SLOT_INNER = 18;
-	private static final int SLOT_BG = 0xFF24171A;
-	private static final int SLOT_EDGE_DARK = 0xFF0C0708;
-	private static final int SLOT_EDGE_LIGHT = 0xFF3E272B;
+	private static final int TILE_MIN_W = 118; // so breit, dass Name und beide Preise passen
+	private static final int TILE_H = 30;
+	private static final int TILE_GAP = 4;
+	private static final int TILE_BG = 0xFF1E1416;
+	private static final int TILE_BG_HOVER = 0xFF2E1C20;
+	private static final int TILE_EDGE = 0xFF3E272B;
 	private static final int ITEM_BG = 0xC0181012;
 	private static final int ITEM_BG_HOVER = 0xD0301A1E;
 	private static final int ITEM_BORDER = 0xFF3E2226;
@@ -78,7 +79,8 @@ public class MarketScreen extends LoothubScreen {
 	private double scroll;
 
 	private int listX, listY, listW, listH;
-	private int gridCols = 9;
+	private int gridCols = 4;
+	private int tileW = TILE_MIN_W;
 	private int detailX, detailY, detailW, detailH;
 	private int chartX, chartY, chartW, chartH;
 
@@ -106,13 +108,16 @@ public class MarketScreen extends LoothubScreen {
 	/** Ansicht 1: Liste mit Item-Knöpfen in der Bildschirmmitte. */
 	private void initList() {
 		int top = ct;
-		// Raster mittig: so viele Spalten wie passen (höchstens 18)
-		gridCols = Mth.clamp(cw / SLOT, 4, 18);
-		int gridW = gridCols * SLOT;
-		int boxW = Math.min(cw, Math.max(gridW, 220));
-		listW = gridW + 6; // Platz für die Bildlaufleiste
-		listX = cl + (cw - listW) / 2;
-		int boxX = cl + (cw - boxW) / 2;
+		// Raster über die ganze Breite: so viele Felder wie passen, Rest verteilt sich auf die Felder
+		listX = cl;
+		listW = cw;
+		int usable = listW - 6; // Platz für die Bildlaufleiste
+		gridCols = Math.max(1, (usable + TILE_GAP) / (TILE_MIN_W + TILE_GAP));
+		tileW = (usable - (gridCols - 1) * TILE_GAP) / gridCols;
+		// Suche und Kategorie nebeneinander
+		int catW = Mth.clamp(cw / 3, 110, 200);
+		int boxX = cl;
+		int boxW = cw - catW - 4;
 
 		EditBox searchBox = new EditBox(font, boxX, top, boxW, 16, Component.translatable("loothub.screen.search"));
 		searchBox.setHint(Component.translatable("loothub.screen.search_hint").withStyle(ChatFormatting.DARK_GRAY));
@@ -125,10 +130,10 @@ public class MarketScreen extends LoothubScreen {
 		addRenderableWidget(searchBox);
 
 		categoryButton = addRenderableWidget(Button.builder(categoryLabel(), b -> cycleCategory())
-				.bounds(boxX, top + 20, boxW, 16)
+				.bounds(cr - catW, top, catW, 16)
 				.build());
 
-		listY = top + 42;
+		listY = top + 22;
 		listH = cb - listY;
 
 		seenVersion = -1; // erzwingt Neuaufbau der Liste
@@ -317,34 +322,37 @@ public class MarketScreen extends LoothubScreen {
 
 		Listing hoveredListing = null;
 		g.enableScissor(listX, top, listX + listW, bottom);
-		int firstRow = Math.max(0, (int) (scroll / SLOT));
+		int step = TILE_H + TILE_GAP;
+		int firstRow = Math.max(0, (int) (scroll / step));
 		for (int i = firstRow * gridCols; i < filtered.size(); i++) {
 			int col = i % gridCols;
 			int row = i / gridCols;
-			int sx = listX + col * SLOT;
-			int sy = top + row * SLOT - (int) scroll;
-			if (sy > bottom) {
+			int tx = listX + col * (tileW + TILE_GAP);
+			int ty = top + row * step - (int) scroll;
+			if (ty > bottom) {
 				break;
 			}
 			Listing l = filtered.get(i);
-			boolean hovered = mx >= sx && mx < sx + SLOT_INNER && my >= Math.max(sy, top)
-					&& my < Math.min(sy + SLOT_INNER, bottom);
-
-			// Slot wie im Inventar: dunkle Kante oben/links, helle unten/rechts
-			g.fill(sx, sy, sx + SLOT_INNER, sy + SLOT_INNER, SLOT_BG);
-			g.fill(sx, sy, sx + SLOT_INNER, sy + 1, SLOT_EDGE_DARK);
-			g.fill(sx, sy, sx + 1, sy + SLOT_INNER, SLOT_EDGE_DARK);
-			g.fill(sx, sy + SLOT_INNER - 1, sx + SLOT_INNER, sy + SLOT_INNER, SLOT_EDGE_LIGHT);
-			g.fill(sx + SLOT_INNER - 1, sy, sx + SLOT_INNER, sy + SLOT_INNER, SLOT_EDGE_LIGHT);
-			g.renderItem(stack(l), sx + 1, sy + 1);
+			boolean hovered = mx >= tx && mx < tx + tileW && my >= Math.max(ty, top) && my < Math.min(ty + TILE_H, bottom);
 			if (hovered) {
 				hoveredListing = l;
-				g.fill(sx + 1, sy + 1, sx + SLOT_INNER - 1, sy + SLOT_INNER - 1, 0x60FFFFFF);
-				g.fill(sx - 1, sy - 1, sx + SLOT_INNER + 1, sy, ITEM_BORDER_HOVER);
-				g.fill(sx - 1, sy + SLOT_INNER, sx + SLOT_INNER + 1, sy + SLOT_INNER + 1, ITEM_BORDER_HOVER);
-				g.fill(sx - 1, sy, sx, sy + SLOT_INNER, ITEM_BORDER_HOVER);
-				g.fill(sx + SLOT_INNER, sy, sx + SLOT_INNER + 1, sy + SLOT_INNER, ITEM_BORDER_HOVER);
 			}
+
+			// Feld: Rahmen (rot beim Überfahren), Hintergrund
+			g.fill(tx, ty, tx + tileW, ty + TILE_H, hovered ? ITEM_BORDER_HOVER : TILE_EDGE);
+			g.fill(tx + 1, ty + 1, tx + tileW - 1, ty + TILE_H - 1, hovered ? TILE_BG_HOVER : TILE_BG);
+			g.renderItem(stack(l), tx + 5, ty + 7);
+
+			// Zeile 1: Name · Zeile 2: Kaufen (gold) links, Verkaufen (grün) rechts
+			int textX = tx + 26;
+			int textW = tileW - 26 - 5;
+			g.drawString(font, ellipsize(name(l), textW), textX, ty + 5, TEXT, false);
+			Side buy = l.entry().buy();
+			Side sell = l.entry().sell();
+			String buyText = buy.available() ? Fmt.compact(buy.price()) + " $" : "–";
+			String sellText = sell.available() ? Fmt.compact(sell.price()) + " $" : "–";
+			g.drawString(font, buyText, textX, ty + 17, buy.available() ? GOLD : FAINT, false);
+			g.drawString(font, sellText, tx + tileW - 5 - font.width(sellText), ty + 17, sell.available() ? GREEN : FAINT, false);
 		}
 		g.disableScissor();
 
@@ -642,9 +650,10 @@ public class MarketScreen extends LoothubScreen {
 		if (!detail && event.button() == 0 && mx >= listX && mx < listX + listW && my >= listY && my < listY + listH) {
 			double offY = my - listY + scroll;
 			double offX = mx - listX;
-			int row = (int) (offY / SLOT);
-			int col = (int) (offX / SLOT);
-			boolean onSlot = offY - row * SLOT < SLOT_INNER && offX - col * SLOT < SLOT_INNER && col < gridCols;
+			int step = TILE_H + TILE_GAP;
+			int row = (int) (offY / step);
+			int col = (int) (offX / (tileW + TILE_GAP));
+			boolean onSlot = offY - row * step < TILE_H && offX - col * (tileW + TILE_GAP) < tileW && col < gridCols;
 			int index = row * gridCols + col;
 			if (onSlot && index >= 0 && index < filtered.size()) {
 				showDetail(filtered.get(index));
@@ -657,7 +666,7 @@ public class MarketScreen extends LoothubScreen {
 	@Override
 	public boolean mouseScrolled(double mx, double my, double horizontal, double vertical) {
 		if (!detail && mx >= listX && mx < listX + listW && my >= listY && my < listY + listH) {
-			scroll -= vertical * SLOT * 2;
+			scroll -= vertical * (TILE_H + TILE_GAP);
 			clampScroll();
 			return true;
 		}
@@ -674,7 +683,7 @@ public class MarketScreen extends LoothubScreen {
 
 	private int contentHeight() {
 		int rows = (filtered.size() + gridCols - 1) / gridCols;
-		return rows * SLOT;
+		return rows == 0 ? 0 : rows * (TILE_H + TILE_GAP) - TILE_GAP;
 	}
 
 	private double maxScroll() {
