@@ -30,8 +30,8 @@ import de.loothub.client.MarketPrices.Listing;
 import de.loothub.client.MarketPrices.Side;
 
 /**
- * Markt-Menü: links alle Items vom Marktplatz (Suche + Kategorie), rechts aktuelle Preise und ein
- * Diagramm mit Durchschnittspreis (Linie) sowie Tiefst- bis Höchstpreis je Zeitabschnitt (Balken).
+ * Reiter „Markt“: in der Mitte eine Liste mit allen Items als Knöpfe (Suche + Kategorie). Ein Klick öffnet
+ * die Preise und das Diagramm mit Durchschnittspreis (Linie) sowie Tiefst- bis Höchstpreis je Zeitabschnitt (Balken).
  * Öffnen mit Taste L (änderbar in der Steuerung), Reiter „Markt“.
  */
 public class MarketScreen extends Screen {
@@ -47,11 +47,14 @@ public class MarketScreen extends Screen {
 	private static final int GOLD = 0xFFFFC040;
 	private static final int BAND = 0x5566AAFF;
 	private static final int BAND_HOVER = 0x9966AAFF;
-	private static final int ROW_HOVER = 0x22FFFFFF;
-	private static final int ROW_SELECTED = 0x44FFC040;
 
 	private static final int PAD = 8;
-	private static final int ROW_H = 18;
+	private static final int ROW_H = 22;   // Höhe eines Item-Knopfs
+	private static final int ROW_STEP = 24; // inkl. Abstand
+	private static final int ITEM_BG = 0x50000000;
+	private static final int ITEM_BG_HOVER = 0x60FFFFFF;
+	private static final int ITEM_BORDER = 0xFF5A5A6A;
+	private static final int ITEM_BORDER_HOVER = 0xFFFFFFFF;
 
 	// Bleibt zwischen zwei Öffnungen des Menüs erhalten
 	private static String search = "";
@@ -65,6 +68,8 @@ public class MarketScreen extends Screen {
 	private final List<Button> intervalButtons = new ArrayList<>();
 	private Button categoryButton;
 	private Button updateButton;
+	/** false = Item-Liste, true = Diagramm des gewählten Items. */
+	private boolean detail;
 	private List<Listing> filtered = List.of();
 	private List<String> categories = List.of();
 	private int seenVersion = -1;
@@ -86,10 +91,22 @@ public class MarketScreen extends Screen {
 
 		Tabs.create(Tabs.Tab.MARKET, width, 4).forEach(this::addRenderableWidget);
 		updateButton = addRenderableWidget(Tabs.updateButton(4));
+		intervalButtons.clear();
+		categoryButton = null;
 
+		if (detail && selected() != null) {
+			initDetail();
+		} else {
+			detail = false;
+			initList();
+		}
+	}
+
+	/** Ansicht 1: Liste mit Item-Knöpfen in der Bildschirmmitte. */
+	private void initList() {
 		int top = 24;
-		listX = PAD;
-		listW = Mth.clamp((width - 3 * PAD) * 2 / 5, 130, 220);
+		listW = Mth.clamp(width - 2 * PAD, 200, 300);
+		listX = (width - listW) / 2;
 
 		EditBox searchBox = new EditBox(font, listX, top, listW, 16, Component.translatable("loothub.screen.search"));
 		searchBox.setHint(Component.translatable("loothub.screen.search_hint").withStyle(ChatFormatting.DARK_GRAY));
@@ -108,12 +125,22 @@ public class MarketScreen extends Screen {
 		listY = top + 40;
 		listH = height - listY - PAD;
 
-		detailX = listX + listW + PAD;
-		detailY = top;
-		detailW = width - detailX - PAD;
+		seenVersion = -1; // erzwingt Neuaufbau der Liste
+		refreshData();
+		setFocused(searchBox);
+	}
+
+	/** Ansicht 2: Preise und Diagramm des angeklickten Items, mit „Zurück“ zur Liste. */
+	private void initDetail() {
+		addRenderableWidget(Button.builder(Component.translatable("loothub.screen.back"), b -> showList())
+				.bounds(PAD, 24, 80, 16)
+				.build());
+
+		detailX = PAD;
+		detailY = 44;
+		detailW = width - 2 * PAD;
 		detailH = height - detailY - PAD;
 
-		intervalButtons.clear();
 		Interval[] values = Interval.values();
 		int gap = 4;
 		int bw = Math.min(64, (detailW - 12 - gap * (values.length - 1)) / values.length);
@@ -133,10 +160,29 @@ public class MarketScreen extends Screen {
 		chartY = by + 22;
 		chartW = detailW - 12;
 		chartH = detailY + detailH - chartY - 6;
+	}
 
-		seenVersion = -1; // erzwingt Neuaufbau der Liste
-		refreshData();
-		setFocused(searchBox);
+	private void showDetail(Listing l) {
+		selectedMaterial = l.material();
+		detail = true;
+		clearWidgets();
+		init();
+	}
+
+	private void showList() {
+		detail = false;
+		clearWidgets();
+		init();
+	}
+
+	/** Esc im Diagramm führt zurück zur Liste, in der Liste schließt es das Menü. */
+	@Override
+	public void onClose() {
+		if (detail) {
+			showList();
+		} else {
+			super.onClose();
+		}
 	}
 
 	@Override
@@ -185,9 +231,6 @@ public class MarketScreen extends Screen {
 		}
 		out.sort(Comparator.comparing(MarketScreen::name, String.CASE_INSENSITIVE_ORDER));
 		filtered = out;
-		if (selected() == null && !out.isEmpty()) {
-			selectedMaterial = out.get(0).material();
-		}
 		clampScroll();
 	}
 
@@ -235,15 +278,17 @@ public class MarketScreen extends Screen {
 
 	@Override
 	public void render(GuiGraphics g, int mouseX, int mouseY, float delta) {
-		// Hintergründe zuerst, damit die Knöpfe darüber liegen
-		panel(g, listX, listY, listW, listH);
-		panel(g, detailX, detailY, detailW, detailH);
-
-		super.render(g, mouseX, mouseY, delta);
-
-		renderStatus(g);
-		renderList(g, mouseX, mouseY);
-		renderDetail(g, mouseX, mouseY);
+		if (detail) {
+			// Hintergrund zuerst, damit die Zeitraum-Knöpfe darüber liegen
+			panel(g, detailX, detailY, detailW, detailH);
+			super.render(g, mouseX, mouseY, delta);
+			renderStatus(g);
+			renderDetail(g, mouseX, mouseY);
+		} else {
+			super.render(g, mouseX, mouseY, delta);
+			renderStatus(g);
+			renderList(g, mouseX, mouseY);
+		}
 	}
 
 	private void renderStatus(GuiGraphics g) {
@@ -269,43 +314,76 @@ public class MarketScreen extends Screen {
 			return;
 		}
 
-		int innerTop = listY + 1;
-		int innerBottom = listY + listH - 1;
-		boolean scrollbar = contentHeight() > listH - 2;
-		int rowW = listW - 2 - (scrollbar ? 4 : 0);
+		int top = listY;
+		int bottom = listY + listH;
+		boolean scrollbar = contentHeight() > listH;
+		int rowW = listW - (scrollbar ? 6 : 0);
 
-		g.enableScissor(listX + 1, innerTop, listX + listW - 1, innerBottom);
-		int first = Math.max(0, (int) (scroll / ROW_H));
-		for (int i = first; i < filtered.size(); i++) {
-			int ry = innerTop + i * ROW_H - (int) scroll;
-			if (ry > innerBottom) {
+		Listing hoveredListing = null;
+		g.enableScissor(listX, top, listX + listW, bottom);
+		for (int i = Math.max(0, (int) (scroll / ROW_STEP)); i < filtered.size(); i++) {
+			int ry = top + i * ROW_STEP - (int) scroll;
+			if (ry > bottom) {
 				break;
 			}
 			Listing l = filtered.get(i);
-			boolean hovered = mx >= listX && mx < listX + rowW && my >= Math.max(ry, innerTop)
-					&& my < Math.min(ry + ROW_H, innerBottom);
-			if (l.material().equals(selectedMaterial)) {
-				g.fill(listX + 1, ry, listX + 1 + rowW, ry + ROW_H, ROW_SELECTED);
-			} else if (hovered) {
-				g.fill(listX + 1, ry, listX + 1 + rowW, ry + ROW_H, ROW_HOVER);
+			boolean hovered = mx >= listX && mx < listX + rowW && my >= Math.max(ry, top)
+					&& my < Math.min(ry + ROW_H, bottom);
+			if (hovered) {
+				hoveredListing = l;
 			}
-			g.renderItem(stack(l), listX + 3, ry + 1);
 
+			// Knopf: Rahmen + Hintergrund
+			int border = hovered ? ITEM_BORDER_HOVER : ITEM_BORDER;
+			g.fill(listX, ry, listX + rowW, ry + ROW_H, border);
+			g.fill(listX + 1, ry + 1, listX + rowW - 1, ry + ROW_H - 1, hovered ? ITEM_BG_HOVER : ITEM_BG);
+
+			g.renderItem(stack(l), listX + 4, ry + 3);
+
+			// Rechts: günstigstes Angebot (gold) und höchster Kaufauftrag (grün)
 			Side sell = l.entry().sell();
-			String price = sell.available() ? Fmt.compact(sell.price()) + " $" : "–";
-			int priceW = font.width(price);
-			g.drawString(font, price, listX + 1 + rowW - 3 - priceW, ry + 5, sell.available() ? GOLD : FAINT, false);
-			g.drawString(font, ellipsize(name(l), rowW - 26 - priceW - 6), listX + 22, ry + 5, TEXT, false);
+			Side buy = l.entry().buy();
+			String sellText = sell.available() ? Fmt.compact(sell.price()) + " $" : "–";
+			String buyText = buy.available() ? Fmt.compact(buy.price()) + " $" : "–";
+			int sellW = font.width(sellText);
+			int buyW = font.width(buyText);
+			int priceRight = listX + rowW - 6;
+			g.drawString(font, sellText, priceRight - sellW, ry + 7, sell.available() ? GOLD : FAINT, false);
+			g.drawString(font, buyText, priceRight - sellW - 10 - buyW, ry + 7, buy.available() ? GREEN : FAINT, false);
+
+			int nameMax = priceRight - sellW - 10 - buyW - 8 - (listX + 24);
+			g.drawString(font, ellipsize(name(l), nameMax), listX + 24, ry + 7, TEXT, false);
 		}
 		g.disableScissor();
 
 		if (scrollbar) {
-			int trackH = listH - 2;
-			int thumbH = Math.max(12, trackH * trackH / contentHeight());
-			int thumbY = innerTop + (int) ((trackH - thumbH) * (scroll / maxScroll()));
-			g.fill(listX + listW - 4, innerTop, listX + listW - 1, innerBottom, 0x33FFFFFF);
-			g.fill(listX + listW - 4, thumbY, listX + listW - 1, thumbY + thumbH, 0xAAFFFFFF);
+			int thumbH = Math.max(12, listH * listH / contentHeight());
+			int thumbY = top + (int) ((listH - thumbH) * (scroll / maxScroll()));
+			g.fill(listX + listW - 3, top, listX + listW, bottom, 0x33FFFFFF);
+			g.fill(listX + listW - 3, thumbY, listX + listW, thumbY + thumbH, 0xAAFFFFFF);
 		}
+
+		// Tooltip: genaue Preise und Hinweis aufs Diagramm
+		if (hoveredListing != null) {
+			List<FormattedCharSequence> tip = new ArrayList<>();
+			tip.add(Component.literal(name(hoveredListing)).withStyle(ChatFormatting.WHITE).getVisualOrderText());
+			tip.add(priceLine("loothub.tooltip.sell", hoveredListing.entry().sell(), ChatFormatting.GOLD));
+			tip.add(priceLine("loothub.tooltip.buy", hoveredListing.entry().buy(), ChatFormatting.GREEN));
+			tip.add(Component.translatable("loothub.screen.click_for_chart").withStyle(ChatFormatting.DARK_GRAY).getVisualOrderText());
+			g.setTooltipForNextFrame(font, tip, mx, my);
+		}
+	}
+
+	private static FormattedCharSequence priceLine(String labelKey, Side side, ChatFormatting color) {
+		Component value = side.available()
+				? Component.literal(Fmt.money(side.price())).withStyle(color)
+						.append(Component.literal(" · ").withStyle(ChatFormatting.DARK_GRAY))
+						.append(Component.translatable("loothub.tooltip.orders", side.activeOrders()).withStyle(ChatFormatting.DARK_GRAY))
+				: Component.translatable("loothub.tooltip.none").withStyle(ChatFormatting.DARK_GRAY);
+		return Component.translatable(labelKey).withStyle(ChatFormatting.GRAY)
+				.append(Component.literal(": ").withStyle(ChatFormatting.GRAY))
+				.append(value)
+				.getVisualOrderText();
 	}
 
 	private void renderDetail(GuiGraphics g, int mx, int my) {
@@ -569,11 +647,12 @@ public class MarketScreen extends Screen {
 		}
 		double mx = event.x();
 		double my = event.y();
-		if (event.button() == 0 && mx >= listX && mx < listX + listW && my > listY && my < listY + listH - 1) {
-			int index = (int) ((my - listY - 1 + scroll) / ROW_H);
-			if (index >= 0 && index < filtered.size()) {
-				selectedMaterial = filtered.get(index).material();
-				setFocused(null);
+		if (!detail && event.button() == 0 && mx >= listX && mx < listX + listW && my >= listY && my < listY + listH) {
+			double offset = my - listY + scroll;
+			int index = (int) (offset / ROW_STEP);
+			boolean onButton = offset - index * ROW_STEP < ROW_H; // nicht im Spalt zwischen zwei Knöpfen
+			if (onButton && index >= 0 && index < filtered.size()) {
+				showDetail(filtered.get(index));
 				return true;
 			}
 		}
@@ -582,8 +661,8 @@ public class MarketScreen extends Screen {
 
 	@Override
 	public boolean mouseScrolled(double mx, double my, double horizontal, double vertical) {
-		if (mx >= listX && mx < listX + listW && my >= listY && my < listY + listH) {
-			scroll -= vertical * ROW_H * 2;
+		if (!detail && mx >= listX && mx < listX + listW && my >= listY && my < listY + listH) {
+			scroll -= vertical * ROW_STEP * 2;
 			clampScroll();
 			return true;
 		}
@@ -598,15 +677,15 @@ public class MarketScreen extends Screen {
 	// ------------------------------------------------------------------ Hilfen
 
 	private int contentHeight() {
-		return filtered.size() * ROW_H;
+		return filtered.isEmpty() ? 0 : filtered.size() * ROW_STEP - (ROW_STEP - ROW_H);
 	}
 
 	private double maxScroll() {
-		return Math.max(1, contentHeight() - (listH - 2));
+		return Math.max(1, contentHeight() - listH);
 	}
 
 	private void clampScroll() {
-		scroll = Mth.clamp(scroll, 0, Math.max(0, contentHeight() - (listH - 2)));
+		scroll = Mth.clamp(scroll, 0, Math.max(0, contentHeight() - listH));
 	}
 
 	private String ellipsize(String s, int maxWidth) {

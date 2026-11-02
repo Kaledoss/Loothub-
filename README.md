@@ -21,12 +21,14 @@ Marktplatz
 
 ### Reiter „Markt“
 
-- **Links:** alle Items vom Marktplatz mit aktuellem Angebotspreis, Suchfeld und Kategorie-Filter.
-- **Rechts:** aktuelle Kaufaufträge/Angebote und ein Preisdiagramm für Stunden, Tage, Wochen oder Monate.
+- **In der Bildschirmmitte:** alle Items vom Marktplatz als Knöpfe – Name, höchster Kaufauftrag (grün) und
+  günstigstes Angebot (gold). Darüber Suchfeld und Kategorie-Filter. Maus drüber zeigt die genauen Preise.
+- **Klick auf ein Item** öffnet seine Preise und das Diagramm für Stunden, Tage, Wochen oder Monate:
   - **Goldene Linie:** Durchschnittspreis
   - **Blaue Balken:** Spanne vom Tiefst- bis zum Höchstpreis je Zeitabschnitt
   - **Grüner/roter Punkt:** Hoch und Tief im gewählten Zeitraum, oben zusätzlich die Veränderung in Prozent
   - Maus über das Diagramm → Details (Ø, Hoch, Tief, gehandelte Stück, Transaktionen)
+- **„← Zurück“** oder **Esc** führt zurück zur Item-Liste.
 
 ### Reiter „Job-Widget“
 

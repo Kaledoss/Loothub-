@@ -69,5 +69,7 @@
 	"loothub.history.col.time": "Active",
 	"loothub.history.empty": "No job sessions yet – enable the display with /job toggle",
 	"loothub.history.live": "(running)",
-	"loothub.history.tip.active": "Active time: %s"
+	"loothub.history.tip.active": "Active time: %s",
+	"loothub.screen.back": "← Back",
+	"loothub.screen.click_for_chart": "Click for the price history"
 }
