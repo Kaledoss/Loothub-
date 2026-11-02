@@ -51,13 +51,13 @@ public final class StatsTracker {
 	// ------------------------------------------------------------------ Ereignisse
 
 	public static void onBlockBroken(BlockState state) {
-		if (tracking(Minecraft.getInstance())) {
+		if (tracking(Minecraft.getInstance()) && isRealBlock(state.getBlock())) {
 			StatsStore.add("mined." + BuiltInRegistries.BLOCK.getKey(state.getBlock()), 1);
 		}
 	}
 
 	public static void onBlockPlaced(Block block) {
-		if (tracking(Minecraft.getInstance())) {
+		if (tracking(Minecraft.getInstance()) && isRealBlock(block)) {
 			StatsStore.add("placed." + BuiltInRegistries.BLOCK.getKey(block), 1);
 		}
 	}
@@ -66,6 +66,14 @@ public final class StatsTracker {
 		if (tracking(Minecraft.getInstance())) {
 			StatsStore.add("picked." + BuiltInRegistries.ITEM.getKey(item), Math.max(1, amount));
 		}
+	}
+
+	/**
+	 * Nur „echte“ Blöcke zählen: Pflanzen und Ähnliches, das man einfach überbauen kann (Gras, hohes Gras, Farn,
+	 * toter Busch, Seegras, Ranken, Schneeschicht …), gehört nicht in die Block-Statistik.
+	 */
+	public static boolean isRealBlock(Block block) {
+		return !block.defaultBlockState().canBeReplaced();
 	}
 
 	/** Treffer auf ein Lebewesen merken: für ausgeteilten Schaden und Kills. */

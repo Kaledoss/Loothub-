@@ -215,6 +215,9 @@ public class StatsScreen extends LoothubScreen {
 		String q = search.toLowerCase(Locale.ROOT).strip();
 		List<Row> out = new ArrayList<>();
 		for (Map.Entry<String, long[]> e : byId.entrySet()) {
+			if (kind == Kind.BLOCK && !isRealBlock(e.getKey())) {
+				continue;
+			}
 			String name = name(e.getKey(), kind);
 			if (!q.isEmpty() && !name.toLowerCase(Locale.ROOT).contains(q) && !e.getKey().contains(q.replace(' ', '_'))) {
 				continue;
@@ -232,13 +235,22 @@ public class StatsScreen extends LoothubScreen {
 	}
 
 	private long total(String prefix) {
+		boolean blocks = prefix.equals("mined.") || prefix.equals("placed.");
 		long sum = 0;
 		for (Map.Entry<String, Long> e : sums.entrySet()) {
-			if (e.getKey().startsWith(prefix)) {
+			if (e.getKey().startsWith(prefix)
+					&& (!blocks || isRealBlock(e.getKey().substring(prefix.length())))) {
 				sum += e.getValue();
 			}
 		}
 		return sum;
+	}
+
+	/** Für ältere Einträge: Pflanzen wie Gras nicht als Block zählen. */
+	private static boolean isRealBlock(String id) {
+		Identifier identifier = Identifier.tryParse(id);
+		Block block = identifier == null ? null : BuiltInRegistries.BLOCK.getOptional(identifier).orElse(null);
+		return block == null || StatsTracker.isRealBlock(block);
 	}
 
 	private long get(String key) {
