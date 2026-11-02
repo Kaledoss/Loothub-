@@ -29,6 +29,7 @@ import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
 
 import de.loothub.client.Fmt;
+import de.loothub.client.LoothubScreen;
 import de.loothub.client.Tabs;
 
 /**

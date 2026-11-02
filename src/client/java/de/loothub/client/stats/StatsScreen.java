@@ -25,6 +25,7 @@ import net.minecraft.world.item.Items;
 import net.minecraft.world.level.block.Block;
 
 import de.loothub.client.Fmt;
+import de.loothub.client.LoothubScreen;
 import de.loothub.client.Tabs;
 import de.loothub.client.stats.StatsStore.Range;
 
