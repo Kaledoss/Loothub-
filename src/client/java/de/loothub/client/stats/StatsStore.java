@@ -83,6 +83,38 @@ public final class StatsStore {
 		return out;
 	}
 
+	/** Erster Tag mit gezählten Werten, oder null, wenn noch nichts gezählt wurde. */
+	public static synchronized LocalDate firstDay() {
+		ensureLoaded();
+		LocalDate first = null;
+		for (String key : days.keySet()) {
+			try {
+				LocalDate d = LocalDate.parse(key);
+				if (first == null || d.isBefore(first)) {
+					first = d;
+				}
+			} catch (RuntimeException ignored) {
+				// ungültiger Eintrag
+			}
+		}
+		return first;
+	}
+
+	/** Ab welchem Tag der Zeitraum zählt – frühestens ab dem ersten gezählten Tag. Null ohne Daten. */
+	public static synchronized LocalDate since(Range range) {
+		LocalDate first = firstDay();
+		if (first == null) {
+			return null;
+		}
+		LocalDate today = LocalDate.now();
+		LocalDate from = switch (range) {
+			case TODAY -> today;
+			case WEEK -> today.minusDays(6);
+			case TOTAL -> first;
+		};
+		return from.isBefore(first) ? first : from;
+	}
+
 	public static synchronized void clear() {
 		ensureLoaded();
 		days.clear();

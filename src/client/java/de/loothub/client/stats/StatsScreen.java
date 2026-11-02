@@ -71,6 +71,7 @@ public class StatsScreen extends LoothubScreen {
 	private static final Map<String, String> NAMES = new HashMap<>();
 
 	private Button clearButton;
+	private int sinceY;
 	private long clearArmedUntil;
 	private final List<Button> categoryButtons = new ArrayList<>();
 	private final List<Button> rangeButtons = new ArrayList<>();
@@ -123,6 +124,7 @@ public class StatsScreen extends LoothubScreen {
 		updateToggleButtons();
 
 		int y2 = y + 20;
+		sinceY = y2;
 		if (category != Category.GENERAL) {
 			EditBox box = new EditBox(font, cl, y2, Math.min(220, cw / 2), 16, Component.translatable("loothub.screen.search"));
 			box.setHint(Component.translatable("loothub.screen.search_hint").withStyle(ChatFormatting.DARK_GRAY));
@@ -286,11 +288,27 @@ public class StatsScreen extends LoothubScreen {
 	public void render(GuiGraphics g, int mouseX, int mouseY, float delta) {
 		panel(g, tableX, tableY, tableW, tableH);
 		super.render(g, mouseX, mouseY, delta);
+		renderSince(g);
 		if (category == Category.GENERAL) {
 			renderGeneral(g);
 		} else {
 			renderTable(g, mouseX, mouseY);
 		}
+	}
+
+	/** „Gezählt seit …“ links neben „Statistik löschen“, passend zum gewählten Zeitraum. */
+	private void renderSince(GuiGraphics g) {
+		java.time.LocalDate since = StatsStore.since(range);
+		Component text;
+		if (since == null) {
+			text = Component.translatable("loothub.stats.since.none");
+		} else {
+			long days = java.time.temporal.ChronoUnit.DAYS.between(since, java.time.LocalDate.now()) + 1;
+			String date = since.format(java.time.format.DateTimeFormatter.ofPattern("dd.MM.yyyy"));
+			text = Component.translatable(days == 1 ? "loothub.stats.since.one" : "loothub.stats.since", date, days);
+		}
+		int x = clearButton.getX() - 8 - font.width(text);
+		g.drawString(font, text, x, sinceY + 4, MUTED, false);
 	}
 
 	private void renderGeneral(GuiGraphics g) {
