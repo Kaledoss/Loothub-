@@ -89,7 +89,7 @@ Level-Up in: ~38 Min.
 - In den Einstellungen (**/loothub**): Widget ein-/ausschalten, **Position ändern** (mit der Maus ziehen),
   Job-Sitzung zurücksetzen.
   Die Position wird in `config/loothub.json` gespeichert.
-- Nur aktive Zeit zählt: mehr als 15 s ohne Job-Aktion gilt als Pause und verfälscht die Stundenwerte nicht.
+- Nur aktive Zeit zählt: mehr als 60 s ohne Job-Aktion gilt als Pause und verfälscht die Stundenwerte nicht.
   Nach 10 Minuten ohne Aktion oder beim Verlassen des Servers beginnt eine neue Sitzung.
 - Das Widget erscheint erst nach der ersten erkannten Job-Aktion.
 

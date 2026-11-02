@@ -58,7 +58,7 @@
 	"loothub.history.col.time": "Aktiv",
 	"loothub.history.empty": "Noch keine Job-Sitzungen – Anzeige mit /job toggle einschalten",
 	"loothub.history.live": "(läuft)",
-	"loothub.history.tip.active": "Aktive Zeit: %s",
+	"loothub.history.tip.active": "Aktive Zeit: %s (Dauer gesamt: %s)",
 	"loothub.screen.back": "← Zurück",
 	"loothub.screen.click_for_chart": "Klicken für den Preisverlauf",
 	"loothub.history.period.hourly": "Stündlich",

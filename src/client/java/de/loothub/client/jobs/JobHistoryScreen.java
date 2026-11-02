@@ -800,8 +800,8 @@ public class JobHistoryScreen extends LoothubScreen {
 	private List<FormattedCharSequence> tooltip(JobHistory.Session s) {
 		List<FormattedCharSequence> tip = new ArrayList<>();
 		tip.add(Component.literal(Fmt.date(s.start, true) + " – " + Fmt.time(s.end)).withStyle(ChatFormatting.WHITE).getVisualOrderText());
-		tip.add(Component.translatable("loothub.history.tip.active", Fmt.duration(s.activeMs))
-				.withStyle(ChatFormatting.GRAY).getVisualOrderText());
+		tip.add(Component.translatable("loothub.history.tip.active", Fmt.duration(s.activeMs),
+				Fmt.duration(Math.max(0, s.end - s.start))).withStyle(ChatFormatting.GRAY).getVisualOrderText());
 		for (JobHistory.JobEntry j : s.jobs) {
 			tip.add(Component.literal(info(j.job).name()).withStyle(st -> st.withColor(info(j.job).color() & 0xFFFFFF))
 					.append(Component.literal(": +" + Fmt.compact(j.xp) + " XP · +" + Fmt.money(j.money)).withStyle(ChatFormatting.WHITE))

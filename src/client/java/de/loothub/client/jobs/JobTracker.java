@@ -13,7 +13,8 @@ import de.loothub.Loothub;
  * des Servers beginnt eine neue Sitzung.
  */
 public final class JobTracker {
-	public static final long PAUSE_AFTER_MS = 15_000;
+	/** Längere Lücken zwischen zwei Job-Aktionen gelten als Pause (60 s – manche Jobs zahlen nur alle 20–40 s). */
+	public static final long PAUSE_AFTER_MS = 60_000;
 	public static final long SESSION_TIMEOUT_MS = 10 * 60_000;
 	/** Unter dieser aktiven Zeit sind Stundenwerte zu ungenau und werden nicht angezeigt. */
 	private static final long MIN_ACTIVE_FOR_RATES_MS = 20_000;
