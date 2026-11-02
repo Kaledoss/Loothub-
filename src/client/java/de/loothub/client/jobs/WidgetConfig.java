@@ -59,7 +59,7 @@ public final class WidgetConfig {
 	/** Knöpfe der Befehls-Leiste (Beschriftung + Befehl). */
 	public java.util.List<de.loothub.client.quick.QuickCommand> quickCommands = de.loothub.client.quick.QuickCommand.defaults();
 	/** Stand der Standard-Knöpfe; ältere Einstellungen bekommen neue Knöpfe hinten angehängt. */
-	public int quickCommandsVersion = de.loothub.client.quick.QuickCommand.DEFAULTS_VERSION;
+	public int quickCommandsVersion = 0; // fehlt in alten Dateien → 0, damit neue Knöpfe ergänzt werden
 	/** Ausgeblendete Zeilen des Job-Widgets (IDs aus {@link JobWidget#ROW_IDS}). */
 	public java.util.List<String> jobWidgetHiddenRows = new java.util.ArrayList<>();
 	public double jobWidgetX = 0.0;

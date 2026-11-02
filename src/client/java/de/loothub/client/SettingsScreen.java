@@ -44,7 +44,7 @@ public class SettingsScreen extends LoothubScreen {
 	}
 
 	/** Kästchen für eine Zeile des Job-Widgets. */
-	private record Check(int x, int y, int w, String id) {
+	private record Check(int x, int y, int w, String label, BooleanSupplier get, Consumer<Boolean> set) {
 		boolean contains(double mx, double my) {
 			return mx >= x && mx < x + w && my >= y - 1 && my < y + 10;
 		}
@@ -94,6 +94,19 @@ public class SettingsScreen extends LoothubScreen {
 
 		y = card(y, 40, "loothub.settings.quick_panel", "loothub.settings.quick_panel.tooltip",
 				() -> c.quickPanelEnabled, v -> c.quickPanelEnabled = v);
+		// Knöpfe der Befehls-Leiste einzeln an/aus
+		List<de.loothub.client.quick.QuickCommand> qcs = c.quickCommands == null ? List.of() : c.quickCommands;
+		int qCols = 4;
+		int qRows = Math.max(1, (qcs.size() + qCols - 1) / qCols);
+		int qDescX = cl + labelW + 12;
+		int qColW = (cr - 8 - qDescX) / qCols;
+		for (int i = 0; i < qcs.size(); i++) {
+			de.loothub.client.quick.QuickCommand q = qcs.get(i);
+			String label = q.label == null || q.label.isBlank() ? "/" + q.command : q.label;
+			checks.add(new Check(qDescX + (i % qCols) * qColW, y + 22 + (i / qCols) * 14, qColW - 4, label,
+					() -> !q.hidden, v -> q.hidden = !v));
+		}
+		y = cardNoToggle(y, 28 + qRows * 14, "loothub.settings.quick_buttons", "loothub.settings.quick_buttons.tooltip");
 		y = card(y, 40, "loothub.settings.pulse", "loothub.settings.pulse.tooltip",
 				() -> c.pulseBorders, v -> c.pulseBorders = v);
 		y = card(y, 40, "loothub.settings.sell_highlight", "loothub.settings.sell_highlight.tooltip",
@@ -123,7 +136,9 @@ public class SettingsScreen extends LoothubScreen {
 		for (int i = 0; i < ids.size(); i++) {
 			int col = i % perRow;
 			int row = i / perRow;
-			checks.add(new Check(descX + col * colW, jobY + 60 + row * 14, colW - 4, ids.get(i)));
+			String id = ids.get(i);
+			checks.add(new Check(descX + col * colW, jobY + 60 + row * 14, colW - 4, rowLabel(id),
+					() -> c.jobRowVisible(id), v -> c.setJobRowVisible(id, v)));
 		}
 
 		// Pokémon Community Game (Twitch): Schalter, Kanal, Twitch-Name, Token-Datei
@@ -208,6 +223,12 @@ public class SettingsScreen extends LoothubScreen {
 		return s.endsWith(":") ? s.substring(0, s.length() - 1) : s;
 	}
 
+	/** Karte ohne eigenen Schalter (Schalter liegen als Kästchen in der Karte). */
+	private int cardNoToggle(int y, int h, String titleKey, String descKey) {
+		cards.add(new Card(y, h, titleKey, descKey, null));
+		return y + h + GAP;
+	}
+
 	private int card(int y, int h, String titleKey, String descKey, BooleanSupplier get, Consumer<Boolean> set) {
 		int tx = cl + 8 + (labelW - Toggle.W) / 2;
 		Toggle t = new Toggle(tx, y + 20, get, set);
@@ -252,7 +273,9 @@ public class SettingsScreen extends LoothubScreen {
 		for (Card card : cards) {
 			Component title = Component.translatable(card.titleKey());
 			g.drawString(font, title, cl + 8 + (labelW - font.width(title)) / 2, card.y() + 6, TEXT, false);
-			drawToggle(g, card.toggle(), mouseX, mouseY);
+			if (card.toggle() != null) {
+				drawToggle(g, card.toggle(), mouseX, mouseY);
+			}
 
 			int descX = cl + labelW + 12;
 			int y = card.y() + 6;
@@ -265,16 +288,15 @@ public class SettingsScreen extends LoothubScreen {
 		// Zeilen des Job-Widgets
 		Component rowsTitle = Component.translatable("loothub.settings.job_widget.rows");
 		g.drawString(font, rowsTitle, cl + 8 + (labelW - font.width(rowsTitle)) / 2, rowsLabelY + 7, TEXT, false);
-		WidgetConfig c = WidgetConfig.get();
 		for (Check ch : checks) {
-			boolean on = c.jobRowVisible(ch.id());
+			boolean on = ch.get().getAsBoolean();
 			boolean hover = ch.contains(mouseX, mouseY) && mouseY >= ct && mouseY < cb;
 			g.fill(ch.x(), ch.y(), ch.x() + 9, ch.y() + 9, hover ? 0xFFFFFFFF : 0xFF000000);
 			g.fill(ch.x() + 1, ch.y() + 1, ch.x() + 8, ch.y() + 8, on ? RED : TRACK_OFF);
 			if (on) {
 				g.fill(ch.x() + 3, ch.y() + 3, ch.x() + 6, ch.y() + 6, 0xFFE8E0E0);
 			}
-			g.drawString(font, rowLabel(ch.id()), ch.x() + 12, ch.y() + 1, on ? TEXT : FAINT, false);
+			g.drawString(font, ch.label(), ch.x() + 12, ch.y() + 1, on ? TEXT : FAINT, false);
 		}
 		// Pokémon Community Game: Feldbeschriftungen und Status
 		g.drawString(font, Component.translatable("loothub.settings.pcg.channel"), pcgFieldX, pcgLabelY, MUTED, false);
@@ -368,15 +390,14 @@ public class SettingsScreen extends LoothubScreen {
 		if (event.button() == 0 && event.y() >= ct && event.y() < cb) {
 			for (Check ch : checks) {
 				if (ch.contains(event.x(), event.y())) {
-					WidgetConfig c = WidgetConfig.get();
-					c.setJobRowVisible(ch.id(), !c.jobRowVisible(ch.id()));
-					c.save();
+					ch.set().accept(!ch.get().getAsBoolean());
+					WidgetConfig.get().save();
 					return true;
 				}
 			}
 			for (Card card : cards) {
 				Toggle t = card.toggle();
-				if (t.contains(event.x(), event.y())) {
+				if (t != null && t.contains(event.x(), event.y())) {
 					t.set().accept(!t.get().getAsBoolean());
 					WidgetConfig.get().save();
 					return true;

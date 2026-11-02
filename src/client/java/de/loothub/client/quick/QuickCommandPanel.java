@@ -110,9 +110,19 @@ public final class QuickCommandPanel {
 			this.screen = screen;
 		}
 
+		/** Nur die eingeschalteten Knöpfe, in gespeicherter Reihenfolge. */
 		private List<QuickCommand> commands() {
 			List<QuickCommand> list = WidgetConfig.get().quickCommands;
-			return list == null ? List.of() : list;
+			if (list == null) {
+				return List.of();
+			}
+			List<QuickCommand> visible = new java.util.ArrayList<>();
+			for (QuickCommand q : list) {
+				if (!q.hidden) {
+					visible.add(q);
+				}
+			}
+			return visible;
 		}
 
 		/** Position berechnen: Standard unter dem Inventar + gespeicherte Verschiebung. */
@@ -244,9 +254,15 @@ public final class QuickCommandPanel {
 						run(list.get(pressedIndex).command);
 					}
 				} else if (pressedIndex < list.size()) {
+					// In der sichtbaren Liste verschieben und auf die volle Liste (mit ausgeblendeten) übertragen
 					int target = slotAt(e.x(), e.y());
 					QuickCommand moved = list.remove(pressedIndex);
-					list.add(Math.min(target, list.size()), moved);
+					target = Math.min(target, list.size());
+					QuickCommand before = target < list.size() ? list.get(target) : null;
+					List<QuickCommand> all = WidgetConfig.get().quickCommands;
+					all.remove(moved);
+					int idx = before == null ? all.size() : all.indexOf(before);
+					all.add(idx < 0 ? all.size() : idx, moved);
 					WidgetConfig.get().save();
 				}
 			} else if (mode == Mode.MOVE) {

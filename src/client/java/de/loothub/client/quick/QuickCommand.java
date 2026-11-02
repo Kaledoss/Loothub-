@@ -12,11 +12,13 @@ public final class QuickCommand {
 	/** Kein Server-Befehl: öffnet die Loothub+-Seite „Wertstoffhändler“. */
 	public static final String MERCHANT = "loothub:merchant";
 	/** Mit jeder Version neu hinzugekommene Standard-Knöpfe (für bestehende Einstellungen). */
-	public static final int DEFAULTS_VERSION = 2;
+	public static final int DEFAULTS_VERSION = 3;
 
 	public String label;
 	public String command;
 	public String icon;
+	/** In den Einstellungen ausgeblendet. */
+	public boolean hidden;
 
 	public QuickCommand() {
 	}
