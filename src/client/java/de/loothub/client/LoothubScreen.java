@@ -183,11 +183,12 @@ public abstract class LoothubScreen extends Screen {
 		int hx = cl - 4;
 		g.fill(hx, frameY + TITLE_H + 4, cr + 4, cb + 4, CONTENT_BG);
 		Component pageTitle = Component.translatable(page.translationKey + ".header");
-		g.drawString(font, pageTitle, cl, frameY + TITLE_H + 8, TEXT, false);
-		g.fill(cl, ct - 5, cr, ct - 4, FRAME_EDGE);
+		// Überschrift oben, Trennlinie darunter (nicht durch die Schrift)
+		g.drawString(font, pageTitle, cl, frameY + TITLE_H + 5, TEXT, false);
+		g.fill(cl, ct - 3, cr, ct - 2, FRAME_EDGE);
 		Component right = headerRight();
 		if (right != null) {
-			g.drawString(font, right, cr - font.width(right), frameY + TITLE_H + 8, FAINT, false);
+			g.drawString(font, right, cr - font.width(right), frameY + TITLE_H + 5, FAINT, false);
 		}
 	}
 
