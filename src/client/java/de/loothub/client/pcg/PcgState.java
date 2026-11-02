@@ -28,7 +28,12 @@ public final class PcgState {
 		}
 	}
 
+	/** Abstand zwischen zwei Spawns (laut Spiel alle 15 Minuten). */
+	public static final long SPAWN_INTERVAL_MS = 15 * 60_000L;
+
 	private static volatile Spawn current;
+	/** Beginn des letzten erkannten Spawns, 0 = noch keiner gesehen. */
+	private static volatile long lastSpawnStart;
 
 	private PcgState() {
 	}
@@ -61,6 +66,7 @@ public final class PcgState {
 			}
 			long now = System.currentTimeMillis();
 			current = new Spawn(name, now, now + window, null, 0);
+			lastSpawnStart = now;
 			Minecraft mc = Minecraft.getInstance();
 			mc.execute(() -> mc.getSoundManager().play(SimpleSoundInstance.forUI(SoundEvents.NOTE_BLOCK_PLING, 1.6f)));
 			return;
@@ -80,6 +86,24 @@ public final class PcgState {
 			long now = System.currentTimeMillis();
 			current = new Spawn(s.name(), s.start(), now, result, now + RESULT_MS);
 		}
+	}
+
+	/**
+	 * Millisekunden bis zum nächsten Spawn: -1, solange noch kein Spawn gesehen wurde,
+	 * 0, wenn er überfällig ist (kommt gleich).
+	 */
+	public static long untilNextMs() {
+		long last = lastSpawnStart;
+		if (last == 0) {
+			return -1;
+		}
+		long now = System.currentTimeMillis();
+		long next = last + SPAWN_INTERVAL_MS;
+		// Verpasste Spawns (z. B. Spiel war zu) überspringen, solange mehr als ein Intervall vergangen ist
+		while (next + 60_000 < now && now - next > SPAWN_INTERVAL_MS) {
+			next += SPAWN_INTERVAL_MS;
+		}
+		return Math.max(0, next - now);
 	}
 
 	private static String clean(String name) {

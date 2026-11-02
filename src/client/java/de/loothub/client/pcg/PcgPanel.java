@@ -82,14 +82,18 @@ public final class PcgPanel {
 		if (spawn != null && spawn.result() == null) {
 			return spawn.name() + " · " + Fmt.clock(spawn.remainingMs());
 		}
-		return "Kein Pokémon";
+		long next = PcgState.untilNextMs();
+		if (next < 0) {
+			return "Nächstes: warte auf Spawn";
+		}
+		return next == 0 ? "Nächstes: gleich" : "Nächstes in " + Fmt.clock(next);
 	}
 
 	private static int panelW(Font font) {
 		int buttons = 2 * PAD + 6 * BTN + 4 * GAP + SEP;
 		// Breite ohne die laufende Uhr berechnen, damit die Leiste nicht im Sekundentakt zappelt
 		PcgState.Spawn spawn = PcgState.current();
-		String sample = spawn != null && spawn.result() == null ? spawn.name() + " · 00:00" : "Kein Pokémon";
+		String sample = spawn != null && spawn.result() == null ? spawn.name() + " · 00:00" : "Nächstes: warte auf Spawn";
 		int head = 2 * PAD + font.width("⠿ " + sample) + 8 + font.width("Verbinde …") + 8 + lockW(font);
 		return Math.max(buttons, head);
 	}
@@ -137,7 +141,7 @@ public final class PcgPanel {
 		PcgState.Spawn spawn = PcgState.current();
 		boolean active = spawn != null && spawn.result() == null;
 		String head = (locked ? "" : "⠿ ") + headText();
-		g.drawString(font, head, x + PAD, y + 3, active ? 0xFFFFD66B : LoothubScreen.FAINT, false);
+		g.drawString(font, head, x + PAD, y + 3, active ? 0xFFFFD66B : 0xFFB9A9AB, false);
 
 		int lx = x + w - PAD - 9;
 		boolean lockHover = onLock(x, y, w, font, mx, my);
