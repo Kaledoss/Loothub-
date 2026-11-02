@@ -66,7 +66,8 @@ zusätzlich abbaut (z. B. Timber-Axt), und Items, die direkt ins Inventar gelegt
 Loothub+ bringt ein eingebautes Ressourcenpaket **„Loothub+ Inventar (Schwarz-Rot)“** mit, das das
 Spieler-Inventar (Taste E) samt Rezeptbuch und Effekt-Kästchen passend zum Loothub+-Fenster färbt. Statt „Handwerk“ steht oben „Loothub+“. Rechts neben dem Rezeptbuch-Knopf sitzen zwei feste
 Knöpfe: **Werkbank** (`/werkbank`) und **Amboss** (`/anvil`). Es ist automatisch aktiv und lässt sich unter
-**Optionen → Ressourcenpakete** ausschalten. Rein optisch (Regelwerk §5.10.3).
+**Optionen → Ressourcenpakete** ausschalten. Rein optisch (Regelwerk §5.10.3). Um Inventar, Rezeptbuch und
+Befehls-Leiste pulsiert ein roter Rand (in den Einstellungen abschaltbar).
 
 ## Befehls-Leiste im Inventar
 

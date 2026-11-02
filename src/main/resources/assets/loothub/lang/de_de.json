@@ -150,5 +150,7 @@
 	"loothub.history.kpi.session": "%s Sitzung",
 	"loothub.settings.quick_panel": "Befehls-Leiste",
 	"loothub.settings.quick_panel.tooltip": "Zeigt unter dem Inventar (Taste E) Knöpfe für wichtige Befehle. Knöpfe per Ziehen umsortieren, das Feld an der Kopfleiste verschieben; „Sperren“ hält alles fest.",
-	"loothub.quick.lock": "Sperren"
+	"loothub.quick.lock": "Sperren",
+	"loothub.settings.pulse": "Pulsierende Ränder",
+	"loothub.settings.pulse.tooltip": "Lässt die roten Ränder um Inventar, Rezeptbuch und Befehls-Leiste langsam pulsieren. Aus: fester dunkelroter Rand."
 }

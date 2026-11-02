@@ -50,6 +50,13 @@ public final class InventoryTitle {
 				int left = acc.loothub$leftPos();
 				int top = acc.loothub$topPos();
 				Font font = Minecraft.getInstance().font;
+				// Pulsierender Rand um Inventar und – falls offen – Rezeptbuch (liegt 149 px links, 147×166 groß)
+				int imgW = acc.loothub$imageWidth();
+				int imgH = acc.loothub$imageHeight();
+				Pulse.outline(g, left, top, imgW, imgH);
+				if (left > (s.width - imgW) / 2 + 10) {
+					Pulse.outline(g, left - 149, top, 147, 166);
+				}
 				g.fill(left + X1, top + Y1, left + X2, top + Y2, 0xFFCEBABE);
 				g.fill(left + X1, top + Y2, left + X2, top + Y2 + 1, LoothubScreen.RED);
 				g.drawString(font, "Loothub+", left + 97, top + 6, LoothubScreen.RED_DARK, false);

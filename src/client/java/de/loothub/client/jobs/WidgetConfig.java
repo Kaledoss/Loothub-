@@ -32,6 +32,8 @@ public final class WidgetConfig {
 	public boolean updateCheck = true;
 	/** Befehls-Leiste unter dem Inventar anzeigen. */
 	public boolean quickPanelEnabled = true;
+	/** Rote Ränder um Inventar, Rezeptbuch und Befehls-Leiste pulsieren lassen. */
+	public boolean pulseBorders = true;
 	/** Befehls-Leiste gesperrt: Knöpfe und Feld lassen sich nicht verschieben. */
 	public boolean quickPanelLocked = false;
 	/** Verschiebung des Feldes gegenüber der Standardposition unter dem Inventar. */

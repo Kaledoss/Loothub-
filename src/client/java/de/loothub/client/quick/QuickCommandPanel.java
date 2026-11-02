@@ -260,8 +260,8 @@ public final class QuickCommandPanel {
 			Font font = Minecraft.getInstance().font;
 			boolean locked = WidgetConfig.get().quickPanelLocked;
 
-			g.fill(x - 1, y - 1, x + w + 1, y + h + 1, LoothubScreen.RED_DARK);
 			g.fill(x, y, x + w, y + h, PANEL_BG);
+			Pulse.outline(g, x, y, w, h);
 
 			// Kopfleiste: Griff zum Verschieben, rechts das Häkchen „Sperren“
 			boolean headerHover = !locked && mx >= x && mx < x + w && my >= y && my < y + HEADER_H && !onLock(mx, my);
