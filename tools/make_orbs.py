@@ -4,7 +4,7 @@ from PIL import Image
 
 out = sys.argv[1]
 os.makedirs(out, exist_ok=True)
-COLORS = {"orb_red": (214, 52, 52), "orb_blue": (60, 120, 220), "orb_gold": (232, 186, 48)}
+COLORS = {"orb_red": (214, 52, 52), "orb_blue": (60, 120, 220), "orb_gold": (232, 186, 48), "orb_green": (60, 190, 110)}
 for name, (r, g, b) in COLORS.items():
     img = Image.new("RGBA", (16, 16), (0, 0, 0, 0))
     cx = cy = 7.5

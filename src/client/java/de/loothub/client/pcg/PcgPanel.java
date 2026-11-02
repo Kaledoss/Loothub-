@@ -39,6 +39,11 @@ public final class PcgPanel {
 			new Ball("Superball", "greatball", tex("orb_blue")),
 			new Ball("Hyperball", "ultraball", tex("orb_gold")));
 	private static final int BUY_AMOUNT = 10;
+	/** 0–2 Standardbälle werfen, 3 Sonderball werfen, 4–6 Standardbälle kaufen. */
+	private static final int SPECIAL = 3;
+	private static final int FIRST_BUY = 4;
+	private static final int COUNT = 7;
+	private static final Identifier SPECIAL_ICON = tex("orb_green");
 
 	private static final int BTN = 22;
 	private static final int GAP = 3;
@@ -92,7 +97,7 @@ public final class PcgPanel {
 	}
 
 	private static int panelW(Font font) {
-		int buttons = 2 * PAD + 6 * BTN + 4 * GAP + SEP;
+		int buttons = 2 * PAD + COUNT * BTN + (COUNT - 2) * GAP + SEP;
 		// Breite ohne die laufende Uhr berechnen, damit die Leiste nicht im Sekundentakt zappelt
 		PcgState.Spawn spawn = PcgState.current();
 		String sample = spawn != null && spawn.result() == null ? GermanNames.of(spawn.name()) + " · 00:00" : "Nächstes: warte auf Spawn";
@@ -120,9 +125,9 @@ public final class PcgPanel {
 		return new int[]{x, y, defX, defY};
 	}
 
-	/** Knopf i: 0–2 werfen, 3–5 kaufen. */
+	/** Knopf i: 0–3 werfen (3 = Sonderball), 4–6 kaufen. */
 	private static int buttonX(int ox, int i) {
-		return ox + PAD + i * (BTN + GAP) + (i >= 3 ? SEP - GAP : 0);
+		return ox + PAD + i * (BTN + GAP) + (i >= FIRST_BUY ? SEP - GAP : 0);
 	}
 
 	private static boolean onLock(int x, int y, int w, Font font, double mx, double my) {
@@ -163,17 +168,27 @@ public final class PcgPanel {
 		}
 		boolean ok = TwitchChat.canWrite();
 		int by = y + HEADER_H;
-		for (int i = 0; i < 6; i++) {
-			Ball b = BALLS.get(i % 3);
-			boolean buy = i >= 3;
+		GermanNames.Special special = active ? GermanNames.specialBall(spawn.name()) : null;
+		for (int i = 0; i < COUNT; i++) {
+			boolean isSpecial = i == SPECIAL;
+			Ball b = isSpecial ? null : BALLS.get(i >= FIRST_BUY ? i - FIRST_BUY : i);
+			boolean buy = i >= FIRST_BUY;
 			int bx = buttonX(x, i);
 			boolean hover = !moving && mx >= bx && mx < bx + BTN && my >= by && my < by + BTN;
 			boolean armed = buy && armedBuy == i;
-			boolean recommended = !buy && active && GermanNames.recommendedBall(spawn.name()) == i;
-			int edge = armed ? 0xFFFF5050 : recommended ? 0xFFFFD040 : hover ? LoothubScreen.RED : BTN_EDGE;
+			boolean recommended = !buy && !isSpecial && active && GermanNames.recommendedBall(spawn.name()) == i;
+			boolean usable = !isSpecial || special != null;
+			int edge = armed ? 0xFFFF5050 : recommended || (isSpecial && special != null) ? 0xFFFFD040
+					: hover && usable ? LoothubScreen.RED : BTN_EDGE;
 			g.fill(bx, by, bx + BTN, by + BTN, edge);
-			g.fill(bx + 1, by + 1, bx + BTN - 1, by + BTN - 1, hover ? BTN_BG_HOVER : BTN_BG);
-			g.blit(RenderPipelines.GUI_TEXTURED, b.icon(), bx + 3, by + 3, 0f, 0f, 16, 16, 16, 16, 16, 16);
+			g.fill(bx + 1, by + 1, bx + BTN - 1, by + BTN - 1, hover && usable ? BTN_BG_HOVER : BTN_BG);
+			g.blit(RenderPipelines.GUI_TEXTURED, isSpecial ? SPECIAL_ICON : b.icon(), bx + 3, by + 3, 0f, 0f, 16, 16, 16, 16, 16, 16);
+			if (isSpecial) {
+				g.drawString(font, "★", bx + BTN - 8, by + BTN - 9, 0xFFFFD040, true);
+				if (special == null) {
+					g.fill(bx + 1, by + 1, bx + BTN - 1, by + BTN - 1, 0xA0140B0D);
+				}
+			}
 			if (buy) {
 				// Dollarzeichen unten rechts = kaufen
 				g.drawString(font, "$", bx + BTN - 7, by + BTN - 9, 0xFFFFC040, true);
@@ -188,6 +203,10 @@ public final class PcgPanel {
 				} else if (buy) {
 					tip = Component.literal(armed ? BUY_AMOUNT + "× " + b.label() + " kaufen – nochmal klicken"
 							: BUY_AMOUNT + "× " + b.label() + " kaufen (2× klicken)");
+				} else if (isSpecial) {
+					tip = special == null
+							? Component.literal("Sonderball: gerade keiner sinnvoll")
+							: Component.literal(special.label() + " werfen – " + special.reason());
 				} else {
 					tip = Component.literal(b.label() + " werfen" + (recommended ? " – empfohlen" : ""));
 				}
@@ -195,7 +214,7 @@ public final class PcgPanel {
 			}
 		}
 		// Trenner zwischen Werfen und Kaufen
-		int sx = buttonX(x, 3) - SEP / 2 - 1;
+		int sx = buttonX(x, FIRST_BUY) - SEP / 2 - 1;
 		g.fill(sx, by + 3, sx + 1, by + BTN - 3, BTN_EDGE);
 
 	}
@@ -242,7 +261,7 @@ public final class PcgPanel {
 			return true;
 		}
 		int by = y + HEADER_H;
-		for (int i = 0; i < 6; i++) {
+		for (int i = 0; i < COUNT; i++) {
 			int bx = buttonX(x, i);
 			if (e.x() < bx || e.x() >= bx + BTN || e.y() < by || e.y() >= by + BTN) {
 				continue;
@@ -250,9 +269,17 @@ public final class PcgPanel {
 			if (!TwitchChat.canWrite()) {
 				return true;
 			}
-			Ball b = BALLS.get(i % 3);
 			long now = System.currentTimeMillis();
-			if (i >= 3) {
+			if (i == SPECIAL) {
+				PcgState.Spawn sp = PcgState.current();
+				GermanNames.Special special = sp != null && sp.result() == null ? GermanNames.specialBall(sp.name()) : null;
+				if (special != null) {
+					show(TwitchChat.send("!pokecatch " + special.id()) ? "Gesendet: " + special.label() + " geworfen" : "Nicht gesendet");
+				}
+				return true;
+			}
+			Ball b = BALLS.get(i >= FIRST_BUY ? i - FIRST_BUY : i);
+			if (i >= FIRST_BUY) {
 				if (armedBuy != i || now > armedUntil) {
 					armedBuy = i;
 					armedUntil = now + 2500;
