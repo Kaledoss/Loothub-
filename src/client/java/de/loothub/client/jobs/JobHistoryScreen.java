@@ -1,6 +1,11 @@
 package de.loothub.client.jobs;
 
+import java.time.DayOfWeek;
 import java.time.Instant;
+import java.time.LocalDateTime;
+import java.time.YearMonth;
+import java.time.temporal.ChronoUnit;
+import java.time.temporal.WeekFields;
 import java.time.LocalDate;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
@@ -40,12 +45,35 @@ public class JobHistoryScreen extends Screen {
 
 	private static final int PAD = 8;
 	private static final int ROW_H = 12;
-	private static final int DAYS = 14;
 	private static final long MIN_ACTIVE_FOR_RATE_MS = 20_000;
 	private static final DateTimeFormatter DAY = DateTimeFormatter.ofPattern("dd.MM.");
+	private static final DateTimeFormatter HOUR = DateTimeFormatter.ofPattern("HH:mm");
+	private static final DateTimeFormatter MONTH = DateTimeFormatter.ofPattern("MM.yy");
+
+	/** Zeitraum für Diagramm und Liste. */
+	public enum Period {
+		HOURLY("loothub.history.period.hourly"),
+		DAILY("loothub.history.period.daily"),
+		WEEKLY("loothub.history.period.weekly"),
+		YEARLY("loothub.history.period.yearly"),
+		ALLTIME("loothub.history.period.alltime");
+
+		final String translationKey;
+
+		Period(String translationKey) {
+			this.translationKey = translationKey;
+		}
+	}
+
+	/** Ein Balken im Diagramm: Zeitraum [start, end) mit kurzer Beschriftung und Tooltip-Text. */
+	private record Bucket(long start, long end, String label, String title) {
+	}
 
 	/** Gewählter Job-Filter; null = alle. Bleibt zwischen zwei Öffnungen erhalten. */
 	private static String jobFilter;
+	private static Period period = Period.DAILY;
+	private final List<Button> periodButtons = new ArrayList<>();
+	private List<Bucket> buckets = List.of();
 
 	private Button updateButton;
 	private Button filterButton;
@@ -74,10 +102,29 @@ public class JobHistoryScreen extends Screen {
 
 		cardsY = 24;
 		int controlsY = cardsY + 38;
+		// Zeitraum-Reiter nebeneinander, daneben Job-Filter, rechts „Verlauf löschen“
+		int sideW = width >= 560 ? 120 : 90;
+		Period[] periods = Period.values();
+		int gap = 4;
+		int tabW = Mth.clamp((width - 2 * PAD - 2 * sideW - 2 * 8 - gap * (periods.length - 1)) / periods.length, 44, 80);
+		int bx = PAD;
+		periodButtons.clear();
+		for (Period p : periods) {
+			Button b = Button.builder(Component.translatable(p.translationKey), btn -> {
+				period = p;
+				updatePeriodButtons();
+				scroll = 0;
+				lastSignature = -1;
+				refresh();
+			}).bounds(bx, controlsY, tabW, 16).build();
+			periodButtons.add(addRenderableWidget(b));
+			bx += tabW + gap;
+		}
+		updatePeriodButtons();
 		filterButton = addRenderableWidget(Button.builder(filterLabel(), b -> cycleFilter())
-				.bounds(PAD, controlsY, 150, 16).build());
+				.bounds(bx - gap + 8, controlsY, sideW, 16).build());
 		clearButton = addRenderableWidget(Button.builder(Component.translatable("loothub.history.clear"), b -> onClear())
-				.bounds(width - PAD - 120, controlsY, 120, 16).build());
+				.bounds(width - PAD - sideW, controlsY, sideW, 16).build());
 
 		chartX = PAD;
 		chartY = controlsY + 22;
@@ -106,6 +153,13 @@ public class JobHistoryScreen extends Screen {
 
 	// ------------------------------------------------------------------ Daten
 
+	private void updatePeriodButtons() {
+		Period[] periods = Period.values();
+		for (int i = 0; i < periodButtons.size(); i++) {
+			periodButtons.get(i).active = periods[i] != period;
+		}
+	}
+
 	private List<JobHistory.Session> allSessions() {
 		List<JobHistory.Session> list = JobHistory.all();
 		JobHistory.Session live = JobTracker.liveSession();
@@ -120,6 +174,9 @@ public class JobHistoryScreen extends Screen {
 		// Nur neu aufbauen, wenn sich etwas geändert hat
 		int sig = all.size() * 31 + (all.isEmpty() ? 0 : (int) (all.get(all.size() - 1).end ^ Double.hashCode(all.get(all.size() - 1).money())));
 		sig = sig * 31 + (jobFilter == null ? 0 : jobFilter.hashCode());
+		sig = sig * 31 + period.ordinal();
+		// Zeitfenster rollt weiter (z. B. neue Stunde) – auch dann neu aufbauen
+		sig = sig * 31 + (int) (System.currentTimeMillis() / 60_000);
 		if (sig == lastSignature) {
 			return;
 		}
@@ -137,15 +194,28 @@ public class JobHistoryScreen extends Screen {
 		}
 		filterButton.setMessage(filterLabel());
 
+		buckets = buildBuckets(all);
+		long periodStart = period == Period.ALLTIME || buckets.isEmpty() ? Long.MIN_VALUE : buckets.get(0).start();
 		List<JobHistory.Session> out = new ArrayList<>();
 		for (JobHistory.Session s : all) {
-			if (jobFilter == null || s.job(jobFilter) != null) {
+			if ((jobFilter == null || s.job(jobFilter) != null) && s.start >= periodStart) {
 				out.add(s);
 			}
 		}
 		Collections.reverse(out);
 		rows = out;
 		clampScroll();
+	}
+
+	/** Für die Karten (heute / 7 Tage / gesamt): alle Sitzungen, nur der Job-Filter gilt. */
+	private List<JobHistory.Session> cardSessions() {
+		List<JobHistory.Session> out = new ArrayList<>();
+		for (JobHistory.Session s : allSessions()) {
+			if (jobFilter == null || s.job(jobFilter) != null) {
+				out.add(s);
+			}
+		}
+		return out;
 	}
 
 	private Values values(JobHistory.Session s) {
@@ -207,7 +277,7 @@ public class JobHistoryScreen extends Screen {
 		double[] xp = new double[3];
 		double[] money = new double[3];
 		long[] active = new long[3];
-		for (JobHistory.Session s : rows) {
+		for (JobHistory.Session s : cardSessions()) {
 			LocalDate day = day(s.start);
 			Values v = values(s);
 			for (int i = 0; i < 3; i++) {
@@ -236,17 +306,21 @@ public class JobHistoryScreen extends Screen {
 
 	private void renderChart(GuiGraphics g, int mx, int my) {
 		panel(g, chartX, chartY, chartW, chartH);
-		g.drawString(font, Component.translatable("loothub.history.chart", DAYS), chartX + 5, chartY + 4, MUTED, false);
+		g.drawString(font, Component.translatable("loothub.history.chart." + period.name().toLowerCase(java.util.Locale.ROOT)),
+				chartX + 5, chartY + 4, MUTED, false);
 
-		LocalDate today = LocalDate.now();
-		double[] money = new double[DAYS];
-		double[] xp = new double[DAYS];
+		int n = buckets.size();
+		if (n == 0) {
+			return;
+		}
+		double[] money = new double[n];
+		double[] xp = new double[n];
 		for (JobHistory.Session s : rows) {
-			long index = DAYS - 1 - (today.toEpochDay() - day(s.start).toEpochDay());
-			if (index >= 0 && index < DAYS) {
+			int i = bucketIndex(s.start);
+			if (i >= 0) {
 				Values v = values(s);
-				money[(int) index] += v.money();
-				xp[(int) index] += v.xp();
+				money[i] += v.money();
+				xp[i] += v.xp();
 			}
 		}
 		double max = 0;
@@ -262,12 +336,19 @@ public class JobHistoryScreen extends Screen {
 		int right = chartX + chartW - 5;
 		int top = chartY + 15;
 		int bottom = chartY + chartH - 12;
-		double slot = (right - left) / (double) DAYS;
+		double slot = (right - left) / (double) n;
 		int barW = Math.max(2, (int) (slot * 0.7));
 		g.fill(left, bottom, right, bottom + 1, 0x44FFFFFF);
 
+		// Nur so viele Beschriftungen, wie nebeneinander passen (die letzte immer)
+		int labelW = 0;
+		for (Bucket b : buckets) {
+			labelW = Math.max(labelW, font.width(b.label()));
+		}
+		int every = Math.max(1, (int) Math.ceil((labelW + 6) / slot));
+
 		int hover = -1;
-		for (int i = 0; i < DAYS; i++) {
+		for (int i = 0; i < n; i++) {
 			int cx = left + (int) Math.round(slot * i + slot / 2);
 			int x1 = cx - barW / 2;
 			boolean hovered = mx >= left + slot * i && mx < left + slot * (i + 1) && my >= top && my <= bottom + 10;
@@ -278,25 +359,106 @@ public class JobHistoryScreen extends Screen {
 				int h = Math.max(1, (int) Math.round((bottom - top) * money[i] / max));
 				g.fill(x1, bottom - h, x1 + barW, bottom, hovered ? BAR_HOVER : BAR);
 			}
-			// Datum unter jedem zweiten Balken (immer heute)
-			if (i == DAYS - 1 || (DAYS - 1 - i) % 2 == 0 && slot >= 18) {
-				String label = i == DAYS - 1 ? Component.translatable("loothub.history.today").getString()
-						: DAY.format(today.minusDays(DAYS - 1 - i));
+			if ((n - 1 - i) % every == 0) {
+				String label = buckets.get(i).label();
 				int lw = font.width(label);
-				if (slot * 2 >= lw + 2 || i == DAYS - 1) {
-					g.drawString(font, label, Mth.clamp(cx - lw / 2, left, right - lw), bottom + 3, FAINT, false);
-				}
+				g.drawString(font, label, Mth.clamp(cx - lw / 2, left, right - lw), bottom + 3, FAINT, false);
 			}
 		}
 
 		if (hover >= 0) {
-			LocalDate d = today.minusDays(DAYS - 1 - hover);
 			List<FormattedCharSequence> tip = new ArrayList<>();
-			tip.add(Component.literal(DAY.format(d) + d.getYear()).withStyle(ChatFormatting.WHITE).getVisualOrderText());
+			tip.add(Component.literal(buckets.get(hover).title()).withStyle(ChatFormatting.WHITE).getVisualOrderText());
 			tip.add(Component.literal(Fmt.money(money[hover])).withStyle(ChatFormatting.GOLD).getVisualOrderText());
 			tip.add(Component.literal(Fmt.compact(xp[hover]) + " XP").withStyle(ChatFormatting.GRAY).getVisualOrderText());
 			g.setTooltipForNextFrame(font, tip, mx, my);
 		}
+	}
+
+	private int bucketIndex(long time) {
+		for (int i = 0; i < buckets.size(); i++) {
+			if (time >= buckets.get(i).start() && time < buckets.get(i).end()) {
+				return i;
+			}
+		}
+		return -1;
+	}
+
+	/** Zeitabschnitte je nach gewähltem Zeitraum. Ältester zuerst. */
+	private static List<Bucket> buildBuckets(List<JobHistory.Session> sessions) {
+		ZoneId zone = ZoneId.systemDefault();
+		List<Bucket> out = new ArrayList<>();
+		switch (period) {
+			case HOURLY -> {
+				// letzte 24 Stunden, je Stunde
+				LocalDateTime hour = LocalDateTime.now().truncatedTo(ChronoUnit.HOURS);
+				for (int i = 23; i >= 0; i--) {
+					LocalDateTime h = hour.minusHours(i);
+					out.add(new Bucket(millis(h, zone), millis(h.plusHours(1), zone),
+							HOUR.format(h), DAY.format(h) + " " + HOUR.format(h) + "–" + HOUR.format(h.plusHours(1))));
+				}
+			}
+			case DAILY -> {
+				// letzte 14 Tage, je Tag
+				LocalDate today = LocalDate.now();
+				for (int i = 13; i >= 0; i--) {
+					LocalDate d = today.minusDays(i);
+					out.add(new Bucket(millis(d.atStartOfDay(), zone), millis(d.plusDays(1).atStartOfDay(), zone),
+							i == 0 ? Component.translatable("loothub.history.today").getString() : DAY.format(d),
+							DAY.format(d) + d.getYear()));
+				}
+			}
+			case WEEKLY -> {
+				// letzte 12 Wochen, Montag bis Sonntag
+				LocalDate monday = LocalDate.now().with(DayOfWeek.MONDAY);
+				for (int i = 11; i >= 0; i--) {
+					LocalDate w = monday.minusWeeks(i);
+					int kw = w.get(WeekFields.ISO.weekOfWeekBasedYear());
+					out.add(new Bucket(millis(w.atStartOfDay(), zone), millis(w.plusWeeks(1).atStartOfDay(), zone),
+							"KW " + kw, "KW " + kw + " · " + DAY.format(w) + " – " + DAY.format(w.plusDays(6))));
+				}
+			}
+			case YEARLY -> {
+				// letzte 12 Monate, je Monat
+				YearMonth now = YearMonth.now();
+				for (int i = 11; i >= 0; i--) {
+					out.add(monthBucket(now.minusMonths(i), zone));
+				}
+			}
+			case ALLTIME -> {
+				// alles: je Monat seit der ersten Sitzung, bei mehr als 24 Monaten je Jahr
+				long first = Long.MAX_VALUE;
+				for (JobHistory.Session s : sessions) {
+					first = Math.min(first, s.start);
+				}
+				YearMonth now = YearMonth.now();
+				YearMonth start = first == Long.MAX_VALUE ? now
+						: YearMonth.from(Instant.ofEpochMilli(first).atZone(zone));
+				long months = ChronoUnit.MONTHS.between(start, now) + 1;
+				if (months <= 24) {
+					for (YearMonth m = start; !m.isAfter(now); m = m.plusMonths(1)) {
+						out.add(monthBucket(m, zone));
+					}
+				} else {
+					for (int y = start.getYear(); y <= now.getYear(); y++) {
+						out.add(new Bucket(millis(LocalDate.of(y, 1, 1).atStartOfDay(), zone),
+								millis(LocalDate.of(y + 1, 1, 1).atStartOfDay(), zone),
+								String.valueOf(y), String.valueOf(y)));
+					}
+				}
+			}
+		}
+		return out;
+	}
+
+	private static Bucket monthBucket(YearMonth m, ZoneId zone) {
+		String label = MONTH.format(m);
+		return new Bucket(millis(m.atDay(1).atStartOfDay(), zone), millis(m.plusMonths(1).atDay(1).atStartOfDay(), zone),
+				label, label);
+	}
+
+	private static long millis(LocalDateTime t, ZoneId zone) {
+		return t.atZone(zone).toInstant().toEpochMilli();
 	}
 
 	private void renderList(GuiGraphics g, int mx, int my) {
@@ -437,6 +599,16 @@ public class JobHistoryScreen extends Screen {
 			return true;
 		}
 		return super.mouseScrolled(mx, my, horizontal, vertical);
+	}
+
+	/**
+	 * Eigener, fast deckender Hintergrund in einer eigenen Ebene – so scheinen HUD-Anzeigen anderer Mods
+	 * (Scoreboard, Uhr, LabyMod-Widgets …) nicht mehr durch das Menü.
+	 */
+	@Override
+	public void renderBackground(GuiGraphics g, int mouseX, int mouseY, float delta) {
+		g.nextStratum();
+		g.fill(0, 0, width, height, 0xE00B0D12);
 	}
 
 	@Override

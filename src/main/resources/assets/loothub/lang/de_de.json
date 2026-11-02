@@ -63,7 +63,6 @@
 	"loothub.history.filter.all": "Alle",
 	"loothub.history.clear": "Verlauf löschen",
 	"loothub.history.clear.confirm": "Wirklich löschen?",
-	"loothub.history.chart": "Verdienst pro Tag (letzte %s Tage)",
 	"loothub.history.col.date": "Beginn",
 	"loothub.history.col.job": "Job",
 	"loothub.history.col.time": "Aktiv",
@@ -71,5 +70,15 @@
 	"loothub.history.live": "(läuft)",
 	"loothub.history.tip.active": "Aktive Zeit: %s",
 	"loothub.screen.back": "← Zurück",
-	"loothub.screen.click_for_chart": "Klicken für den Preisverlauf"
+	"loothub.screen.click_for_chart": "Klicken für den Preisverlauf",
+	"loothub.history.period.hourly": "Stündlich",
+	"loothub.history.period.daily": "Täglich",
+	"loothub.history.period.weekly": "Wöchentlich",
+	"loothub.history.period.yearly": "Jährlich",
+	"loothub.history.period.alltime": "Alltime",
+	"loothub.history.chart.hourly": "Verdienst pro Stunde (letzte 24 Stunden)",
+	"loothub.history.chart.daily": "Verdienst pro Tag (letzte 14 Tage)",
+	"loothub.history.chart.weekly": "Verdienst pro Woche (letzte 12 Wochen)",
+	"loothub.history.chart.yearly": "Verdienst pro Monat (letzte 12 Monate)",
+	"loothub.history.chart.alltime": "Verdienst seit Beginn"
 }

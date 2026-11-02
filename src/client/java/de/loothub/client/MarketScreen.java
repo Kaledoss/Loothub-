@@ -669,6 +669,16 @@ public class MarketScreen extends Screen {
 		return super.mouseScrolled(mx, my, horizontal, vertical);
 	}
 
+	/**
+	 * Eigener, fast deckender Hintergrund in einer eigenen Ebene – so scheinen HUD-Anzeigen anderer Mods
+	 * (Scoreboard, Uhr, LabyMod-Widgets …) nicht mehr durch das Menü.
+	 */
+	@Override
+	public void renderBackground(GuiGraphics g, int mouseX, int mouseY, float delta) {
+		g.nextStratum();
+		g.fill(0, 0, width, height, 0xE00B0D12);
+	}
+
 	@Override
 	public boolean isPauseScreen() {
 		return false;

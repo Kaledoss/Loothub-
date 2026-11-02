@@ -63,7 +63,6 @@
 	"loothub.history.filter.all": "All",
 	"loothub.history.clear": "Clear history",
 	"loothub.history.clear.confirm": "Really clear?",
-	"loothub.history.chart": "Earnings per day (last %s days)",
 	"loothub.history.col.date": "Start",
 	"loothub.history.col.job": "Job",
 	"loothub.history.col.time": "Active",
@@ -71,5 +70,15 @@
 	"loothub.history.live": "(running)",
 	"loothub.history.tip.active": "Active time: %s",
 	"loothub.screen.back": "← Back",
-	"loothub.screen.click_for_chart": "Click for the price history"
+	"loothub.screen.click_for_chart": "Click for the price history",
+	"loothub.history.period.hourly": "Hourly",
+	"loothub.history.period.daily": "Daily",
+	"loothub.history.period.weekly": "Weekly",
+	"loothub.history.period.yearly": "Yearly",
+	"loothub.history.period.alltime": "All time",
+	"loothub.history.chart.hourly": "Earnings per hour (last 24 hours)",
+	"loothub.history.chart.daily": "Earnings per day (last 14 days)",
+	"loothub.history.chart.weekly": "Earnings per week (last 12 weeks)",
+	"loothub.history.chart.yearly": "Earnings per month (last 12 months)",
+	"loothub.history.chart.alltime": "Earnings since the start"
 }

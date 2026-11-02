@@ -91,10 +91,12 @@ Jede Job-Sitzung wird gespeichert (`config/loothub-jobs.json`, bis zu 1000 Sitzu
 des Servers und beim Beenden des Spiels:
 
 - **Summen** für heute, die letzten 7 Tage und gesamt: Geld, XP, aktive Zeit und $/h.
-- **Balkendiagramm** mit dem Verdienst pro Tag der letzten 14 Tage (Maus drüber für Details).
+- **Zeitraum-Reiter** nebeneinander: **Stündlich** (letzte 24 Stunden), **Täglich** (14 Tage), **Wöchentlich**
+  (12 Wochen), **Jährlich** (12 Monate, je Monat) und **Alltime** (seit der ersten Sitzung). Der Zeitraum steuert
+  das Balkendiagramm (Maus drüber für Details) und die Sitzungsliste.
 - **Liste aller Sitzungen**, neueste oben, die laufende Sitzung grün: Beginn, Job, aktive Zeit, XP, $, $/h
   und (bei breitem Fenster) Level. Maus über eine Zeile zeigt alle Jobs der Sitzung mit Level-Fortschritt.
-- **Job-Filter** (z. B. nur Holzfäller) und **Verlauf löschen** (zweimal klicken zur Bestätigung).
+- **Job-Filter** neben den Zeitraum-Reitern (z. B. nur Holzfäller) und **Verlauf löschen** (zweimal klicken zur Bestätigung).
 
 ## Updates im Spiel
 
