@@ -9,6 +9,9 @@ import net.minecraft.world.InteractionResult;
 import net.minecraft.resources.Identifier;
 
 import net.fabricmc.api.ClientModInitializer;
+import net.fabricmc.fabric.api.resource.v1.ResourceLoader;
+import net.fabricmc.fabric.api.resource.v1.pack.PackActivationType;
+import net.fabricmc.loader.api.FabricLoader;
 import net.fabricmc.fabric.api.client.command.v2.ClientCommandManager;
 import net.fabricmc.fabric.api.client.command.v2.ClientCommandRegistrationCallback;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientLifecycleEvents;
@@ -97,6 +100,11 @@ public class LoothubClient implements ClientModInitializer {
 					openSettings = true;
 					return 1;
 				})));
+		// Eingebautes Ressourcenpaket: Inventar in Schwarz-Rot (unter Optionen → Ressourcenpakete abschaltbar)
+		FabricLoader.getInstance().getModContainer(Loothub.MOD_ID).ifPresent(mod ->
+				ResourceLoader.registerBuiltinPack(Identifier.fromNamespaceAndPath(Loothub.MOD_ID, "dark_inventory"), mod,
+						Component.literal("Loothub+ Inventar (Schwarz-Rot)"), PackActivationType.DEFAULT_ENABLED));
+
 		PriceTooltip.register();
 		de.loothub.client.quick.QuickCommandPanel.register();
 		// Preise gleich beim Start im Hintergrund laden, damit der erste Tooltip schon Daten hat

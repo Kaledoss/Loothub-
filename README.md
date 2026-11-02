@@ -60,6 +60,12 @@ was auf Ihrem PC passiert – nur auf Servern, ab der Installation – und speic
 Grenzen: Getötete Mobs sind geschätzt (Tod innerhalb von 5 s nach Ihrem Treffer). Blöcke, die der Server
 zusätzlich abbaut (z. B. Timber-Axt), und Items, die direkt ins Inventar gelegt werden, sieht der Client nicht.
 
+## Inventar in Schwarz-Rot
+
+Loothub+ bringt ein eingebautes Ressourcenpaket **„Loothub+ Inventar (Schwarz-Rot)“** mit, das das
+Spieler-Inventar (Taste E) passend zum Loothub+-Fenster färbt. Es ist automatisch aktiv und lässt sich unter
+**Optionen → Ressourcenpakete** ausschalten. Rein optisch (Regelwerk §5.10.3).
+
 ## Befehls-Leiste im Inventar
 
 Unter dem Inventar (Taste **E**) erscheint ein Feld mit Knöpfen für wichtige Befehle:
