@@ -147,5 +147,7 @@
 	"loothub.settings.status.checking": "Checking …",
 	"loothub.settings.status.up_to_date": "Up to date",
 	"loothub.settings.status.available": "Update %s available",
-	"loothub.history.kpi.session": "%s session"
+	"loothub.history.kpi.session": "%s session",
+	"loothub.settings.quick_panel": "Command bar",
+	"loothub.settings.quick_panel.tooltip": "Shows buttons for important commands below the inventory (key E). One click sends the command as if you typed it."
 }

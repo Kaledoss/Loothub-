@@ -30,6 +30,10 @@ public final class WidgetConfig {
 	public boolean statsEnabled = true;
 	/** Beim Start nach Updates suchen. */
 	public boolean updateCheck = true;
+	/** Befehls-Leiste unter dem Inventar anzeigen. */
+	public boolean quickPanelEnabled = true;
+	/** Knöpfe der Befehls-Leiste (Beschriftung + Befehl). */
+	public java.util.List<de.loothub.client.quick.QuickCommand> quickCommands = de.loothub.client.quick.QuickCommand.defaults();
 	public double jobWidgetX = 0.0;
 	public double jobWidgetY = 0.35;
 

@@ -60,6 +60,13 @@ was auf Ihrem PC passiert – nur auf Servern, ab der Installation – und speic
 Grenzen: Getötete Mobs sind geschätzt (Tod innerhalb von 5 s nach Ihrem Treffer). Blöcke, die der Server
 zusätzlich abbaut (z. B. Timber-Axt), und Items, die direkt ins Inventar gelegt werden, sieht der Client nicht.
 
+## Befehls-Leiste im Inventar
+
+Unter dem Inventar (Taste **E**) erscheint ein Feld mit Knöpfen für wichtige Befehle (bei offenem Rezeptbuch
+reicht es unter beides). Ein Klick schickt genau einen Befehl – wie selbst eingetippt, keine Automatisierung.
+Die Knöpfe stehen in `config/loothub.json` unter `quickCommands` (Beschriftung + Befehl) und lassen sich in den
+Einstellungen ein- und ausschalten. Passen nicht alle Knöpfe unter das Inventar, werden die übrigen ausgeblendet.
+
 ## Einstellungen (/loothub)
 
 **/loothub** im Chat (oder die Kategorie **Einstellungen**) öffnet die Einstellungen – oben Version und

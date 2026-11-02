@@ -98,6 +98,7 @@ public class LoothubClient implements ClientModInitializer {
 					return 1;
 				})));
 		PriceTooltip.register();
+		de.loothub.client.quick.QuickCommandPanel.register();
 		// Preise gleich beim Start im Hintergrund laden, damit der erste Tooltip schon Daten hat
 		MarketPrices.refreshIfStale();
 	}

@@ -72,6 +72,9 @@ public class SettingsScreen extends LoothubScreen {
 		y = card(y, 40, "loothub.settings.stats", "loothub.settings.stats.tooltip",
 				() -> c.statsEnabled, v -> c.statsEnabled = v);
 
+		y = card(y, 40, "loothub.settings.quick_panel", "loothub.settings.quick_panel.tooltip",
+				() -> c.quickPanelEnabled, v -> c.quickPanelEnabled = v);
+
 		// Job-Widget: Schalter + zwei Knöpfe unter der Beschreibung
 		int jobY = y;
 		card(jobY, 58, "loothub.settings.section.job_widget", "loothub.settings.job_widget.tooltip",

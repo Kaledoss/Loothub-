@@ -147,5 +147,7 @@
 	"loothub.settings.status.checking": "Prüfe …",
 	"loothub.settings.status.up_to_date": "Aktuell",
 	"loothub.settings.status.available": "Update %s verfügbar",
-	"loothub.history.kpi.session": "%s Sitzung"
+	"loothub.history.kpi.session": "%s Sitzung",
+	"loothub.settings.quick_panel": "Befehls-Leiste",
+	"loothub.settings.quick_panel.tooltip": "Zeigt unter dem Inventar (Taste E) Knöpfe für wichtige Befehle. Ein Klick schickt den Befehl, als hätten Sie ihn eingetippt."
 }
