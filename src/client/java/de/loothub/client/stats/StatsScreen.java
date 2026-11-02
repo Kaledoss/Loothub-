@@ -358,7 +358,7 @@ public class StatsScreen extends LoothubScreen {
 			GeneralEntry e = entries.get(i);
 			g.drawString(font, e.label(), x, y, MUTED, false);
 			int vx = x + colW - font.width(e.value());
-			g.drawString(font, e.value(), vx, y, e.icon().isEmpty() ? TEXT : GOLD, false);
+			g.drawString(font, e.value(), vx, y, e.value().equals("–") ? FAINT : GOLD, false);
 			if (!e.icon().isEmpty()) {
 				g.renderItem(e.icon(), vx - 19, y - 4);
 			}
@@ -371,8 +371,32 @@ public class StatsScreen extends LoothubScreen {
 	private record GeneralEntry(String label, String value, ItemStack icon) {
 	}
 
+	/** Passendes Symbol je Eintrag unter „Allgemein“. */
+	private static final Map<String, ItemStack> GENERAL_ICONS = Map.ofEntries(
+			Map.entry("play_time", new ItemStack(Items.CLOCK)),
+			Map.entry("walk_total", new ItemStack(Items.COMPASS)),
+			Map.entry("walk", new ItemStack(Items.LEATHER_BOOTS)),
+			Map.entry("sprint", new ItemStack(Items.SUGAR)),
+			Map.entry("crouch", new ItemStack(Items.SCULK_SENSOR)),
+			Map.entry("swim", new ItemStack(Items.WATER_BUCKET)),
+			Map.entry("climb", new ItemStack(Items.LADDER)),
+			Map.entry("elytra", new ItemStack(Items.ELYTRA)),
+			Map.entry("fly", new ItemStack(Items.FEATHER)),
+			Map.entry("ride", new ItemStack(Items.SADDLE)),
+			Map.entry("jumps", new ItemStack(Items.RABBIT_FOOT)),
+			Map.entry("mined", new ItemStack(Items.IRON_PICKAXE)),
+			Map.entry("placed", new ItemStack(Items.BRICKS)),
+			Map.entry("picked", new ItemStack(Items.HOPPER)),
+			Map.entry("eaten", new ItemStack(Items.COOKED_BEEF)),
+			Map.entry("killed", new ItemStack(Items.IRON_SWORD)),
+			Map.entry("tool_uses", new ItemStack(Items.ANVIL)),
+			Map.entry("damage_dealt", new ItemStack(Items.BLAZE_POWDER)),
+			Map.entry("damage_taken", new ItemStack(Items.SHIELD)),
+			Map.entry("deaths", new ItemStack(Items.SKELETON_SKULL)));
+
 	private GeneralEntry entry(String key, String value) {
-		return new GeneralEntry(Component.translatable("loothub.stats.general." + key).getString(), value, ItemStack.EMPTY);
+		return new GeneralEntry(Component.translatable("loothub.stats.general." + key).getString(), value,
+				GENERAL_ICONS.getOrDefault(key, ItemStack.EMPTY));
 	}
 
 	/** Spitzenreiter: höchster Zähler über die Präfixe (gleiche ID wird zusammengezählt), im gewählten Zeitraum. */
