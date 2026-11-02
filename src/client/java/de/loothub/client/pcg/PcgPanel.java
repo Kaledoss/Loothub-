@@ -169,7 +169,8 @@ public final class PcgPanel {
 			int bx = buttonX(x, i);
 			boolean hover = !moving && mx >= bx && mx < bx + BTN && my >= by && my < by + BTN;
 			boolean armed = buy && armedBuy == i;
-			int edge = armed ? 0xFFFF5050 : hover ? LoothubScreen.RED : BTN_EDGE;
+			boolean recommended = !buy && active && GermanNames.recommendedBall(spawn.name()) == i;
+			int edge = armed ? 0xFFFF5050 : recommended ? 0xFFFFD040 : hover ? LoothubScreen.RED : BTN_EDGE;
 			g.fill(bx, by, bx + BTN, by + BTN, edge);
 			g.fill(bx + 1, by + 1, bx + BTN - 1, by + BTN - 1, hover ? BTN_BG_HOVER : BTN_BG);
 			g.blit(RenderPipelines.GUI_TEXTURED, b.icon(), bx + 3, by + 3, 0f, 0f, 16, 16, 16, 16, 16, 16);
@@ -188,7 +189,7 @@ public final class PcgPanel {
 					tip = Component.literal(armed ? BUY_AMOUNT + "× " + b.label() + " kaufen – nochmal klicken"
 							: BUY_AMOUNT + "× " + b.label() + " kaufen (2× klicken)");
 				} else {
-					tip = Component.literal(b.label() + " werfen");
+					tip = Component.literal(b.label() + " werfen" + (recommended ? " – empfohlen" : ""));
 				}
 				g.setTooltipForNextFrame(font, tip, mx, my);
 			}

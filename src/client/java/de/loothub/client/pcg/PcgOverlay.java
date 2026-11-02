@@ -16,6 +16,8 @@ public final class PcgOverlay {
 	private static final int LABEL = 0xFFE07A7A;
 	private static final int NAME = 0xFFFFD66B;
 	private static final int TIME_OK = 0xFF55E06A;
+	static final String[] BALL_NAMES = {"Pokéball", "Superball", "Hyperball"};
+	private static final int[] BALL_COLORS = {0xFFFF6A6A, 0xFF6FA8FF, 0xFFFFD040};
 	private static final int TIME_LOW = 0xFFFF5050;
 
 	private PcgOverlay() {
@@ -49,7 +51,8 @@ public final class PcgOverlay {
 
 	/** Breite und Höhe der Anzeige. */
 	public static int[] size(Font font, PcgState.Spawn s) {
-		int w = Math.max(font.width(title()) + 8 + font.width("Entkommen"), font.width(GermanNames.of(s.name()))) + 14;
+		int w = Math.max(font.width(title()) + 8 + font.width("Entkommen"),
+				font.width(GermanNames.of(s.name())) + 8 + font.width("Tipp: Hyperball")) + 14;
 		return new int[]{w, 32};
 	}
 
@@ -83,6 +86,11 @@ public final class PcgOverlay {
 		g.drawString(font, title(), x + 7, y + 7, LABEL, true);
 		g.drawString(font, time, x + w - 7 - font.width(time), y + 7, timeColor, true);
 		g.drawString(font, GermanNames.of(s.name()), x + 7, y + 19, NAME, true);
+		int ball = s.result() == null ? GermanNames.recommendedBall(s.name()) : -1;
+		if (ball >= 0) {
+			String tip = "Tipp: " + BALL_NAMES[ball];
+			g.drawString(font, tip, x + w - 7 - font.width(tip), y + 19, BALL_COLORS[ball], true);
+		}
 
 		// Restzeit-Balken unten
 		if (s.result() == null) {

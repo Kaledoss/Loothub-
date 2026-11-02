@@ -15,14 +15,36 @@ import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 
 /**
- * Deutsche Pokémon-Namen über die freie PokéAPI (pokeapi.co). Einmal pro Name abgefragt und gemerkt;
- * solange nichts da ist oder nichts gefunden wird, bleibt der englische Name stehen.
+ * Deutsche Pokémon-Namen und Fangrate über die freie PokéAPI (pokeapi.co). Einmal pro Name abgefragt und
+ * gemerkt; solange nichts da ist oder nichts gefunden wird, bleibt der englische Name stehen.
  */
 public final class GermanNames {
 	private static final HttpClient HTTP = HttpClient.newBuilder().connectTimeout(Duration.ofSeconds(8)).build();
 	/** Englischer Name (klein) → deutscher Name; leerer Text = nicht gefunden. */
 	private static final Map<String, String> CACHE = new ConcurrentHashMap<>();
 	private static final Map<String, Boolean> PENDING = new ConcurrentHashMap<>();
+	/** Englischer Name (klein) → Fangdaten. */
+	private static final Map<String, Info> INFO = new ConcurrentHashMap<>();
+
+	/** Fangrate laut Spieldaten (3 = sehr schwer … 255 = sehr leicht) und ob legendär/mysteriös. */
+	public record Info(int captureRate, boolean legendary, boolean mythical) {
+	}
+
+	/** Ballempfehlung: 0 = Pokéball, 1 = Superball, 2 = Hyperball; -1 = noch unbekannt. */
+	public static int recommendedBall(String english) {
+		if (english == null) {
+			return -1;
+		}
+		of(english); // stößt die Abfrage an, falls nötig
+		Info info = INFO.get(english.strip().toLowerCase(Locale.ROOT));
+		if (info == null) {
+			return -1;
+		}
+		if (info.legendary() || info.mythical() || info.captureRate() < 45) {
+			return 2;
+		}
+		return info.captureRate() < 120 ? 1 : 0;
+	}
 
 	private GermanNames() {
 	}
@@ -65,7 +87,7 @@ public final class GermanNames {
 				.header("User-Agent", "Loothub-Mod")
 				.GET().build();
 		HTTP.sendAsync(req, HttpResponse.BodyHandlers.ofString(StandardCharsets.UTF_8))
-				.thenApply(r -> r.statusCode() == 200 ? germanFrom(r.body()) : null)
+				.thenApply(r -> r.statusCode() == 200 ? germanFrom(key, r.body()) : null)
 				.thenCompose(de -> {
 					if (de != null || base.equals(slug)) {
 						return java.util.concurrent.CompletableFuture.completedFuture(de);
@@ -73,7 +95,7 @@ public final class GermanNames {
 					HttpRequest retry = HttpRequest.newBuilder(URI.create("https://pokeapi.co/api/v2/pokemon-species/" + base))
 							.timeout(Duration.ofSeconds(10)).header("User-Agent", "Loothub-Mod").GET().build();
 					return HTTP.sendAsync(retry, HttpResponse.BodyHandlers.ofString(StandardCharsets.UTF_8))
-							.thenApply(r -> r.statusCode() == 200 ? germanFrom(r.body()) : null);
+							.thenApply(r -> r.statusCode() == 200 ? germanFrom(key, r.body()) : null);
 				})
 				.whenComplete((de, error) -> {
 					if (error == null) {
@@ -83,10 +105,17 @@ public final class GermanNames {
 				});
 	}
 
-	private static String germanFrom(String body) {
+	private static String germanFrom(String key, String body) {
 		try {
-			JsonElement root = JsonParser.parseString(body);
-			for (JsonElement e : root.getAsJsonObject().getAsJsonArray("names")) {
+			JsonObject root = JsonParser.parseString(body).getAsJsonObject();
+			try {
+				INFO.put(key, new Info(root.get("capture_rate").getAsInt(),
+						root.has("is_legendary") && root.get("is_legendary").getAsBoolean(),
+						root.has("is_mythical") && root.get("is_mythical").getAsBoolean()));
+			} catch (RuntimeException ignored) {
+				// keine Fangdaten → keine Empfehlung
+			}
+			for (JsonElement e : root.getAsJsonArray("names")) {
 				JsonObject o = e.getAsJsonObject();
 				if ("de".equals(o.getAsJsonObject("language").get("name").getAsString())) {
 					return o.get("name").getAsString();
