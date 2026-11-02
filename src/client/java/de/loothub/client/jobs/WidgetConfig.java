@@ -15,7 +15,7 @@ import net.fabricmc.loader.api.FabricLoader;
 import de.loothub.Loothub;
 
 /**
- * Einstellungen des Job-Widgets, gespeichert in {@code config/loothub.json}.
+ * Einstellungen von Loothub+ (Job-Widget, Tooltip-Preise, Statistik, Updates), gespeichert in {@code config/loothub.json}.
  * Die Position wird relativ gespeichert (0 = ganz links/oben, 1 = ganz rechts/unten),
  * damit das Widget auch nach einer Fenstergrößen-Änderung an der richtigen Stelle sitzt.
  */
@@ -24,6 +24,12 @@ public final class WidgetConfig {
 	private static WidgetConfig instance;
 
 	public boolean jobWidgetEnabled = true;
+	/** Marktpreise im Item-Tooltip anzeigen. */
+	public boolean tooltipPrices = true;
+	/** Eigene Statistik zählen. */
+	public boolean statsEnabled = true;
+	/** Beim Start nach Updates suchen. */
+	public boolean updateCheck = true;
 	public double jobWidgetX = 0.0;
 	public double jobWidgetY = 0.35;
 

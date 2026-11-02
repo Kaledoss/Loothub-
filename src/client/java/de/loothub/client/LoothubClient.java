@@ -9,6 +9,8 @@ import net.minecraft.world.InteractionResult;
 import net.minecraft.resources.Identifier;
 
 import net.fabricmc.api.ClientModInitializer;
+import net.fabricmc.fabric.api.client.command.v2.ClientCommandManager;
+import net.fabricmc.fabric.api.client.command.v2.ClientCommandRegistrationCallback;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientLifecycleEvents;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
 import net.fabricmc.fabric.api.client.keybinding.v1.KeyBindingHelper;
@@ -34,6 +36,8 @@ public class LoothubClient implements ClientModInitializer {
 
 	private static KeyMapping menuKey;
 	private static boolean updateNoticeShown;
+	/** /loothub öffnet die Einstellungen erst im nächsten Tick – sonst schließt der Chat sie gleich wieder. */
+	private static boolean openSettings;
 
 	@Override
 	public void onInitializeClient() {
@@ -59,6 +63,10 @@ public class LoothubClient implements ClientModInitializer {
 				client.player.displayClientMessage(Component.translatable("loothub.update.notice",
 						Updater.latestVersion()).withStyle(ChatFormatting.GOLD), false);
 			}
+			if (openSettings && client.screen == null) {
+				openSettings = false;
+				client.setScreen(new SettingsScreen());
+			}
 			while (menuKey.consumeClick()) {
 				if (client.screen == null) {
 					client.setScreen(new JobHistoryScreen());
@@ -81,7 +89,14 @@ public class LoothubClient implements ClientModInitializer {
 			StatsStore.saveIfDirty(true);
 		});
 
-		Updater.checkAsync();
+		Updater.checkOnStartup();
+
+		// /loothub → Einstellungen
+		ClientCommandRegistrationCallback.EVENT.register((dispatcher, registryAccess) ->
+				dispatcher.register(ClientCommandManager.literal(Loothub.MOD_ID).executes(ctx -> {
+					openSettings = true;
+					return 1;
+				})));
 		PriceTooltip.register();
 		// Preise gleich beim Start im Hintergrund laden, damit der erste Tooltip schon Daten hat
 		MarketPrices.refreshIfStale();

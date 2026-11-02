@@ -14,7 +14,7 @@ import de.loothub.client.Fmt;
 
 /**
  * Das Job-Widget im HUD. Position und Sichtbarkeit kommen aus {@link WidgetConfig};
- * verschoben wird es im {@link JobWidgetEditScreen} (Taste L, Reiter „Job-Widget“).
+ * verschoben wird es im {@link JobWidgetEditScreen} (Einstellungen /loothub → „Position ändern“).
  */
 public final class JobWidget {
 	private static final int MIN_WIDTH = 150;

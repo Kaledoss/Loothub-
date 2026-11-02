@@ -9,14 +9,12 @@ import net.minecraft.network.chat.Component;
 
 import de.loothub.client.jobs.JobHistoryScreen;
 import de.loothub.client.stats.StatsScreen;
-import de.loothub.client.jobs.JobWidgetEditScreen;
 
-/** Reiter oben mittig im Loothub+-Menü: „Verlauf“, „Markt“, „Job-Widget“ und „Statistik“. */
+/** Reiter oben mittig im Loothub+-Menü: „Verlauf“, „Markt“, „Statistik“ und ⚙ für die Einstellungen. */
 public final class Tabs {
 	public enum Tab {
 		HISTORY("loothub.tab.history"),
 		MARKET("loothub.tab.market"),
-		JOBS("loothub.tab.jobs"),
 		STATS("loothub.tab.stats");
 
 		private final String translationKey;
@@ -27,7 +25,8 @@ public final class Tabs {
 	}
 
 	public static final int HEIGHT = 16;
-	private static final int WIDTH = 58;
+	private static final int WIDTH = 64;
+	private static final int GEAR_WIDTH = 20;
 	private static final int GAP = 4;
 
 	private Tabs() {
@@ -41,7 +40,7 @@ public final class Tabs {
 		Tab[] tabs = Tab.values();
 		int total = tabs.length * WIDTH + (tabs.length - 1) * GAP;
 		int x = (screenWidth - total) / 2;
-		Button[] buttons = new Button[tabs.length];
+		Button[] buttons = new Button[tabs.length + 1];
 		for (int i = 0; i < tabs.length; i++) {
 			Tab tab = tabs[i];
 			Button b = Button.builder(Component.translatable(tab.translationKey), btn -> open(tab))
@@ -50,6 +49,11 @@ public final class Tabs {
 			b.active = tab != current;
 			buttons[i] = b;
 		}
+		// ⚙ rechts neben den Reitern: Einstellungen (wie /loothub)
+		buttons[tabs.length] = Button.builder(Component.literal("⚙"), btn -> Minecraft.getInstance().setScreen(new SettingsScreen()))
+				.bounds(x + total + GAP, y, GEAR_WIDTH, HEIGHT)
+				.tooltip(Tooltip.create(Component.translatable("loothub.settings.title")))
+				.build();
 		return List.of(buttons);
 	}
 
@@ -100,7 +104,6 @@ public final class Tabs {
 		Minecraft mc = Minecraft.getInstance();
 		mc.setScreen(switch (tab) {
 			case MARKET -> new MarketScreen();
-			case JOBS -> new JobWidgetEditScreen();
 			case HISTORY -> new JobHistoryScreen();
 			case STATS -> new StatsScreen();
 		});

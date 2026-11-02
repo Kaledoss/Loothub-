@@ -71,13 +71,32 @@ public final class Updater {
 				.orElse("0");
 	}
 
-	/** Einmal pro Spielstart aufrufen. Läuft im Hintergrund. */
+	/** Beim Spielstart: prüft nur, wenn „Automatisch prüfen“ eingeschaltet ist. */
+	public static void checkOnStartup() {
+		cleanupOldVersions();
+		if (de.loothub.client.jobs.WidgetConfig.get().updateCheck) {
+			checkAsync();
+		}
+	}
+
+	/** „Jetzt prüfen“ in den Einstellungen – unabhängig von der Einstellung. */
+	public static void checkAgain() {
+		if (state == State.CHECKING || state == State.DOWNLOADING || state == State.INSTALLED) {
+			return;
+		}
+		state = State.IDLE;
+		latestVersion = null;
+		downloadUrl = null;
+		errorMessage = null;
+		checkAsync();
+	}
+
+	/** Prüft im Hintergrund auf eine neue Version. */
 	public static void checkAsync() {
 		if (state != State.IDLE) {
 			return;
 		}
 		state = State.CHECKING;
-		cleanupOldVersions();
 
 		HttpRequest request = HttpRequest.newBuilder(URI.create(RELEASE_API))
 				.timeout(Duration.ofSeconds(15))

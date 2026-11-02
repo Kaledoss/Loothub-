@@ -13,7 +13,7 @@ Marktplatz
 
 ## Loothub+-Menü (Taste L)
 
-**L** öffnet das Loothub+-Menü mit vier Reitern oben in der Mitte: **Verlauf** (öffnet zuerst), **Markt**, **Job-Widget** und **Statistik**
+**L** öffnet das Loothub+-Menü mit drei Reitern oben in der Mitte: **Verlauf** (öffnet zuerst), **Markt** und **Statistik**, daneben **⚙** für die Einstellungen
 (Taste änderbar unter Optionen → Steuerung → „Loothub+“).
 
 > **Wichtig:** In Minecraft liegt L standardmäßig auf „Fortschritte“. Diese Taste bitte unter
@@ -30,7 +30,46 @@ Marktplatz
   - Maus über das Diagramm → Details (Ø, Hoch, Tief, gehandelte Stück, Transaktionen)
 - **„← Zurück“** oder **Esc** führt zurück zur Item-Liste.
 
-### Reiter „Job-Widget“
+### Reiter „Verlauf“
+
+Jede Job-Sitzung wird gespeichert (`config/loothub-jobs.json`, bis zu 1000 Sitzungen) – auch beim Verlassen
+des Servers und beim Beenden des Spiels:
+
+- **Summen** für heute, die letzten 7 Tage und gesamt: Geld, XP, aktive Zeit und $/h.
+- **Zeitraum-Reiter** nebeneinander: **Stündlich** (letzte 24 Stunden), **Täglich** (14 Tage), **Wöchentlich**
+  (12 Wochen), **Jährlich** (12 Monate, je Monat) und **Alltime** (seit der ersten Sitzung). Der Zeitraum steuert
+  das Balkendiagramm (Maus drüber für Details) und die Sitzungsliste.
+- **Liste aller Sitzungen**, neueste oben, die laufende Sitzung grün: Beginn, Job, aktive Zeit, XP, $, $/h
+  und (bei breitem Fenster) Level. Maus über eine Zeile zeigt alle Jobs der Sitzung mit Level-Fortschritt.
+- **Job-Filter** neben den Zeitraum-Reitern (z. B. nur Holzfäller) und **Verlauf löschen** (zweimal klicken zur Bestätigung).
+
+### Reiter „Statistik“
+
+Eigene Statistik wie bei Vanilla (auf OPSUCHT ist die Vanilla-Statistik deaktiviert). Loothub+ zählt selbst mit,
+was auf Ihrem PC passiert – nur auf Servern, ab der Installation – und speichert es pro Tag in
+`config/loothub-stats.json`. Zeitraum wählbar: **Heute**, **7 Tage**, **Gesamt**.
+
+- **Allgemein:** Spielzeit, Strecken (gelaufen, gesprintet, geschlichen, geschwommen, geklettert, Elytren,
+  geflogen, geritten), Sprünge, Blöcke abgebaut/platziert, Items aufgesammelt, Nahrung gegessen, Mobs getötet,
+  Schaden ausgeteilt/erlitten, Tode.
+- **Blöcke:** je Blockart abgebaut und platziert · **Items:** aufgesammelt und gegessen · **Mobs:** getötet.
+  Mit Suche; Klick auf eine Spaltenüberschrift sortiert (nochmal klicken = umgekehrt).
+
+Grenzen: Getötete Mobs sind geschätzt (Tod innerhalb von 5 s nach Ihrem Treffer). Blöcke, die der Server
+zusätzlich abbaut (z. B. Timber-Axt), und Items, die direkt ins Inventar gelegt werden, sieht der Client nicht.
+
+## Einstellungen (/loothub)
+
+**/loothub** im Chat (oder **⚙** im Loothub+-Menü) öffnet die Einstellungen:
+
+- **Job-Widget:** an/aus, Position ändern, Job-Sitzung zurücksetzen
+- **Marktpreise:** Preise im Item-Tooltip an/aus
+- **Statistik:** Zählen an/aus
+- **Updates:** automatisch beim Start prüfen an/aus, „Jetzt prüfen“, installierte und neueste Version
+
+Gespeichert in `config/loothub.json`.
+
+### Job-Widget (in den Einstellungen)
 
 Zeigt im Spiel ein frei verschiebbares Widget mit dem aktuellen Job:
 
@@ -44,7 +83,8 @@ Level-Up in: ~38 Min.
 
 - **Voraussetzung:** Die Job-Fortschrittsanzeige von OPSUCHT muss an sein (`/job toggle`). Die Mod liest diese
   Actionbar-Zeile mit (z. B. `+2,5 XP • +12,73$ • Holzfäller Level 58 • […] 13,85%`), es gibt dafür keine API.
-- Im Reiter **Job-Widget** (Taste L): Widget mit der Maus verschieben, ein-/ausschalten, Sitzung zurücksetzen.
+- In den Einstellungen (**/loothub**): Widget ein-/ausschalten, **Position ändern** (mit der Maus ziehen),
+  Job-Sitzung zurücksetzen.
   Die Position wird in `config/loothub.json` gespeichert.
 - Nur aktive Zeit zählt: mehr als 15 s ohne Job-Aktion gilt als Pause und verfälscht die Stundenwerte nicht.
   Nach 10 Minuten ohne Aktion oder beim Verlassen des Servers beginnt eine neue Sitzung.
@@ -85,34 +125,6 @@ vor der Nutzung auf dem Server beim OPSUCHT-Support nachfragen (§5.10.4).
 Ergebnis: `build/libs/loothub-1.0.0.jar` (die `-sources`-Datei brauchen Sie nicht).
 Diese Datei zusammen mit der Fabric API für 1.21.11 in den `mods`-Ordner legen.
 
-### Reiter „Verlauf“
-
-Jede Job-Sitzung wird gespeichert (`config/loothub-jobs.json`, bis zu 1000 Sitzungen) – auch beim Verlassen
-des Servers und beim Beenden des Spiels:
-
-- **Summen** für heute, die letzten 7 Tage und gesamt: Geld, XP, aktive Zeit und $/h.
-- **Zeitraum-Reiter** nebeneinander: **Stündlich** (letzte 24 Stunden), **Täglich** (14 Tage), **Wöchentlich**
-  (12 Wochen), **Jährlich** (12 Monate, je Monat) und **Alltime** (seit der ersten Sitzung). Der Zeitraum steuert
-  das Balkendiagramm (Maus drüber für Details) und die Sitzungsliste.
-- **Liste aller Sitzungen**, neueste oben, die laufende Sitzung grün: Beginn, Job, aktive Zeit, XP, $, $/h
-  und (bei breitem Fenster) Level. Maus über eine Zeile zeigt alle Jobs der Sitzung mit Level-Fortschritt.
-- **Job-Filter** neben den Zeitraum-Reitern (z. B. nur Holzfäller) und **Verlauf löschen** (zweimal klicken zur Bestätigung).
-
-### Reiter „Statistik“
-
-Eigene Statistik wie bei Vanilla (auf OPSUCHT ist die Vanilla-Statistik deaktiviert). Loothub+ zählt selbst mit,
-was auf Ihrem PC passiert – nur auf Servern, ab der Installation – und speichert es pro Tag in
-`config/loothub-stats.json`. Zeitraum wählbar: **Heute**, **7 Tage**, **Gesamt**.
-
-- **Allgemein:** Spielzeit, Strecken (gelaufen, gesprintet, geschlichen, geschwommen, geklettert, Elytren,
-  geflogen, geritten), Sprünge, Blöcke abgebaut/platziert, Items aufgesammelt, Nahrung gegessen, Mobs getötet,
-  Schaden ausgeteilt/erlitten, Tode.
-- **Blöcke:** je Blockart abgebaut und platziert · **Items:** aufgesammelt und gegessen · **Mobs:** getötet.
-  Mit Suche; Klick auf eine Spaltenüberschrift sortiert (nochmal klicken = umgekehrt).
-
-Grenzen: Getötete Mobs sind geschätzt (Tod innerhalb von 5 s nach Ihrem Treffer). Blöcke, die der Server
-zusätzlich abbaut (z. B. Timber-Axt), und Items, die direkt ins Inventar gelegt werden, sieht der Client nicht.
-
 ## Updates im Spiel
 
 Loothub+ prüft beim Start, ob auf GitHub (Release „latest“ von Kaledoss/Loothub-) eine neuere Version liegt.
@@ -140,13 +152,14 @@ Fabric-Unterstützung in LabyMod ist laut LabyMod experimentell; manche Mods sin
 | `src/client/java/de/loothub/client/PriceTooltip.java` | Schreibt die Preise in den Tooltip |
 | `src/client/java/de/loothub/client/MarketHistory.java` | Lädt den Preisverlauf |
 | `src/client/java/de/loothub/client/MarketScreen.java` | Reiter „Markt“ mit Liste und Diagramm |
-| `src/client/java/de/loothub/client/Tabs.java` | Die Reiter oben links |
+| `src/client/java/de/loothub/client/Tabs.java` | Die Reiter oben mittig und der ⚙-Knopf |
 | `src/client/java/de/loothub/client/jobs/JobParser.java` | Erkennt die Job-Zeile in der Actionbar |
 | `src/client/java/de/loothub/client/jobs/JobTracker.java` | Sitzungswerte, XP/h, $/h, Level-Up-Zeit |
 | `src/client/java/de/loothub/client/jobs/JobWidget.java` | Zeichnet das Widget |
 | `src/client/java/de/loothub/client/jobs/JobHistory.java` | Speichert die Sitzungen |
 | `src/client/java/de/loothub/client/jobs/JobHistoryScreen.java` | Reiter „Verlauf“ |
-| `src/client/java/de/loothub/client/jobs/JobWidgetEditScreen.java` | Reiter „Job-Widget“: Editor zum Verschieben |
+| `src/client/java/de/loothub/client/jobs/JobWidgetEditScreen.java` | Job-Widget verschieben |
+| `src/client/java/de/loothub/client/SettingsScreen.java` | Einstellungen (/loothub) |
 | `src/client/java/de/loothub/client/mixin/GuiMixin.java` | Liest Actionbar-Nachrichten mit |
 | `src/client/java/de/loothub/client/stats/*` | Eigene Statistik: Zählung, Speicher, Reiter |
 | `src/client/java/de/loothub/client/mixin/BlockItemMixin.java` | Zählt platzierte Blöcke |

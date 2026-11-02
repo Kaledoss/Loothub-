@@ -29,7 +29,7 @@ public final class PriceTooltip {
 	}
 
 	private static void append(ItemStack stack, List<Component> lines) {
-		if (stack.isEmpty()) {
+		if (stack.isEmpty() || !de.loothub.client.jobs.WidgetConfig.get().tooltipPrices) {
 			return;
 		}
 		// Umbenannte Items und Sonder-/OP-Items (eigenes Modell) werden nicht am Marktplatz gehandelt

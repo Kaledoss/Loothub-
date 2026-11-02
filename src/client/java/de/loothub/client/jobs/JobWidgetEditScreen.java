@@ -6,11 +6,9 @@ import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.input.MouseButtonEvent;
 import net.minecraft.network.chat.Component;
 
-import de.loothub.client.Tabs;
-
 /**
- * Editor für das Job-Widget (Reiter „Job-Widget“ im Loothub+-Menü, Taste L): Widget mit der Maus an die gewünschte Stelle ziehen,
- * ein-/ausschalten oder die Sitzung zurücksetzen. Die Position wird beim Loslassen gespeichert.
+ * Job-Widget verschieben (aus den Einstellungen /loothub → „Position ändern“): Widget mit der Maus an die
+ * gewünschte Stelle ziehen. Die Position wird beim Loslassen gespeichert; „Fertig“ oder Esc führt zurück.
  */
 public class JobWidgetEditScreen extends Screen {
 	private static final int TEXT = 0xFFFFFFFF;
@@ -18,8 +16,7 @@ public class JobWidgetEditScreen extends Screen {
 	private static final int OUTLINE = 0xFFFFC040;
 	private static final int OUTLINE_HOVER = 0xFFFFFFFF;
 
-	private Button toggleButton;
-	private Button updateButton;
+	private final Screen parent;
 	private boolean dragging;
 	private double grabX;
 	private double grabY;
@@ -27,45 +24,15 @@ public class JobWidgetEditScreen extends Screen {
 	// Zuletzt gezeichnete Position/Größe – für Klick-Erkennung
 	private int wx, wy, ww, wh;
 
-	public JobWidgetEditScreen() {
+	public JobWidgetEditScreen(Screen parent) {
 		super(Component.translatable("loothub.job.editor.title"));
+		this.parent = parent;
 	}
 
 	@Override
 	protected void init() {
-		Tabs.create(Tabs.Tab.JOBS, width, 4).forEach(this::addRenderableWidget);
-		updateButton = addRenderableWidget(Tabs.updateButton(4));
-
-		int bw = 120;
-		int gap = 6;
-		int total = 3 * bw + 2 * gap;
-		int bx = (width - total) / 2;
-		int by = height - 28;
-
-		toggleButton = addRenderableWidget(Button.builder(toggleLabel(), b -> {
-			WidgetConfig c = WidgetConfig.get();
-			c.jobWidgetEnabled = !c.jobWidgetEnabled;
-			c.save();
-			b.setMessage(toggleLabel());
-		}).bounds(bx, by, bw, 20).build());
-
-		addRenderableWidget(Button.builder(Component.translatable("loothub.job.editor.reset"), b -> JobTracker.reset())
-				.bounds(bx + bw + gap, by, bw, 20).build());
-
 		addRenderableWidget(Button.builder(Component.translatable("loothub.job.editor.done"), b -> onClose())
-				.bounds(bx + 2 * (bw + gap), by, bw, 20).build());
-	}
-
-	@Override
-	public void tick() {
-		super.tick();
-		Tabs.refreshUpdateButton(updateButton);
-	}
-
-	private Component toggleLabel() {
-		return Component.translatable(WidgetConfig.get().jobWidgetEnabled
-				? "loothub.job.editor.enabled"
-				: "loothub.job.editor.disabled");
+				.bounds((width - 120) / 2, height - 28, 120, 20).build());
 	}
 
 	@Override
@@ -73,12 +40,12 @@ public class JobWidgetEditScreen extends Screen {
 		super.render(g, mouseX, mouseY, delta);
 
 		Component title = getTitle();
-		g.drawString(font, title, (width - font.width(title)) / 2, 28, TEXT, true);
+		g.drawString(font, title, (width - font.width(title)) / 2, 12, TEXT, true);
 		Component hint = Component.translatable("loothub.job.editor.hint");
-		g.drawString(font, hint, (width - font.width(hint)) / 2, 40, HINT, true);
+		g.drawString(font, hint, (width - font.width(hint)) / 2, 24, HINT, true);
 		if (!JobTracker.hasData()) {
 			Component info = Component.translatable("loothub.job.editor.no_data");
-			g.drawString(font, info, (width - font.width(info)) / 2, 52, HINT, true);
+			g.drawString(font, info, (width - font.width(info)) / 2, 36, HINT, true);
 		}
 
 		JobTracker.Snapshot snap = JobTracker.snapshot();
@@ -145,7 +112,7 @@ public class JobWidgetEditScreen extends Screen {
 	@Override
 	public void onClose() {
 		WidgetConfig.get().save();
-		super.onClose();
+		minecraft.setScreen(parent);
 	}
 
 	@Override

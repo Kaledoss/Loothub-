@@ -44,7 +44,8 @@ public final class StatsTracker {
 	}
 
 	public static boolean tracking(Minecraft mc) {
-		return mc.player != null && mc.level != null && !mc.hasSingleplayerServer();
+		return mc.player != null && mc.level != null && !mc.hasSingleplayerServer()
+				&& de.loothub.client.jobs.WidgetConfig.get().statsEnabled;
 	}
 
 	// ------------------------------------------------------------------ Ereignisse
