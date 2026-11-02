@@ -156,7 +156,7 @@ public class SettingsScreen extends LoothubScreen {
 					} catch (java.io.IOException ignored) {
 						// Ordner wird trotzdem geöffnet
 					}
-					net.minecraft.Util.getPlatform().openPath(file.getParent());
+					openFolder(file.getParent());
 				})
 				.bounds(descX, pcgY + 70, fieldW, 16).build()));
 		buttons.add(addRenderableWidget(Button.builder(Component.translatable("loothub.settings.pcg.connect"), b -> {
@@ -177,6 +177,20 @@ public class SettingsScreen extends LoothubScreen {
 		}
 		for (net.minecraft.client.gui.components.AbstractWidget b : buttons) {
 			b.visible = b.getY() >= ct && b.getY() + b.getHeight() <= cb;
+		}
+	}
+
+	/** Ordner im Datei-Explorer öffnen (Windows, macOS, Linux). */
+	private static void openFolder(java.nio.file.Path dir) {
+		String os = System.getProperty("os.name", "").toLowerCase(java.util.Locale.ROOT);
+		String path = dir.toAbsolutePath().toString();
+		String[] cmd = os.contains("win") ? new String[]{"explorer", path}
+				: os.contains("mac") ? new String[]{"open", path}
+				: new String[]{"xdg-open", path};
+		try {
+			new ProcessBuilder(cmd).start();
+		} catch (java.io.IOException e) {
+			de.loothub.Loothub.LOGGER.warn("Ordner konnte nicht geöffnet werden: {}", path, e);
 		}
 	}
 
