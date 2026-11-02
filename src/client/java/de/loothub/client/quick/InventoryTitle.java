@@ -42,6 +42,14 @@ public final class InventoryTitle {
 
 	public static void register() {
 		ScreenEvents.AFTER_INIT.register((client, screen, w, h) -> {
+			// Kisten und Server-Menüs (z. B. OPSUCHT): nur der pulsierende Rand
+			if (screen instanceof net.minecraft.client.gui.screens.inventory.ContainerScreen) {
+				ScreenEvents.afterRender(screen).register((s, g, mx, my, delta) -> {
+					AbstractContainerScreenAccessor acc = (AbstractContainerScreenAccessor) s;
+					Pulse.outline(g, acc.loothub$leftPos(), acc.loothub$topPos(), acc.loothub$imageWidth(), acc.loothub$imageHeight());
+				});
+				return;
+			}
 			if (!(screen instanceof InventoryScreen)) {
 				return;
 			}
