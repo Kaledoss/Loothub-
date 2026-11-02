@@ -9,10 +9,10 @@ import java.util.Locale;
  * Symbol: Item-ID wie {@code minecraft:emerald} oder eigene Grafik {@code loothub:crown} / {@code loothub:trophy}.
  */
 public final class QuickCommand {
-	/** Kein Server-Befehl: öffnet die Loothub+-Seite „Wertstoffhändler“. */
+	/** Früherer Knopf (öffnete die Kurs-Übersicht) – wird in den Einstellungen durch /shards ersetzt. */
 	public static final String MERCHANT = "loothub:merchant";
 	/** Mit jeder Version neu hinzugekommene Standard-Knöpfe (für bestehende Einstellungen). */
-	public static final int DEFAULTS_VERSION = 3;
+	public static final int DEFAULTS_VERSION = 4;
 
 	public String label;
 	public String command;
@@ -58,7 +58,7 @@ public final class QuickCommand {
 		list.add(new QuickCommand("Erfolge", "achievement", "loothub:trophy"));
 		list.add(new QuickCommand("Pets", "pets", "minecraft:bone"));
 		list.add(new QuickCommand("Minions", "minions", "minecraft:armor_stand"));
-		list.add(new QuickCommand("Wertstoffhändler", MERCHANT, "minecraft:composter"));
+		list.add(new QuickCommand("Wertstoffhändler", "shards", "minecraft:amethyst_shard"));
 		return list;
 	}
 }

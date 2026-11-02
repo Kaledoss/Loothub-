@@ -85,6 +85,13 @@ public final class WidgetConfig {
 					c.jobWidgetX = clamp01(c.jobWidgetX);
 					c.jobWidgetY = clamp01(c.jobWidgetY);
 					if (c.quickCommands != null && c.quickCommandsVersion < de.loothub.client.quick.QuickCommand.DEFAULTS_VERSION) {
+						// Der Händler-Knopf öffnet jetzt das Server-Menü (/shards) statt der Übersicht
+						for (de.loothub.client.quick.QuickCommand q : c.quickCommands) {
+							if (de.loothub.client.quick.QuickCommand.MERCHANT.equals(q.command)) {
+								q.command = "shards";
+								q.icon = "minecraft:amethyst_shard";
+							}
+						}
 						java.util.Set<String> have = new java.util.HashSet<>();
 						for (de.loothub.client.quick.QuickCommand q : c.quickCommands) {
 							have.add(q.command == null ? "" : q.command.strip().replaceFirst("^/", ""));
