@@ -28,13 +28,13 @@ import net.fabricmc.loader.api.metadata.ModOrigin;
 import de.loothub.Loothub;
 
 /**
- * Update-Funktion: prüft das GitHub-Release „latest“ im öffentlichen Repository Kaledoss/Loothub-Releases
- * (dort liegt nur die fertige Mod, der Quellcode bleibt privat) auf eine neuere Version,
+ * Update-Funktion: prüft das GitHub-Release „latest“ von Kaledoss/Loothub- auf eine neuere Version
+ * (das Repository muss dafür öffentlich sein),
  * lädt sie auf Wunsch in den Mods-Ordner und entfernt die alte Datei nach dem Beenden des Spiels.
  * Die neue Version ist nach einem Neustart aktiv.
  */
 public final class Updater {
-	private static final String RELEASE_API = "https://api.github.com/repos/Kaledoss/Loothub-Releases/releases/tags/latest";
+	private static final String RELEASE_API = "https://api.github.com/repos/Kaledoss/Loothub-/releases/tags/latest";
 	private static final Pattern ASSET = Pattern.compile("^" + Loothub.MOD_ID + "-(\\d+(?:\\.\\d+)*)\\.jar$");
 
 	public enum State {

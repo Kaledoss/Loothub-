@@ -1,5 +1,5 @@
 # Baut Loothub+ bei jedem Push und stellt die fertige Mod bereit:
-#  - als Release "latest" im öffentlichen Repository Kaledoss/Loothub-Releases (für die Update-Funktion)
+#  - als Release "Neueste Version" (Tab "Releases" im Repository) – direkt herunterladbar
 #  - zusätzlich als Artefakt im jeweiligen Actions-Lauf
 name: build
 on:
@@ -7,7 +7,7 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: read
+  contents: write
 
 jobs:
   build:
@@ -38,20 +38,13 @@ jobs:
         with:
           name: Loothub-Mod
           path: dist/
-      # Die fertige Mod kommt ins öffentliche Repository Kaledoss/Loothub-Releases (der Code bleibt privat).
-      # Benötigt das Secret RELEASES_TOKEN: Fine-grained Token mit „Contents: Read and write“ nur für Loothub-Releases.
-      - name: Release im öffentlichen Repository aktualisieren
+      - name: Release "Neueste Version" aktualisieren
         if: github.ref == 'refs/heads/main'
         env:
-          GH_TOKEN: ${{ secrets.RELEASES_TOKEN }}
-          RELEASE_REPO: Kaledoss/Loothub-Releases
+          GH_TOKEN: ${{ github.token }}
         run: |
-          if [ -z "$GH_TOKEN" ]; then
-            echo "::error::Secret RELEASES_TOKEN fehlt – siehe Anleitung im README (Abschnitt Updates)."
-            exit 1
-          fi
-          gh release delete latest --repo "$RELEASE_REPO" --yes --cleanup-tag || true
+          gh release delete latest --yes --cleanup-tag || true
           gh release create latest dist/*.jar \
-            --repo "$RELEASE_REPO" \
             --title "Loothub+ 1.0.${{ github.run_number }}" \
-            --notes "Automatisch gebaut. Für Minecraft 1.21.11 (Fabric). Benötigt Fabric API 0.141.6+1.21.11."
+            --notes "Automatisch gebaut aus Commit ${GITHUB_SHA::7}. Für Minecraft 1.21.11 (Fabric). Benötigt Fabric API 0.141.6+1.21.11." \
+            --target "$GITHUB_SHA"

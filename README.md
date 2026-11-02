@@ -127,15 +127,10 @@ Diese Datei zusammen mit der Fabric API für 1.21.11 in den `mods`-Ordner legen.
 
 ## Updates im Spiel
 
-Loothub+ prüft beim Start, ob im öffentlichen Repository **Kaledoss/Loothub-Releases** (Release „latest“)
-eine neuere Version liegt. Dort liegt nur die fertige Mod – der Quellcode in Kaledoss/Loothub- bleibt privat.
+Loothub+ prüft beim Start, ob auf GitHub (Release „latest“ von Kaledoss/Loothub-) eine neuere Version liegt.
 Falls ja, erscheint ein Hinweis im Chat und im Loothub+-Menü (Taste L) der Knopf **„Update … installieren“**.
 Die neue Datei wird in denselben Mods-Ordner geladen, die alte nach dem Beenden entfernt –
-nach einem **Neustart** ist die neue Version aktiv.
-
-**Einrichtung (einmalig):** Damit der Build die Mod in Loothub-Releases veröffentlichen darf, braucht das
-private Repository das Secret `RELEASES_TOKEN` – ein *Fine-grained Personal Access Token* mit Zugriff nur auf
-`Kaledoss/Loothub-Releases` und der Berechtigung **Contents: Read and write**.
+nach einem **Neustart** ist die neue Version aktiv. Funktioniert nur, solange das Repository öffentlich ist.
 
 ## Mit LabyMod nutzen
 
