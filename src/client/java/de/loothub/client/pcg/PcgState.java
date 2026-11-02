@@ -69,7 +69,9 @@ public final class PcgState {
 			lastSpawnStart = now;
 			GermanNames.of(name); // deutschen Namen schon mal nachschlagen
 			Minecraft mc = Minecraft.getInstance();
-			mc.execute(() -> mc.getSoundManager().play(SimpleSoundInstance.forUI(SoundEvents.NOTE_BLOCK_PLING, 1.6f)));
+			if (de.loothub.client.jobs.WidgetConfig.get().pcgSound) {
+				mc.execute(() -> mc.getSoundManager().play(SimpleSoundInstance.forUI(SoundEvents.NOTE_BLOCK_PLING, 1.6f)));
+			}
 			return;
 		}
 		Spawn s = current;

@@ -169,6 +169,8 @@ public class SettingsScreen extends LoothubScreen {
 						b -> minecraft.setScreen(new de.loothub.client.pcg.PcgOverlayEditScreen(this)))
 				.bounds(descX, pcgY + 92, fieldW, 16).build()));
 		pcgFieldX = descX;
+		end = card(end, 40, "loothub.settings.pcg_sound", "loothub.settings.pcg_sound.tooltip",
+				() -> c.pcgSound, v -> c.pcgSound = v);
 		pcgFieldW = fieldW;
 
 		// Scrollen: Inhalt höher als der sichtbare Bereich?

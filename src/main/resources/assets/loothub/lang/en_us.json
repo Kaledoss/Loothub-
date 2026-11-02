@@ -193,5 +193,7 @@
 	"loothub.merchant.col.base": "Grundkurs",
 	"loothub.merchant.col.rate": "Aktueller Kurs",
 	"loothub.settings.pcg.move": "Anzeige verschieben",
-	"loothub.pcg.editor.title": "Pokémon-Anzeige verschieben"
+	"loothub.pcg.editor.title": "Pokémon-Anzeige verschieben",
+	"loothub.settings.pcg_sound": "Pokémon-Ton",
+	"loothub.settings.pcg_sound.tooltip": "Spielt einen kurzen Ton, wenn im Pokémon Community Game ein neues Pokémon erscheint."
 }
