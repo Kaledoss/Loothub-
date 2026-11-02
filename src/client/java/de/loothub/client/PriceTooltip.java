@@ -23,10 +23,16 @@ public final class PriceTooltip {
 			try {
 				append(stack, lines);
 			} catch (RuntimeException e) {
-				Loothub.LOGGER.debug("Tooltip fehlgeschlagen", e);
+				// Nur einmal melden – der Tooltip wird jedes Bild neu gebaut und würde sonst das Log fluten
+				if (!loggedError) {
+					loggedError = true;
+					Loothub.LOGGER.warn("Tooltip fehlgeschlagen (weitere Meldungen unterdrückt)", e);
+				}
 			}
 		});
 	}
+
+	private static boolean loggedError;
 
 	private static void append(ItemStack stack, List<Component> lines) {
 		if (stack.isEmpty() || !de.loothub.client.jobs.WidgetConfig.get().tooltipPrices) {

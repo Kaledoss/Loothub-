@@ -39,6 +39,7 @@ public final class JobTracker {
 
 	private static final Map<String, JobStats> JOBS = new HashMap<>();
 	private static String currentJob;
+	private static boolean loggedParseError;
 	private static long sessionStart;
 	private static long lastGain;
 	private static double totalMoney;
@@ -52,7 +53,10 @@ public final class JobTracker {
 		try {
 			JobParser.parse(text).ifPresent(JobTracker::onGain);
 		} catch (RuntimeException e) {
-			Loothub.LOGGER.debug("Actionbar konnte nicht ausgewertet werden: {}", text, e);
+			if (!loggedParseError) {
+				loggedParseError = true;
+				Loothub.LOGGER.warn("Actionbar konnte nicht ausgewertet werden (weitere Meldungen unterdrückt): {}", text, e);
+			}
 		}
 	}
 
