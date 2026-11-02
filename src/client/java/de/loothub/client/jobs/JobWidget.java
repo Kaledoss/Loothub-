@@ -80,9 +80,8 @@ public final class JobWidget {
 		String state = "";
 		if (s.demo()) {
 			state = tr("loothub.job.demo");
-		} else if (s.paused()) {
-			state = tr("loothub.job.paused");
 		}
+		// In der Pause bleibt nur die Tracking-Zeit stehen, kein Hinweis „(Pause)“
 
 		WidgetConfig c = WidgetConfig.get();
 		boolean showJob = c.jobRowVisible("job");

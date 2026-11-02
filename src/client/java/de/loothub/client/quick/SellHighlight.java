@@ -14,8 +14,8 @@ import de.loothub.client.jobs.WidgetConfig;
 import de.loothub.client.mixin.AbstractContainerScreenAccessor;
 
 /**
- * In Markt-Menüs des Servers (Titel enthält „Markt“ oder „verkaufen“) werden alle Slots mit Items, die man
- * laut Marktplatz verkaufen kann (aktive Kaufaufträge), grün hinterlegt – auch im eigenen Inventar darunter.
+ * In Markt-Menüs des Servers (Titel enthält „Markt“ oder „verkaufen“) werden alle Slots mit Items, die am
+ * Marktplatz gehandelt werden, grün hinterlegt – auch im eigenen Inventar darunter.
  * Reine Anzeige; aufgerufen von {@code ContainerScreenMixin} direkt nach der Menü-Textur, also unter den Items.
  */
 public final class SellHighlight {
@@ -42,7 +42,7 @@ public final class SellHighlight {
 		int left = acc.loothub$leftPos();
 		int top = acc.loothub$topPos();
 		for (Slot slot : screen.getMenu().slots) {
-			if (!slot.isActive() || !sellable(slot.getItem())) {
+			if (!slot.isActive() || !traded(slot.getItem())) {
 				continue;
 			}
 			int x = left + slot.x;
@@ -52,7 +52,7 @@ public final class SellHighlight {
 		}
 	}
 
-	private static boolean sellable(ItemStack stack) {
+	private static boolean traded(ItemStack stack) {
 		if (stack.isEmpty()) {
 			return false;
 		}
@@ -61,6 +61,6 @@ public final class SellHighlight {
 			return false;
 		}
 		MarketPrices.Entry entry = MarketPrices.get(BuiltInRegistries.ITEM.getKey(stack.getItem()).toString());
-		return entry != null && entry.sell().available();
+		return entry != null; // alles, was am Marktplatz gehandelt wird
 	}
 }

@@ -9,8 +9,7 @@
 		"AbstractContainerScreenAccessor",
 		"InventoryScreenMixin",
 		"ContainerLabelMixin",
-		"ContainerScreenMixin",
-		"BossHealthOverlayMixin"
+		"ContainerScreenMixin"
 	],
 	"injectors": {
 		"defaultRequire": 0

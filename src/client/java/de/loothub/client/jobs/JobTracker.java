@@ -63,7 +63,8 @@ public final class JobTracker {
 		}
 
 		long gap = lastGain == 0 ? 0 : now - lastGain;
-		long active = gap <= PAUSE_AFTER_MS ? gap : 0;
+		// Längere Lücken zählen nur bis zur Pausen-Grenze – genau so, wie die Uhr im Widget stehen bleibt
+		long active = Math.min(gap, PAUSE_AFTER_MS);
 
 		if (sessionStart == 0) {
 			sessionStart = now;
@@ -148,7 +149,7 @@ public final class JobTracker {
 		}
 
 		return new Snapshot(currentJob, s.level, s.progress, s.xp, totalMoney, xpPerHour, moneyPerHour, eta,
-				now - sessionStart, now - lastGain > PAUSE_AFTER_MS, false);
+				totalActiveMs + Math.min(now - lastGain, PAUSE_AFTER_MS), now - lastGain > PAUSE_AFTER_MS, false);
 	}
 
 	/** Die laufende Sitzung für die Anzeige im Verlauf, oder null. Wird nicht gespeichert. */
