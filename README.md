@@ -63,7 +63,8 @@ zusätzlich abbaut (z. B. Timber-Axt), und Items, die direkt ins Inventar gelegt
 ## Inventar in Schwarz-Rot
 
 Loothub+ bringt ein eingebautes Ressourcenpaket **„Loothub+ Inventar (Schwarz-Rot)“** mit, das das
-Spieler-Inventar (Taste E) passend zum Loothub+-Fenster färbt. Statt „Handwerk“ steht oben „Loothub+“. Es ist automatisch aktiv und lässt sich unter
+Spieler-Inventar (Taste E) passend zum Loothub+-Fenster färbt. Statt „Handwerk“ steht oben „Loothub+“. Rechts neben dem Zweithand-Slot sitzen zwei feste
+Knöpfe: **Werkbank** (`/werkbank`) und **Amboss** (`/anvil`). Es ist automatisch aktiv und lässt sich unter
 **Optionen → Ressourcenpakete** ausschalten. Rein optisch (Regelwerk §5.10.3).
 
 ## Befehls-Leiste im Inventar
