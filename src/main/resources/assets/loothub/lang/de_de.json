@@ -112,6 +112,7 @@
 	"loothub.settings.section.job_widget": "Job-Widget",
 	"loothub.settings.job_widget.tooltip": "Zeigt im Spiel Job, Level, Fortschritt, Tracking-Zeit sowie Geld und XP (gesamt und pro Stunde). Benötigt /job toggle.",
 	"loothub.settings.job_widget.move": "Position ändern",
+	"loothub.settings.job_widget.rows": "Zeilen",
 	"loothub.settings.job_session.reset": "Job-Sitzung zurücksetzen",
 	"loothub.settings.job_session.reset.done": "✔ Sitzung gespeichert und neu gestartet",
 	"loothub.settings.tooltip_prices": "Tooltip-Preise",

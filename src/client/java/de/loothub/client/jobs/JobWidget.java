@@ -30,12 +30,15 @@ public final class JobWidget {
 	private static final int JOB = 0xFFFFAA33;
 	private static final int MUTED = 0xFFAAAAAA;
 
+	/** Zeilen-IDs in Anzeigereihenfolge; Sprachschlüssel: loothub.job.row.&lt;id&gt;. In den Einstellungen einzeln schaltbar. */
+	public static final List<String> ROW_IDS = List.of("job", "level", "progress", "time", "money", "money_rate", "xp", "xp_rate");
+
 	/** Eine Zeile des Widgets. */
 	public record Row(String label, String value, int color) {
 	}
 
 	/** Fertig aufbereitete Anzeige – einmal berechnet, damit Größe und Zeichnen übereinstimmen. */
-	public record Layout(ItemStack icon, String job, String state, List<Row> rows, int labelW, int width, int height) {
+	public record Layout(boolean showJob, ItemStack icon, String job, String state, List<Row> rows, int labelW, int width, int height) {
 	}
 
 	private JobWidget() {
@@ -55,6 +58,9 @@ public final class JobWidget {
 			return; // noch keine Job-Aktion in dieser Sitzung
 		}
 		Layout layout = layout(mc.font, snap);
+		if (!layout.showJob() && layout.rows().isEmpty()) {
+			return; // alle Zeilen ausgeschaltet
+		}
 		int[] pos = position(g.guiWidth(), g.guiHeight(), layout);
 		draw(g, mc.font, layout, pos[0], pos[1]);
 	}
@@ -75,30 +81,37 @@ public final class JobWidget {
 			state = tr("loothub.job.paused");
 		}
 
+		WidgetConfig c = WidgetConfig.get();
+		boolean showJob = c.jobRowVisible("job");
 		List<Row> rows = new ArrayList<>();
-		rows.add(new Row(tr("loothub.job.row.level"), s.level() >= 0 ? String.valueOf(s.level()) : "–", VALUE));
-		rows.add(new Row(tr("loothub.job.row.progress"),
-				Double.isNaN(s.progress()) ? "–" : Fmt.exact(s.progress()) + " %", VALUE));
-		rows.add(new Row(tr("loothub.job.row.time"), Fmt.clock(s.trackingMs()), VALUE));
-		rows.add(new Row(tr("loothub.job.row.money"), Fmt.exact(s.sessionMoney()), VALUE));
-		rows.add(new Row(tr("loothub.job.row.money_rate"), orDash(s.moneyPerHour()), VALUE));
-		rows.add(new Row(tr("loothub.job.row.xp"), Fmt.exact(s.sessionXp()), VALUE));
-		rows.add(new Row(tr("loothub.job.row.xp_rate"), orDash(s.xpPerHour()), VALUE));
+		addRow(rows, c, "level", s.level() >= 0 ? String.valueOf(s.level()) : "–");
+		addRow(rows, c, "progress", Double.isNaN(s.progress()) ? "–" : Fmt.exact(s.progress()) + " %");
+		addRow(rows, c, "time", Fmt.clock(s.trackingMs()));
+		addRow(rows, c, "money", Fmt.exact(s.sessionMoney()));
+		addRow(rows, c, "money_rate", orDash(s.moneyPerHour()));
+		addRow(rows, c, "xp", Fmt.exact(s.sessionXp()));
+		addRow(rows, c, "xp_rate", orDash(s.xpPerHour()));
 
-		int labelW = font.width(tr("loothub.job.row.job"));
+		int labelW = showJob ? font.width(tr("loothub.job.row.job")) : 0;
 		for (Row r : rows) {
 			labelW = Math.max(labelW, font.width(r.label()));
 		}
 		labelW += 4;
 
-		int contentW = labelW + ICON_W + font.width(s.job()) + font.width(state);
+		int contentW = showJob ? labelW + ICON_W + font.width(s.job()) + font.width(state) : 40;
 		for (Row r : rows) {
 			contentW = Math.max(contentW, labelW + font.width(r.value()));
 		}
 		int width = contentW + 2 * PADDING;
-		int height = PADDING + JOB_ROW_H + rows.size() * LINE_H + PADDING - 1;
+		int height = PADDING + (showJob ? JOB_ROW_H : 0) + rows.size() * LINE_H + PADDING - 1;
 		ItemStack icon = new ItemStack(JobHistoryScreen.jobIcon(s.job()));
-		return new Layout(icon, s.job(), state, rows, labelW, width, height);
+		return new Layout(showJob, icon, s.job(), state, rows, labelW, width, height);
+	}
+
+	private static void addRow(List<Row> rows, WidgetConfig c, String id, String value) {
+		if (c.jobRowVisible(id)) {
+			rows.add(new Row(tr("loothub.job.row." + id), value, VALUE));
+		}
 	}
 
 	/** Bildschirmposition aus der relativen Position in der Config. */
@@ -119,13 +132,15 @@ public final class JobWidget {
 		int cy = y + PADDING;
 
 		// Job-Zeile mit Symbol
-		g.drawString(font, tr("loothub.job.row.job"), lx, cy + 4, LABEL, true);
-		g.renderItem(l.icon(), vx, cy - 1);
-		g.drawString(font, l.job(), vx + ICON_W, cy + 4, JOB, true);
-		if (!l.state().isEmpty()) {
-			g.drawString(font, l.state(), vx + ICON_W + font.width(l.job()), cy + 4, MUTED, true);
+		if (l.showJob()) {
+			g.drawString(font, tr("loothub.job.row.job"), lx, cy + 4, LABEL, true);
+			g.renderItem(l.icon(), vx, cy - 1);
+			g.drawString(font, l.job(), vx + ICON_W, cy + 4, JOB, true);
+			if (!l.state().isEmpty()) {
+				g.drawString(font, l.state(), vx + ICON_W + font.width(l.job()), cy + 4, MUTED, true);
+			}
+			cy += JOB_ROW_H;
 		}
-		cy += JOB_ROW_H;
 
 		for (Row r : l.rows()) {
 			g.drawString(font, r.label(), lx, cy, LABEL, true);

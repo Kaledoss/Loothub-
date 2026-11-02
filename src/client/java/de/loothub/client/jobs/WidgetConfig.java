@@ -41,6 +41,8 @@ public final class WidgetConfig {
 	public int quickPanelOffsetY = 0;
 	/** Knöpfe der Befehls-Leiste (Beschriftung + Befehl). */
 	public java.util.List<de.loothub.client.quick.QuickCommand> quickCommands = de.loothub.client.quick.QuickCommand.defaults();
+	/** Ausgeblendete Zeilen des Job-Widgets (IDs aus {@link JobWidget#ROW_IDS}). */
+	public java.util.List<String> jobWidgetHiddenRows = new java.util.ArrayList<>();
 	public double jobWidgetX = 0.0;
 	public double jobWidgetY = 0.35;
 
@@ -63,6 +65,9 @@ public final class WidgetConfig {
 				if (c != null) {
 					c.jobWidgetX = clamp01(c.jobWidgetX);
 					c.jobWidgetY = clamp01(c.jobWidgetY);
+					if (c.jobWidgetHiddenRows == null) {
+						c.jobWidgetHiddenRows = new java.util.ArrayList<>();
+					}
 					return c;
 				}
 			} catch (IOException | RuntimeException e) {
@@ -80,6 +85,17 @@ public final class WidgetConfig {
 			}
 		} catch (IOException e) {
 			Loothub.LOGGER.warn("Einstellungen konnten nicht gespeichert werden", e);
+		}
+	}
+
+	public boolean jobRowVisible(String id) {
+		return !jobWidgetHiddenRows.contains(id);
+	}
+
+	public void setJobRowVisible(String id, boolean visible) {
+		jobWidgetHiddenRows.remove(id);
+		if (!visible) {
+			jobWidgetHiddenRows.add(id);
 		}
 	}
 

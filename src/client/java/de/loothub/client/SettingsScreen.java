@@ -13,6 +13,7 @@ import net.minecraft.network.chat.Component;
 import net.minecraft.util.FormattedCharSequence;
 
 import de.loothub.client.jobs.JobTracker;
+import de.loothub.client.jobs.JobWidget;
 import de.loothub.client.jobs.JobWidgetEditScreen;
 import de.loothub.client.jobs.WidgetConfig;
 
@@ -42,7 +43,21 @@ public class SettingsScreen extends LoothubScreen {
 	private record Card(int y, int h, String titleKey, String descKey, Toggle toggle) {
 	}
 
+	/** Kästchen für eine Zeile des Job-Widgets. */
+	private record Check(int x, int y, int w, String id) {
+		boolean contains(double mx, double my) {
+			return mx >= x && mx < x + w && my >= y - 1 && my < y + 10;
+		}
+	}
+
 	private final List<Card> cards = new ArrayList<>();
+	private final List<Check> checks = new ArrayList<>();
+	private final List<Button> buttons = new ArrayList<>();
+	/** Scroll-Position bleibt beim Neuaufbau (Fenstergröße, Scrollen) erhalten. */
+	private static int scroll;
+	private int contentH;
+	private boolean needsRebuild;
+	private int rowsLabelY;
 	private Button resetButton;
 	private long resetFeedbackUntil;
 	private int versionY;
@@ -55,14 +70,16 @@ public class SettingsScreen extends LoothubScreen {
 	@Override
 	protected void initPage() {
 		cards.clear();
+		checks.clear();
+		buttons.clear();
 		WidgetConfig c = WidgetConfig.get();
 		labelW = Math.min(130, cw / 3);
 
 		// Versionsblock
-		versionY = ct;
+		versionY = ct - scroll;
 		int bw = 100;
-		addRenderableWidget(Button.builder(Component.translatable("loothub.settings.update_now"), b -> Updater.checkAgain())
-				.bounds(cr - 8 - bw, versionY + 24, bw, 16).build());
+		buttons.add(addRenderableWidget(Button.builder(Component.translatable("loothub.settings.update_now"), b -> Updater.checkAgain())
+				.bounds(cr - 8 - bw, versionY + 24, bw, 16).build()));
 
 		int y = versionY + 50;
 		y = card(y, 40, "loothub.settings.update_check", "loothub.settings.update_check.tooltip",
@@ -77,21 +94,52 @@ public class SettingsScreen extends LoothubScreen {
 		y = card(y, 40, "loothub.settings.pulse", "loothub.settings.pulse.tooltip",
 				() -> c.pulseBorders, v -> c.pulseBorders = v);
 
-		// Job-Widget: Schalter + zwei Knöpfe unter der Beschreibung
+		// Job-Widget: Schalter + zwei Knöpfe unter der Beschreibung + Kästchen für jede Zeile
 		int jobY = y;
-		card(jobY, 58, "loothub.settings.section.job_widget", "loothub.settings.job_widget.tooltip",
+		int end = card(jobY, 92, "loothub.settings.section.job_widget", "loothub.settings.job_widget.tooltip",
 				() -> c.jobWidgetEnabled, v -> c.jobWidgetEnabled = v);
 		int descX = cl + labelW + 12;
 		int half = (cr - 8 - descX - 4) / 2;
-		addRenderableWidget(Button.builder(Component.translatable("loothub.settings.job_widget.move"),
+		buttons.add(addRenderableWidget(Button.builder(Component.translatable("loothub.settings.job_widget.move"),
 						b -> minecraft.setScreen(new JobWidgetEditScreen(this)))
-				.bounds(descX, jobY + 36, half, 16).build());
+				.bounds(descX, jobY + 36, half, 16).build()));
 		resetButton = addRenderableWidget(Button.builder(Component.translatable("loothub.settings.job_session.reset"), b -> {
 					JobTracker.reset();
 					resetFeedbackUntil = System.currentTimeMillis() + 2000;
 					b.setMessage(Component.translatable("loothub.settings.job_session.reset.done").withStyle(ChatFormatting.GREEN));
 				})
 				.bounds(descX + half + 4, jobY + 36, half, 16).build());
+		buttons.add(resetButton);
+
+		rowsLabelY = jobY + 60;
+		List<String> ids = JobWidget.ROW_IDS;
+		int perRow = (ids.size() + 1) / 2;
+		int colW = (cr - 8 - descX) / perRow;
+		for (int i = 0; i < ids.size(); i++) {
+			int col = i % perRow;
+			int row = i / perRow;
+			checks.add(new Check(descX + col * colW, jobY + 60 + row * 14, colW - 4, ids.get(i)));
+		}
+
+		// Scrollen: Inhalt höher als der sichtbare Bereich?
+		contentH = end - GAP - versionY;
+		int max = maxScroll();
+		if (scroll > max) {
+			scroll = max;
+			needsRebuild = true;
+		}
+		for (Button b : buttons) {
+			b.visible = b.getY() >= ct && b.getY() + b.getHeight() <= cb;
+		}
+	}
+
+	private int maxScroll() {
+		return Math.max(0, contentH - (cb - ct));
+	}
+
+	private static String rowLabel(String id) {
+		String s = Component.translatable("loothub.job.row." + id).getString();
+		return s.endsWith(":") ? s.substring(0, s.length() - 1) : s;
 	}
 
 	private int card(int y, int h, String titleKey, String descKey, BooleanSupplier get, Consumer<Boolean> set) {
@@ -104,6 +152,11 @@ public class SettingsScreen extends LoothubScreen {
 	@Override
 	public void tick() {
 		super.tick();
+		if (needsRebuild) {
+			needsRebuild = false;
+			rebuildWidgets();
+			return;
+		}
 		if (resetFeedbackUntil > 0 && System.currentTimeMillis() > resetFeedbackUntil) {
 			resetFeedbackUntil = 0;
 			resetButton.setMessage(Component.translatable("loothub.settings.job_session.reset"));
@@ -116,16 +169,19 @@ public class SettingsScreen extends LoothubScreen {
 	public void renderBackground(GuiGraphics g, int mouseX, int mouseY, float delta) {
 		super.renderBackground(g, mouseX, mouseY, delta);
 		// Karten-Hintergründe unter den Knöpfen
+		g.enableScissor(cl, ct, cr, cb);
 		box(g, cl, versionY, cw, 44);
 		for (Card card : cards) {
 			box(g, cl, card.y(), cw, card.h());
 			g.fill(cl + labelW + 6, card.y() + 5, cl + labelW + 7, card.y() + card.h() - 5, CARD_EDGE);
 		}
+		g.disableScissor();
 	}
 
 	@Override
 	public void render(GuiGraphics g, int mouseX, int mouseY, float delta) {
 		super.render(g, mouseX, mouseY, delta);
+		g.enableScissor(cl, ct, cr, cb);
 		renderVersion(g);
 		for (Card card : cards) {
 			Component title = Component.translatable(card.titleKey());
@@ -138,6 +194,32 @@ public class SettingsScreen extends LoothubScreen {
 				g.drawString(font, line, descX, y, MUTED, false);
 				y += 10;
 			}
+		}
+
+		// Zeilen des Job-Widgets
+		Component rowsTitle = Component.translatable("loothub.settings.job_widget.rows");
+		g.drawString(font, rowsTitle, cl + 8 + (labelW - font.width(rowsTitle)) / 2, rowsLabelY + 7, TEXT, false);
+		WidgetConfig c = WidgetConfig.get();
+		for (Check ch : checks) {
+			boolean on = c.jobRowVisible(ch.id());
+			boolean hover = ch.contains(mouseX, mouseY) && mouseY >= ct && mouseY < cb;
+			g.fill(ch.x(), ch.y(), ch.x() + 9, ch.y() + 9, hover ? 0xFFFFFFFF : 0xFF000000);
+			g.fill(ch.x() + 1, ch.y() + 1, ch.x() + 8, ch.y() + 8, on ? RED : TRACK_OFF);
+			if (on) {
+				g.fill(ch.x() + 3, ch.y() + 3, ch.x() + 6, ch.y() + 6, 0xFFE8E0E0);
+			}
+			g.drawString(font, rowLabel(ch.id()), ch.x() + 12, ch.y() + 1, on ? TEXT : FAINT, false);
+		}
+		g.disableScissor();
+
+		// Scrollleiste
+		int max = maxScroll();
+		if (max > 0) {
+			int trackH = cb - ct;
+			int barH = Math.max(16, trackH * trackH / (trackH + max));
+			int barY = ct + (trackH - barH) * scroll / max;
+			g.fill(cr - 3, ct, cr - 1, cb, 0x40FFFFFF);
+			g.fill(cr - 3, barY, cr - 1, barY + barH, RED);
 		}
 	}
 
@@ -211,7 +293,15 @@ public class SettingsScreen extends LoothubScreen {
 		if (super.mouseClicked(event, doubleClick)) {
 			return true;
 		}
-		if (event.button() == 0) {
+		if (event.button() == 0 && event.y() >= ct && event.y() < cb) {
+			for (Check ch : checks) {
+				if (ch.contains(event.x(), event.y())) {
+					WidgetConfig c = WidgetConfig.get();
+					c.setJobRowVisible(ch.id(), !c.jobRowVisible(ch.id()));
+					c.save();
+					return true;
+				}
+			}
 			for (Card card : cards) {
 				Toggle t = card.toggle();
 				if (t.contains(event.x(), event.y())) {
@@ -222,6 +312,19 @@ public class SettingsScreen extends LoothubScreen {
 			}
 		}
 		return false;
+	}
+
+	@Override
+	public boolean mouseScrolled(double mx, double my, double horizontal, double vertical) {
+		if (maxScroll() > 0 && mx >= cl && mx < cr && my >= ct && my < cb) {
+			int next = Math.max(0, Math.min(maxScroll(), scroll - (int) Math.round(vertical * 20)));
+			if (next != scroll) {
+				scroll = next;
+				rebuildWidgets();
+			}
+			return true;
+		}
+		return super.mouseScrolled(mx, my, horizontal, vertical);
 	}
 
 	@Override
