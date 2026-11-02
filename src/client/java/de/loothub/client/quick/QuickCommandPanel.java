@@ -29,11 +29,11 @@ import de.loothub.client.mixin.AbstractContainerScreenAccessor;
  * Reihenfolge, Position und Sperre werden in {@code config/loothub.json} gespeichert.
  */
 public final class QuickCommandPanel {
-	private static final int BUTTON_H = 16;
+	private static final int BUTTON_H = 22;
 	private static final int GAP = 3;
 	private static final int PAD = 4;
 	private static final int HEADER_H = 12;
-	private static final int MIN_BUTTON_W = 52;
+	private static final int MIN_BUTTON_W = 24;
 	private static final int DEFAULT_W = 330;
 	private static final int RECIPE_BOOK_W = 149;
 	private static final int DRAG_THRESHOLD = 4;
@@ -57,6 +57,28 @@ public final class QuickCommandPanel {
 			ScreenMouseEvents.allowMouseDrag(screen).register((s, e, dx, dy) -> !panel.mouseDragged(e));
 			ScreenMouseEvents.allowMouseRelease(screen).register((s, e) -> !panel.mouseReleased(e));
 		});
+	}
+
+	private static final net.minecraft.resources.Identifier CROWN =
+			net.minecraft.resources.Identifier.fromNamespaceAndPath("loothub", "icon.png");
+	private static final net.minecraft.resources.Identifier TROPHY =
+			net.minecraft.resources.Identifier.fromNamespaceAndPath("loothub", "textures/gui/trophy.png");
+	private static final java.util.Map<String, net.minecraft.world.item.ItemStack> ITEM_ICONS = new java.util.HashMap<>();
+
+	/** Zeichnet ein Symbol: eigene Grafik (Krone, Pokal) oder ein Minecraft-Item. */
+	static void drawIcon(GuiGraphics g, String icon, int x, int y) {
+		switch (icon) {
+			case "loothub:crown" -> g.blit(net.minecraft.client.renderer.RenderPipelines.GUI_TEXTURED, CROWN,
+					x, y, 0f, 0f, 16, 16, 128, 128, 128, 128);
+			case "loothub:trophy" -> g.blit(net.minecraft.client.renderer.RenderPipelines.GUI_TEXTURED, TROPHY,
+					x, y, 0f, 0f, 16, 16, 16, 16, 16, 16);
+			default -> g.renderItem(ITEM_ICONS.computeIfAbsent(icon, id -> {
+				net.minecraft.resources.Identifier rid = net.minecraft.resources.Identifier.tryParse(id);
+				net.minecraft.world.item.Item item = rid == null ? net.minecraft.world.item.Items.BARRIER
+						: net.minecraft.core.registries.BuiltInRegistries.ITEM.getOptional(rid).orElse(net.minecraft.world.item.Items.BARRIER);
+				return new net.minecraft.world.item.ItemStack(item);
+			}), x, y);
+		}
 	}
 
 	private static void run(String command) {
@@ -101,7 +123,7 @@ public final class QuickCommandPanel {
 			int regionW = left + imgW - regionX;
 
 			w = Math.min(screen.width - 4, Math.max(regionW, DEFAULT_W));
-			cols = Mth.clamp((w - 2 * PAD + GAP) / (MIN_BUTTON_W + GAP), 1, 6);
+			cols = Mth.clamp((w - 2 * PAD + GAP) / (MIN_BUTTON_W + GAP), 1, 10);
 			bw = (w - 2 * PAD - (cols - 1) * GAP) / cols;
 			int rows = Math.max(1, (commands().size() + cols - 1) / cols);
 			h = HEADER_H + rows * (BUTTON_H + GAP) - GAP + PAD + 2;
@@ -276,21 +298,21 @@ public final class QuickCommandPanel {
 			}
 
 			if (hovered >= 0) {
-				g.setTooltipForNextFrame(font, Component.literal("/" + list.get(hovered).command.strip().replaceFirst("^/", "")), mx, my);
+				QuickCommand qc = list.get(hovered);
+				List<net.minecraft.util.FormattedCharSequence> tip = new java.util.ArrayList<>();
+				String name = qc.label == null || qc.label.isBlank() ? "/" + qc.command : qc.label;
+				tip.add(Component.literal(name).withStyle(net.minecraft.ChatFormatting.WHITE).getVisualOrderText());
+				tip.add(Component.literal("/" + qc.command.strip().replaceFirst("^/", ""))
+						.withStyle(net.minecraft.ChatFormatting.GRAY).getVisualOrderText());
+				g.setTooltipForNextFrame(font, tip, mx, my);
 			}
 		}
 
 		private void drawButton(GuiGraphics g, Font font, QuickCommand qc, int bx, int by, boolean hover) {
 			g.fill(bx, by, bx + bw, by + BUTTON_H, hover ? LoothubScreen.RED : BTN_EDGE);
 			g.fill(bx + 1, by + 1, bx + bw - 1, by + BUTTON_H - 1, hover ? BTN_BG_HOVER : BTN_BG);
-			String label = qc.label == null || qc.label.isBlank() ? "/" + qc.command : qc.label;
-			if (font.width(label) > bw - 6) {
-				while (label.length() > 1 && font.width(label + "…") > bw - 6) {
-					label = label.substring(0, label.length() - 1);
-				}
-				label += "…";
-			}
-			g.drawString(font, label, bx + (bw - font.width(label)) / 2, by + 4, 0xFFFFFFFF, false);
+			// Nur das Symbol – Name und Befehl stehen im Tooltip
+			drawIcon(g, qc.iconOrDefault(), bx + (bw - 16) / 2, by + (BUTTON_H - 16) / 2);
 		}
 	}
 }

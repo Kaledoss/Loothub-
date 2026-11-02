@@ -70,15 +70,16 @@ Knöpfe: **Werkbank** (`/werkbank`) und **Amboss** (`/anvil`). Es ist automatisc
 
 ## Befehls-Leiste im Inventar
 
-Unter dem Inventar (Taste **E**) erscheint ein Feld mit Knöpfen für wichtige Befehle:
-Markt (`/markt`), Verkaufen (`/sell`), Auktionshaus (`/ah`), Jobs (`/jobs`), Fischerei (`/fischerei`),
-Jäger (`/hunter`), Farmer (`/farmer`), Clan (`/clan`), Quests (`/quest`), Erfolge (`/achievement`).
+Unter dem Inventar (Taste **E**) erscheint ein Feld mit Symbol-Knöpfen für wichtige Befehle (Name und
+Befehl im Tooltip): Markt – Smaragd (`/markt`), Verkaufen – Goldnugget (`/sell`), Auktionshaus – Goldblock
+(`/ah`), Jobs – Papier (`/jobs`), Fischerei – Fisch (`/fischerei`), Jäger – Schwert (`/hunter`), Farmer –
+Weizen (`/farmer`), Clan – Krone (`/clan`), Quests – Buch (`/quest`), Erfolge – Pokal (`/achievement`).
 
 - **Klick** schickt genau einen Befehl – wie selbst eingetippt, keine Automatisierung.
 - **Knöpfe ziehen** sortiert sie um; **Kopfleiste ziehen** („⠿ Loothub+“) verschiebt das ganze Feld.
 - **Häkchen „Sperren“** oben rechts im Feld: dann lässt sich nichts mehr verschieben.
 - Reihenfolge, Position und Sperre werden in `config/loothub.json` gespeichert (`quickCommands` usw.);
-  dort lassen sich auch Beschriftungen und Befehle ändern. In den Einstellungen ein-/ausschaltbar.
+  dort lassen sich auch Namen, Befehle und Symbole (`icon`, z. B. `minecraft:diamond`) ändern. In den Einstellungen ein-/ausschaltbar.
 
 ## Einstellungen (/loothub)
 
