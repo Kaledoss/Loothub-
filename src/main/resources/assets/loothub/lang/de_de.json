@@ -161,6 +161,8 @@
 	"loothub.quick.lock": "Sperren",
 	"loothub.settings.pulse": "Pulsierende Ränder",
 	"loothub.settings.pulse.tooltip": "Lässt die roten Ränder um Inventar, Rezeptbuch und Befehls-Leiste langsam pulsieren. Aus: fester dunkelroter Rand.",
+	"loothub.settings.sell_highlight": "Verkaufbar markieren",
+	"loothub.settings.sell_highlight.tooltip": "Hinterlegt in den Markt-Menüs des Servers (z. B. „Items verkaufen“) alle Items grün, die man laut Marktplatz gerade verkaufen kann – auch im eigenen Inventar.",
 	"loothub.stats.cat.tools": "Tools",
 	"loothub.stats.col.tool_mined": "Abgebaut",
 	"loothub.stats.col.tool_hits": "Treffer",
