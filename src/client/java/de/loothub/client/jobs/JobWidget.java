@@ -72,8 +72,8 @@ public final class JobWidget {
 		return Component.translatable(key).getString();
 	}
 
-	private static String orDash(double v) {
-		return Double.isNaN(v) ? "–" : Fmt.exact(v);
+	private static String orDash(double v, String unit) {
+		return Double.isNaN(v) ? "–" : Fmt.exact(v) + unit;
 	}
 
 	public static Layout layout(Font font, JobTracker.Snapshot s) {
@@ -90,10 +90,10 @@ public final class JobWidget {
 		addRow(rows, c, "level", s.level() >= 0 ? String.valueOf(s.level()) : "–");
 		addRow(rows, c, "progress", Double.isNaN(s.progress()) ? "–" : Fmt.exact(s.progress()) + " %");
 		addRow(rows, c, "time", Fmt.clock(s.trackingMs()));
-		addRow(rows, c, "money", Fmt.exact(s.sessionMoney()));
-		addRow(rows, c, "money_rate", orDash(s.moneyPerHour()));
-		addRow(rows, c, "xp", Fmt.exact(s.sessionXp()));
-		addRow(rows, c, "xp_rate", orDash(s.xpPerHour()));
+		addRow(rows, c, "money", Fmt.exact(s.sessionMoney()) + " $");
+		addRow(rows, c, "money_rate", orDash(s.moneyPerHour(), " $"));
+		addRow(rows, c, "xp", Fmt.exact(s.sessionXp()) + " XP");
+		addRow(rows, c, "xp_rate", orDash(s.xpPerHour(), " XP"));
 
 		int labelW = showJob ? font.width(tr("loothub.job.row.job")) : 0;
 		for (Row r : rows) {
