@@ -13,7 +13,7 @@ Marktplatz
 
 ## Loothub+-Menü (Taste L)
 
-**L** öffnet das Loothub+-Menü mit drei Reitern oben in der Mitte: **Verlauf** (öffnet zuerst), **Markt** und **Job-Widget**
+**L** öffnet das Loothub+-Menü mit vier Reitern oben in der Mitte: **Verlauf** (öffnet zuerst), **Markt**, **Job-Widget** und **Statistik**
 (Taste änderbar unter Optionen → Steuerung → „Loothub+“).
 
 > **Wichtig:** In Minecraft liegt L standardmäßig auf „Fortschritte“. Diese Taste bitte unter
@@ -98,6 +98,21 @@ des Servers und beim Beenden des Spiels:
   und (bei breitem Fenster) Level. Maus über eine Zeile zeigt alle Jobs der Sitzung mit Level-Fortschritt.
 - **Job-Filter** neben den Zeitraum-Reitern (z. B. nur Holzfäller) und **Verlauf löschen** (zweimal klicken zur Bestätigung).
 
+### Reiter „Statistik“
+
+Eigene Statistik wie bei Vanilla (auf OPSUCHT ist die Vanilla-Statistik deaktiviert). Loothub+ zählt selbst mit,
+was auf Ihrem PC passiert – nur auf Servern, ab der Installation – und speichert es pro Tag in
+`config/loothub-stats.json`. Zeitraum wählbar: **Heute**, **7 Tage**, **Gesamt**.
+
+- **Allgemein:** Spielzeit, Strecken (gelaufen, gesprintet, geschlichen, geschwommen, geklettert, Elytren,
+  geflogen, geritten), Sprünge, Blöcke abgebaut/platziert, Items aufgesammelt, Nahrung gegessen, Mobs getötet,
+  Schaden ausgeteilt/erlitten, Tode.
+- **Blöcke:** je Blockart abgebaut und platziert · **Items:** aufgesammelt und gegessen · **Mobs:** getötet.
+  Mit Suche; Klick auf eine Spaltenüberschrift sortiert (nochmal klicken = umgekehrt).
+
+Grenzen: Getötete Mobs sind geschätzt (Tod innerhalb von 5 s nach Ihrem Treffer). Blöcke, die der Server
+zusätzlich abbaut (z. B. Timber-Axt), und Items, die direkt ins Inventar gelegt werden, sieht der Client nicht.
+
 ## Updates im Spiel
 
 Loothub+ prüft beim Start, ob auf GitHub (Release „latest“ von Kaledoss/Loothub-) eine neuere Version liegt.
@@ -133,5 +148,8 @@ Fabric-Unterstützung in LabyMod ist laut LabyMod experimentell; manche Mods sin
 | `src/client/java/de/loothub/client/jobs/JobHistoryScreen.java` | Reiter „Verlauf“ |
 | `src/client/java/de/loothub/client/jobs/JobWidgetEditScreen.java` | Reiter „Job-Widget“: Editor zum Verschieben |
 | `src/client/java/de/loothub/client/mixin/GuiMixin.java` | Liest Actionbar-Nachrichten mit |
+| `src/client/java/de/loothub/client/stats/*` | Eigene Statistik: Zählung, Speicher, Reiter |
+| `src/client/java/de/loothub/client/mixin/BlockItemMixin.java` | Zählt platzierte Blöcke |
+| `src/client/java/de/loothub/client/mixin/ClientPacketListenerMixin.java` | Zählt aufgesammelte Items |
 | `src/main/resources/assets/loothub/lang/*.json` | Texte (Deutsch/Englisch) |
 | `gradle.properties` | Versionen (Minecraft 1.21.11, Loader 0.20.1, Fabric API 0.141.6) |

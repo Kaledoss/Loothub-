@@ -8,14 +8,16 @@ import net.minecraft.client.gui.components.Tooltip;
 import net.minecraft.network.chat.Component;
 
 import de.loothub.client.jobs.JobHistoryScreen;
+import de.loothub.client.stats.StatsScreen;
 import de.loothub.client.jobs.JobWidgetEditScreen;
 
-/** Reiter oben mittig im Loothub+-Menü: „Verlauf“, „Markt“ und „Job-Widget“. */
+/** Reiter oben mittig im Loothub+-Menü: „Verlauf“, „Markt“, „Job-Widget“ und „Statistik“. */
 public final class Tabs {
 	public enum Tab {
 		HISTORY("loothub.tab.history"),
 		MARKET("loothub.tab.market"),
-		JOBS("loothub.tab.jobs");
+		JOBS("loothub.tab.jobs"),
+		STATS("loothub.tab.stats");
 
 		private final String translationKey;
 
@@ -25,7 +27,7 @@ public final class Tabs {
 	}
 
 	public static final int HEIGHT = 16;
-	private static final int WIDTH = 64;
+	private static final int WIDTH = 58;
 	private static final int GAP = 4;
 
 	private Tabs() {
@@ -54,7 +56,7 @@ public final class Tabs {
 	/** Knopf oben links: erscheint nur, wenn ein Update verfügbar ist. */
 	public static Button updateButton(int y) {
 		Button b = Button.builder(Component.empty(), btn -> Updater.installAsync())
-				.bounds(8, y, 100, HEIGHT)
+				.bounds(8, y, 80, HEIGHT)
 				.build();
 		refreshUpdateButton(b);
 		return b;
@@ -100,6 +102,7 @@ public final class Tabs {
 			case MARKET -> new MarketScreen();
 			case JOBS -> new JobWidgetEditScreen();
 			case HISTORY -> new JobHistoryScreen();
+			case STATS -> new StatsScreen();
 		});
 	}
 }

@@ -5,6 +5,7 @@ import com.mojang.blaze3d.platform.InputConstants;
 import net.minecraft.ChatFormatting;
 import net.minecraft.client.KeyMapping;
 import net.minecraft.network.chat.Component;
+import net.minecraft.world.InteractionResult;
 import net.minecraft.resources.Identifier;
 
 import net.fabricmc.api.ClientModInitializer;
@@ -12,6 +13,8 @@ import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientLifecycleEvents;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
 import net.fabricmc.fabric.api.client.keybinding.v1.KeyBindingHelper;
 import net.fabricmc.fabric.api.client.networking.v1.ClientPlayConnectionEvents;
+import net.fabricmc.fabric.api.event.client.player.ClientPlayerBlockBreakEvents;
+import net.fabricmc.fabric.api.event.player.AttackEntityCallback;
 import net.fabricmc.fabric.api.client.rendering.v1.hud.HudElementRegistry;
 import net.fabricmc.fabric.api.client.rendering.v1.hud.VanillaHudElements;
 
@@ -20,6 +23,8 @@ import org.lwjgl.glfw.GLFW;
 import de.loothub.Loothub;
 import de.loothub.client.jobs.JobHistoryScreen;
 import de.loothub.client.jobs.JobTracker;
+import de.loothub.client.stats.StatsStore;
+import de.loothub.client.stats.StatsTracker;
 import de.loothub.client.jobs.JobWidget;
 
 public class LoothubClient implements ClientModInitializer {
@@ -36,6 +41,16 @@ public class LoothubClient implements ClientModInitializer {
 		// Hinweis: In Minecraft liegt L standardmäßig auf „Fortschritte“ – das bitte unter Steuerung umlegen.
 		menuKey = KeyBindingHelper.registerKeyBinding(new KeyMapping(
 				"key.loothub.open", InputConstants.Type.KEYSYM, GLFW.GLFW_KEY_L, CATEGORY));
+
+		// Eigene Statistik
+		ClientTickEvents.END_CLIENT_TICK.register(StatsTracker::tick);
+		ClientPlayerBlockBreakEvents.AFTER.register((world, player, pos, state) -> StatsTracker.onBlockBroken(state));
+		AttackEntityCallback.EVENT.register((player, world, hand, entity, hit) -> {
+			if (world.isClientSide()) {
+				StatsTracker.onAttack(entity);
+			}
+			return InteractionResult.PASS;
+		});
 
 		ClientTickEvents.END_CLIENT_TICK.register(client -> {
 			// Einmal pro Spielstart im Chat auf ein verfügbares Update hinweisen
@@ -56,9 +71,15 @@ public class LoothubClient implements ClientModInitializer {
 				Identifier.fromNamespaceAndPath(Loothub.MOD_ID, "job_widget"), JobWidget::renderHud);
 
 		// Beim Verlassen des Servers beginnt eine neue Job-Sitzung
-		ClientPlayConnectionEvents.DISCONNECT.register((handler, client) -> JobTracker.reset());
+		ClientPlayConnectionEvents.DISCONNECT.register((handler, client) -> {
+			JobTracker.reset();
+			StatsStore.saveIfDirty(true);
+		});
 		// Beim Beenden des Spiels die laufende Sitzung noch im Verlauf speichern
-		ClientLifecycleEvents.CLIENT_STOPPING.register(client -> JobTracker.reset());
+		ClientLifecycleEvents.CLIENT_STOPPING.register(client -> {
+			JobTracker.reset();
+			StatsStore.saveIfDirty(true);
+		});
 
 		Updater.checkAsync();
 		PriceTooltip.register();

@@ -3,7 +3,9 @@
 	"package": "de.loothub.client.mixin",
 	"compatibilityLevel": "JAVA_21",
 	"client": [
-		"GuiMixin"
+		"GuiMixin",
+		"BlockItemMixin",
+		"ClientPacketListenerMixin"
 	],
 	"injectors": {
 		"defaultRequire": 0

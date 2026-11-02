@@ -72,6 +72,24 @@ public final class Fmt {
 		return rest == 0 || hours >= 10 ? hours + " Std." : hours + " Std. " + rest + " Min.";
 	}
 
+	/** Lange Dauer: "45 Min.", "12 Std. 5 Min.", "3 T 4 Std." */
+	public static String longDuration(long ms) {
+		long minutes = ms / 60_000;
+		if (minutes < 60) {
+			return minutes + " Min.";
+		}
+		long hours = minutes / 60;
+		if (hours < 24) {
+			return hours + " Std. " + (minutes % 60) + " Min.";
+		}
+		return WHOLE.get().format(hours / 24) + " T " + (hours % 24) + " Std.";
+	}
+
+	/** Zahl mit höchstens einer Nachkommastelle, ohne Einheit: 12,4 */
+	public static String compactPlain(double v) {
+		return ONE.get().format(v);
+	}
+
 	public static String time(long epochMillis) {
 		return TIME.format(Instant.ofEpochMilli(epochMillis).atZone(ZoneId.systemDefault()));
 	}
