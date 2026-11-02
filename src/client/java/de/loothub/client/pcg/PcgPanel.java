@@ -199,7 +199,7 @@ public final class PcgPanel {
 
 	}
 
-	/** „Gesendet: …“ direkt unter der Leiste, auf eigenem dunklen Streifen. */
+	/** „Gesendet: …“ direkt über der Leiste, auf eigenem dunklen Streifen. */
 	private static void renderFeedback(Screen s, GuiGraphics g) {
 		if (System.currentTimeMillis() >= feedbackUntil) {
 			return;
@@ -207,7 +207,7 @@ public final class PcgPanel {
 		Font font = Minecraft.getInstance().font;
 		int[] o = origin(s, font);
 		int x = o[0];
-		int y = o[1] + panelH() + 2;
+		int y = Math.max(0, o[1] - 14);
 		int w = font.width(feedback) + 2 * PAD;
 		g.fill(x, y, x + w, y + 12, 0xF0140B0D);
 		g.fill(x, y + 11, x + w, y + 12, 0xFF55E06A);
