@@ -84,7 +84,7 @@ public class MarketScreen extends Screen {
 	protected void init() {
 		MarketPrices.refreshIfStale();
 
-		Tabs.create(Tabs.Tab.MARKET, PAD, 4).forEach(this::addRenderableWidget);
+		Tabs.create(Tabs.Tab.MARKET, width, 4).forEach(this::addRenderableWidget);
 		updateButton = addRenderableWidget(Tabs.updateButton(4));
 
 		int top = 24;

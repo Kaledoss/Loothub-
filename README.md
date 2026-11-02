@@ -13,7 +13,7 @@ Marktplatz
 
 ## Loothub+-Menü (Taste L)
 
-**L** öffnet das Loothub+-Menü mit zwei Reitern oben links: **Markt** und **Job-Widget**
+**L** öffnet das Loothub+-Menü mit zwei Reitern oben in der Mitte: **Markt** und **Job-Widget**
 (Taste änderbar unter Optionen → Steuerung → „Loothub+“).
 
 > **Wichtig:** In Minecraft liegt L standardmäßig auf „Fortschritte“. Diese Taste bitte unter

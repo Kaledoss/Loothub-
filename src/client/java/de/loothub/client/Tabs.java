@@ -9,7 +9,7 @@ import net.minecraft.network.chat.Component;
 
 import de.loothub.client.jobs.JobWidgetEditScreen;
 
-/** Reiter oben links im Loothub+-Menü: „Markt“ und „Job-Widget“. */
+/** Reiter oben mittig im Loothub+-Menü: „Markt“ und „Job-Widget“. */
 public final class Tabs {
 	public enum Tab {
 		MARKET("loothub.tab.market"),
@@ -29,9 +29,14 @@ public final class Tabs {
 	private Tabs() {
 	}
 
-	/** Erzeugt die Reiter-Knöpfe; der aktuelle Reiter ist ausgegraut. Der Aufrufer fügt sie per addRenderableWidget hinzu. */
-	public static List<Button> create(Tab current, int x, int y) {
+	/**
+	 * Erzeugt die Reiter-Knöpfe, oben mittig auf dem Bildschirm; der aktuelle Reiter ist ausgegraut.
+	 * Der Aufrufer fügt sie per addRenderableWidget hinzu.
+	 */
+	public static List<Button> create(Tab current, int screenWidth, int y) {
 		Tab[] tabs = Tab.values();
+		int total = tabs.length * WIDTH + (tabs.length - 1) * GAP;
+		int x = (screenWidth - total) / 2;
 		Button[] buttons = new Button[tabs.length];
 		for (int i = 0; i < tabs.length; i++) {
 			Tab tab = tabs[i];
@@ -44,10 +49,10 @@ public final class Tabs {
 		return List.of(buttons);
 	}
 
-	/** Knopf rechts neben den Reitern: erscheint nur, wenn ein Update verfügbar ist. */
+	/** Knopf oben links: erscheint nur, wenn ein Update verfügbar ist. */
 	public static Button updateButton(int y) {
 		Button b = Button.builder(Component.empty(), btn -> Updater.installAsync())
-				.bounds(8 + Tab.values().length * (WIDTH + GAP), y, 150, HEIGHT)
+				.bounds(8, y, 130, HEIGHT)
 				.build();
 		refreshUpdateButton(b);
 		return b;

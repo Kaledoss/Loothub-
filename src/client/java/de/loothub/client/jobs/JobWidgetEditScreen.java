@@ -33,7 +33,7 @@ public class JobWidgetEditScreen extends Screen {
 
 	@Override
 	protected void init() {
-		Tabs.create(Tabs.Tab.JOBS, 8, 4).forEach(this::addRenderableWidget);
+		Tabs.create(Tabs.Tab.JOBS, width, 4).forEach(this::addRenderableWidget);
 		updateButton = addRenderableWidget(Tabs.updateButton(4));
 
 		int bw = 120;
