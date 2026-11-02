@@ -469,43 +469,67 @@ public class MarketScreen extends LoothubScreen {
 			legend(g, lx + 10, chartY, "loothub.chart.change", Fmt.percent(change), change >= 0 ? GREEN : RED);
 		}
 
-		int left = chartX + 40;
-		int right = chartX + chartW - 4;
+		int left = chartX + 44;
+		int right = chartX + chartW - 6;
 		int top = chartY + 16;
-		int bottom = chartY + chartH - 12;
-		if (right - left < 40 || bottom - top < 30) {
+		int bottom = chartY + chartH - 14;
+		if (right - left < 40 || bottom - top < 40) {
 			return; // Fenster zu klein
 		}
+		int n = pts.size();
 
-		double yMin = lo;
-		double yMax = hi;
+		// Skala nach dem Durchschnittspreis – so nutzt die Linie die ganze Höhe.
+		// Die Spanne Tief–Hoch wird dahinter nur angedeutet (und am Rand abgeschnitten).
+		double aMin = Double.MAX_VALUE, aMax = -Double.MAX_VALUE;
+		int aMinIdx = -1, aMaxIdx = -1;
+		long maxItems = 0;
+		for (int i = 0; i < n; i++) {
+			Point p = pts.get(i);
+			if (p.hasAvg()) {
+				if (p.avg() < aMin) {
+					aMin = p.avg();
+					aMinIdx = i;
+				}
+				if (p.avg() > aMax) {
+					aMax = p.avg();
+					aMaxIdx = i;
+				}
+			}
+			maxItems = Math.max(maxItems, p.items());
+		}
+		if (aMinIdx < 0) {
+			aMin = lo;
+			aMax = hi;
+		}
+		double yMin = aMin;
+		double yMax = aMax;
 		if (yMax - yMin < 1e-9) {
 			yMax += Math.max(1, yMax * 0.1);
 			yMin -= Math.max(1, yMin * 0.1);
 		}
-		double pad = (yMax - yMin) * 0.08;
+		double pad = (yMax - yMin) * 0.15;
 		yMin = Math.max(0, yMin - pad);
 		yMax += pad;
 
-		// Raster + Preisachse
+		// Plotfläche + gestrichelte Hilfslinien mit Preisachse
+		g.fill(left, top, right, bottom, 0x18000000);
 		for (int i = 0; i <= 4; i++) {
 			int gy = bottom - (bottom - top) * i / 4;
-			g.fill(left, gy, right, gy + 1, GRID);
-			String label = Fmt.compact(yMin + (yMax - yMin) * i / 4.0);
-			g.drawString(font, label, left - 4 - font.width(label), gy - 4, FAINT, false);
+			for (int dx = left; dx < right; dx += 6) {
+				g.fill(dx, gy, Math.min(dx + 3, right), gy + 1, GRID);
+			}
+			String label = Fmt.compact(yMin + (yMax - yMin) * i / 4.0) + " $";
+			g.drawString(font, label, left - 5 - font.width(label), gy - 4, FAINT, false);
 		}
 
-		int n = pts.size();
 		int[] xs = new int[n];
 		for (int i = 0; i < n; i++) {
 			xs[i] = n == 1 ? (left + right) / 2 : left + (int) Math.round(i * (right - left) / (double) (n - 1));
 		}
 		double step = n == 1 ? 12 : (right - left) / (double) (n - 1);
-		int barW = Mth.clamp((int) (step * 0.6), 1, 10);
 
-		// Hover-Index bestimmen
 		int hover = -1;
-		if (mx >= left - barW && mx <= right + barW && my >= top && my <= bottom) {
+		if (mx >= left - 4 && mx <= right + 4 && my >= top && my <= bottom) {
 			int best = Integer.MAX_VALUE;
 			for (int i = 0; i < n; i++) {
 				int d = Math.abs(xs[i] - mx);
@@ -516,19 +540,36 @@ public class MarketScreen extends LoothubScreen {
 			}
 		}
 
-		// Balken: Tiefst- bis Höchstpreis je Abschnitt
-		for (int i = 0; i < n; i++) {
-			Point p = pts.get(i);
-			if (!p.hasRange()) {
-				continue;
+		// Handelsvolumen: dezente Säulen am unteren Rand (Höhe = gehandelte Stück)
+		int volH = (bottom - top) / 6;
+		int volW = Mth.clamp((int) (step * 0.5), 1, 8);
+		if (maxItems > 0) {
+			for (int i = 0; i < n; i++) {
+				long items = pts.get(i).items();
+				if (items <= 0) {
+					continue;
+				}
+				int h = Math.max(1, (int) Math.round(volH * items / (double) maxItems));
+				g.fill(xs[i] - volW / 2, bottom - h, xs[i] - volW / 2 + volW, bottom, i == hover ? 0x60FFFFFF : 0x22FFFFFF);
 			}
-			int y1 = toY(p.max(), yMin, yMax, top, bottom);
-			int y2 = toY(p.min(), yMin, yMax, top, bottom);
-			int x1 = xs[i] - barW / 2;
-			g.fill(x1, y1, x1 + barW, Math.max(y2, y1 + 1) + 1, i == hover ? BAND_HOVER : BAND);
 		}
 
-		// Linie: Durchschnittspreis (Lücken bleiben offen)
+		// Spanne Tief–Hoch als zarte rote Fläche zwischen den Punkten
+		for (int i = 0; i < n - 1; i++) {
+			Point a = pts.get(i);
+			Point b = pts.get(i + 1);
+			if (!a.hasRange() || !b.hasRange()) {
+				continue;
+			}
+			for (int px = xs[i]; px < xs[i + 1]; px++) {
+				double t = (px - xs[i]) / (double) Math.max(1, xs[i + 1] - xs[i]);
+				int yHi = Mth.clamp(toY(a.max() + (b.max() - a.max()) * t, yMin, yMax, top, bottom), top, bottom);
+				int yLo = Mth.clamp(toY(a.min() + (b.min() - a.min()) * t, yMin, yMax, top, bottom), top, bottom);
+				g.fill(px, yHi, px + 1, Math.max(yLo, yHi + 1), 0x1CE23B3B);
+			}
+		}
+
+		// Fläche unter der Durchschnittslinie (Verlauf nach unten ausblendend) + Linie
 		int prevX = Integer.MIN_VALUE, prevY = 0;
 		for (int i = 0; i < n; i++) {
 			Point p = pts.get(i);
@@ -538,30 +579,55 @@ public class MarketScreen extends LoothubScreen {
 			}
 			int y = toY(p.avg(), yMin, yMax, top, bottom);
 			if (prevX != Integer.MIN_VALUE) {
+				for (int px = prevX; px < xs[i]; px++) {
+					double t = (px - prevX) / (double) Math.max(1, xs[i] - prevX);
+					int py = (int) Math.round(prevY + (y - prevY) * t);
+					g.fillGradient(px, py, px + 1, bottom, 0x55FFC040, 0x00FFC040);
+				}
 				line(g, prevX, prevY, xs[i], y, GOLD);
-			} else {
-				g.fill(xs[i] - 1, y - 1, xs[i] + 1, y + 1, GOLD);
 			}
 			prevX = xs[i];
 			prevY = y;
 		}
-
-		// Markierungen für Hoch und Tief
-		marker(g, xs[hiIdx], toY(hi, yMin, yMax, top, bottom), GREEN);
-		marker(g, xs[loIdx], toY(lo, yMin, yMax, top, bottom), RED);
-
-		// Zeitachse: erster und letzter Wert
-		String from = Fmt.date(pts.get(0).time(), interval.showTime());
-		String to = Fmt.date(pts.get(n - 1).time(), interval.showTime());
-		g.drawString(font, from, left, bottom + 3, FAINT, false);
-		if (font.width(from) + font.width(to) + 8 < right - left) {
-			g.drawString(font, to, right - font.width(to), bottom + 3, FAINT, false);
+		// Punkte auf der Linie (nur wenn genug Platz)
+		if (step >= 10) {
+			for (int i = 0; i < n; i++) {
+				Point p = pts.get(i);
+				if (p.hasAvg()) {
+					int y = toY(p.avg(), yMin, yMax, top, bottom);
+					g.fill(xs[i] - 1, y - 1, xs[i] + 2, y + 2, 0xFF1A1012);
+					g.fill(xs[i], y, xs[i] + 1, y + 1, GOLD);
+				}
+			}
 		}
 
-		// Hover: Hilfslinie + Details
+		// Höchster und tiefster Durchschnitt mit Wert beschriftet
+		if (aMaxIdx >= 0 && aMinIdx >= 0 && aMaxIdx != aMinIdx) {
+			valueMarker(g, xs[aMaxIdx], toY(aMax, yMin, yMax, top, bottom), Fmt.compact(aMax) + " $", GREEN, true, left, right);
+			valueMarker(g, xs[aMinIdx], toY(aMin, yMin, yMax, top, bottom), Fmt.compact(aMin) + " $", RED, false, left, right);
+		}
+
+		// Zeitachse: so viele Daten, wie nebeneinander passen
+		int labelW = font.width(Fmt.date(pts.get(0).time(), interval.showTime())) + 10;
+		int every = Math.max(1, (int) Math.ceil(labelW / Math.max(1.0, step)));
+		for (int i = n - 1; i >= 0; i -= every) {
+			String d = Fmt.date(pts.get(i).time(), interval.showTime());
+			int lx = Mth.clamp(xs[i] - font.width(d) / 2, left, right - font.width(d));
+			g.fill(xs[i], bottom, xs[i] + 1, bottom + 2, FAINT);
+			g.drawString(font, d, lx, bottom + 4, i == hover ? TEXT : FAINT, false);
+		}
+
+		// Hover: gestrichelte Hilfslinie, hervorgehobener Punkt, Details
 		if (hover >= 0) {
 			Point p = pts.get(hover);
-			g.fill(xs[hover], top, xs[hover] + 1, bottom, 0x55FFFFFF);
+			for (int dy = top; dy < bottom; dy += 4) {
+				g.fill(xs[hover], dy, xs[hover] + 1, Math.min(dy + 2, bottom), 0x88FFFFFF);
+			}
+			if (p.hasAvg()) {
+				int y = toY(p.avg(), yMin, yMax, top, bottom);
+				g.fill(xs[hover] - 3, y - 3, xs[hover] + 4, y + 4, 0xFF000000);
+				g.fill(xs[hover] - 2, y - 2, xs[hover] + 3, y + 3, GOLD);
+			}
 			List<FormattedCharSequence> tip = new ArrayList<>();
 			tip.add(Component.literal(Fmt.date(p.time(), interval.showTime())).withStyle(ChatFormatting.WHITE).getVisualOrderText());
 			if (p.hasAvg()) {
@@ -579,6 +645,18 @@ public class MarketScreen extends LoothubScreen {
 			}
 			g.setTooltipForNextFrame(font, tip, mx, my);
 		}
+	}
+
+	/** Punkt mit kleinem Wert-Schild darüber (oben) bzw. darunter. */
+	private void valueMarker(GuiGraphics g, int x, int y, String text, int color, boolean above, int left, int right) {
+		g.fill(x - 3, y - 3, x + 4, y + 4, 0xFF000000);
+		g.fill(x - 2, y - 2, x + 3, y + 3, color);
+		int w = font.width(text) + 6;
+		int bx = Mth.clamp(x - w / 2, left, right - w);
+		int by = above ? y - 16 : y + 6;
+		g.fill(bx, by, bx + w, by + 11, 0xE0100A0B);
+		g.fill(bx, above ? by + 10 : by, bx + w, above ? by + 11 : by + 1, color);
+		g.drawString(font, text, bx + 3, by + 2, color, false);
 	}
 
 	private int legend(GuiGraphics g, int x, int y, String labelKey, String value, int color) {

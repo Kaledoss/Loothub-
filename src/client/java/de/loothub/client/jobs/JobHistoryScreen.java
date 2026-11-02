@@ -603,6 +603,13 @@ public class JobHistoryScreen extends LoothubScreen {
 		int barW = Math.max(2, (int) (slot * 0.62));
 		int barColor = showXp ? BLUE : GOLD;
 		g.fill(left, bottom, right, bottom + 1, 0x33FFFFFF);
+		// gestrichelte Hilfslinien bei 1/3 und 2/3
+		for (int k = 1; k <= 2; k++) {
+			int gy = bottom - (bottom - top) * k / 3;
+			for (int dx = left; dx < right; dx += 6) {
+				g.fill(dx, gy, Math.min(dx + 3, right), gy + 1, 0x16FFFFFF);
+			}
+		}
 
 		int labelW = 0;
 		for (Bucket b : buckets) {
@@ -625,9 +632,20 @@ public class JobHistoryScreen extends LoothubScreen {
 			// leere Spur, damit auch Null-Werte sichtbar sind
 			g.fill(x1, bottom - 1, x1 + barW, bottom, TRACK);
 			if (bucketValues[i] > 0 && max > 0) {
-				int h = Math.max(1, (int) Math.round((bottom - top) * bucketValues[i] / max));
-				int color = selected || hovered ? barColor : (barColor & 0x00FFFFFF) | 0x99000000;
-				g.fill(x1, bottom - h, x1 + barW, bottom, color);
+				int h = Math.max(2, (int) Math.round((bottom - top) * bucketValues[i] / max));
+				int rgb = barColor & 0x00FFFFFF;
+				boolean strong = selected || hovered;
+				// Balken mit Farbverlauf (oben kräftig, unten dunkler) und abgerundeter Kante
+				g.fillGradient(x1, bottom - h + 1, x1 + barW, bottom, (strong ? 0xFF000000 : 0xCC000000) | rgb,
+						(strong ? 0x99000000 : 0x55000000) | rgb);
+				if (barW > 2) {
+					g.fill(x1 + 1, bottom - h, x1 + barW - 1, bottom - h + 1, (strong ? 0xFF000000 : 0xCC000000) | rgb);
+				}
+				if (hovered && h > 10) {
+					String v = Fmt.compact(bucketValues[i]);
+					int vw = font.width(v);
+					g.drawString(font, v, Mth.clamp(cx - vw / 2, left, right - vw), bottom - h - 10, TEXT, false);
+				}
 			}
 			if ((n - 1 - i) % every == 0) {
 				String label = buckets.get(i).label();

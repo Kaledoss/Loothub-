@@ -25,9 +25,10 @@ Kategorie-Leiste nur Icons. Ist ein Update verfügbar, erscheint rechts in der T
 - **Raster über die ganze Breite:** jedes Item als Feld mit Icon, Name, **Kaufen** (gold, was Sie zahlen)
   und **Verkaufen** (grün, was Sie z. B. per `/sell` bekommen). Darüber Suchfeld und Kategorie in einer Zeile.
 - **Klick auf ein Item** öffnet seine Preise und das Diagramm für Stunden, Tage, Wochen oder Monate:
-  - **Goldene Linie:** Durchschnittspreis
-  - **Blaue Balken:** Spanne vom Tiefst- bis zum Höchstpreis je Zeitabschnitt
-  - **Grüner/roter Punkt:** Hoch und Tief im gewählten Zeitraum, oben zusätzlich die Veränderung in Prozent
+  - **Goldene Linie mit Fläche:** Durchschnittspreis (Skala passt sich der Linie an)
+  - **Zarte rote Fläche:** Spanne vom Tiefst- bis zum Höchstpreis je Zeitabschnitt
+  - **Graue Säulen unten:** gehandelte Menge
+  - **Grünes/rotes Schild:** höchster und tiefster Durchschnitt; oben Hoch, Tief und Veränderung in Prozent
   - Maus über das Diagramm → Details (Ø, Hoch, Tief, gehandelte Stück, Transaktionen)
 - **„← Zurück“** oder **Esc** führt zurück zum Raster.
 
