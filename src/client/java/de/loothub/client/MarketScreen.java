@@ -612,9 +612,9 @@ public class MarketScreen extends LoothubScreen {
 		int every = Math.max(1, (int) Math.ceil(labelW / Math.max(1.0, step)));
 		for (int i = n - 1; i >= 0; i -= every) {
 			String d = Fmt.date(pts.get(i).time(), interval.showTime());
-			int lx = Mth.clamp(xs[i] - font.width(d) / 2, left, right - font.width(d));
+			int dateX = Mth.clamp(xs[i] - font.width(d) / 2, left, right - font.width(d));
 			g.fill(xs[i], bottom, xs[i] + 1, bottom + 2, FAINT);
-			g.drawString(font, d, lx, bottom + 4, i == hover ? TEXT : FAINT, false);
+			g.drawString(font, d, dateX, bottom + 4, i == hover ? TEXT : FAINT, false);
 		}
 
 		// Hover: gestrichelte Hilfslinie, hervorgehobener Punkt, Details
