@@ -10,12 +10,12 @@ import net.minecraft.network.chat.Component;
 import de.loothub.client.jobs.JobHistoryScreen;
 import de.loothub.client.jobs.JobWidgetEditScreen;
 
-/** Reiter oben mittig im Loothub+-Menü: „Markt“, „Job-Widget“ und „Verlauf“. */
+/** Reiter oben mittig im Loothub+-Menü: „Verlauf“, „Markt“ und „Job-Widget“. */
 public final class Tabs {
 	public enum Tab {
+		HISTORY("loothub.tab.history"),
 		MARKET("loothub.tab.market"),
-		JOBS("loothub.tab.jobs"),
-		HISTORY("loothub.tab.history");
+		JOBS("loothub.tab.jobs");
 
 		private final String translationKey;
 

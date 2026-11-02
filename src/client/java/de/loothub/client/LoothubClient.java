@@ -18,6 +18,7 @@ import net.fabricmc.fabric.api.client.rendering.v1.hud.VanillaHudElements;
 import org.lwjgl.glfw.GLFW;
 
 import de.loothub.Loothub;
+import de.loothub.client.jobs.JobHistoryScreen;
 import de.loothub.client.jobs.JobTracker;
 import de.loothub.client.jobs.JobWidget;
 
@@ -31,7 +32,7 @@ public class LoothubClient implements ClientModInitializer {
 
 	@Override
 	public void onInitializeClient() {
-		// L öffnet das Loothub+-Menü (Reiter „Markt“ und „Job-Widget“).
+		// L öffnet das Loothub+-Menü mit dem ersten Reiter „Verlauf“ (daneben „Markt“ und „Job-Widget“).
 		// Hinweis: In Minecraft liegt L standardmäßig auf „Fortschritte“ – das bitte unter Steuerung umlegen.
 		menuKey = KeyBindingHelper.registerKeyBinding(new KeyMapping(
 				"key.loothub.open", InputConstants.Type.KEYSYM, GLFW.GLFW_KEY_L, CATEGORY));
@@ -45,7 +46,7 @@ public class LoothubClient implements ClientModInitializer {
 			}
 			while (menuKey.consumeClick()) {
 				if (client.screen == null) {
-					client.setScreen(new MarketScreen());
+					client.setScreen(new JobHistoryScreen());
 				}
 			}
 		});
