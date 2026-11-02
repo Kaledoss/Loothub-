@@ -105,7 +105,7 @@ public final class StatsTracker {
 	 * Nur „echte“ Blöcke zählen. Nicht dazu gehören:
 	 * <ul>
 	 *   <li>Überbaubares wie Gras, hohes Gras, Farn, Seegras, Ranken, Schneeschicht,</li>
-	 *   <li>sofort abbaubare Dinge ohne Kollision wie Getreide, Blumen, Setzlinge, Fackeln.</li>
+	 *   <li>alles ohne Kollision wie Schilder, Getreide, Blumen, Setzlinge, Fackeln, Knöpfe, Schienen.</li>
 	 * </ul>
 	 */
 	public static boolean isRealBlock(Block block) {
@@ -113,7 +113,13 @@ public final class StatsTracker {
 		if (state.canBeReplaced()) {
 			return false;
 		}
-		return state.blocksMotion() || block.defaultDestroyTime() > 0;
+		// Ohne Kollision (Schilder, Fackeln, Blumen, Knöpfe, Schienen …) zählt es als Item, nicht als Block
+		try {
+			return !state.getCollisionShape(net.minecraft.world.level.EmptyBlockGetter.INSTANCE,
+					net.minecraft.core.BlockPos.ZERO).isEmpty();
+		} catch (RuntimeException e) {
+			return state.blocksMotion();
+		}
 	}
 
 	/** Treffer auf ein Lebewesen merken: für ausgeteilten Schaden und Kills. */
