@@ -42,6 +42,10 @@ public final class WidgetConfig {
 	public String pcgChannel = "";
 	/** Eigener Twitch-Name (nur zum Senden nötig; der Token liegt in config/loothub-twitch-token.txt). */
 	public String pcgUser = "";
+	/** Pokémon-Leiste über dem Inventar: gesperrt und Verschiebung gegenüber der Standardposition. */
+	public boolean pcgPanelLocked = false;
+	public int pcgPanelOffsetX = 0;
+	public int pcgPanelOffsetY = 0;
 	/** Befehls-Leiste gesperrt: Knöpfe und Feld lassen sich nicht verschieben. */
 	public boolean quickPanelLocked = false;
 	/** Verschiebung des Feldes gegenüber der Standardposition unter dem Inventar. */

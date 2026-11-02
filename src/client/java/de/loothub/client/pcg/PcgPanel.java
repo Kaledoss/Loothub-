@@ -8,10 +8,15 @@ import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.gui.screens.inventory.InventoryScreen;
 import net.minecraft.client.input.MouseButtonEvent;
+import net.minecraft.client.renderer.RenderPipelines;
 import net.minecraft.network.chat.Component;
+import net.minecraft.resources.Identifier;
+import net.minecraft.util.Mth;
 
 import net.fabricmc.fabric.api.client.screen.v1.ScreenEvents;
 import net.fabricmc.fabric.api.client.screen.v1.ScreenMouseEvents;
+
+import de.loothub.Loothub;
 
 import de.loothub.client.Fmt;
 import de.loothub.client.LoothubScreen;
@@ -22,30 +27,40 @@ import de.loothub.client.quick.Pulse;
 /**
  * Leiste über dem Inventar für das Pokémon Community Game: Bälle werfen ({@code !pokecatch}) und kaufen
  * ({@code !pokeshop}). Jeder Knopf schickt genau eine Chat-Nachricht – nur auf Klick, nie automatisch.
- * Kaufen will einen zweiten Klick zur Bestätigung.
+ * Kaufen will einen zweiten Klick zur Bestätigung. Die Leiste lässt sich an der Kopfzeile verschieben und sperren.
  */
 public final class PcgPanel {
-	private record Ball(String label, String id, int color) {
+	/** Ball-Art: Anzeigename, Befehls-ID und eigenes Kugel-Symbol. */
+	private record Ball(String label, String id, Identifier icon) {
 	}
 
 	private static final List<Ball> BALLS = List.of(
-			new Ball("Poké", "pokeball", 0xFFE04848),
-			new Ball("Super", "greatball", 0xFF4A90E0),
-			new Ball("Hyper", "ultraball", 0xFFE8C547));
+			new Ball("Pokéball", "pokeball", tex("orb_red")),
+			new Ball("Superball", "greatball", tex("orb_blue")),
+			new Ball("Hyperball", "ultraball", tex("orb_gold")));
 	private static final int BUY_AMOUNT = 10;
 
-	private static final int BTN_W = 44;
-	private static final int BTN_H = 16;
+	private static final int BTN = 22;
 	private static final int GAP = 3;
+	private static final int SEP = 8;
 	private static final int PAD = 4;
-	private static final int HEADER_H = 12;
+	private static final int HEADER_H = 13;
+	private static final int BTN_BG = 0xFF24161A;
+	private static final int BTN_BG_HOVER = 0xFF3A1C22;
+	private static final int BTN_EDGE = 0xFF4A2A2F;
 
 	private static long feedbackUntil;
 	private static String feedback = "";
 	private static int armedBuy = -1;
 	private static long armedUntil;
+	private static boolean moving;
+	private static double grabX, grabY;
 
 	private PcgPanel() {
+	}
+
+	private static Identifier tex(String name) {
+		return Identifier.fromNamespaceAndPath(Loothub.MOD_ID, "textures/gui/" + name + ".png");
 	}
 
 	public static void register() {
@@ -55,51 +70,86 @@ public final class PcgPanel {
 			}
 			ScreenEvents.afterBackground(screen).register((s, g, mx, my, delta) -> render(s, g, mx, my));
 			ScreenMouseEvents.allowMouseClick(screen).register((s, e) -> !click(s, e));
+			ScreenMouseEvents.allowMouseDrag(screen).register((s, e, dx, dy) -> !drag(s, e));
+			ScreenMouseEvents.allowMouseRelease(screen).register((s, e) -> !release());
 		});
 	}
 
-	// Positionen: Leiste mittig über dem Inventar
-	private static int panelW() {
-		return 2 * PAD + 6 * BTN_W + 5 * GAP + 6;
+	// ------------------------------------------------------------------ Lage
+
+	private static String headText() {
+		PcgState.Spawn spawn = PcgState.current();
+		if (spawn != null && spawn.result() == null) {
+			return spawn.name() + " · " + Fmt.clock(spawn.remainingMs());
+		}
+		return "Kein Pokémon";
+	}
+
+	private static int panelW(Font font) {
+		int buttons = 2 * PAD + 6 * BTN + 4 * GAP + SEP;
+		// Breite ohne die laufende Uhr berechnen, damit die Leiste nicht im Sekundentakt zappelt
+		PcgState.Spawn spawn = PcgState.current();
+		String sample = spawn != null && spawn.result() == null ? spawn.name() + " · 00:00" : "Kein Pokémon";
+		int head = 2 * PAD + font.width("⠿ " + sample) + 8 + font.width("Verbinde …") + 8 + lockW(font);
+		return Math.max(buttons, head);
 	}
 
 	private static int panelH() {
-		return HEADER_H + BTN_H + PAD + 2;
+		return HEADER_H + BTN + PAD;
 	}
 
-	private static int[] origin(Screen s) {
+	private static int lockW(Font font) {
+		return font.width(Component.translatable("loothub.quick.lock")) + 12;
+	}
+
+	/** Linke obere Ecke: Standard mittig über dem Inventar + gespeicherte Verschiebung. */
+	private static int[] origin(Screen s, Font font) {
 		AbstractContainerScreenAccessor acc = (AbstractContainerScreenAccessor) s;
-		int x = acc.loothub$leftPos() + (acc.loothub$imageWidth() - panelW()) / 2;
-		int y = acc.loothub$topPos() - panelH() - 5;
-		return new int[]{Math.max(2, x), Math.max(2, y)};
+		WidgetConfig c = WidgetConfig.get();
+		int w = panelW(font);
+		int defX = acc.loothub$leftPos() + (acc.loothub$imageWidth() - w) / 2;
+		int defY = acc.loothub$topPos() - panelH() - 5;
+		int x = Mth.clamp(defX + c.pcgPanelOffsetX, 2, Math.max(2, s.width - w - 2));
+		int y = Mth.clamp(defY + c.pcgPanelOffsetY, 2, Math.max(2, s.height - panelH() - 2));
+		return new int[]{x, y, defX, defY};
 	}
 
 	/** Knopf i: 0–2 werfen, 3–5 kaufen. */
 	private static int buttonX(int ox, int i) {
-		return ox + PAD + i * (BTN_W + GAP) + (i >= 3 ? 6 : 0);
+		return ox + PAD + i * (BTN + GAP) + (i >= 3 ? SEP - GAP : 0);
 	}
+
+	private static boolean onLock(int x, int y, int w, Font font, double mx, double my) {
+		return my >= y + 1 && my < y + 12 && mx >= x + w - PAD - lockW(font) && mx < x + w - PAD;
+	}
+
+	// ------------------------------------------------------------------ Zeichnen
 
 	private static void render(Screen s, GuiGraphics g, int mx, int my) {
 		Font font = Minecraft.getInstance().font;
-		int[] o = origin(s);
-		int x = o[0], y = o[1], w = panelW(), h = panelH();
+		int[] o = origin(s, font);
+		int x = o[0], y = o[1], w = panelW(font), h = panelH();
+		boolean locked = WidgetConfig.get().pcgPanelLocked;
 		g.fill(x, y, x + w, y + h, 0xE0140B0D);
 		Pulse.outline(g, x, y, w, h);
 
-		// Kopf: Spawn + Zeit, rechts Verbindungsstatus
+		// Kopf: Griff + Spawn/Zeit, rechts Status und „Sperren“
 		PcgState.Spawn spawn = PcgState.current();
-		String head;
-		int headColor;
-		if (spawn != null && spawn.result() == null) {
-			head = spawn.name() + " · " + Fmt.clock(spawn.remainingMs());
-			headColor = 0xFFFFD66B;
-		} else {
-			head = "Kein Pokémon";
-			headColor = LoothubScreen.FAINT;
+		boolean active = spawn != null && spawn.result() == null;
+		String head = (locked ? "" : "⠿ ") + headText();
+		g.drawString(font, head, x + PAD, y + 3, active ? 0xFFFFD66B : LoothubScreen.FAINT, false);
+
+		int lx = x + w - PAD - 9;
+		boolean lockHover = onLock(x, y, w, font, mx, my);
+		g.fill(lx, y + 3, lx + 8, y + 11, lockHover ? 0xFFFFFFFF : BTN_EDGE);
+		g.fill(lx + 1, y + 4, lx + 7, y + 10, 0xFF0F0A0B);
+		if (locked) {
+			g.fill(lx + 2, y + 5, lx + 6, y + 9, LoothubScreen.RED);
 		}
-		g.drawString(font, head, x + PAD, y + 2, headColor, false);
+		Component lock = Component.translatable("loothub.quick.lock");
+		g.drawString(font, lock, lx - 3 - font.width(lock), y + 3, locked ? 0xFFFFFFFF : LoothubScreen.FAINT, false);
 		String st = statusText();
-		g.drawString(font, st, x + w - PAD - font.width(st), y + 2, statusColor(), false);
+		g.drawString(font, st, lx - 3 - font.width(lock) - 8 - font.width(st), y + 3, statusColor(), false);
 
 		long now = System.currentTimeMillis();
 		if (armedBuy >= 0 && now > armedUntil) {
@@ -111,42 +161,71 @@ public final class PcgPanel {
 			Ball b = BALLS.get(i % 3);
 			boolean buy = i >= 3;
 			int bx = buttonX(x, i);
-			boolean hover = mx >= bx && mx < bx + BTN_W && my >= by && my < by + BTN_H;
-			int edge = buy ? 0xFFB08A2A : b.color();
-			g.fill(bx, by, bx + BTN_W, by + BTN_H, ok ? (hover ? 0xFF3A1C22 : 0xFF24161A) : 0xFF1A1214);
-			g.fill(bx, by + BTN_H - 1, bx + BTN_W, by + BTN_H, ok ? edge : 0xFF3A2A2C);
-			g.fill(bx, by, bx + 2, by + BTN_H - 1, ok ? b.color() : 0xFF3A2A2C);
-			String label = buy ? (armedBuy == i ? "Sicher?" : "+" + BUY_AMOUNT + " " + b.label()) : b.label();
-			int tc = !ok ? LoothubScreen.FAINT : (buy && armedBuy == i ? 0xFFFF5050 : 0xFFFFFFFF);
-			g.drawString(font, label, bx + 2 + (BTN_W - 2 - font.width(label)) / 2, by + 4, tc, false);
+			boolean hover = !moving && mx >= bx && mx < bx + BTN && my >= by && my < by + BTN;
+			boolean armed = buy && armedBuy == i;
+			int edge = armed ? 0xFFFF5050 : hover ? LoothubScreen.RED : BTN_EDGE;
+			g.fill(bx, by, bx + BTN, by + BTN, edge);
+			g.fill(bx + 1, by + 1, bx + BTN - 1, by + BTN - 1, hover ? BTN_BG_HOVER : BTN_BG);
+			g.blit(RenderPipelines.GUI_TEXTURED, b.icon(), bx + 3, by + 3, 0f, 0f, 16, 16, 16, 16, 16, 16);
+			if (buy) {
+				// Dollarzeichen unten rechts = kaufen
+				g.drawString(font, "$", bx + BTN - 7, by + BTN - 9, 0xFFFFC040, true);
+			}
+			if (!ok) {
+				g.fill(bx + 1, by + 1, bx + BTN - 1, by + BTN - 1, 0x90140B0D); // ausgegraut
+			}
 			if (hover) {
-				Component tip = !ok
-						? Component.literal("Zum Senden Twitch-Name und Token in /loothub eintragen")
-						: Component.literal(buy ? "!pokeshop " + b.id() + " " + BUY_AMOUNT + "  (2× klicken)" : "!pokecatch " + b.id());
+				Component tip;
+				if (!ok) {
+					tip = Component.literal("Zum Senden Twitch-Name und Token in /loothub eintragen");
+				} else if (buy) {
+					tip = Component.literal(armed ? BUY_AMOUNT + "× " + b.label() + " kaufen – nochmal klicken"
+							: BUY_AMOUNT + "× " + b.label() + " kaufen (2× klicken)");
+				} else {
+					tip = Component.literal(b.label() + " werfen");
+				}
 				g.setTooltipForNextFrame(font, tip, mx, my);
 			}
 		}
 		// Trenner zwischen Werfen und Kaufen
-		int sx = buttonX(x, 3) - 5;
-		g.fill(sx, by + 2, sx + 1, by + BTN_H - 2, 0xFF4A2A2F);
+		int sx = buttonX(x, 3) - SEP / 2 - 1;
+		g.fill(sx, by + 3, sx + 1, by + BTN - 3, BTN_EDGE);
 
 		if (now < feedbackUntil) {
-			g.drawString(font, feedback, x + PAD, y + h + 2, 0xFF55E06A, true);
+			g.drawString(font, feedback, x + PAD, y + h + 3, 0xFF55E06A, true);
 		}
 	}
+
+	// ------------------------------------------------------------------ Maus
 
 	private static boolean click(Screen s, MouseButtonEvent e) {
 		if (e.button() != 0) {
 			return false;
 		}
-		int[] o = origin(s);
-		int by = o[1] + HEADER_H;
-		if (e.y() < by || e.y() >= by + BTN_H) {
+		Font font = Minecraft.getInstance().font;
+		int[] o = origin(s, font);
+		int x = o[0], y = o[1], w = panelW(font), h = panelH();
+		if (e.x() < x || e.x() >= x + w || e.y() < y || e.y() >= y + h) {
 			return false;
 		}
+		WidgetConfig c = WidgetConfig.get();
+		if (onLock(x, y, w, font, e.x(), e.y())) {
+			c.pcgPanelLocked = !c.pcgPanelLocked;
+			c.save();
+			return true;
+		}
+		if (e.y() < y + HEADER_H) {
+			if (!c.pcgPanelLocked) {
+				moving = true;
+				grabX = e.x() - x;
+				grabY = e.y() - y;
+			}
+			return true;
+		}
+		int by = y + HEADER_H;
 		for (int i = 0; i < 6; i++) {
-			int bx = buttonX(o[0], i);
-			if (e.x() < bx || e.x() >= bx + BTN_W) {
+			int bx = buttonX(x, i);
+			if (e.x() < bx || e.x() >= bx + BTN || e.y() < by || e.y() >= by + BTN) {
 				continue;
 			}
 			if (!TwitchChat.canWrite()) {
@@ -161,13 +240,35 @@ public final class PcgPanel {
 					return true;
 				}
 				armedBuy = -1;
-				show(TwitchChat.send("!pokeshop " + b.id() + " " + BUY_AMOUNT) ? "Gesendet: " + BUY_AMOUNT + "× " + b.label() + " kaufen" : "Nicht gesendet");
+				show(TwitchChat.send("!pokeshop " + b.id() + " " + BUY_AMOUNT)
+						? "Gesendet: " + BUY_AMOUNT + "× " + b.label() + " kaufen" : "Nicht gesendet");
 			} else {
-				show(TwitchChat.send("!pokecatch " + b.id()) ? "Gesendet: " + b.label() + "-Ball geworfen" : "Nicht gesendet");
+				show(TwitchChat.send("!pokecatch " + b.id()) ? "Gesendet: " + b.label() + " geworfen" : "Nicht gesendet");
 			}
 			return true;
 		}
-		return false;
+		return true; // Klicks ins Feld nicht ans Inventar weitergeben
+	}
+
+	private static boolean drag(Screen s, MouseButtonEvent e) {
+		if (!moving) {
+			return false;
+		}
+		Font font = Minecraft.getInstance().font;
+		int[] o = origin(s, font);
+		WidgetConfig c = WidgetConfig.get();
+		c.pcgPanelOffsetX += (int) Math.round(e.x() - grabX) - o[0];
+		c.pcgPanelOffsetY += (int) Math.round(e.y() - grabY) - o[1];
+		return true;
+	}
+
+	private static boolean release() {
+		if (!moving) {
+			return false;
+		}
+		moving = false;
+		WidgetConfig.get().save();
+		return true;
 	}
 
 	private static void show(String text) {
