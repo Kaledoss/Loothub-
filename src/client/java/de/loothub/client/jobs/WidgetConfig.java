@@ -44,6 +44,9 @@ public final class WidgetConfig {
 	public String pcgUser = "";
 	/** Pokémon-Leiste über dem Inventar: gesperrt und Verschiebung gegenüber der Standardposition. */
 	public boolean pcgPanelLocked = false;
+	/** Position der Pokémon-Anzeige im HUD (relativ, Standard oben rechts). */
+	public double pcgOverlayX = 1.0;
+	public double pcgOverlayY = 0.0;
 	public int pcgPanelOffsetX = 0;
 	public int pcgPanelOffsetY = 0;
 	/** Befehls-Leiste gesperrt: Knöpfe und Feld lassen sich nicht verschieben. */

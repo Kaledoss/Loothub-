@@ -191,5 +191,7 @@
 	"loothub.merchant.col.item": "Item",
 	"loothub.merchant.col.change": "Trend",
 	"loothub.merchant.col.base": "Grundkurs",
-	"loothub.merchant.col.rate": "Aktueller Kurs"
+	"loothub.merchant.col.rate": "Aktueller Kurs",
+	"loothub.settings.pcg.move": "Anzeige verschieben",
+	"loothub.pcg.editor.title": "Pokémon-Anzeige verschieben"
 }

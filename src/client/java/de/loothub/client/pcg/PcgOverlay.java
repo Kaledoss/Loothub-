@@ -8,7 +8,7 @@ import net.minecraft.client.gui.GuiGraphics;
 import de.loothub.client.Fmt;
 import de.loothub.client.jobs.WidgetConfig;
 
-/** HUD oben rechts: Name des wilden Pokémon und verbleibende Fangzeit (bzw. Ergebnis). */
+/** HUD (Standard oben rechts, verschiebbar): Name des wilden Pokémon und verbleibende Fangzeit (bzw. Ergebnis). */
 public final class PcgOverlay {
 	private static final int BG = 0xC0120A0C;
 	private static final int EDGE = 0xE0000000;
@@ -23,29 +23,55 @@ public final class PcgOverlay {
 
 	public static void renderHud(GuiGraphics g, DeltaTracker delta) {
 		Minecraft mc = Minecraft.getInstance();
-		if (!WidgetConfig.get().pcgEnabled || mc.options.hideGui) {
+		if (!WidgetConfig.get().pcgEnabled || mc.options.hideGui || mc.screen instanceof PcgOverlayEditScreen) {
 			return;
 		}
 		PcgState.Spawn s = PcgState.current();
 		if (s == null) {
 			return;
 		}
-		Font font = mc.font;
-		String title = "Wildes Pokémon";
-		String time;
+		int[] size = size(mc.font, s);
+		int[] pos = position(g.guiWidth(), g.guiHeight(), size[0], size[1]);
+		draw(g, mc.font, s, pos[0], pos[1]);
+	}
+
+	private static String title() {
+		return "Wildes Pokémon";
+	}
+
+	private static String time(PcgState.Spawn s) {
+		if (s.result() != null) {
+			return s.result().equals("gefangen") ? "Gefangen!" : "Entkommen";
+		}
+		long ms = s.remainingMs();
+		return ms <= 0 ? "Zeit um" : Fmt.clock(ms);
+	}
+
+	/** Breite und Höhe der Anzeige. */
+	public static int[] size(Font font, PcgState.Spawn s) {
+		int w = Math.max(font.width(title()) + 8 + font.width("Entkommen"), font.width(s.name())) + 14;
+		return new int[]{w, 32};
+	}
+
+	/** Bildschirmposition aus der relativen Position in der Config (Standard: oben rechts). */
+	public static int[] position(int screenW, int screenH, int w, int h) {
+		WidgetConfig c = WidgetConfig.get();
+		int x = (int) Math.round(c.pcgOverlayX * Math.max(0, screenW - w - 8)) + 4;
+		int y = (int) Math.round(c.pcgOverlayY * Math.max(0, screenH - h - 8)) + 4;
+		return new int[]{x, y};
+	}
+
+	public static void draw(GuiGraphics g, Font font, PcgState.Spawn s, int x, int y) {
+		int[] size = size(font, s);
+		int w = size[0];
+		int h = size[1];
+		String time = time(s);
 		int timeColor;
 		if (s.result() != null) {
-			time = s.result().equals("gefangen") ? "Gefangen!" : "Entkommen";
 			timeColor = s.result().equals("gefangen") ? TIME_OK : TIME_LOW;
 		} else {
-			long ms = s.remainingMs();
-			time = ms <= 0 ? "Zeit um" : Fmt.clock(ms);
-			timeColor = ms <= 15_000 ? TIME_LOW : TIME_OK;
+			timeColor = s.remainingMs() <= 15_000 ? TIME_LOW : TIME_OK;
 		}
-		int w = Math.max(font.width(title) + 8 + font.width(time), font.width(s.name())) + 14;
-		int h = 32;
-		int x = g.guiWidth() - w - 4;
-		int y = 4;
 
 		g.fill(x + 1, y, x + w - 1, y + h, BG);
 		g.fill(x, y + 1, x + 1, y + h - 1, BG);
@@ -54,7 +80,7 @@ public final class PcgOverlay {
 		g.fill(x + 2, y + h - 1, x + w - 2, y + h, EDGE);
 		g.fill(x + 4, y + 2, x + w - 4, y + 3, RED);
 
-		g.drawString(font, title, x + 7, y + 7, LABEL, true);
+		g.drawString(font, title(), x + 7, y + 7, LABEL, true);
 		g.drawString(font, time, x + w - 7 - font.width(time), y + 7, timeColor, true);
 		g.drawString(font, s.name(), x + 7, y + 19, NAME, true);
 

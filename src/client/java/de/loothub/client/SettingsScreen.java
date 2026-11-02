@@ -128,7 +128,7 @@ public class SettingsScreen extends LoothubScreen {
 
 		// Pokémon Community Game (Twitch): Schalter, Kanal, Twitch-Name, Token-Datei
 		int pcgY = end;
-		end = card(pcgY, 100, "loothub.settings.pcg", "loothub.settings.pcg.tooltip",
+		end = card(pcgY, 120, "loothub.settings.pcg", "loothub.settings.pcg.tooltip",
 				() -> c.pcgEnabled, v -> {
 					c.pcgEnabled = v;
 					de.loothub.client.pcg.TwitchChat.ensure(v, c.pcgChannel, c.pcgUser);
@@ -165,6 +165,9 @@ public class SettingsScreen extends LoothubScreen {
 					de.loothub.client.pcg.TwitchChat.ensure(c.pcgEnabled, c.pcgChannel, c.pcgUser);
 				})
 				.bounds(descX + fieldW + 4, pcgY + 70, fieldW, 16).build()));
+		buttons.add(addRenderableWidget(Button.builder(Component.translatable("loothub.settings.pcg.move"),
+						b -> minecraft.setScreen(new de.loothub.client.pcg.PcgOverlayEditScreen(this)))
+				.bounds(descX, pcgY + 92, fieldW, 16).build()));
 		pcgFieldX = descX;
 		pcgFieldW = fieldW;
 
