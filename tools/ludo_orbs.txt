@@ -1,0 +1,3 @@
+# Eigene Kugel-Symbole, mit Ludo erzeugt und freigestellt. Der CI-Lauf lädt sie, legt sie als
+# 16x16-PNG in textures/gui ab, committet sie und löscht diese Liste wieder.
+orb_green https://storage.googleapis.com/ludo-assets/api/184ba4fac104de2e5b6b71f37a817a0e.png
