@@ -144,9 +144,6 @@ public class LoothubClient implements ClientModInitializer {
 							Component.literal("Loothub+ Inventar (Schwarz-" + a.label + ")"), PackActivationType.NORMAL);
 				}
 			}
-			// Himmel: eigene Sonne, Mond, Wolken und End-Himmel
-			ResourceLoader.registerBuiltinPack(Identifier.fromNamespaceAndPath(Loothub.MOD_ID, "sky"), mod,
-					Component.literal("Loothub+ Himmel"), PackActivationType.DEFAULT_ENABLED);
 			// Bossleisten (z. B. Erfolge, Jobitems) mit Farbverlauf Rot → Orange → Gelb → Grün
 			ResourceLoader.registerBuiltinPack(Identifier.fromNamespaceAndPath(Loothub.MOD_ID, "progress_bars"), mod,
 					Component.literal("Loothub+ Fortschrittsbalken"), PackActivationType.DEFAULT_ENABLED);
