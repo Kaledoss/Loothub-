@@ -32,6 +32,7 @@ public final class QuickCommandPanel {
 	private static final int BUTTON_H = 20;
 	private static final int BUTTON_W = 20;
 	private static final int MIN_PANEL_W = 130;
+	private static final int MAX_PER_ROW = 14;
 	private static final int GAP = 3;
 	private static final int PAD = 4;
 	private static final int HEADER_H = 12;
@@ -137,10 +138,11 @@ public final class QuickCommandPanel {
 			int regionX = left > centered + 10 ? Math.max(2, left - RECIPE_BOOK_W) : left;
 			int regionW = left + imgW - regionX;
 
-			// Alle Knöpfe in einer Reihe; nur wenn das Fenster zu schmal ist, wird umgebrochen
+			// Knöpfe in Reihen zu je höchstens 14
 			int n = Math.max(1, commands().size());
 			bw = BUTTON_W;
-			int maxCols = Math.max(1, (screen.width - 4 - 2 * PAD + GAP) / (bw + GAP));
+			// höchstens MAX_PER_ROW Knöpfe pro Reihe (und nie breiter als das Fenster), sonst neue Reihe
+			int maxCols = Math.min(MAX_PER_ROW, Math.max(1, (screen.width - 4 - 2 * PAD + GAP) / (bw + GAP)));
 			cols = Math.min(n, maxCols);
 			w = Math.max(MIN_PANEL_W, 2 * PAD + cols * (bw + GAP) - GAP);
 			int rows = (n + cols - 1) / cols;
