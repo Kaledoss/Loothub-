@@ -92,12 +92,15 @@ public final class PcgPanel {
 		}
 		long next = PcgState.untilNextMs();
 		if (next < 0) {
-			return "Nächstes: warte auf Spawn";
+			return "◎ Nächstes: warte auf Spawn";
 		}
-		return next == 0 ? "Nächstes: gleich" : "Nächstes in " + Fmt.clock(next);
+		return next == 0 ? "◎ Nächstes: gleich" : "◎ Nächstes in " + Fmt.clock(next);
 	}
 
 	private static int panelW(Font font) {
+		if (!expanded()) {
+			return 2 * PAD + font.width("⠿ ◎ Nächstes: warte auf Spawn") + 8 + font.width("Verbinde …") + 8 + lockW(font);
+		}
 		int buttons = 2 * PAD + COUNT * BTN + (COUNT - 2) * GAP + SEP;
 		// Breite ohne die laufende Uhr berechnen, damit die Leiste nicht im Sekundentakt zappelt
 		PcgState.Spawn spawn = PcgState.current();
@@ -106,8 +109,14 @@ public final class PcgPanel {
 		return Math.max(buttons, head);
 	}
 
+	/** Ohne Pokémon nur die schmale Kopfzeile (Countdown + Status), mit Pokémon die volle Leiste. */
+	private static boolean expanded() {
+		PcgState.Spawn sp = PcgState.current();
+		return sp != null && sp.result() == null;
+	}
+
 	private static int panelH() {
-		return HEADER_H + BTN + PAD;
+		return expanded() ? HEADER_H + BTN + PAD : HEADER_H + 1;
 	}
 
 	private static int lockW(Font font) {
@@ -177,6 +186,9 @@ public final class PcgPanel {
 			armedBuy = -1;
 		}
 		boolean ok = TwitchChat.canWrite();
+		if (!expanded()) {
+			return; // schmale Zeile ohne Knöpfe
+		}
 		int by = y + HEADER_H;
 		GermanNames.Special special = active ? GermanNames.specialBall(spawn.name()) : null;
 		for (int i = 0; i < COUNT; i++) {
@@ -269,6 +281,9 @@ public final class PcgPanel {
 				grabY = e.y() - y;
 			}
 			return true;
+		}
+		if (!expanded()) {
+			return true; // schmale Zeile: keine Knöpfe
 		}
 		int by = y + HEADER_H;
 		for (int i = 0; i < COUNT; i++) {

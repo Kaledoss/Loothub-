@@ -29,12 +29,12 @@ import de.loothub.client.mixin.AbstractContainerScreenAccessor;
  * Reihenfolge, Position und Sperre werden in {@code config/loothub.json} gespeichert.
  */
 public final class QuickCommandPanel {
-	private static final int BUTTON_H = 22;
+	private static final int BUTTON_H = 20;
+	private static final int BUTTON_W = 20;
+	private static final int MIN_PANEL_W = 130;
 	private static final int GAP = 3;
 	private static final int PAD = 4;
 	private static final int HEADER_H = 12;
-	private static final int MIN_BUTTON_W = 24;
-	private static final int DEFAULT_W = 330;
 	private static final int RECIPE_BOOK_W = 149;
 	private static final int DRAG_THRESHOLD = 4;
 
@@ -137,10 +137,13 @@ public final class QuickCommandPanel {
 			int regionX = left > centered + 10 ? Math.max(2, left - RECIPE_BOOK_W) : left;
 			int regionW = left + imgW - regionX;
 
-			w = Math.min(screen.width - 4, Math.max(regionW, DEFAULT_W));
-			cols = Mth.clamp((w - 2 * PAD + GAP) / (MIN_BUTTON_W + GAP), 1, 10);
-			bw = (w - 2 * PAD - (cols - 1) * GAP) / cols;
-			int rows = Math.max(1, (commands().size() + cols - 1) / cols);
+			// Alle Knöpfe in einer Reihe; nur wenn das Fenster zu schmal ist, wird umgebrochen
+			int n = Math.max(1, commands().size());
+			bw = BUTTON_W;
+			int maxCols = Math.max(1, (screen.width - 4 - 2 * PAD + GAP) / (bw + GAP));
+			cols = Math.min(n, maxCols);
+			w = Math.max(MIN_PANEL_W, 2 * PAD + cols * (bw + GAP) - GAP);
+			int rows = (n + cols - 1) / cols;
 			h = HEADER_H + rows * (BUTTON_H + GAP) - GAP + PAD + 2;
 
 			int defX = regionX + (regionW - w) / 2;
