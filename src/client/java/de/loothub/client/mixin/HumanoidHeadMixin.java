@@ -33,9 +33,9 @@ public abstract class HumanoidHeadMixin {
 		// Talismanrucksack in der Zweithand (von außen gesehen)
 		if (de.loothub.client.quick.HiddenItems.hideOffhand(entity.getOffhandItem())) {
 			if (entity.getMainArm() == net.minecraft.world.entity.HumanoidArm.RIGHT) {
-				state.leftHandItem.clear();
+				state.leftHandItemState.clear();
 			} else {
-				state.rightHandItem.clear();
+				state.rightHandItemState.clear();
 			}
 		}
 	}
