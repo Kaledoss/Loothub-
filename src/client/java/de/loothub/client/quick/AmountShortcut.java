@@ -12,13 +12,15 @@ import net.fabricmc.fabric.api.client.message.v1.ClientSendMessageEvents;
  * Kurzschreibweise für Beträge in selbst eingegebenen Befehlen:
  * „/bank einzahlen 1m“ wird als „/bank einzahlen 1000000“ gesendet.
  * k = Tausend, m = Million, b = Milliarde; Kommazahlen wie 1,5m oder 2.5k gehen auch.
+ * Gilt für /bank, /clan bank, /clanbank, /pay und das Auktionshaus (/ah …).
  * Es wird nur der Text umgeschrieben, den der Spieler selbst abschickt.
  */
 public final class AmountShortcut {
 	private AmountShortcut() {}
 
-	/** Befehle, in denen Beträge umgeschrieben werden. */
-	private static final Set<String> COMMANDS = Set.of("bank", "pay");
+	/** Befehle, in denen Beträge umgeschrieben werden (Bank, Zahlungen, Auktionshaus). */
+	private static final Set<String> COMMANDS = Set.of("bank", "clanbank", "pay",
+			"ah", "auction", "auctions", "auktion", "auktionshaus");
 
 	private static final Pattern AMOUNT = Pattern.compile("(?i)^(\\d+(?:[.,]\\d+)?)([kmb])$");
 
@@ -28,7 +30,11 @@ public final class AmountShortcut {
 
 	static String rewrite(String command) {
 		String[] parts = command.split(" ", -1);
-		if (parts.length < 2 || !COMMANDS.contains(parts[0].toLowerCase(Locale.ROOT))) return command;
+		if (parts.length < 2) return command;
+		String root = parts[0].toLowerCase(Locale.ROOT);
+		// Clanbank: „/clan bank einzahlen 1m“
+		boolean clanBank = root.equals("clan") && parts[1].equalsIgnoreCase("bank");
+		if (!clanBank && !COMMANDS.contains(root)) return command;
 		boolean changed = false;
 		for (int i = 1; i < parts.length; i++) {
 			Matcher m = AMOUNT.matcher(parts[i]);
