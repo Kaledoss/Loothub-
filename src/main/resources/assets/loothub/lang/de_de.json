@@ -258,5 +258,6 @@
 	"loothub.rename.title.sign": "Item signieren (/sign)",
 	"loothub.rename.input": "Text",
 	"loothub.rename.hint": "Neuer Text … (Farben mit &, z. B. &cRot)",
-	"loothub.rename.codes": "Klick fügt den Code an der Cursor-Stelle ein"
+	"loothub.rename.codes": "Klick fügt den Code ein",
+	"loothub.rename.preview": "Vorschau"
 }

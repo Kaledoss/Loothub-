@@ -59,33 +59,47 @@ public class RenameScreen extends Screen {
 		return mc.player == null ? ItemStack.EMPTY : mc.player.getMainHandItem();
 	}
 
+	// Lage des Fensters (rechts) – links daneben steht die Tooltip-Vorschau
+	private int panelW() {
+		return Math.min(300, width / 2 - 20);
+	}
+
+	private int panelX() {
+		return width / 2 + 10;
+	}
+
+	private int panelY() {
+		return height / 2 - 70;
+	}
+
 	@Override
 	protected void init() {
-		int w = Math.min(320, width - 40);
-		int x = (width - w) / 2;
-		int y = height / 2 - 40;
-		box = new EditBox(font, x, y + 26, w, 18, Component.translatable("loothub.rename.input"));
+		int w = panelW() - 20;
+		int x = panelX() + 10;
+		int y = panelY() + 50;
+		box = new EditBox(font, x, y, w, 18, Component.translatable("loothub.rename.input"));
 		box.setMaxLength(command.equals("sign") ? 120 : 60);
 		box.setHint(Component.translatable("loothub.rename.hint").withStyle(net.minecraft.ChatFormatting.DARK_GRAY));
 		addRenderableWidget(box);
 		setFocused(box);
-		// Farben
-		int cw = Math.max(12, (w - 15 * 2) / 16);
+		// Farben in zwei Reihen à 8
+		int cw = (w - 7 * 3) / 8;
 		for (int i = 0; i < 16; i++) {
 			String code = CODES[i];
 			addRenderableWidget(Button.builder(Component.empty(), b -> insert("&" + code))
-					.bounds(x + i * (cw + 2), y + 50, cw, 12).build());
+					.bounds(x + (i % 8) * (cw + 3), y + 26 + (i / 8) * 16, cw, 13).build());
 		}
 		// Formatierung
 		for (int i = 0; i < STYLES.length; i++) {
 			String[] st = STYLES[i];
 			addRenderableWidget(Button.builder(Component.literal(st[1]), b -> insert("&" + st[0]))
-					.bounds(x + i * 26, y + 66, 22, 14).build());
+					.bounds(x + i * 26, y + 62, 22, 14).build());
 		}
+		int half = (w - 6) / 2;
 		addRenderableWidget(Button.builder(Component.translatable("loothub.color.apply"), b -> send())
-				.bounds(width / 2 - 104, y + 92, 100, 20).build());
+				.bounds(x, y + 86, half, 20).build());
 		addRenderableWidget(Button.builder(Component.translatable("loothub.color.cancel"), b -> onClose())
-				.bounds(width / 2 + 4, y + 92, 100, 20).build());
+				.bounds(x + half + 6, y + 86, half, 20).build());
 	}
 
 	private void insert(String s) {
@@ -102,29 +116,70 @@ public class RenameScreen extends Screen {
 		onClose();
 	}
 
+	private Component typed() {
+		return Component.literal(box.getValue().replace('&', '§'));
+	}
+
+	/** Tooltip des Items, wie er nach dem Befehl aussähe. */
+	private java.util.List<net.minecraft.util.FormattedCharSequence> previewTooltip(ItemStack st) {
+		java.util.List<Component> lines = new java.util.ArrayList<>(Screen.getTooltipFromItem(Minecraft.getInstance(), st));
+		boolean empty = box.getValue().isBlank();
+		if (command.equals("rename")) {
+			if (!empty && !lines.isEmpty()) {
+				lines.set(0, typed()); // neuer Name statt des alten
+			}
+		} else if (!empty) {
+			lines.add(Component.empty());
+			lines.add(typed()); // Signatur unten
+		}
+		java.util.List<net.minecraft.util.FormattedCharSequence> out = new java.util.ArrayList<>();
+		for (Component c : lines) {
+			out.add(c.getVisualOrderText());
+		}
+		return out;
+	}
+
 	@Override
 	public void render(GuiGraphics g, int mx, int my, float delta) {
 		super.render(g, mx, my, delta);
-		int w = Math.min(320, width - 40);
-		int x = (width - w) / 2;
-		int y = height / 2 - 40;
-		g.drawString(font, getTitle(), (width - font.width(getTitle())) / 2, y - 26, 0xFFFFFFFF, true);
-		// Item in der Hand + Vorschau
+		int px = panelX();
+		int py = panelY();
+		int pw = panelW();
+		int ph = 162;
+		// Fenster im Loothub-Stil
+		g.fill(px, py, px + pw, py + ph, de.loothub.client.Theme.bg(0xF0140B0D));
+		Pulse.outline(g, px, py, pw, ph);
+		g.fill(px + 4, py + 3, px + pw - 4, py + 4, LoothubScreen.RED);
+		g.drawString(font, getTitle(), px + 10, py + 10, LoothubScreen.RED, false);
+		// Item + kurze Vorschau des Namens
 		ItemStack st = held();
-		g.fill(x - 2, y - 4, x + w + 2, y + 22, 0xC0140B0D);
-		g.renderItem(st, x + 2, y + 1);
-		Component preview = box.getValue().isBlank()
-				? st.getHoverName()
-				: Component.literal(box.getValue().replace('&', '§'));
-		g.drawString(font, preview, x + 24, y + 5, 0xFFFFFFFF, true);
+		g.fill(px + 10, py + 24, px + pw - 10, py + 44, de.loothub.client.Theme.bg(0xFF24161A));
+		g.renderItem(st, px + 12, py + 26);
+		Component name = command.equals("rename") && !box.getValue().isBlank() ? typed() : st.getHoverName();
+		g.drawString(font, name, px + 32, py + 30, 0xFFFFFFFF, true);
 		// Farbfelder auf die Knöpfe malen
-		int cw = Math.max(12, (w - 15 * 2) / 16);
+		int w = pw - 20;
+		int x = px + 10;
+		int y = py + 50;
+		int cw = (w - 7 * 3) / 8;
 		for (int i = 0; i < 16; i++) {
-			int bx = x + i * (cw + 2);
-			g.fill(bx + 2, y + 52, bx + cw - 2, y + 60, 0xFF000000 | COLORS[i]);
+			int bx = x + (i % 8) * (cw + 3);
+			int by = y + 26 + (i / 8) * 16;
+			g.fill(bx + 3, by + 3, bx + cw - 3, by + 10, 0xFF000000 | COLORS[i]);
 		}
-		Component hint = Component.translatable("loothub.rename.codes");
-		g.drawString(font, hint, x + STYLES.length * 26 + 6, y + 69, LoothubScreen.FAINT, false);
+		g.drawString(font, Component.translatable("loothub.rename.codes"), x + STYLES.length * 26 + 4, y + 65, LoothubScreen.FAINT, false);
+
+		// Links: vollständige Vorschau als Tooltip
+		if (!st.isEmpty()) {
+			java.util.List<net.minecraft.util.FormattedCharSequence> tip = previewTooltip(st);
+			int tw = 0;
+			for (net.minecraft.util.FormattedCharSequence l : tip) {
+				tw = Math.max(tw, font.width(l));
+			}
+			int tx = Math.max(4, px - tw - 24);
+			g.drawString(font, Component.translatable("loothub.rename.preview"), tx, py - 4, LoothubScreen.FAINT, false);
+			g.setTooltipForNextFrame(font, tip, tx - 12, py + 18);
+		}
 	}
 
 	@Override
