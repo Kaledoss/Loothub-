@@ -105,7 +105,7 @@ public final class JobWidget {
 		addRow(rows, c, "xp_total", Fmt.exact(s.totalXp()) + " XP");
 		if (c.jobRowVisible("treasure")) {
 			rows.add(new Row(tr("loothub.job.row.treasure"), Fmt.whole((long) c.treasureXp) + " / "
-					+ Fmt.whole((long) JobTracker.TREASURE_STEP) + " XP · " + c.treasureChances + "×", 0xFFFFC040));
+					+ Fmt.whole((long) JobTracker.TREASURE_STEP) + " XP · " + c.treasuresFound + "× gefunden", 0xFFFFC040));
 		}
 		if (c.jobRowVisible("inv_market")) {
 			rows.add(new Row(tr("loothub.job.row.inv_market"), Fmt.exact(de.loothub.client.quick.InventoryValue.market()) + " $", 0xFF55E06A));

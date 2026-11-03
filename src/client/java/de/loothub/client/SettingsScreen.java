@@ -269,6 +269,7 @@ public class SettingsScreen extends LoothubScreen {
 			buttons.add(addRenderableWidget(Button.builder(Component.translatable("loothub.settings.treasure.reset"), b -> {
 				c.treasureXp = 0;
 				c.treasureChances = 0;
+				c.treasuresFound = 0;
 				c.save();
 				rebuildWidgets();
 			}).bounds(tx + 106, tY + 26, 110, 16).build()));
