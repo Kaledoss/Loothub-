@@ -15,6 +15,8 @@ jobs:
     steps:
       - name: Repository auschecken
         uses: actions/checkout@v6
+        with:
+          fetch-depth: 0  # ganze Historie, damit die Änderungsliste seit dem letzten Release erstellt werden kann
       - name: Gradle-Wrapper prüfen
         uses: gradle/actions/wrapper-validation@v6
       - name: JDK einrichten
@@ -43,8 +45,17 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
+          # Änderungen seit dem vorigen Release (Commit-Überschriften) – die Mod zeigt sie im Chat an
+          OLD=$(gh api "repos/${{ github.repository }}/git/ref/tags/latest" -q .object.sha 2>/dev/null || true)
+          if [ -n "$OLD" ] && git cat-file -e "$OLD" 2>/dev/null; then
+            git log --no-merges --format='- %s' "$OLD..$GITHUB_SHA" > notes.md
+          else
+            git log --no-merges --format='- %s' -n 10 "$GITHUB_SHA" > notes.md
+          fi
+          [ -s notes.md ] || echo "- Kleinere Verbesserungen" > notes.md
+          printf '\nFür Minecraft 1.21.11 (Fabric). Benötigt Fabric API 0.141.6+1.21.11.\n' >> notes.md
           gh release delete latest --yes --cleanup-tag || true
           gh release create latest dist/*.jar \
             --title "Loothub+ 1.0.${{ github.run_number }}" \
-            --notes "Automatisch gebaut aus Commit ${GITHUB_SHA::7}. Für Minecraft 1.21.11 (Fabric). Benötigt Fabric API 0.141.6+1.21.11." \
+            --notes-file notes.md \
             --target "$GITHUB_SHA"

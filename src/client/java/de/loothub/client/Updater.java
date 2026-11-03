@@ -48,6 +48,12 @@ public final class Updater {
 
 	private static volatile State state = State.IDLE;
 	private static volatile String latestVersion;
+	/** Änderungen der neuesten Version (aus der Release-Beschreibung). */
+	private static volatile java.util.List<String> changes = java.util.List.of();
+
+	public static java.util.List<String> changes() {
+		return changes;
+	}
 	private static volatile String downloadUrl;
 	private static volatile String errorMessage;
 
@@ -131,6 +137,16 @@ public final class Updater {
 							throw new IllegalStateException("HTTP " + response.statusCode());
 						}
 						JsonObject release = JsonParser.parseString(response.body()).getAsJsonObject();
+						// Änderungsliste aus der Release-Beschreibung („- …“-Zeilen)
+						java.util.List<String> notes = new java.util.ArrayList<>();
+						if (release.has("body") && !release.get("body").isJsonNull()) {
+							for (String line : release.get("body").getAsString().split("\\r?\\n")) {
+								if (line.startsWith("- ")) {
+									notes.add(line.substring(2).strip());
+								}
+							}
+						}
+						changes = java.util.List.copyOf(notes);
 						for (JsonElement el : release.getAsJsonArray("assets")) {
 							JsonObject asset = el.getAsJsonObject();
 							Matcher m = ASSET.matcher(asset.get("name").getAsString());

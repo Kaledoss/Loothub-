@@ -80,6 +80,20 @@ public class LoothubClient implements ClientModInitializer {
 				updateNoticeShown = true;
 				client.player.displayClientMessage(Component.translatable("loothub.update.notice",
 						Updater.latestVersion()).withStyle(ChatFormatting.GOLD), false);
+				// Was ist neu? (höchstens 10 Punkte)
+				java.util.List<String> changes = Updater.changes();
+				if (!changes.isEmpty()) {
+					client.player.displayClientMessage(Component.translatable("loothub.update.changes")
+							.withStyle(ChatFormatting.YELLOW), false);
+					for (int i = 0; i < Math.min(10, changes.size()); i++) {
+						client.player.displayClientMessage(Component.literal(" • " + changes.get(i))
+								.withStyle(ChatFormatting.GRAY), false);
+					}
+					if (changes.size() > 10) {
+						client.player.displayClientMessage(Component.translatable("loothub.update.more", changes.size() - 10)
+								.withStyle(ChatFormatting.DARK_GRAY), false);
+					}
+				}
 			}
 			if (openSettings && client.screen == null) {
 				openSettings = false;
