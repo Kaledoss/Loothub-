@@ -24,6 +24,17 @@ jobs:
         with:
           java-version: '25'  # Loom braucht Java 25 zum Bauen; die Mod selbst zielt weiter auf Java 21
           distribution: 'temurin'
+      - name: Ludo-Kugelsymbole übernehmen (einmalig)
+        if: hashFiles('tools/ludo_orbs.txt') != '' && github.ref == 'refs/heads/main'
+        run: |
+          pip install --quiet pillow
+          python3 tools/fetch_ludo_orbs.py tools/ludo_orbs.txt src/main/resources/assets/loothub/textures/gui
+          git config user.name "github-actions[bot]"
+          git config user.email "41898283+github-actions[bot]@users.noreply.github.com"
+          git rm -q tools/ludo_orbs.txt
+          git add src/main/resources/assets/loothub/textures/gui/orb_*.png
+          git commit -q -m "Eigene Kugelsymbole (Ludo) als Texturen gespeichert [skip ci]"
+          git push origin HEAD:main
       - name: Gradle-Wrapper ausführbar machen
         run: chmod +x ./gradlew
       - name: Bauen
