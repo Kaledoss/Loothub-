@@ -21,8 +21,8 @@ import de.loothub.client.jobs.WidgetConfig;
  * außer es ist gesperrt (Häkchen „Sperren“ am Feld, solange der Chat offen ist).
  */
 public final class MusicWidget {
-	private static final int W = 170;
-	private static final int H = 34;
+	static final int W = 170;
+	static final int H = 34;
 	private static final int BG = 0xC0120A0C;
 	private static final int EDGE = 0xE0000000;
 	private static final int RED = 0xFFB3262E;
@@ -35,7 +35,7 @@ public final class MusicWidget {
 
 	public static void register() {
 		ScreenEvents.AFTER_INIT.register((client, screen, w, h) -> {
-			if (!(screen instanceof ChatScreen)) {
+			if (!isChat(screen)) {
 				return;
 			}
 			ScreenEvents.afterRender(screen).register((s, g, mx, my, d) -> renderEditable(s, g, mx, my));
@@ -63,7 +63,7 @@ public final class MusicWidget {
 
 	public static void renderHud(GuiGraphics g, DeltaTracker delta) {
 		Minecraft mc = Minecraft.getInstance();
-		if (mc.options.hideGui || mc.screen instanceof ChatScreen) {
+		if (mc.options.hideGui || isChat(mc.screen) || mc.screen instanceof MusicEditScreen) {
 			return; // im Chat zeichnet renderEditable (mit Rahmen zum Verschieben)
 		}
 		YtMusic.Song s = shownSong();
@@ -74,7 +74,13 @@ public final class MusicWidget {
 		draw(g, mc.font, s, p[0], p[1]);
 	}
 
-	private static int[] pos(int sw, int sh) {
+	/** Chat-Fenster – auch, wenn LabyMod oder eine andere Mod einen eigenen Chat benutzt. */
+	private static boolean isChat(net.minecraft.client.gui.screens.Screen screen) {
+		return screen instanceof ChatScreen
+				|| screen != null && screen.getClass().getSimpleName().toLowerCase(java.util.Locale.ROOT).contains("chat");
+	}
+
+	static int[] pos(int sw, int sh) {
 		WidgetConfig c = WidgetConfig.get();
 		int x = (int) Math.round(c.musicX * Math.max(0, sw - W - 8)) + 4;
 		int y = (int) Math.round(c.musicY * Math.max(0, sh - H - 8)) + 4;

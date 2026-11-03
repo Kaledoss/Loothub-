@@ -115,12 +115,15 @@ public class SettingsScreen extends LoothubScreen {
 						b -> minecraft.setScreen(new de.loothub.client.quick.QuickButtonsScreen(this)))
 				.bounds(qDescX, qBtnY, Math.min(200, cr - 8 - qDescX), 16).build()));
 		y = cardNoToggle(y, 48 + qRows * 14, "loothub.settings.quick_buttons", "loothub.settings.quick_buttons.tooltip");
-		y = card(y, 48, "loothub.settings.music", "loothub.settings.music.tooltip",
+		y = card(y, 70, "loothub.settings.music", "loothub.settings.music.tooltip",
 				() -> c.musicEnabled, v -> {
 					c.musicEnabled = v;
 					de.loothub.client.music.YtMusic.ensure(v);
 				});
-		musicCardY = y - 48 - GAP;
+		musicCardY = y - 70 - GAP;
+		buttons.add(addRenderableWidget(Button.builder(Component.translatable("loothub.settings.job_widget.move"),
+						b -> minecraft.setScreen(new de.loothub.client.music.MusicEditScreen(this)))
+				.bounds(cl + labelW + 12, musicCardY + 48, Math.min(160, cr - 20 - cl - labelW), 16).build()));
 		// Werkzeugschutz: Schalter, Regler für die Grenze, Kästchen je Werkzeugart
 		{
 			int tpY = y;

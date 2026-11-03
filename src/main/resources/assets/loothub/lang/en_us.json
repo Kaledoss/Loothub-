@@ -205,7 +205,7 @@
 	"loothub.pokedex.empty": "Noch leer – jedes Pokémon, das du fängst, landet automatisch hier.",
 	"loothub.pokedex.caught_at": "gefangen %s",
 	"loothub.settings.music": "YouTube Music",
-	"loothub.settings.music.tooltip": "Zeigt im HUD, was gerade läuft: YouTube Music im Browser/als Web-App (über die Windows-Medienanzeige) oder die Desktop-App mit „API Server“-Plugin. Verschieben: Chat öffnen (T) und das Feld ziehen.",
+	"loothub.settings.music.tooltip": "Zeigt im HUD, was gerade läuft: YouTube Music im Browser/als Web-App (über Windows) oder die Desktop-App mit „API Server“-Plugin.",
 	"loothub.settings.music.status.off": "Aus",
 	"loothub.settings.music.status.not_running": "Keine Quelle gefunden",
 	"loothub.settings.music.status.waiting_for_approval": "In der App bestätigen",
@@ -252,5 +252,6 @@
 	"loothub.update.changes": "Neu in dieser Version:",
 	"loothub.update.more": "… und %s weitere Änderungen",
 	"loothub.stats.col.used": "Genutzt",
-	"loothub.merchant.new_today": "★ Tagesitem"
+	"loothub.merchant.new_today": "★ Tagesitem",
+	"loothub.music.editor.title": "Musik-Anzeige verschieben"
 }
