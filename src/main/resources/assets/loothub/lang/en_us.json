@@ -207,7 +207,7 @@
 	"loothub.settings.music": "YouTube Music",
 	"loothub.settings.music.tooltip": "Zeigt im HUD, was gerade läuft: YouTube Music im Browser/als Web-App (über die Windows-Medienanzeige) oder die Desktop-App mit „API Server“-Plugin. Verschieben: Chat öffnen (T) und das Feld ziehen.",
 	"loothub.settings.music.status.off": "Aus",
-	"loothub.settings.music.status.not_running": "App nicht erreichbar",
+	"loothub.settings.music.status.not_running": "Keine Quelle gefunden",
 	"loothub.settings.music.status.waiting_for_approval": "In der App bestätigen",
 	"loothub.settings.music.status.denied": "Abgelehnt",
 	"loothub.settings.music.status.ok": "Verbunden",
@@ -247,5 +247,6 @@
 	"loothub.settings.music.status.windows": "Über Windows",
 	"loothub.settings.inv_hud": "Inventar über Hotbar",
 	"loothub.settings.inv_hud.tooltip": "Zeigt dein Inventar dauerhaft über der Hotbar.",
-	"loothub.settings.inv_hud.color": "Hintergrundfarbe"
+	"loothub.settings.inv_hud.color": "Hintergrundfarbe",
+	"loothub.settings.music.status.windows_idle": "Bereit – nichts läuft"
 }

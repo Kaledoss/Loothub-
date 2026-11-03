@@ -3,7 +3,6 @@ package de.loothub.client.music;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
-import java.io.OutputStream;
 import java.nio.charset.StandardCharsets;
 import java.util.Locale;
 
@@ -20,6 +19,7 @@ import de.loothub.Loothub;
 public final class WindowsMedia {
 	private static final String SCRIPT = String.join("\n",
 			"$ErrorActionPreference='SilentlyContinue'",
+			"[Console]::OutputEncoding=[Text.Encoding]::UTF8",
 			"Add-Type -AssemblyName System.Runtime.WindowsRuntime",
 			"$asTask=([System.WindowsRuntimeSystemExtensions].GetMethods()|?{$_.Name -eq 'AsTask' -and $_.GetParameters().Count -eq 1 -and $_.GetParameters()[0].ParameterType.Name -eq 'IAsyncOperation`1'})[0]",
 			"function Await($op,[Type]$t){$m=$asTask.MakeGenericMethod($t);$task=$m.Invoke($null,@($op));$task.Wait(-1)|Out-Null;$task.Result}",
@@ -39,6 +39,13 @@ public final class WindowsMedia {
 	private static volatile YtMusic.Song song;
 	private static volatile Process process;
 	private static volatile Thread thread;
+	private static boolean loggedOutput;
+	/** PowerShell liefert Daten (auch wenn gerade nichts läuft). */
+	private static volatile boolean active;
+
+	public static boolean active() {
+		return active;
+	}
 
 	private WindowsMedia() {
 	}
@@ -83,22 +90,38 @@ public final class WindowsMedia {
 		Thread me = Thread.currentThread();
 		while (thread == me) {
 			try {
-				Process p = new ProcessBuilder("powershell.exe", "-NoProfile", "-NonInteractive", "-ExecutionPolicy", "Bypass", "-Command", "-")
-						.redirectErrorStream(false).start();
+				// Skript als -EncodedCommand (UTF-16LE, Base64): über stdin würden mehrzeilige Blöcke nicht ausgeführt
+				String encoded = java.util.Base64.getEncoder().encodeToString(SCRIPT.getBytes(StandardCharsets.UTF_16LE));
+				Process p = new ProcessBuilder("powershell.exe", "-NoProfile", "-NonInteractive", "-ExecutionPolicy", "Bypass",
+						"-WindowStyle", "Hidden", "-EncodedCommand", encoded)
+						.redirectErrorStream(true).start();
 				process = p;
-				try (OutputStream os = p.getOutputStream()) {
-					os.write(SCRIPT.getBytes(StandardCharsets.UTF_8));
-				}
+				p.getOutputStream().close();
+				long started = System.currentTimeMillis();
 				try (BufferedReader r = new BufferedReader(new InputStreamReader(p.getInputStream(), StandardCharsets.UTF_8))) {
 					String line;
+					int junk = 0;
 					while (thread == me && (line = r.readLine()) != null) {
-						parse(line.strip());
+						String l = line.strip();
+						if (l.startsWith("{")) {
+							active = true;
+							parse(l);
+						} else if (!l.isEmpty() && junk++ < 5 && !loggedOutput) {
+							Loothub.LOGGER.warn("Windows-Medieninfo: {}", l); // Fehlermeldungen von PowerShell
+						}
+					}
+					if (junk > 0) {
+						loggedOutput = true;
+					}
+					if (System.currentTimeMillis() - started < 5000) {
+						Loothub.LOGGER.warn("Windows-Medieninfo: PowerShell hat sich sofort beendet");
 					}
 				}
 			} catch (IOException | RuntimeException e) {
 				Loothub.LOGGER.debug("Windows-Medieninfo nicht verfügbar", e);
 			}
 			song = null;
+			active = false;
 			try {
 				Thread.sleep(10_000); // Prozess beendet → später neu starten
 			} catch (InterruptedException e) {
