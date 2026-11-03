@@ -85,6 +85,7 @@ public final class JobTracker {
 			s.firstProgress = gain.progress();
 		}
 		s.xp += gain.xp();
+		addTreasureXp(gain.xp());
 		s.money += gain.money();
 		s.activeMs += active;
 		totalActiveMs += active;
@@ -127,6 +128,40 @@ public final class JobTracker {
 		lastGain = 0;
 		totalMoney = 0;
 		totalActiveMs = 0;
+	}
+
+	/** Alle 100.000 Job-XP gibt es eine Chance auf einen Jobschatz – Fortschritt dauerhaft mitzählen. */
+	public static final double TREASURE_STEP = 100_000;
+	private static long lastTreasureSave;
+
+	private static void addTreasureXp(double xp) {
+		if (xp <= 0) {
+			return;
+		}
+		WidgetConfig c = WidgetConfig.get();
+		c.treasureXp += xp;
+		boolean crossed = false;
+		while (c.treasureXp >= TREASURE_STEP) {
+			c.treasureXp -= TREASURE_STEP;
+			c.treasureChances++;
+			crossed = true;
+		}
+		long now = System.currentTimeMillis();
+		if (crossed || now - lastTreasureSave > 60_000) {
+			lastTreasureSave = now;
+			c.save();
+		}
+		if (crossed) {
+			net.minecraft.client.Minecraft mc = net.minecraft.client.Minecraft.getInstance();
+			mc.execute(() -> {
+				if (mc.player != null) {
+					mc.player.displayClientMessage(net.minecraft.network.chat.Component.translatable("loothub.treasure.chance")
+							.withStyle(net.minecraft.ChatFormatting.GOLD), false);
+					mc.getSoundManager().play(net.minecraft.client.resources.sounds.SimpleSoundInstance.forUI(
+							net.minecraft.sounds.SoundEvents.PLAYER_LEVELUP, 1.4f));
+				}
+			});
+		}
 	}
 
 	public static synchronized boolean hasData() {

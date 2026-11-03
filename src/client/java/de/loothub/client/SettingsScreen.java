@@ -250,6 +250,30 @@ public class SettingsScreen extends LoothubScreen {
 			y = card(ihY, 72, "loothub.settings.inv_hud", "loothub.settings.inv_hud.tooltip",
 					() -> c.invHudEnabled, v -> c.invHudEnabled = v);
 		}
+		// Jobschatz-Zähler: Stand korrigieren
+		{
+			int tY = y;
+			int tx = cl + labelW + 12;
+			net.minecraft.client.gui.components.EditBox treasureBox = new net.minecraft.client.gui.components.EditBox(
+					font, tx, tY + 26, 100, 16, Component.translatable("loothub.settings.treasure"));
+			treasureBox.setMaxLength(7);
+			treasureBox.setValue(String.valueOf((long) c.treasureXp));
+			treasureBox.setResponder(t -> {
+				try {
+					c.treasureXp = Math.max(0, Math.min(99_999, Long.parseLong(t.strip().replace(".", ""))));
+				} catch (NumberFormatException ignored) {
+					// nur Zahlen übernehmen
+				}
+			});
+			buttons.add(addRenderableWidget(treasureBox));
+			buttons.add(addRenderableWidget(Button.builder(Component.translatable("loothub.settings.treasure.reset"), b -> {
+				c.treasureXp = 0;
+				c.treasureChances = 0;
+				c.save();
+				rebuildWidgets();
+			}).bounds(tx + 106, tY + 26, 110, 16).build()));
+			y = cardNoToggle(tY, 50, "loothub.settings.treasure", "loothub.settings.treasure.tooltip");
+		}
 		y = card(y, 40, "loothub.settings.hide_head", "loothub.settings.hide_head.tooltip",
 				() -> c.hideOwnHeadItem, v -> c.hideOwnHeadItem = v);
 		y = card(y, 40, "loothub.settings.hide_offhand", "loothub.settings.hide_offhand.tooltip",

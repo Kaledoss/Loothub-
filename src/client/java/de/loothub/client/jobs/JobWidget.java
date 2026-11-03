@@ -35,7 +35,7 @@ public final class JobWidget {
 
 	/** Zeilen-IDs in Anzeigereihenfolge; Sprachschlüssel: loothub.job.row.&lt;id&gt;. In den Einstellungen einzeln schaltbar. */
 	public static final List<String> ROW_IDS = List.of("job", "level", "progress", "time", "money", "money_rate", "xp", "xp_rate",
-			"money_total", "xp_total", "inv_market", "inv_shards");
+			"money_total", "xp_total", "treasure", "inv_market", "inv_shards");
 
 	/** Eine Zeile des Widgets. */
 	public record Row(String label, String value, int color) {
@@ -103,6 +103,10 @@ public final class JobWidget {
 		addRow(rows, c, "xp_rate", orDash(s.xpPerHour(), " XP"));
 		addRow(rows, c, "money_total", Fmt.exact(s.totalMoney()) + " $");
 		addRow(rows, c, "xp_total", Fmt.exact(s.totalXp()) + " XP");
+		if (c.jobRowVisible("treasure")) {
+			rows.add(new Row(tr("loothub.job.row.treasure"), Fmt.whole((long) c.treasureXp) + " / "
+					+ Fmt.whole((long) JobTracker.TREASURE_STEP) + " XP · " + c.treasureChances + "×", 0xFFFFC040));
+		}
 		if (c.jobRowVisible("inv_market")) {
 			rows.add(new Row(tr("loothub.job.row.inv_market"), Fmt.exact(de.loothub.client.quick.InventoryValue.market()) + " $", 0xFF55E06A));
 		}

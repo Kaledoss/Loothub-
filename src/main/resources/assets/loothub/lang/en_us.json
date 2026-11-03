@@ -265,5 +265,10 @@
 	"loothub.inv_hud.editor.title": "Inventar-Anzeige verschieben",
 	"loothub.inv_hud.editor.reset": "Standard (über Hotbar)",
 	"loothub.settings.hide_offhand": "Talismanrucksack ausblenden",
-	"loothub.settings.hide_offhand.tooltip": "Blendet den Talismanrucksack in deiner Zweithand aus – in der Ich-Ansicht und von außen. Nur du siehst den Unterschied, die Wirkung bleibt."
+	"loothub.settings.hide_offhand.tooltip": "Blendet den Talismanrucksack in deiner Zweithand aus – in der Ich-Ansicht und von außen. Nur du siehst den Unterschied, die Wirkung bleibt.",
+	"loothub.job.row.treasure": "Jobschatz:",
+	"loothub.treasure.chance": "[Loothub+] 100.000 Job-XP erreicht – Chance auf einen Jobschatz!",
+	"loothub.settings.treasure": "Jobschatz-Zähler",
+	"loothub.settings.treasure.tooltip": "Zählt Job-XP bis 100.000 (Chance auf Jobschatz). Stand hier korrigieren:",
+	"loothub.settings.treasure.reset": "Zurücksetzen"
 }

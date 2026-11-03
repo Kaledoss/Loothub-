@@ -38,6 +38,9 @@ public final class WidgetConfig {
 	public boolean sellHighlight = true;
 	/** Item auf dem eigenen Kopf (z. B. Auto) nicht anzeigen – nur für einen selbst. */
 	public boolean hideOwnHeadItem = false;
+	/** Jobschatz-Zähler: XP seit der letzten 100.000er-Marke und Anzahl erreichter Marken. */
+	public double treasureXp = 0;
+	public int treasureChances = 0;
 	/** Talismanrucksack in der eigenen Zweithand nicht anzeigen. */
 	public boolean hideOffhandBackpack = false;
 	/** Inventar über der Hotbar anzeigen, mit eigener Hintergrundfarbe und Deckkraft. */
