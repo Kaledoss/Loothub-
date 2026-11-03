@@ -131,6 +131,8 @@ public class JobHistoryScreen extends LoothubScreen {
 	private List<JobHistory.Session> unitSessions = List.of();
 	private List<Bucket> buckets = List.of();
 	private double[] bucketValues = new double[0];
+	/** Je Balken der Anteil jedes Jobs (für gestapelte, farbige Balken). */
+	private List<Map<JobInfo, Double>> bucketParts = new ArrayList<>();
 	private int selectedBucket = -1;
 	private final Map<String, JobSum> jobSums = new LinkedHashMap<>();
 	private double totalMoney;
@@ -363,6 +365,10 @@ public class JobHistoryScreen extends LoothubScreen {
 
 		// Diagramm-Werte
 		bucketValues = new double[buckets.size()];
+		bucketParts = new ArrayList<>();
+		for (int k = 0; k < buckets.size(); k++) {
+			bucketParts.add(new java.util.LinkedHashMap<>());
+		}
 		for (JobHistory.Session s : all) {
 			int i = bucketIndex(s.start);
 			if (i < 0) {
@@ -370,7 +376,9 @@ public class JobHistoryScreen extends LoothubScreen {
 			}
 			for (JobHistory.JobEntry e : s.jobs) {
 				if (matchesFilter(e)) {
-					bucketValues[i] += showXp ? e.xp : e.money;
+					double v = showXp ? e.xp : e.money;
+					bucketValues[i] += v;
+					bucketParts.get(i).merge(info(e.job), v, Double::sum);
 				}
 			}
 		}
@@ -643,13 +651,34 @@ public class JobHistoryScreen extends LoothubScreen {
 			g.fill(x1, bottom - 1, x1 + barW, bottom, TRACK);
 			if (bucketValues[i] > 0 && max > 0) {
 				int h = Math.max(2, (int) Math.round((bottom - top) * bucketValues[i] / max));
-				int rgb = barColor & 0x00FFFFFF;
 				boolean strong = selected || hovered;
-				// Balken mit Farbverlauf (oben kräftig, unten dunkler) und abgerundeter Kante
-				g.fillGradient(x1, bottom - h + 1, x1 + barW, bottom, (strong ? 0xFF000000 : 0xCC000000) | rgb,
-						(strong ? 0x99000000 : 0x55000000) | rgb);
-				if (barW > 2) {
-					g.fill(x1 + 1, bottom - h, x1 + barW - 1, bottom - h + 1, (strong ? 0xFF000000 : 0xCC000000) | rgb);
+				// Gestapelt: jeder Job in seiner Farbe, unten beginnend (Reihenfolge wie die Job-Kacheln)
+				int segBottom = bottom;
+				double acc = 0;
+				for (JobInfo j : JOBS) {
+					Double part = bucketParts.get(i).get(j);
+					if (part == null || part <= 0) {
+						continue;
+					}
+					acc += part;
+					int segTop = bottom - (int) Math.round(h * acc / bucketValues[i]);
+					if (segTop < segBottom) {
+						int rgb = j.color() & 0x00FFFFFF;
+						g.fill(x1, segTop, x1 + barW, segBottom, (strong ? 0xFF000000 : 0xD0000000) | rgb);
+						segBottom = segTop;
+					}
+				}
+				// Jobs, die nicht in der Liste stehen
+				for (Map.Entry<JobInfo, Double> pe : bucketParts.get(i).entrySet()) {
+					if (JOBS.contains(pe.getKey()) || pe.getValue() <= 0) {
+						continue;
+					}
+					acc += pe.getValue();
+					int segTop = bottom - (int) Math.round(h * acc / bucketValues[i]);
+					if (segTop < segBottom) {
+						g.fill(x1, segTop, x1 + barW, segBottom, (strong ? 0xFF000000 : 0xD0000000) | (pe.getKey().color() & 0xFFFFFF));
+						segBottom = segTop;
+					}
 				}
 				if (hovered && h > 10) {
 					String v = Fmt.compact(bucketValues[i]);
@@ -671,6 +700,13 @@ public class JobHistoryScreen extends LoothubScreen {
 			tip.add(Component.literal(b.title()).withStyle(ChatFormatting.WHITE).getVisualOrderText());
 			tip.add(Component.literal(showXp ? Fmt.compact(bucketValues[hover]) + " XP" : Fmt.money(bucketValues[hover]))
 					.withStyle(showXp ? ChatFormatting.AQUA : ChatFormatting.GOLD).getVisualOrderText());
+			// Aufteilung nach Jobs, größter zuerst
+			bucketParts.get(hover).entrySet().stream()
+					.filter(en -> en.getValue() > 0)
+					.sorted((a, b2) -> Double.compare(b2.getValue(), a.getValue()))
+					.forEach(en -> tip.add(Component.literal("■ ").withStyle(st -> st.withColor(en.getKey().color() & 0xFFFFFF))
+							.append(Component.literal(en.getKey().name() + ": " + (showXp ? Fmt.compact(en.getValue()) + " XP"
+									: Fmt.money(en.getValue()))).withStyle(ChatFormatting.GRAY)).getVisualOrderText()));
 			if (b.unitOffset() != Integer.MIN_VALUE && hover != selectedBucket) {
 				tip.add(Component.translatable("loothub.history.chart.click").withStyle(ChatFormatting.DARK_GRAY).getVisualOrderText());
 			}
