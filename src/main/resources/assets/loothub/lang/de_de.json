@@ -218,7 +218,7 @@
 	"loothub.tooltip.shards": "Händler: ",
 	"loothub.settings.tool_protection": "Werkzeugschutz",
 	"loothub.settings.tool_protection.tooltip": "Warnt und sperrt das Werkzeug, sobald die Haltbarkeit die Grenze erreicht.",
-	"loothub.settings.tool_protection.min": "Grenze: %s Haltbarkeit",
+	"loothub.settings.tool_protection.min": "Grenze: %s %% Haltbarkeit",
 	"loothub.job.row.inv_market": "Inventar:",
 	"loothub.job.row.inv_shards": "Inv. Shards:",
 	"loothub.job.row.money_total": "Geld gesamt:",

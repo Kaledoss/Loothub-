@@ -50,8 +50,8 @@ public final class WidgetConfig {
 	public boolean themePackWanted = true;
 	/** Werkzeugschutz: warnen und Benutzen sperren, wenn die Haltbarkeit fast aufgebraucht ist. */
 	public boolean toolProtection = true;
-	/** Ab so viel Resthaltbarkeit wird gesperrt. */
-	public int toolProtectionMin = 10;
+	/** Ab so viel Prozent Resthaltbarkeit wird gesperrt (1–100). */
+	public int toolProtectionPercent = 5;
 	/** Werkzeugarten, die NICHT geschützt werden (Schlüssel aus ToolProtection.KINDS). */
 	public java.util.List<String> toolProtectionOff = new java.util.ArrayList<>();
 	/** YouTube Music (Desktop-App, API Server): „Läuft gerade“ im HUD. */
@@ -136,7 +136,7 @@ public final class WidgetConfig {
 					if (c.toolProtectionOff == null) {
 						c.toolProtectionOff = new java.util.ArrayList<>();
 					}
-					c.toolProtectionMin = Math.max(1, Math.min(200, c.toolProtectionMin));
+					c.toolProtectionPercent = Math.max(1, Math.min(100, c.toolProtectionPercent));
 					if (c.pcgChannel == null) {
 						c.pcgChannel = "";
 					}

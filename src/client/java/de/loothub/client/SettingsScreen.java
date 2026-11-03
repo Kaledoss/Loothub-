@@ -131,7 +131,7 @@ public class SettingsScreen extends LoothubScreen {
 			int tRows = (kinds.size() + tCols - 1) / tCols;
 			int tColW = tW / tCols;
 			buttons.add(addRenderableWidget(new net.minecraft.client.gui.components.AbstractSliderButton(
-					tDescX, tpY + 24, Math.min(220, tW), 16, Component.empty(), (c.toolProtectionMin - 1) / 99.0) {
+					tDescX, tpY + 24, Math.min(220, tW), 16, Component.empty(), (c.toolProtectionPercent - 1) / 99.0) {
 				{
 					updateMessage();
 				}
@@ -143,7 +143,7 @@ public class SettingsScreen extends LoothubScreen {
 
 				@Override
 				protected void applyValue() {
-					c.toolProtectionMin = 1 + (int) Math.round(value * 99);
+					c.toolProtectionPercent = 1 + (int) Math.round(value * 99);
 				}
 			}));
 			for (int i = 0; i < kinds.size(); i++) {

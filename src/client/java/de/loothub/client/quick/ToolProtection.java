@@ -93,11 +93,21 @@ public final class ToolProtection {
 		return st.getMaxDamage() - st.getDamageValue();
 	}
 
+	/** Resthaltbarkeit in Prozent. */
+	private static double percent(ItemStack st) {
+		int max = st.getMaxDamage();
+		return max <= 0 ? 100 : remaining(st) * 100.0 / max;
+	}
+
+	private static String percentText(ItemStack st) {
+		return de.loothub.client.Fmt.compactPlain(percent(st)) + " %";
+	}
+
 	private static boolean critical(ItemStack st) {
 		int r = remaining(st);
 		String k = kind(st);
 		WidgetConfig c = WidgetConfig.get();
-		return r >= 0 && k != null && !c.toolProtectionOff.contains(k) && r <= c.toolProtectionMin;
+		return r >= 0 && k != null && !c.toolProtectionOff.contains(k) && percent(st) <= c.toolProtectionPercent;
 	}
 
 	private static InteractionResult check(Player player, InteractionHand hand) {
@@ -109,8 +119,8 @@ public final class ToolProtection {
 		if (!critical(st)) {
 			return InteractionResult.PASS;
 		}
-		player.displayClientMessage(Component.literal("🛡 Werkzeugschutz: nur noch " + remaining(st)
-				+ " Haltbarkeit – erst reparieren").withStyle(ChatFormatting.RED), true);
+		player.displayClientMessage(Component.literal("🛡 Werkzeugschutz: nur noch " + percentText(st)
+				+ " Haltbarkeit (" + remaining(st) + ") – erst reparieren").withStyle(ChatFormatting.RED), true);
 		return InteractionResult.FAIL;
 	}
 
@@ -133,6 +143,6 @@ public final class ToolProtection {
 		warnedFor = st.copy();
 		mc.getSoundManager().play(SimpleSoundInstance.forUI(SoundEvents.NOTE_BLOCK_BASS, 0.7f));
 		mc.player.displayClientMessage(Component.literal("⚠ " + st.getHoverName().getString() + " fast kaputt ("
-				+ remaining(st) + " übrig) – Werkzeugschutz aktiv").withStyle(ChatFormatting.GOLD), true);
+				+ percentText(st) + ", " + remaining(st) + " übrig) – Werkzeugschutz aktiv").withStyle(ChatFormatting.GOLD), true);
 	}
 }
