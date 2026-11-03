@@ -67,7 +67,7 @@ public final class QuickCommandPanel {
 	private static final java.util.Map<String, net.minecraft.world.item.ItemStack> ITEM_ICONS = new java.util.HashMap<>();
 
 	/** Zeichnet ein Symbol: eigene Grafik (Krone, Pokal) oder ein Minecraft-Item. */
-	static void drawIcon(GuiGraphics g, String icon, int x, int y) {
+	public static void drawIcon(GuiGraphics g, String icon, int x, int y) {
 		switch (icon) {
 			case "loothub:crown" -> g.blit(net.minecraft.client.renderer.RenderPipelines.GUI_TEXTURED, CROWN,
 					x, y, 0f, 0f, 16, 16, 128, 128, 128, 128);

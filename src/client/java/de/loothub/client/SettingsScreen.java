@@ -109,7 +109,11 @@ public class SettingsScreen extends LoothubScreen {
 			checks.add(new Check(qDescX + (i % qCols) * qColW, y + 22 + (i / qCols) * 14, qColW - 4, label,
 					() -> !q.hidden, v -> q.hidden = !v));
 		}
-		y = cardNoToggle(y, 28 + qRows * 14, "loothub.settings.quick_buttons", "loothub.settings.quick_buttons.tooltip");
+		int qBtnY = y + 24 + qRows * 14;
+		buttons.add(addRenderableWidget(Button.builder(Component.translatable("loothub.quickedit.open"),
+						b -> minecraft.setScreen(new de.loothub.client.quick.QuickButtonsScreen(this)))
+				.bounds(qDescX, qBtnY, Math.min(200, cr - 8 - qDescX), 16).build()));
+		y = cardNoToggle(y, 48 + qRows * 14, "loothub.settings.quick_buttons", "loothub.settings.quick_buttons.tooltip");
 		y = card(y, 48, "loothub.settings.music", "loothub.settings.music.tooltip",
 				() -> c.musicEnabled, v -> {
 					c.musicEnabled = v;

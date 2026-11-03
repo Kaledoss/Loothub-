@@ -234,5 +234,14 @@
 	"loothub.settings.theme.pulse.title": "Farbe des Pulsierens",
 	"loothub.color.apply": "Übernehmen",
 	"loothub.color.cancel": "Abbrechen",
-	"loothub.color.preview": "Alt / Neu"
+	"loothub.color.preview": "Alt / Neu",
+	"loothub.quickedit.open": "Knöpfe bearbeiten / neu …",
+	"loothub.quickedit.title": "Knöpfe der Befehls-Leiste",
+	"loothub.quickedit.hint": "✎ bearbeiten · ✖ löschen · Reihenfolge per Ziehen in der Leiste",
+	"loothub.quickedit.new": "Neuer Knopf",
+	"loothub.quickedit.edit": "Knopf bearbeiten",
+	"loothub.quickedit.name": "Name",
+	"loothub.quickedit.command": "Befehl",
+	"loothub.quickedit.icon": "Symbol",
+	"loothub.quickedit.search": "Item suchen …"
 }
