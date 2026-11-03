@@ -100,7 +100,7 @@ public final class PcgPanel {
 		int buttons = 2 * PAD + COUNT * BTN + (COUNT - 2) * GAP + SEP;
 		// Breite ohne die laufende Uhr berechnen, damit die Leiste nicht im Sekundentakt zappelt
 		PcgState.Spawn spawn = PcgState.current();
-		String sample = spawn != null && spawn.result() == null ? GermanNames.of(spawn.name()) + " · 00:00 · ? prüfen" : "Nächstes: warte auf Spawn";
+		String sample = spawn != null && spawn.result() == null ? GermanNames.of(spawn.name()) + " · 00:00 · ✔ im Dex" : "Nächstes: warte auf Spawn";
 		int head = 2 * PAD + font.width("⠿ " + sample) + 8 + font.width("Verbinde …") + 8 + lockW(font);
 		return Math.max(buttons, head);
 	}
@@ -262,18 +262,6 @@ public final class PcgPanel {
 			return true;
 		}
 		if (e.y() < y + HEADER_H) {
-			// Klick auf den Pokédex-Hinweis: per !pokecheck nachfragen
-			PcgState.Spawn sp = PcgState.current();
-			if (sp != null && sp.result() == null) {
-				String head = (c.pcgPanelLocked ? "" : "⠿ ") + headText();
-				int tx = x + PAD + font.width(head) + 5;
-				if (e.x() >= tx - 2 && e.x() < tx + font.width(dexTag(sp.name())) + 2) {
-					if (TwitchChat.canWrite()) {
-						show(PcgState.requestCheck(sp.name()) ? "Gesendet: !pokecheck" : "Nicht gesendet");
-					}
-					return true;
-				}
-			}
 			if (!c.pcgPanelLocked) {
 				moving = true;
 				grabX = e.x() - x;
@@ -342,7 +330,6 @@ public final class PcgPanel {
 		return switch (Pokedex.state(name)) {
 			case CAUGHT -> "✔ im Dex";
 			case NOT_CAUGHT -> "NEU!";
-			case UNKNOWN -> "? prüfen";
 		};
 	}
 
@@ -350,15 +337,13 @@ public final class PcgPanel {
 		return switch (Pokedex.state(name)) {
 			case CAUGHT -> 0xFF9A9A9A;
 			case NOT_CAUGHT -> 0xFF55E06A;
-			case UNKNOWN -> 0xFF6FA8FF;
 		};
 	}
 
 	private static String dexTooltip(String name) {
 		return switch (Pokedex.state(name)) {
-			case CAUGHT -> "Schon gefangen – klicken zum erneuten Prüfen";
-			case NOT_CAUGHT -> "Noch nicht gefangen – neu für deinen Pokédex!";
-			case UNKNOWN -> "Unbekannt – klicken: !pokecheck senden";
+			case CAUGHT -> "Schon in deinem Loothub-Pokédex";
+			case NOT_CAUGHT -> "Noch nicht in deinem Loothub-Pokédex";
 		};
 	}
 

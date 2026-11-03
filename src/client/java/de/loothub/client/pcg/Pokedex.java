@@ -13,22 +13,24 @@ import java.util.TreeMap;
 
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
-import com.google.gson.reflect.TypeToken;
+import com.google.gson.JsonElement;
+import com.google.gson.JsonObject;
+import com.google.gson.JsonParser;
 
 import net.fabricmc.loader.api.FabricLoader;
 
 import de.loothub.Loothub;
 
 /**
- * Eigener kleiner Pokédex: merkt sich, welche Pokémon man laut Bot-Nachrichten gefangen hat
- * (bzw. laut {@code !pokecheck} noch nicht). Gespeichert in {@code config/loothub-pokedex.json}.
+ * Eigener Pokédex: beginnt leer und bekommt automatisch einen Eintrag, sobald der Bot meldet, dass man
+ * selbst ein Pokémon gefangen hat. Gespeichert in {@code config/loothub-pokedex.json} (Name → Zeitpunkt).
  */
 public final class Pokedex {
-	public enum State { CAUGHT, NOT_CAUGHT, UNKNOWN }
+	public enum State { CAUGHT, NOT_CAUGHT }
 
 	private static final Gson GSON = new GsonBuilder().setPrettyPrinting().create();
-	/** Englischer Name (klein) → gefangen ja/nein. */
-	private static Map<String, Boolean> entries;
+	/** Englischer Name (klein) → Zeitpunkt des ersten Fangs (0 = unbekannt). */
+	private static Map<String, Long> caught;
 
 	private Pokedex() {
 	}
@@ -38,26 +40,37 @@ public final class Pokedex {
 	}
 
 	private static synchronized void load() {
-		if (entries != null) {
+		if (caught != null) {
 			return;
 		}
-		entries = new HashMap<>();
+		caught = new HashMap<>();
 		Path p = file();
-		if (Files.exists(p)) {
-			try (Reader r = Files.newBufferedReader(p, StandardCharsets.UTF_8)) {
-				Map<String, Boolean> m = GSON.fromJson(r, new TypeToken<Map<String, Boolean>>() { }.getType());
-				if (m != null) {
-					entries.putAll(m);
+		if (!Files.exists(p)) {
+			return;
+		}
+		try (Reader r = Files.newBufferedReader(p, StandardCharsets.UTF_8)) {
+			JsonElement root = JsonParser.parseReader(r);
+			if (root != null && root.isJsonObject()) {
+				JsonObject o = root.getAsJsonObject();
+				for (String k : o.keySet()) {
+					JsonElement v = o.get(k);
+					if (v.isJsonPrimitive() && v.getAsJsonPrimitive().isBoolean()) {
+						if (v.getAsBoolean()) {
+							caught.put(k, 0L); // ältere Datei (ja/nein)
+						}
+					} else if (v.isJsonPrimitive() && v.getAsJsonPrimitive().isNumber()) {
+						caught.put(k, v.getAsLong());
+					}
 				}
-			} catch (IOException | RuntimeException e) {
-				Loothub.LOGGER.warn("Pokédex konnte nicht gelesen werden", e);
 			}
+		} catch (IOException | RuntimeException e) {
+			Loothub.LOGGER.warn("Pokédex konnte nicht gelesen werden", e);
 		}
 	}
 
 	private static synchronized void save() {
 		try (Writer w = Files.newBufferedWriter(file(), StandardCharsets.UTF_8)) {
-			GSON.toJson(new TreeMap<>(entries), w);
+			GSON.toJson(new TreeMap<>(caught), w);
 		} catch (IOException e) {
 			Loothub.LOGGER.warn("Pokédex konnte nicht gespeichert werden", e);
 		}
@@ -69,23 +82,23 @@ public final class Pokedex {
 
 	public static synchronized State state(String name) {
 		if (name == null) {
-			return State.UNKNOWN;
+			return State.NOT_CAUGHT;
 		}
 		load();
-		Boolean b = entries.get(key(name));
-		return b == null ? State.UNKNOWN : b ? State.CAUGHT : State.NOT_CAUGHT;
+		return caught.containsKey(key(name)) ? State.CAUGHT : State.NOT_CAUGHT;
 	}
 
-	public static synchronized void set(String name, boolean caught) {
+	/** Neuer Fang – nur beim ersten Mal gespeichert. */
+	public static synchronized void addCaught(String name) {
 		load();
-		Boolean old = entries.put(key(name), caught);
-		if (old == null || old != caught) {
+		if (caught.putIfAbsent(key(name), System.currentTimeMillis()) == null) {
 			save();
 		}
 	}
 
-	public static synchronized int caughtCount() {
+	/** Alle gefangenen Pokémon (englischer Name klein → Zeitpunkt). */
+	public static synchronized Map<String, Long> all() {
 		load();
-		return (int) entries.values().stream().filter(Boolean::booleanValue).count();
+		return new HashMap<>(caught);
 	}
 }

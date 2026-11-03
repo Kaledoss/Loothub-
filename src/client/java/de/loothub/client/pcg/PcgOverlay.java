@@ -84,7 +84,7 @@ public final class PcgOverlay {
 		g.fill(x + 4, y + 2, x + w - 4, y + 3, RED);
 
 		g.drawString(font, title(), x + 7, y + 7, LABEL, true);
-		if (s.result() == null && Pokedex.state(s.name()) != Pokedex.State.UNKNOWN) {
+		if (s.result() == null) {
 			String tag = PcgPanel.dexTag(s.name());
 			g.drawString(font, tag, x + 7 + font.width(title()) + 5, y + 7, PcgPanel.dexColor(s.name()), true);
 		}
