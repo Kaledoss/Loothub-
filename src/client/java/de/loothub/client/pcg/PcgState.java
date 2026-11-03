@@ -61,6 +61,16 @@ public final class PcgState {
 		String me = de.loothub.client.jobs.WidgetConfig.get().pcgUser.strip().toLowerCase(Locale.ROOT);
 		boolean aboutMe = !me.isEmpty() && lowerAll.contains(me);
 
+		// Antwort des Bots auf den eigenen Befehl (z. B. „keine Bälle“) kurz in der Leiste anzeigen
+		if (aboutMe && System.currentTimeMillis() - TwitchChat.lastSentAt() < 12_000 && !lowerAll.contains("caught")) {
+			String reply = text.replaceAll("(?i)@?" + java.util.regex.Pattern.quote(me) + "[,:]?\\s*", "").strip();
+			boolean problem = lowerAll.matches(".*\\b(no|not|don't|dont|can't|cant|cannot|need|insufficient|enough|already|only|invalid|unknown|failed|kein|keine|nicht)\\b.*");
+			if (reply.length() > 70) {
+				reply = reply.substring(0, 67) + "…";
+			}
+			PcgPanel.showBotReply(reply, problem);
+		}
+
 		Matcher m = WILD.matcher(text);
 		if (m.find()) {
 			String name = clean(m.group(1));

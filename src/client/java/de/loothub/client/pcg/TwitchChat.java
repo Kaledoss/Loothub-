@@ -92,15 +92,38 @@ public final class TwitchChat {
 		canWrite = false;
 	}
 
+	/** Grund, warum die letzte Nachricht nicht gesendet wurde (für die Anzeige). */
+	private static volatile String lastError = "";
+	/** Zeitpunkt der letzten gesendeten Nachricht – Bot-Antworten danach gelten als Antwort darauf. */
+	private static volatile long lastSentAt;
+
+	public static String lastError() {
+		return lastError;
+	}
+
+	public static long lastSentAt() {
+		return lastSentAt;
+	}
+
 	/** Schickt eine Chat-Nachricht in den Kanal. Nur auf Knopfdruck aufrufen. */
 	public static boolean send(String message) {
 		BufferedWriter w = out;
+		if (status == Status.ERROR) {
+			lastError = "Token ungültig – neuen Token eintragen";
+			return false;
+		}
+		if (status == Status.READ_ONLY) {
+			lastError = "Nur lesen – Twitch-Name oder Token fehlt";
+			return false;
+		}
 		if (!canWrite() || w == null) {
+			lastError = status == Status.CONNECTING ? "Noch nicht mit Twitch verbunden" : "Twitch-Verbindung ist aus";
 			return false;
 		}
 		long now = System.currentTimeMillis();
 		if (now - lastSend < 1500) {
-			return false; // Doppelklicks abfangen
+			lastError = "Zu schnell – kurz warten";
+			return false;
 		}
 		lastSend = now;
 		try {
@@ -108,9 +131,12 @@ public final class TwitchChat {
 				w.write("PRIVMSG #" + channel + " :" + message + "\r\n");
 				w.flush();
 			}
+			lastSentAt = now;
+			lastError = "";
 			return true;
 		} catch (IOException e) {
 			Loothub.LOGGER.warn("Twitch-Nachricht konnte nicht gesendet werden", e);
+			lastError = "Verbindung unterbrochen";
 			return false;
 		}
 	}

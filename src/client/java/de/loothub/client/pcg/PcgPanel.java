@@ -56,6 +56,7 @@ public final class PcgPanel {
 
 	private static long feedbackUntil;
 	private static String feedback = "";
+	private static int feedbackColor = 0xFF55E06A;
 	private static int armedBuy = -1;
 	private static long armedUntil;
 	private static boolean moving;
@@ -239,8 +240,8 @@ public final class PcgPanel {
 		int y = Math.max(0, o[1] - 14);
 		int w = font.width(feedback) + 2 * PAD;
 		g.fill(x, y, x + w, y + 12, 0xF0140B0D);
-		g.fill(x, y + 11, x + w, y + 12, 0xFF55E06A);
-		g.drawString(font, feedback, x + PAD, y + 2, 0xFF55E06A, false);
+		g.fill(x, y + 11, x + w, y + 12, feedbackColor);
+		g.drawString(font, feedback, x + PAD, y + 2, feedbackColor, false);
 	}
 
 	// ------------------------------------------------------------------ Maus
@@ -283,7 +284,7 @@ public final class PcgPanel {
 				PcgState.Spawn sp = PcgState.current();
 				GermanNames.Special special = sp != null && sp.result() == null ? GermanNames.specialBall(sp.name()) : null;
 				if (special != null) {
-					show(TwitchChat.send("!pokecatch " + special.id()) ? "Gesendet: " + special.label() + " geworfen" : "Nicht gesendet");
+					sendAndShow("!pokecatch " + special.id(), special.label() + " geworfen");
 				}
 				return true;
 			}
@@ -295,10 +296,14 @@ public final class PcgPanel {
 					return true;
 				}
 				armedBuy = -1;
-				show(TwitchChat.send("!pokeshop " + b.id() + " " + BUY_AMOUNT)
-						? "Gesendet: " + BUY_AMOUNT + "× " + b.label() + " kaufen" : "Nicht gesendet");
+				sendAndShow("!pokeshop " + b.id() + " " + BUY_AMOUNT, BUY_AMOUNT + "× " + b.label() + " bestellt");
 			} else {
-				show(TwitchChat.send("!pokecatch " + b.id()) ? "Gesendet: " + b.label() + " geworfen" : "Nicht gesendet");
+				PcgState.Spawn sp = PcgState.current();
+				if (sp == null || sp.result() != null || sp.remainingMs() <= 0) {
+					showError("Nicht geworfen: gerade kein Pokémon zum Fangen");
+				} else {
+					sendAndShow("!pokecatch " + b.id(), b.label() + " geworfen");
+				}
 			}
 			return true;
 		}
@@ -347,8 +352,30 @@ public final class PcgPanel {
 		};
 	}
 
+	private static void sendAndShow(String command, String what) {
+		if (TwitchChat.send(command)) {
+			show(what + " ✔");
+		} else {
+			showError("Nicht gesendet: " + TwitchChat.lastError());
+		}
+	}
+
+	private static void showError(String text) {
+		feedback = text;
+		feedbackColor = 0xFFFF5050;
+		feedbackUntil = System.currentTimeMillis() + 4000;
+	}
+
+	/** Antwort des Bots auf den letzten eigenen Befehl (rot, wenn es nach einem Fehler klingt). */
+	static void showBotReply(String text, boolean problem) {
+		feedback = (problem ? "Bot: " : "Bot: ") + text;
+		feedbackColor = problem ? 0xFFFF5050 : 0xFFB9A9AB;
+		feedbackUntil = System.currentTimeMillis() + 6000;
+	}
+
 	private static void show(String text) {
 		feedback = text;
+		feedbackColor = 0xFF55E06A;
 		feedbackUntil = System.currentTimeMillis() + 2500;
 	}
 
