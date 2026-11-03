@@ -114,6 +114,10 @@ public class SettingsScreen extends LoothubScreen {
 					de.loothub.client.music.YtMusic.ensure(v);
 				});
 		musicCardY = y - 48 - GAP;
+		y = card(y, 40, "loothub.settings.inventory_value", "loothub.settings.inventory_value.tooltip",
+				() -> c.inventoryValue, v -> c.inventoryValue = v);
+		y = card(y, 40, "loothub.settings.tool_protection", "loothub.settings.tool_protection.tooltip",
+				() -> c.toolProtection, v -> c.toolProtection = v);
 		y = card(y, 40, "loothub.settings.pulse", "loothub.settings.pulse.tooltip",
 				() -> c.pulseBorders, v -> c.pulseBorders = v);
 		y = card(y, 40, "loothub.settings.sell_highlight", "loothub.settings.sell_highlight.tooltip",

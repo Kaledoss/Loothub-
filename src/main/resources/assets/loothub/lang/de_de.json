@@ -215,5 +215,9 @@
 	"loothub.tooltip.ah.from": "Sofortkauf ab ",
 	"loothub.tooltip.ah.offers": "%s Angebote",
 	"loothub.tooltip.ah.avg": "Ø günstigster: ",
-	"loothub.tooltip.shards": "Händler: "
+	"loothub.tooltip.shards": "Händler: ",
+	"loothub.settings.inventory_value": "Inventarwert",
+	"loothub.settings.inventory_value.tooltip": "Zeigt links neben dem Inventar, was es wert ist: am Marktplatz (Verkaufspreis), im Auktionshaus (günstigster Sofortkauf) und beim Wertstoffhändler (OPShards).",
+	"loothub.settings.tool_protection": "Werkzeugschutz",
+	"loothub.settings.tool_protection.tooltip": "Warnt mit Ton, wenn ein Werkzeug nur noch 10 Haltbarkeit hat, und sperrt dann Abbauen, Schlagen und Benutzen damit. Schleichen hebt die Sperre auf."
 }

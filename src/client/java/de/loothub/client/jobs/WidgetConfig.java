@@ -36,6 +36,12 @@ public final class WidgetConfig {
 	public boolean pulseBorders = true;
 	/** In Markt-Menüs des Servers alle am Marktplatz gehandelten Items grün hinterlegen. */
 	public boolean sellHighlight = true;
+	/** Inventarwert (Markt, Auktion, Shards) links neben dem Inventar. */
+	public boolean inventoryValue = true;
+	/** Werkzeugschutz: warnen und Benutzen sperren, wenn die Haltbarkeit fast aufgebraucht ist. */
+	public boolean toolProtection = true;
+	/** Ab so viel Resthaltbarkeit wird gesperrt (Schleichen hebt die Sperre auf). */
+	public int toolProtectionMin = 10;
 	/** YouTube Music (Desktop-App, API Server): „Läuft gerade“ im HUD. */
 	public boolean musicEnabled = false;
 	public boolean musicLocked = false;
