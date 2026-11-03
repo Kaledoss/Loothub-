@@ -413,7 +413,9 @@ public class SettingsScreen extends LoothubScreen {
 		}
 
 		// YouTube Music: Status unter dem Schalter
-		Component musicStatus = Component.translatable("loothub.settings.music.status."
+		Component musicStatus = de.loothub.client.music.YtMusic.song() == null && de.loothub.client.music.WindowsMedia.song() != null
+				? Component.translatable("loothub.settings.music.status.windows")
+				: Component.translatable("loothub.settings.music.status."
 				+ de.loothub.client.music.YtMusic.status().name().toLowerCase(java.util.Locale.ROOT));
 		g.drawString(font, musicStatus, cl + 8 + (labelW - font.width(musicStatus)) / 2, musicCardY + 35, FAINT, false);
 

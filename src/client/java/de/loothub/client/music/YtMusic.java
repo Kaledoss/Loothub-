@@ -62,6 +62,7 @@ public final class YtMusic {
 
 	/** Startet bzw. stoppt die Abfrage passend zur Einstellung. */
 	public static synchronized void ensure(boolean enabled) {
+		WindowsMedia.ensure(enabled);
 		if (!enabled) {
 			Thread t = thread;
 			thread = null;

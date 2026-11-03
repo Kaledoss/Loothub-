@@ -205,7 +205,7 @@
 	"loothub.pokedex.empty": "Noch leer – jedes Pokémon, das du fängst, landet automatisch hier.",
 	"loothub.pokedex.caught_at": "gefangen %s",
 	"loothub.settings.music": "YouTube Music",
-	"loothub.settings.music.tooltip": "Zeigt im HUD, was in der YouTube-Music-Desktop-App läuft. In der App unter Plugins „API Server“ einschalten; beim ersten Mal die Anfrage von „loothub“ bestätigen. Verschieben: Chat öffnen (T) und das Feld ziehen.",
+	"loothub.settings.music.tooltip": "Zeigt im HUD, was gerade läuft: YouTube Music im Browser/als Web-App (über die Windows-Medienanzeige) oder die Desktop-App mit „API Server“-Plugin. Verschieben: Chat öffnen (T) und das Feld ziehen.",
 	"loothub.settings.music.status.off": "Aus",
 	"loothub.settings.music.status.not_running": "App nicht erreichbar",
 	"loothub.settings.music.status.waiting_for_approval": "In der App bestätigen",
@@ -243,5 +243,6 @@
 	"loothub.quickedit.name": "Name",
 	"loothub.quickedit.command": "Befehl",
 	"loothub.quickedit.icon": "Symbol",
-	"loothub.quickedit.search": "Item suchen …"
+	"loothub.quickedit.search": "Item suchen …",
+	"loothub.settings.music.status.windows": "Über Windows"
 }

@@ -57,7 +57,8 @@ public final class MusicWidget {
 		if (!c.musicEnabled) {
 			return null;
 		}
-		return YtMusic.song();
+		YtMusic.Song s = YtMusic.song();
+		return s != null ? s : WindowsMedia.song(); // Desktop-App bevorzugt, sonst Windows-Medienanzeige
 	}
 
 	public static void renderHud(GuiGraphics g, DeltaTracker delta) {
@@ -104,7 +105,10 @@ public final class MusicWidget {
 		g.drawString(font, fit(font, s.title(), W - 24), x + 17, y + 7, 0xFFFFD66B, true);
 		g.drawString(font, fit(font, s.artist(), W - 24), x + 17, y + 17, 0xFFB9A9AB, true);
 
-		// Fortschritt
+		// Fortschritt (bei Quellen ohne Länge weglassen)
+		if (s.duration() <= 0) {
+			return;
+		}
 		double dur = Math.max(1, s.duration());
 		double pos = s.position();
 		int bx = x + 6;
