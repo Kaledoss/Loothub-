@@ -38,6 +38,8 @@ public final class WidgetConfig {
 	public boolean sellHighlight = true;
 	/** Item auf dem eigenen Kopf (z. B. Auto) nicht anzeigen – nur für einen selbst. */
 	public boolean hideOwnHeadItem = false;
+	/** Talismanrucksack in der eigenen Zweithand nicht anzeigen. */
+	public boolean hideOffhandBackpack = false;
 	/** Inventar über der Hotbar anzeigen, mit eigener Hintergrundfarbe und Deckkraft. */
 	public boolean invHudEnabled = false;
 	public int invHudColor = 0x140B0D;

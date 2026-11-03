@@ -252,6 +252,8 @@ public class SettingsScreen extends LoothubScreen {
 		}
 		y = card(y, 40, "loothub.settings.hide_head", "loothub.settings.hide_head.tooltip",
 				() -> c.hideOwnHeadItem, v -> c.hideOwnHeadItem = v);
+		y = card(y, 40, "loothub.settings.hide_offhand", "loothub.settings.hide_offhand.tooltip",
+				() -> c.hideOffhandBackpack, v -> c.hideOffhandBackpack = v);
 		y = card(y, 40, "loothub.settings.pulse", "loothub.settings.pulse.tooltip",
 				() -> c.pulseBorders, v -> c.pulseBorders = v);
 		y = card(y, 40, "loothub.settings.sell_highlight", "loothub.settings.sell_highlight.tooltip",

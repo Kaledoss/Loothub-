@@ -10,7 +10,8 @@
 		"InventoryScreenMixin",
 		"ContainerLabelMixin",
 		"ContainerScreenMixin",
-		"HumanoidHeadMixin"
+		"HumanoidHeadMixin",
+		"ItemInHandRendererMixin"
 	],
 	"injectors": {
 		"defaultRequire": 0
