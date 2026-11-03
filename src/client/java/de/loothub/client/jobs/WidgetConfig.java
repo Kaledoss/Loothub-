@@ -36,6 +36,10 @@ public final class WidgetConfig {
 	public boolean pulseBorders = true;
 	/** In Markt-Menüs des Servers alle am Marktplatz gehandelten Items grün hinterlegen. */
 	public boolean sellHighlight = true;
+	/** Inventar über der Hotbar anzeigen, mit eigener Hintergrundfarbe und Deckkraft. */
+	public boolean invHudEnabled = false;
+	public int invHudColor = 0x140B0D;
+	public double invHudOpacity = 0.6;
 	/** Farben (RGB): innen = Akzente in Menüs/Inventar, außen = Rahmen, Puls = pulsierender Rand. */
 	public int colorInner = de.loothub.client.Theme.DEFAULT_INNER;
 	public int colorOuter = de.loothub.client.Theme.DEFAULT_OUTER;

@@ -244,5 +244,8 @@
 	"loothub.quickedit.command": "Befehl",
 	"loothub.quickedit.icon": "Symbol",
 	"loothub.quickedit.search": "Item suchen …",
-	"loothub.settings.music.status.windows": "Über Windows"
+	"loothub.settings.music.status.windows": "Über Windows",
+	"loothub.settings.inv_hud": "Inventar über Hotbar",
+	"loothub.settings.inv_hud.tooltip": "Zeigt dein Inventar dauerhaft über der Hotbar.",
+	"loothub.settings.inv_hud.color": "Hintergrundfarbe"
 }

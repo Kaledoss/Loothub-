@@ -61,6 +61,7 @@ public class SettingsScreen extends LoothubScreen {
 	private int pcgLabelY;
 	/** Position der kleinen Farbfelder auf den drei Farbknöpfen. */
 	private final int[][] colorSwatches = new int[3][];
+	private int[] invHudSwatch;
 	private int musicCardY;
 	private int pcgFieldX;
 	private int pcgFieldW;
@@ -209,6 +210,39 @@ public class SettingsScreen extends LoothubScreen {
 				}
 			}));
 			y = cardNoToggle(thY, 60, "loothub.settings.theme", "loothub.settings.theme.tooltip");
+		}
+		// Inventar über der Hotbar: Schalter, Farbe, Deckkraft
+		{
+			int ihY = y;
+			int iDescX = cl + labelW + 12;
+			int iW = Math.min(300, cr - 8 - iDescX);
+			int half = (iW - 4) / 2;
+			buttons.add(addRenderableWidget(Button.builder(Component.translatable("loothub.settings.inv_hud.color"),
+							b -> minecraft.setScreen(new ColorPickerScreen(this,
+									Component.translatable("loothub.settings.inv_hud.color"), c.invHudColor, rgb -> {
+								c.invHudColor = rgb;
+								c.save();
+							})))
+					.bounds(iDescX, ihY + 30, half, 16).build()));
+			invHudSwatch = new int[]{iDescX + half - 12, ihY + 34};
+			buttons.add(addRenderableWidget(new net.minecraft.client.gui.components.AbstractSliderButton(
+					iDescX + half + 4, ihY + 30, half, 16, Component.empty(), c.invHudOpacity) {
+				{
+					updateMessage();
+				}
+
+				@Override
+				protected void updateMessage() {
+					setMessage(Component.translatable("loothub.settings.theme.opacity", (int) Math.round(value * 100)));
+				}
+
+				@Override
+				protected void applyValue() {
+					c.invHudOpacity = value;
+				}
+			}));
+			y = card(ihY, 52, "loothub.settings.inv_hud", "loothub.settings.inv_hud.tooltip",
+					() -> c.invHudEnabled, v -> c.invHudEnabled = v);
 		}
 		y = card(y, 40, "loothub.settings.pulse", "loothub.settings.pulse.tooltip",
 				() -> c.pulseBorders, v -> c.pulseBorders = v);
@@ -410,6 +444,11 @@ public class SettingsScreen extends LoothubScreen {
 				g.fill(sx - 1, sy - 1, sx + 9, sy + 9, 0xFF000000);
 				g.fill(sx, sy, sx + 8, sy + 8, 0xFF000000 | cols[i]);
 			}
+		}
+
+		if (invHudSwatch != null) {
+			g.fill(invHudSwatch[0] - 1, invHudSwatch[1] - 1, invHudSwatch[0] + 9, invHudSwatch[1] + 9, 0xFF000000);
+			g.fill(invHudSwatch[0], invHudSwatch[1], invHudSwatch[0] + 8, invHudSwatch[1] + 8, 0xFF000000 | WidgetConfig.get().invHudColor);
 		}
 
 		// YouTube Music: Status unter dem Schalter

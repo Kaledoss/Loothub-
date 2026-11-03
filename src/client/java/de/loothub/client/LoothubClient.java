@@ -105,6 +105,10 @@ public class LoothubClient implements ClientModInitializer {
 			de.loothub.client.pcg.TwitchChat.ensure(wc.pcgEnabled, wc.pcgChannel, wc.pcgUser);
 		}
 
+		// Inventar über der Hotbar
+		HudElementRegistry.attachElementBefore(VanillaHudElements.CHAT,
+				Identifier.fromNamespaceAndPath(Loothub.MOD_ID, "inventory_hud"), de.loothub.client.quick.InventoryHud::renderHud);
+
 		// YouTube Music: „Läuft gerade“ im HUD, im Chat verschiebbar
 		HudElementRegistry.attachElementBefore(VanillaHudElements.CHAT,
 				Identifier.fromNamespaceAndPath(Loothub.MOD_ID, "music"), de.loothub.client.music.MusicWidget::renderHud);
