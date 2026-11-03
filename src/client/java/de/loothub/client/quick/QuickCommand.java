@@ -12,7 +12,7 @@ public final class QuickCommand {
 	/** Früherer Knopf (öffnete die Kurs-Übersicht) – wird in den Einstellungen durch /shards ersetzt. */
 	public static final String MERCHANT = "loothub:merchant";
 	/** Mit jeder Version neu hinzugekommene Standard-Knöpfe (für bestehende Einstellungen). */
-	public static final int DEFAULTS_VERSION = 4;
+	public static final int DEFAULTS_VERSION = 5;
 
 	public String label;
 	public String command;
@@ -56,9 +56,8 @@ public final class QuickCommand {
 		list.add(new QuickCommand("Clan", "clan", "loothub:crown"));
 		list.add(new QuickCommand("Quests", "quest", "minecraft:book"));
 		list.add(new QuickCommand("Erfolge", "achievement", "loothub:trophy"));
-		list.add(new QuickCommand("Pets", "pets", "minecraft:bone"));
-		list.add(new QuickCommand("Minions", "minions", "minecraft:armor_stand"));
-		list.add(new QuickCommand("Wertstoffhändler", "shards", "minecraft:amethyst_shard"));
+		list.add(new QuickCommand("Minions", "minion", "minecraft:armor_stand"));
+		list.add(new QuickCommand("Wertstoffhändler", "merchant", "minecraft:amethyst_shard"));
 		return list;
 	}
 }

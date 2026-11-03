@@ -30,6 +30,8 @@ public final class InventoryTitle {
 	}
 
 	private static final IconButton[] BUTTONS = {
+			// Pets: über der Zweithand, links neben der Überschrift „Loothub+“
+			new IconButton(79, 4, new ItemStack(Items.BONE), "pets"),
 			new IconButton(130, 62, new ItemStack(Items.CRAFTING_TABLE), "werkbank"),
 			new IconButton(150, 62, new ItemStack(Items.ANVIL), "anvil"),
 	};
