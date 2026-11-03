@@ -56,13 +56,14 @@ public class JobHistoryScreen extends LoothubScreen {
 	private static final DateTimeFormatter DAY = DateTimeFormatter.ofPattern("dd.MM.");
 	private static final DateTimeFormatter HOUR = DateTimeFormatter.ofPattern("HH:mm");
 	private static final DateTimeFormatter MONTH = DateTimeFormatter.ofPattern("MM.yy");
+	private static final DateTimeFormatter MONTH_NAME = DateTimeFormatter.ofPattern("MMMM yyyy", java.util.Locale.GERMAN);
 
 	/** Zeitraum-Art. */
 	public enum Period {
 		HOURLY("loothub.history.period.hourly"),
 		DAILY("loothub.history.period.daily"),
 		WEEKLY("loothub.history.period.weekly"),
-		YEARLY("loothub.history.period.yearly"),
+		MONTHLY("loothub.history.period.monthly"),
 		ALLTIME("loothub.history.period.alltime");
 
 		final String translationKey;
@@ -412,11 +413,11 @@ public class JobHistoryScreen extends LoothubScreen {
 				unitLabel = "KW " + monday.get(WeekFields.ISO.weekOfWeekBasedYear()) + " · "
 						+ DAY.format(monday) + "–" + DATE.format(monday.plusDays(6));
 			}
-			case YEARLY -> {
-				int year = today.getYear() + offset;
-				unitStart = millis(LocalDate.of(year, 1, 1).atStartOfDay(), zone);
-				unitEnd = millis(LocalDate.of(year + 1, 1, 1).atStartOfDay(), zone);
-				unitLabel = String.valueOf(year);
+			case MONTHLY -> {
+				YearMonth m = YearMonth.now().plusMonths(offset);
+				unitStart = millis(m.atDay(1).atStartOfDay(), zone);
+				unitEnd = millis(m.plusMonths(1).atDay(1).atStartOfDay(), zone);
+				unitLabel = MONTH_NAME.format(m);
 			}
 			case ALLTIME -> {
 				unitStart = Long.MIN_VALUE;
@@ -429,7 +430,7 @@ public class JobHistoryScreen extends LoothubScreen {
 		}
 	}
 
-	/** Diagramm-Balken: Verlauf bis zum gewählten Zeitraum (Jahr: seine 12 Monate, Alltime: alle Monate/Jahre). */
+	/** Diagramm-Balken: Verlauf bis zum gewählten Zeitraum (Monat: die letzten 12 Monate, Alltime: alle Monate/Jahre). */
 	private List<Bucket> buildBuckets(ZoneId zone, long first) {
 		List<Bucket> out = new ArrayList<>();
 		selectedBucket = -1;
@@ -462,11 +463,15 @@ public class JobHistoryScreen extends LoothubScreen {
 				}
 				selectedBucket = out.size() - 1;
 			}
-			case YEARLY -> {
-				int year = LocalDate.now().getYear() + offset;
-				for (int m = 1; m <= 12; m++) {
-					out.add(monthBucket(YearMonth.of(year, m), zone));
+			case MONTHLY -> {
+				YearMonth end = YearMonth.now().plusMonths(offset);
+				for (int i = 11; i >= 0; i--) {
+					YearMonth m = end.minusMonths(i);
+					String label = MONTH.format(m);
+					out.add(new Bucket(millis(m.atDay(1).atStartOfDay(), zone), millis(m.plusMonths(1).atDay(1).atStartOfDay(), zone),
+							label, MONTH_NAME.format(m), offset - i));
 				}
+				selectedBucket = out.size() - 1;
 			}
 			case ALLTIME -> {
 				YearMonth now = YearMonth.now();
