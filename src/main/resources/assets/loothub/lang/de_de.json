@@ -197,5 +197,15 @@
 	"loothub.settings.pcg_sound": "Pokémon-Ton",
 	"loothub.settings.pcg_sound.tooltip": "Spielt einen kurzen Ton, wenn im Pokémon Community Game ein neues Pokémon erscheint.",
 	"loothub.settings.quick_buttons": "Leisten-Knöpfe",
-	"loothub.settings.quick_buttons.tooltip": "Welche Knöpfe die Befehls-Leiste zeigt:"
+	"loothub.settings.quick_buttons.tooltip": "Welche Knöpfe die Befehls-Leiste zeigt:",
+	"loothub.tab.pokedex": "Pokédex",
+	"loothub.tab.pokedex.header": "Pokédex für das Pokémon Community Game",
+	"loothub.pokedex.search": "Name oder Nummer suchen …",
+	"loothub.pokedex.filter.all": "Alle",
+	"loothub.pokedex.filter.caught": "Gefangen",
+	"loothub.pokedex.filter.missing": "Fehlend",
+	"loothub.pokedex.count": "%s / %s gefangen",
+	"loothub.pokedex.legend": "✔ gefangen   ✘ noch nicht   · unbekannt (per „? prüfen“ beim Spawn abfragen)",
+	"loothub.pokedex.loading": "Lade Pokédex-Liste …",
+	"loothub.pokedex.error": "Pokédex-Liste konnte nicht geladen werden – später erneut öffnen."
 }
