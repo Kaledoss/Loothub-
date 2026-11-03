@@ -334,7 +334,7 @@ public final class QuickCommandPanel {
 
 		private void drawButton(GuiGraphics g, Font font, QuickCommand qc, int bx, int by, boolean hover) {
 			g.fill(bx, by, bx + bw, by + BUTTON_H, hover ? LoothubScreen.RED : BTN_EDGE);
-			g.fill(bx + 1, by + 1, bx + bw - 1, by + BUTTON_H - 1, hover ? BTN_BG_HOVER : BTN_BG);
+			g.fill(bx + 1, by + 1, bx + bw - 1, by + BUTTON_H - 1, hover ? de.loothub.client.Theme.bg(BTN_BG_HOVER) : de.loothub.client.Theme.bg(BTN_BG));
 			// Nur das Symbol – Name und Befehl stehen im Tooltip
 			drawIcon(g, qc.iconOrDefault(), bx + (bw - 16) / 2, by + (BUTTON_H - 16) / 2);
 		}

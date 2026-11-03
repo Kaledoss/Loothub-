@@ -490,7 +490,7 @@ public class SettingsScreen extends LoothubScreen {
 	}
 
 	private static void box(GuiGraphics g, int x, int y, int w, int h) {
-		g.fill(x, y, x + w, y + h, CARD);
+		g.fill(x, y, x + w, y + h, de.loothub.client.Theme.bg(CARD));
 		g.fill(x, y + h - 1, x + w, y + h, CARD_EDGE);
 		g.fill(x, y, x + w, y + 1, 0xFF2A171A);
 	}

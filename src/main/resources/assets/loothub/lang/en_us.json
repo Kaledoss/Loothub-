@@ -224,7 +224,7 @@
 	"loothub.job.row.money_total": "Geld gesamt:",
 	"loothub.job.row.xp_total": "XP gesamt:",
 	"loothub.settings.theme": "Farben",
-	"loothub.settings.theme.tooltip": "Innen: Akzente in Menüs und Inventar · Außen: Rahmen · Pulsieren: Farbe des pulsierenden Rands.",
+	"loothub.settings.theme.tooltip": "Innen: Akzente in Menüs und Inventar · Außen: Rahmen · Pulsieren: Farbe des pulsierenden Rands. Deckkraft gilt für alle Loothub-Hintergründe.",
 	"loothub.settings.theme.opacity": "Deckkraft: %s %%",
 	"loothub.settings.theme.inner": "Innen",
 	"loothub.settings.theme.outer": "Außen",

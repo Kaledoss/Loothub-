@@ -203,7 +203,7 @@ public final class PcgPanel {
 			int edge = armed ? 0xFFFF5050 : recommended || (isSpecial && special != null) ? 0xFFFFD040
 					: hover && usable ? LoothubScreen.RED : BTN_EDGE;
 			g.fill(bx, by, bx + BTN, by + BTN, edge);
-			g.fill(bx + 1, by + 1, bx + BTN - 1, by + BTN - 1, hover && usable ? BTN_BG_HOVER : BTN_BG);
+			g.fill(bx + 1, by + 1, bx + BTN - 1, by + BTN - 1, hover && usable ? de.loothub.client.Theme.bg(BTN_BG_HOVER) : de.loothub.client.Theme.bg(BTN_BG));
 			g.blit(RenderPipelines.GUI_TEXTURED, isSpecial ? SPECIAL_ICON : b.icon(), bx + 3, by + 3, 0f, 0f, 16, 16, 16, 16, 16, 16);
 			if (isSpecial) {
 				g.drawString(font, "★", bx + BTN - 8, by + BTN - 9, 0xFFFFD040, true);

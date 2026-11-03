@@ -529,7 +529,7 @@ public class JobHistoryScreen extends LoothubScreen {
 
 	/** Karte mit farbiger Akzentleiste links. */
 	private static void card(GuiGraphics g, int x, int y, int w, int h, int accent, boolean hover) {
-		g.fill(x, y, x + w, y + h, hover ? CARD_HOVER : CARD);
+		g.fill(x, y, x + w, y + h, hover ? CARD_HOVER : de.loothub.client.Theme.bg(CARD));
 		g.fill(x, y + h - 1, x + w, y + h, CARD_EDGE);
 		g.fill(x, y, x + 2, y + h, accent);
 	}

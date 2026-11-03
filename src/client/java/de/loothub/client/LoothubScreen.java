@@ -132,10 +132,10 @@ public abstract class LoothubScreen extends Screen {
 
 		// Rahmen (doppelt: außen dunkelrot, innen schwarz)
 		g.fill(frameX - 1, frameY - 1, frameX + frameW + 1, frameY + frameH + 1, RED_DARK);
-		g.fill(frameX, frameY, frameX + frameW, frameY + frameH, FRAME_BG);
+		g.fill(frameX, frameY, frameX + frameW, frameY + frameH, de.loothub.client.Theme.bg(FRAME_BG));
 
 		// Titelleiste
-		g.fill(frameX, frameY, frameX + frameW, frameY + TITLE_H, TITLE_BG);
+		g.fill(frameX, frameY, frameX + frameW, frameY + TITLE_H, de.loothub.client.Theme.bg(TITLE_BG));
 		g.fill(frameX, frameY + TITLE_H - 1, frameX + frameW, frameY + TITLE_H, RED);
 		Component title = Component.literal("LOOTHUB").withStyle(ChatFormatting.BOLD)
 				.append(Component.literal("+").withStyle(ChatFormatting.BOLD))
@@ -150,7 +150,7 @@ public abstract class LoothubScreen extends Screen {
 		int sx = frameX + 4;
 		int sy = frameY + TITLE_H + 4;
 		int sh = frameH - TITLE_H - 8;
-		g.fill(sx, sy, sx + sidebarW, sy + sh, SIDEBAR_BG);
+		g.fill(sx, sy, sx + sidebarW, sy + sh, de.loothub.client.Theme.bg(SIDEBAR_BG));
 		g.fill(sx + sidebarW, sy, sx + sidebarW + 1, sy + sh, FRAME_EDGE);
 		boolean compact = sidebarW < 60;
 		int ey = sy + 6;
@@ -185,7 +185,7 @@ public abstract class LoothubScreen extends Screen {
 
 		// Kopfzeile der Seite
 		int hx = cl - 4;
-		g.fill(hx, frameY + TITLE_H + 4, cr + 4, cb + 4, CONTENT_BG);
+		g.fill(hx, frameY + TITLE_H + 4, cr + 4, cb + 4, de.loothub.client.Theme.bg(CONTENT_BG));
 		Component pageTitle = Component.translatable(page.translationKey + ".header");
 		// Überschrift oben, Trennlinie darunter (nicht durch die Schrift)
 		g.drawString(font, pageTitle, cl, frameY + TITLE_H + 5, TEXT, false);

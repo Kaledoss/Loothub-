@@ -628,7 +628,7 @@ public class StatsScreen extends LoothubScreen {
 	}
 
 	private static void panel(GuiGraphics g, int x, int y, int w, int h) {
-		g.fill(x, y, x + w, y + h, PANEL);
+		g.fill(x, y, x + w, y + h, de.loothub.client.Theme.bg(PANEL));
 		g.fill(x, y, x + w, y + 1, BORDER);
 		g.fill(x, y + h - 1, x + w, y + h, BORDER);
 		g.fill(x, y, x + 1, y + h, BORDER);
