@@ -102,6 +102,8 @@ public final class WidgetConfig {
 	public java.util.List<String> jobWidgetHiddenRows = new java.util.ArrayList<>();
 	public double jobWidgetX = 0.0;
 	public double jobWidgetY = 0.35;
+	/** Größe des Job-Widgets (1 = normal), im Editor an den Rändern ziehbar. */
+	public double jobWidgetScale = 1.0;
 
 	public static WidgetConfig get() {
 		if (instance == null) {
@@ -122,6 +124,7 @@ public final class WidgetConfig {
 				if (c != null) {
 					c.jobWidgetX = clamp01(c.jobWidgetX);
 					c.jobWidgetY = clamp01(c.jobWidgetY);
+					c.jobWidgetScale = JobWidget.clampScale(c.jobWidgetScale);
 					if (c.quickCommands != null && c.quickCommandsVersion < de.loothub.client.quick.QuickCommand.DEFAULTS_VERSION) {
 						// Alte Befehle auf die richtigen OPSUCHT-Befehle umstellen; Pets liegt jetzt im Inventar
 						for (de.loothub.client.quick.QuickCommand q : c.quickCommands) {

@@ -41,7 +41,7 @@
 	"loothub.job.row.xp": "XP:",
 	"loothub.job.row.xp_rate": "XP/h:",
 	"loothub.job.editor.title": "Job-Widget verschieben",
-	"loothub.job.editor.hint": "Widget mit der Maus an die gewünschte Stelle ziehen",
+	"loothub.job.editor.hint": "Ziehen zum Verschieben · Ränder/Ecken ziehen für die Größe · Rechtsklick: 100 %",
 	"loothub.job.editor.no_data": "Noch keine Job-Daten – Beispielanzeige. Echte Werte mit /job toggle einschalten.",
 	"loothub.job.editor.done": "Fertig",
 	"loothub.tab.market": "Markt",

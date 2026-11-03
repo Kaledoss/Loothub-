@@ -70,7 +70,40 @@ public final class JobWidget {
 			return; // alle Zeilen ausgeschaltet
 		}
 		int[] pos = position(g.guiWidth(), g.guiHeight(), layout);
-		draw(g, mc.font, layout, pos[0], pos[1]);
+		drawScaled(g, mc.font, layout, pos[0], pos[1], scale());
+	}
+
+	public static final double MIN_SCALE = 0.5;
+	public static final double MAX_SCALE = 2.5;
+
+	public static double clampScale(double s) {
+		return Double.isNaN(s) || s <= 0 ? 1.0 : Math.max(MIN_SCALE, Math.min(MAX_SCALE, s));
+	}
+
+	public static double scale() {
+		return clampScale(WidgetConfig.get().jobWidgetScale);
+	}
+
+	/** Breite/Höhe auf dem Bildschirm (mit Größe). */
+	public static int scaledWidth(Layout l) {
+		return (int) Math.ceil(l.width() * scale());
+	}
+
+	public static int scaledHeight(Layout l) {
+		return (int) Math.ceil(l.height() * scale());
+	}
+
+	/** Zeichnet das Widget mit der eingestellten Größe; x/y ist die linke obere Ecke auf dem Bildschirm. */
+	public static void drawScaled(GuiGraphics g, Font font, Layout l, int x, int y, double scale) {
+		if (Math.abs(scale - 1.0) < 0.001) {
+			draw(g, font, l, x, y);
+			return;
+		}
+		g.pose().pushMatrix();
+		g.pose().translate(x, y);
+		g.pose().scale((float) scale, (float) scale);
+		draw(g, font, l, 0, 0);
+		g.pose().popMatrix();
 	}
 
 	private static String tr(String key) {
@@ -158,8 +191,8 @@ public final class JobWidget {
 	/** Bildschirmposition aus der relativen Position in der Config. */
 	public static int[] position(int screenW, int screenH, Layout layout) {
 		WidgetConfig c = WidgetConfig.get();
-		int x = (int) Math.round(c.jobWidgetX * Math.max(0, screenW - layout.width()));
-		int y = (int) Math.round(c.jobWidgetY * Math.max(0, screenH - layout.height()));
+		int x = (int) Math.round(c.jobWidgetX * Math.max(0, screenW - scaledWidth(layout)));
+		int y = (int) Math.round(c.jobWidgetY * Math.max(0, screenH - scaledHeight(layout)));
 		return new int[]{x, y};
 	}
 
