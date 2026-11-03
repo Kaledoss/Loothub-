@@ -128,10 +128,10 @@ public abstract class LoothubScreen extends Screen {
 	@Override
 	public void renderBackground(GuiGraphics g, int mouseX, int mouseY, float delta) {
 		g.nextStratum();
-		g.fill(0, 0, width, height, 0xA0000000);
+		g.fill(0, 0, width, height, de.loothub.client.Theme.bg(0xA0000000));
 
 		// Rahmen (doppelt: außen dunkelrot, innen schwarz)
-		g.fill(frameX - 1, frameY - 1, frameX + frameW + 1, frameY + frameH + 1, RED_DARK);
+		g.fill(frameX - 1, frameY - 1, frameX + frameW + 1, frameY + frameH + 1, de.loothub.client.Theme.bg(RED_DARK));
 		g.fill(frameX, frameY, frameX + frameW, frameY + frameH, de.loothub.client.Theme.bg(FRAME_BG));
 
 		// Titelleiste

@@ -339,7 +339,7 @@ public class MarketScreen extends LoothubScreen {
 			}
 
 			// Feld: Rahmen (rot beim Überfahren), Hintergrund
-			g.fill(tx, ty, tx + tileW, ty + TILE_H, hovered ? ITEM_BORDER_HOVER : TILE_EDGE);
+			g.fill(tx, ty, tx + tileW, ty + TILE_H, hovered ? ITEM_BORDER_HOVER : de.loothub.client.Theme.bg(TILE_EDGE));
 			g.fill(tx + 1, ty + 1, tx + tileW - 1, ty + TILE_H - 1, hovered ? de.loothub.client.Theme.bg(TILE_BG_HOVER) : de.loothub.client.Theme.bg(TILE_BG));
 			g.renderItem(stack(l), tx + 5, ty + 12);
 
@@ -720,10 +720,10 @@ public class MarketScreen extends LoothubScreen {
 
 	private static void panel(GuiGraphics g, int x, int y, int w, int h) {
 		g.fill(x, y, x + w, y + h, de.loothub.client.Theme.bg(PANEL));
-		g.fill(x, y, x + w, y + 1, BORDER);
-		g.fill(x, y + h - 1, x + w, y + h, BORDER);
-		g.fill(x, y, x + 1, y + h, BORDER);
-		g.fill(x + w - 1, y, x + w, y + h, BORDER);
+		g.fill(x, y, x + w, y + 1, de.loothub.client.Theme.bg(BORDER));
+		g.fill(x, y + h - 1, x + w, y + h, de.loothub.client.Theme.bg(BORDER));
+		g.fill(x, y, x + 1, y + h, de.loothub.client.Theme.bg(BORDER));
+		g.fill(x + w - 1, y, x + w, y + h, de.loothub.client.Theme.bg(BORDER));
 	}
 
 	// ------------------------------------------------------------------ Eingabe

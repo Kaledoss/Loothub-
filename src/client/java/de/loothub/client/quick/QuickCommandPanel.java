@@ -294,7 +294,7 @@ public final class QuickCommandPanel {
 			String grip = locked ? "Loothub+" : "⠿ Loothub+";
 			g.drawString(font, grip, x + PAD, y + 2, headerHover || mode == Mode.MOVE ? 0xFFFFFFFF : LoothubScreen.FAINT, false);
 			int lx = lockX();
-			g.fill(lx, y + 2, lx + 8, y + 10, onLock(mx, my) ? 0xFFFFFFFF : BTN_EDGE);
+			g.fill(lx, y + 2, lx + 8, y + 10, onLock(mx, my) ? 0xFFFFFFFF : de.loothub.client.Theme.bg(BTN_EDGE));
 			g.fill(lx + 1, y + 3, lx + 7, y + 9, 0xFF0F0A0B);
 			if (locked) {
 				g.fill(lx + 2, y + 4, lx + 6, y + 8, LoothubScreen.RED);
@@ -335,7 +335,7 @@ public final class QuickCommandPanel {
 		}
 
 		private void drawButton(GuiGraphics g, Font font, QuickCommand qc, int bx, int by, boolean hover) {
-			g.fill(bx, by, bx + bw, by + BUTTON_H, hover ? LoothubScreen.RED : BTN_EDGE);
+			g.fill(bx, by, bx + bw, by + BUTTON_H, hover ? LoothubScreen.RED : de.loothub.client.Theme.bg(BTN_EDGE));
 			g.fill(bx + 1, by + 1, bx + bw - 1, by + BUTTON_H - 1, hover ? de.loothub.client.Theme.bg(BTN_BG_HOVER) : de.loothub.client.Theme.bg(BTN_BG));
 			// Nur das Symbol – Name und Befehl stehen im Tooltip
 			drawIcon(g, qc.iconOrDefault(), bx + (bw - 16) / 2, by + (BUTTON_H - 16) / 2);

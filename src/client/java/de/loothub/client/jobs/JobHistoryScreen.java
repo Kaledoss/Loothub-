@@ -538,7 +538,7 @@ public class JobHistoryScreen extends LoothubScreen {
 	/** Karte mit farbiger Akzentleiste links. */
 	private static void card(GuiGraphics g, int x, int y, int w, int h, int accent, boolean hover) {
 		g.fill(x, y, x + w, y + h, hover ? CARD_HOVER : de.loothub.client.Theme.bg(CARD));
-		g.fill(x, y + h - 1, x + w, y + h, CARD_EDGE);
+		g.fill(x, y + h - 1, x + w, y + h, de.loothub.client.Theme.bg(CARD_EDGE));
 		g.fill(x, y, x + 2, y + h, accent);
 	}
 
@@ -648,7 +648,7 @@ public class JobHistoryScreen extends LoothubScreen {
 				g.fill(left + (int) (slot * i), top - 2, left + (int) (slot * (i + 1)), bottom, 0x18FFFFFF);
 			}
 			// leere Spur, damit auch Null-Werte sichtbar sind
-			g.fill(x1, bottom - 1, x1 + barW, bottom, TRACK);
+			g.fill(x1, bottom - 1, x1 + barW, bottom, de.loothub.client.Theme.bg(TRACK));
 			if (bucketValues[i] > 0 && max > 0) {
 				int h = Math.max(2, (int) Math.round((bottom - top) * bucketValues[i] / max));
 				boolean strong = selected || hovered;
@@ -741,7 +741,7 @@ public class JobHistoryScreen extends LoothubScreen {
 			int barX = x + 26;
 			int barW = tileW - 26 - 6 - 34;
 			int barY = y + 15;
-			g.fill(barX, barY, barX + barW, barY + 3, TRACK);
+			g.fill(barX, barY, barX + barW, barY + 3, de.loothub.client.Theme.bg(TRACK));
 			if (s.progress >= 0) {
 				g.fill(barX, barY, barX + (int) Math.round(barW * Math.min(100, s.progress) / 100.0), barY + 3, j.color());
 				String pct = Fmt.compactPlain(s.progress) + " %";
@@ -785,7 +785,7 @@ public class JobHistoryScreen extends LoothubScreen {
 		if (showLevel) {
 			right(g, "Level", colLevelR, hy, FAINT);
 		}
-		g.fill(listX + 2, listY + 14, listX + listW, listY + 15, CARD_EDGE);
+		g.fill(listX + 2, listY + 14, listX + listW, listY + 15, de.loothub.client.Theme.bg(CARD_EDGE));
 
 		int top = listY + 16;
 		int bottom = listY + listH - 1;

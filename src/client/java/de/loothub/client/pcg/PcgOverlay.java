@@ -83,8 +83,8 @@ public final class PcgOverlay {
 		g.fill(x + 1, y, x + w - 1, y + h, de.loothub.client.Theme.bg(BG));
 		g.fill(x, y + 1, x + 1, y + h - 1, de.loothub.client.Theme.bg(BG));
 		g.fill(x + w - 1, y + 1, x + w, y + h - 1, de.loothub.client.Theme.bg(BG));
-		g.fill(x + 2, y, x + w - 2, y + 1, EDGE);
-		g.fill(x + 2, y + h - 1, x + w - 2, y + h, EDGE);
+		g.fill(x + 2, y, x + w - 2, y + 1, de.loothub.client.Theme.bg(EDGE));
+		g.fill(x + 2, y + h - 1, x + w - 2, y + h, de.loothub.client.Theme.bg(EDGE));
 		g.fill(x + 4, y + 2, x + w - 4, y + 3, de.loothub.client.LoothubScreen.RED);
 
 		g.drawString(font, title(), x + 7, y + 7, LABEL, true);

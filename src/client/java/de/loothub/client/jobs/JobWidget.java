@@ -170,19 +170,19 @@ public final class JobWidget {
 		g.fill(x, y + 1, x + 1, b - 1, de.loothub.client.Theme.bg(BACKGROUND));
 		g.fill(r - 1, y + 1, r, b - 1, de.loothub.client.Theme.bg(BACKGROUND));
 		// Außenlinie, Ecken frei → rund
-		g.fill(x + 2, y, r - 2, y + 1, EDGE);
-		g.fill(x + 2, b - 1, r - 2, b, EDGE);
-		g.fill(x, y + 2, x + 1, b - 2, EDGE);
-		g.fill(r - 1, y + 2, r, b - 2, EDGE);
-		g.fill(x + 1, y + 1, x + 2, y + 2, EDGE);
-		g.fill(r - 2, y + 1, r - 1, y + 2, EDGE);
-		g.fill(x + 1, b - 2, x + 2, b - 1, EDGE);
-		g.fill(r - 2, b - 2, r - 1, b - 1, EDGE);
+		g.fill(x + 2, y, r - 2, y + 1, de.loothub.client.Theme.bg(EDGE));
+		g.fill(x + 2, b - 1, r - 2, b, de.loothub.client.Theme.bg(EDGE));
+		g.fill(x, y + 2, x + 1, b - 2, de.loothub.client.Theme.bg(EDGE));
+		g.fill(r - 1, y + 2, r, b - 2, de.loothub.client.Theme.bg(EDGE));
+		g.fill(x + 1, y + 1, x + 2, y + 2, de.loothub.client.Theme.bg(EDGE));
+		g.fill(r - 2, y + 1, r - 1, y + 2, de.loothub.client.Theme.bg(EDGE));
+		g.fill(x + 1, b - 2, x + 2, b - 1, de.loothub.client.Theme.bg(EDGE));
+		g.fill(r - 2, b - 2, r - 1, b - 1, de.loothub.client.Theme.bg(EDGE));
 		// Innenkante: oben/links etwas heller, unten/rechts dunkler
-		g.fill(x + 2, y + 1, r - 2, y + 2, BEVEL_HI);
-		g.fill(x + 1, y + 2, x + 2, b - 2, BEVEL_HI);
-		g.fill(x + 2, b - 2, r - 2, b - 1, BEVEL_SH);
-		g.fill(r - 2, y + 2, r - 1, b - 2, BEVEL_SH);
+		g.fill(x + 2, y + 1, r - 2, y + 2, de.loothub.client.Theme.bg(BEVEL_HI));
+		g.fill(x + 1, y + 2, x + 2, b - 2, de.loothub.client.Theme.bg(BEVEL_HI));
+		g.fill(x + 2, b - 2, r - 2, b - 1, de.loothub.client.Theme.bg(BEVEL_SH));
+		g.fill(r - 2, y + 2, r - 1, b - 2, de.loothub.client.Theme.bg(BEVEL_SH));
 		// roter Streifen oben, mit weichen Enden
 		g.fill(x + 4, y + 2, r - 4, y + 3, de.loothub.client.LoothubScreen.RED);
 		g.fill(x + 3, y + 2, x + 4, y + 3, 0x80B3262E);

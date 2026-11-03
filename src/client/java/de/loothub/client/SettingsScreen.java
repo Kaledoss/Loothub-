@@ -397,7 +397,7 @@ public class SettingsScreen extends LoothubScreen {
 		box(g, cl, versionY, cw, 44);
 		for (Card card : cards) {
 			box(g, cl, card.y(), cw, card.h());
-			g.fill(cl + labelW + 6, card.y() + 5, cl + labelW + 7, card.y() + card.h() - 5, CARD_EDGE);
+			g.fill(cl + labelW + 6, card.y() + 5, cl + labelW + 7, card.y() + card.h() - 5, de.loothub.client.Theme.bg(CARD_EDGE));
 		}
 		g.disableScissor();
 	}
@@ -429,7 +429,7 @@ public class SettingsScreen extends LoothubScreen {
 			boolean on = ch.get().getAsBoolean();
 			boolean hover = ch.contains(mouseX, mouseY) && mouseY >= ct && mouseY < cb;
 			g.fill(ch.x(), ch.y(), ch.x() + 9, ch.y() + 9, hover ? 0xFFFFFFFF : 0xFF000000);
-			g.fill(ch.x() + 1, ch.y() + 1, ch.x() + 8, ch.y() + 8, on ? RED : TRACK_OFF);
+			g.fill(ch.x() + 1, ch.y() + 1, ch.x() + 8, ch.y() + 8, on ? RED : de.loothub.client.Theme.bg(TRACK_OFF));
 			if (on) {
 				g.fill(ch.x() + 3, ch.y() + 3, ch.x() + 6, ch.y() + 6, 0xFFE8E0E0);
 			}
@@ -536,7 +536,7 @@ public class SettingsScreen extends LoothubScreen {
 
 	private static void box(GuiGraphics g, int x, int y, int w, int h) {
 		g.fill(x, y, x + w, y + h, de.loothub.client.Theme.bg(CARD));
-		g.fill(x, y + h - 1, x + w, y + h, CARD_EDGE);
+		g.fill(x, y + h - 1, x + w, y + h, de.loothub.client.Theme.bg(CARD_EDGE));
 		g.fill(x, y, x + w, y + 1, 0xFF2A171A);
 	}
 

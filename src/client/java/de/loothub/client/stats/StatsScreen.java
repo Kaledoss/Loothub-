@@ -455,7 +455,7 @@ public class StatsScreen extends LoothubScreen {
 			int r = columnRight(i, cols.size());
 			g.drawString(font, h, r - font.width(h), headerY, sortColumn == i + 1 ? GOLD : FAINT, false);
 		}
-		g.fill(tableX + 1, tableY + 14, tableX + tableW - 1, tableY + 15, BORDER);
+		g.fill(tableX + 1, tableY + 14, tableX + tableW - 1, tableY + 15, de.loothub.client.Theme.bg(BORDER));
 
 		int top = tableY + 16;
 		int bottom = tableY + tableH - 1;
@@ -629,9 +629,9 @@ public class StatsScreen extends LoothubScreen {
 
 	private static void panel(GuiGraphics g, int x, int y, int w, int h) {
 		g.fill(x, y, x + w, y + h, de.loothub.client.Theme.bg(PANEL));
-		g.fill(x, y, x + w, y + 1, BORDER);
-		g.fill(x, y + h - 1, x + w, y + h, BORDER);
-		g.fill(x, y, x + 1, y + h, BORDER);
-		g.fill(x + w - 1, y, x + w, y + h, BORDER);
+		g.fill(x, y, x + w, y + 1, de.loothub.client.Theme.bg(BORDER));
+		g.fill(x, y + h - 1, x + w, y + h, de.loothub.client.Theme.bg(BORDER));
+		g.fill(x, y, x + 1, y + h, de.loothub.client.Theme.bg(BORDER));
+		g.fill(x + w - 1, y, x + w, y + h, de.loothub.client.Theme.bg(BORDER));
 	}
 }

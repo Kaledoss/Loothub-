@@ -171,7 +171,7 @@ public final class PcgPanel {
 
 		int lx = x + w - PAD - 9;
 		boolean lockHover = onLock(x, y, w, font, mx, my);
-		g.fill(lx, y + 3, lx + 8, y + 11, lockHover ? 0xFFFFFFFF : BTN_EDGE);
+		g.fill(lx, y + 3, lx + 8, y + 11, lockHover ? 0xFFFFFFFF : de.loothub.client.Theme.bg(BTN_EDGE));
 		g.fill(lx + 1, y + 4, lx + 7, y + 10, 0xFF0F0A0B);
 		if (locked) {
 			g.fill(lx + 2, y + 5, lx + 6, y + 9, LoothubScreen.RED);
@@ -237,7 +237,7 @@ public final class PcgPanel {
 		}
 		// Trenner zwischen Werfen und Kaufen
 		int sx = buttonX(x, FIRST_BUY) - SEP / 2 - 1;
-		g.fill(sx, by + 3, sx + 1, by + BTN - 3, BTN_EDGE);
+		g.fill(sx, by + 3, sx + 1, by + BTN - 3, de.loothub.client.Theme.bg(BTN_EDGE));
 
 	}
 

@@ -96,8 +96,8 @@ public final class MusicWidget {
 		g.fill(x + 1, y, x + W - 1, y + H, de.loothub.client.Theme.bg(BG));
 		g.fill(x, y + 1, x + 1, y + H - 1, de.loothub.client.Theme.bg(BG));
 		g.fill(x + W - 1, y + 1, x + W, y + H - 1, de.loothub.client.Theme.bg(BG));
-		g.fill(x + 2, y, x + W - 2, y + 1, EDGE);
-		g.fill(x + 2, y + H - 1, x + W - 2, y + H, EDGE);
+		g.fill(x + 2, y, x + W - 2, y + 1, de.loothub.client.Theme.bg(EDGE));
+		g.fill(x + 2, y + H - 1, x + W - 2, y + H, de.loothub.client.Theme.bg(EDGE));
 		g.fill(x + 4, y + 2, x + W - 4, y + 3, de.loothub.client.LoothubScreen.RED);
 
 		String icon = s.paused() ? "⏸" : "♪";
