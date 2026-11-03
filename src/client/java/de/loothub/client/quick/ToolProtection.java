@@ -14,16 +14,61 @@ import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
 import net.fabricmc.fabric.api.event.player.AttackBlockCallback;
 import net.fabricmc.fabric.api.event.player.AttackEntityCallback;
 import net.fabricmc.fabric.api.event.player.UseBlockCallback;
+import net.fabricmc.fabric.api.event.player.UseItemCallback;
 
 import de.loothub.client.jobs.WidgetConfig;
 
 /**
  * Werkzeugschutz: Ist die Haltbarkeit des Werkzeugs in der Hand fast aufgebraucht, warnt die Mod
- * (Ton + Hinweis) und verhindert Abbauen/Schlagen/Benutzen damit. Schleichen hebt die Sperre auf.
+ * (Ton + Hinweis) und verhindert Abbauen/Schlagen/Benutzen damit. Grenze und geschützte Werkzeugarten
+ * stellt man in den Einstellungen ein.
  * Greift nur in eigene Klicks ein, löst selbst nichts aus.
  */
 public final class ToolProtection {
 	private static ItemStack warnedFor = ItemStack.EMPTY;
+
+	/** Schützbare Werkzeugarten: ID (für die Einstellungen) und Anzeigename. */
+	public static final java.util.List<String[]> KINDS = java.util.List.of(
+			new String[]{"pickaxe", "Spitzhacken"}, new String[]{"axe", "Äxte"}, new String[]{"shovel", "Schaufeln"},
+			new String[]{"hoe", "Hacken"}, new String[]{"sword", "Schwerter"}, new String[]{"bow", "Bögen/Armbrüste"},
+			new String[]{"trident", "Dreizack/Streitkolben"}, new String[]{"fishing_rod", "Angeln"},
+			new String[]{"shears", "Scheren"}, new String[]{"other", "Sonstiges"});
+
+	/** Werkzeugart eines Items (Schlüssel aus {@link #KINDS}), oder null bei Dingen ohne Haltbarkeit. */
+	public static String kind(ItemStack st) {
+		if (st.isEmpty() || !st.isDamageableItem()) {
+			return null;
+		}
+		if (st.is(net.minecraft.tags.ItemTags.PICKAXES)) {
+			return "pickaxe";
+		}
+		if (st.is(net.minecraft.tags.ItemTags.AXES)) {
+			return "axe";
+		}
+		if (st.is(net.minecraft.tags.ItemTags.SHOVELS)) {
+			return "shovel";
+		}
+		if (st.is(net.minecraft.tags.ItemTags.HOES)) {
+			return "hoe";
+		}
+		if (st.is(net.minecraft.tags.ItemTags.SWORDS)) {
+			return "sword";
+		}
+		String id = net.minecraft.core.registries.BuiltInRegistries.ITEM.getKey(st.getItem()).getPath();
+		if (id.equals("bow") || id.equals("crossbow")) {
+			return "bow";
+		}
+		if (id.equals("trident") || id.equals("mace")) {
+			return "trident";
+		}
+		if (id.endsWith("fishing_rod")) {
+			return "fishing_rod";
+		}
+		if (id.equals("shears")) {
+			return "shears";
+		}
+		return "other";
+	}
 
 	private ToolProtection() {
 	}
@@ -34,6 +79,8 @@ public final class ToolProtection {
 		AttackEntityCallback.EVENT.register((player, world, hand, entity, hit) ->
 				world.isClientSide() ? check(player, hand) : InteractionResult.PASS);
 		UseBlockCallback.EVENT.register((player, world, hand, hit) ->
+				world.isClientSide() ? check(player, hand) : InteractionResult.PASS);
+		UseItemCallback.EVENT.register((player, world, hand) ->
 				world.isClientSide() ? check(player, hand) : InteractionResult.PASS);
 		ClientTickEvents.END_CLIENT_TICK.register(client -> warnTick());
 	}
@@ -48,12 +95,14 @@ public final class ToolProtection {
 
 	private static boolean critical(ItemStack st) {
 		int r = remaining(st);
-		return r >= 0 && r <= WidgetConfig.get().toolProtectionMin;
+		String k = kind(st);
+		WidgetConfig c = WidgetConfig.get();
+		return r >= 0 && k != null && !c.toolProtectionOff.contains(k) && r <= c.toolProtectionMin;
 	}
 
 	private static InteractionResult check(Player player, InteractionHand hand) {
 		WidgetConfig c = WidgetConfig.get();
-		if (!c.toolProtection || player != Minecraft.getInstance().player || player.isShiftKeyDown()) {
+		if (!c.toolProtection || player != Minecraft.getInstance().player) {
 			return InteractionResult.PASS;
 		}
 		ItemStack st = player.getItemInHand(hand);
@@ -61,7 +110,7 @@ public final class ToolProtection {
 			return InteractionResult.PASS;
 		}
 		player.displayClientMessage(Component.literal("🛡 Werkzeugschutz: nur noch " + remaining(st)
-				+ " Haltbarkeit – Schleichen zum Benutzen").withStyle(ChatFormatting.RED), true);
+				+ " Haltbarkeit – erst reparieren").withStyle(ChatFormatting.RED), true);
 		return InteractionResult.FAIL;
 	}
 

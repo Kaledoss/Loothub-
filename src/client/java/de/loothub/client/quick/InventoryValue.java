@@ -12,7 +12,6 @@ import net.minecraft.world.item.ItemStack;
 
 import net.fabricmc.fabric.api.client.screen.v1.ScreenEvents;
 
-import de.loothub.client.AuctionPrices;
 import de.loothub.client.Fmt;
 import de.loothub.client.LoothubScreen;
 import de.loothub.client.MarketPrices;
@@ -21,15 +20,15 @@ import de.loothub.client.jobs.WidgetConfig;
 import de.loothub.client.mixin.AbstractContainerScreenAccessor;
 
 /**
- * Feld links neben dem Inventar: Wert des eigenen Inventars am Marktplatz (Verkaufspreis),
- * im Auktionshaus (günstigster Sofortkauf) und beim Wertstoffhändler (OPShards). Reine Anzeige.
+ * Feld links neben dem Inventar: Wert des eigenen Inventars am Marktplatz (Verkaufspreis)
+ * und beim Wertstoffhändler (OPShards). Reine Anzeige.
  */
 public final class InventoryValue {
 	private static final int W = 112;
 	private static final int PAD = 5;
 
 	private static long lastCalc;
-	private static double market, auction, shards;
+	private static double market, shards;
 
 	private InventoryValue() {
 	}
@@ -53,7 +52,7 @@ public final class InventoryValue {
 			return;
 		}
 		MarketPrices.refreshIfStale();
-		double m = 0, a = 0, sh = 0;
+		double m = 0, sh = 0;
 		Inventory inv = mc.player.getInventory();
 		for (int i = 0; i < inv.getContainerSize(); i++) {
 			ItemStack st = inv.getItem(i);
@@ -73,13 +72,8 @@ public final class InventoryValue {
 			if (e != null && e.sell().available()) {
 				m += e.sell().price() * n;
 			}
-			AuctionPrices.Now ah = AuctionPrices.get(id);
-			if (ah != null) {
-				a += ah.minPerUnit() * n;
-			}
 		}
 		market = m;
-		auction = a;
 		shards = sh;
 	}
 
@@ -95,15 +89,13 @@ public final class InventoryValue {
 		if (x < 2) {
 			return; // kein Platz
 		}
-		int h = 4 * 11 + 2 * PAD - 2;
+		int h = 3 * 11 + 2 * PAD - 1;
 		g.fill(x, y, x + W, y + h, 0xE0140B0D);
 		Pulse.outline(g, x, y, W, h);
 		int ty = y + PAD;
 		g.drawString(font, "Inventarwert", x + PAD, ty, LoothubScreen.RED, false);
 		ty += 12;
 		row(g, font, x, ty, "Markt", Fmt.compact(market) + " $", 0xFF55E06A);
-		ty += 11;
-		row(g, font, x, ty, "Auktion", auction > 0 ? Fmt.compact(auction) + " $" : "–", 0xFFE58CFF);
 		ty += 11;
 		row(g, font, x, ty, "Shards", shards > 0 ? Fmt.compact(shards) : "–", 0xFF55D5E0);
 	}

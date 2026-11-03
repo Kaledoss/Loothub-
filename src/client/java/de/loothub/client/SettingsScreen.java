@@ -116,8 +116,44 @@ public class SettingsScreen extends LoothubScreen {
 		musicCardY = y - 48 - GAP;
 		y = card(y, 40, "loothub.settings.inventory_value", "loothub.settings.inventory_value.tooltip",
 				() -> c.inventoryValue, v -> c.inventoryValue = v);
-		y = card(y, 40, "loothub.settings.tool_protection", "loothub.settings.tool_protection.tooltip",
-				() -> c.toolProtection, v -> c.toolProtection = v);
+		// Werkzeugschutz: Schalter, Regler für die Grenze, Kästchen je Werkzeugart
+		{
+			int tpY = y;
+			int tDescX = cl + labelW + 12;
+			int tW = cr - 8 - tDescX;
+			List<String[]> kinds = de.loothub.client.quick.ToolProtection.KINDS;
+			int tCols = 4;
+			int tRows = (kinds.size() + tCols - 1) / tCols;
+			int tColW = tW / tCols;
+			buttons.add(addRenderableWidget(new net.minecraft.client.gui.components.AbstractSliderButton(
+					tDescX, tpY + 24, Math.min(220, tW), 16, Component.empty(), (c.toolProtectionMin - 1) / 99.0) {
+				{
+					updateMessage();
+				}
+
+				@Override
+				protected void updateMessage() {
+					setMessage(Component.translatable("loothub.settings.tool_protection.min", 1 + (int) Math.round(value * 99)));
+				}
+
+				@Override
+				protected void applyValue() {
+					c.toolProtectionMin = 1 + (int) Math.round(value * 99);
+				}
+			}));
+			for (int i = 0; i < kinds.size(); i++) {
+				String id = kinds.get(i)[0];
+				checks.add(new Check(tDescX + (i % tCols) * tColW, tpY + 46 + (i / tCols) * 14, tColW - 4, kinds.get(i)[1],
+						() -> !c.toolProtectionOff.contains(id), v -> {
+							c.toolProtectionOff.remove(id);
+							if (!v) {
+								c.toolProtectionOff.add(id);
+							}
+						}));
+			}
+			y = card(tpY, 50 + tRows * 14, "loothub.settings.tool_protection", "loothub.settings.tool_protection.tooltip",
+					() -> c.toolProtection, v -> c.toolProtection = v);
+		}
 		y = card(y, 40, "loothub.settings.pulse", "loothub.settings.pulse.tooltip",
 				() -> c.pulseBorders, v -> c.pulseBorders = v);
 		y = card(y, 40, "loothub.settings.sell_highlight", "loothub.settings.sell_highlight.tooltip",

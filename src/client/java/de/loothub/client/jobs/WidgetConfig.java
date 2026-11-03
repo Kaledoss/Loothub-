@@ -40,8 +40,10 @@ public final class WidgetConfig {
 	public boolean inventoryValue = true;
 	/** Werkzeugschutz: warnen und Benutzen sperren, wenn die Haltbarkeit fast aufgebraucht ist. */
 	public boolean toolProtection = true;
-	/** Ab so viel Resthaltbarkeit wird gesperrt (Schleichen hebt die Sperre auf). */
+	/** Ab so viel Resthaltbarkeit wird gesperrt. */
 	public int toolProtectionMin = 10;
+	/** Werkzeugarten, die NICHT geschützt werden (Schlüssel aus ToolProtection.KINDS). */
+	public java.util.List<String> toolProtectionOff = new java.util.ArrayList<>();
 	/** YouTube Music (Desktop-App, API Server): „Läuft gerade“ im HUD. */
 	public boolean musicEnabled = false;
 	public boolean musicLocked = false;
@@ -121,6 +123,10 @@ public final class WidgetConfig {
 						c.quickCommandsVersion = de.loothub.client.quick.QuickCommand.DEFAULTS_VERSION;
 						c.save();
 					}
+					if (c.toolProtectionOff == null) {
+						c.toolProtectionOff = new java.util.ArrayList<>();
+					}
+					c.toolProtectionMin = Math.max(1, Math.min(200, c.toolProtectionMin));
 					if (c.pcgChannel == null) {
 						c.pcgChannel = "";
 					}
