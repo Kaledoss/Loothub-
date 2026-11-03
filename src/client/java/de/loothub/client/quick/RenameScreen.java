@@ -129,8 +129,20 @@ public class RenameScreen extends Screen {
 				lines.set(0, typed()); // neuer Name statt des alten
 			}
 		} else if (!empty) {
-			lines.add(Component.empty());
-			lines.add(typed()); // Signatur unten
+			// Wie OPSUCHT: Text (umgebrochen), Trennlinie, „Signiert von <Name> am <Datum>“
+			for (net.minecraft.network.chat.FormattedText part : font.getSplitter().splitLines(typed(), 150,
+					net.minecraft.network.chat.Style.EMPTY)) {
+				lines.add(Component.literal(part.getString()).withStyle(net.minecraft.ChatFormatting.YELLOW));
+			}
+			lines.add(Component.literal(" ".repeat(42)).withStyle(net.minecraft.ChatFormatting.DARK_GRAY,
+					net.minecraft.ChatFormatting.STRIKETHROUGH));
+			Minecraft mc = Minecraft.getInstance();
+			String me = mc.player == null ? "?" : mc.player.getName().getString();
+			String date = java.time.LocalDate.now().format(java.time.format.DateTimeFormatter.ofPattern("dd.MM.yyyy"));
+			lines.add(Component.literal("Signiert von ").withStyle(net.minecraft.ChatFormatting.GRAY)
+					.append(Component.literal(me).withStyle(net.minecraft.ChatFormatting.RED))
+					.append(Component.literal(" am ").withStyle(net.minecraft.ChatFormatting.GRAY))
+					.append(Component.literal(date).withStyle(net.minecraft.ChatFormatting.AQUA)));
 		}
 		java.util.List<net.minecraft.util.FormattedCharSequence> out = new java.util.ArrayList<>();
 		for (Component c : lines) {
