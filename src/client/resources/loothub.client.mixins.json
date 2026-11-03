@@ -9,7 +9,8 @@
 		"AbstractContainerScreenAccessor",
 		"InventoryScreenMixin",
 		"ContainerLabelMixin",
-		"ContainerScreenMixin"
+		"ContainerScreenMixin",
+		"HumanoidHeadMixin"
 	],
 	"injectors": {
 		"defaultRequire": 0

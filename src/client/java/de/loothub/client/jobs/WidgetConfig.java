@@ -36,6 +36,8 @@ public final class WidgetConfig {
 	public boolean pulseBorders = true;
 	/** In Markt-Menüs des Servers alle am Marktplatz gehandelten Items grün hinterlegen. */
 	public boolean sellHighlight = true;
+	/** Item auf dem eigenen Kopf (z. B. Auto) nicht anzeigen – nur für einen selbst. */
+	public boolean hideOwnHeadItem = false;
 	/** Inventar über der Hotbar anzeigen, mit eigener Hintergrundfarbe und Deckkraft. */
 	public boolean invHudEnabled = false;
 	public int invHudColor = 0x140B0D;

@@ -247,6 +247,8 @@ public class SettingsScreen extends LoothubScreen {
 			y = card(ihY, 52, "loothub.settings.inv_hud", "loothub.settings.inv_hud.tooltip",
 					() -> c.invHudEnabled, v -> c.invHudEnabled = v);
 		}
+		y = card(y, 40, "loothub.settings.hide_head", "loothub.settings.hide_head.tooltip",
+				() -> c.hideOwnHeadItem, v -> c.hideOwnHeadItem = v);
 		y = card(y, 40, "loothub.settings.pulse", "loothub.settings.pulse.tooltip",
 				() -> c.pulseBorders, v -> c.pulseBorders = v);
 		y = card(y, 40, "loothub.settings.sell_highlight", "loothub.settings.sell_highlight.tooltip",

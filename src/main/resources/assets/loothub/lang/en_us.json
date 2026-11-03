@@ -259,5 +259,7 @@
 	"loothub.rename.input": "Text",
 	"loothub.rename.hint": "Neuer Text … (Farben mit &, z. B. &cRot)",
 	"loothub.rename.codes": "Klick fügt den Code ein",
-	"loothub.rename.preview": "Vorschau"
+	"loothub.rename.preview": "Vorschau",
+	"loothub.settings.hide_head": "Kopf-Item ausblenden",
+	"loothub.settings.hide_head.tooltip": "Blendet das Item auf deinem eigenen Kopf aus (z. B. das Auto). Nur du siehst den Unterschied – die Wirkung des Items bleibt."
 }
