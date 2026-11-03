@@ -40,6 +40,13 @@ public final class PriceTooltip {
 		}
 		// Umbenannte Items und Sonder-/OP-Items (eigenes Modell) werden nicht am Marktplatz gehandelt
 		if (stack.get(DataComponents.CUSTOM_NAME) != null || stack.get(DataComponents.CUSTOM_MODEL_DATA) != null) {
+			// Sonderitems (z. B. Gräbergemisch) haben keinen Marktpreis, aber evtl. einen Shard-Wert
+			double special = ShardValue.perItem(stack);
+			if (!Double.isNaN(special)) {
+				lines.add(Component.empty());
+				lines.add(Component.literal("  ").append(Component.translatable("loothub.tooltip.shards").withStyle(ChatFormatting.GRAY))
+						.append(Component.literal(Fmt.exact(special * stack.getCount()) + " OPShards").withStyle(ChatFormatting.AQUA)));
+			}
 			return;
 		}
 
@@ -56,16 +63,49 @@ public final class PriceTooltip {
 
 		String itemId = BuiltInRegistries.ITEM.getKey(stack.getItem()).toString();
 		MarketPrices.Entry entry = MarketPrices.get(itemId);
-		if (entry == null) {
-			return; // wird am Marktplatz nicht gehandelt
+		AuctionPrices.Now ah = AuctionPrices.get(itemId);
+		if (entry == null && ah == null) {
+			return; // weder am Marktplatz noch im Auktionshaus
 		}
 
 		int count = stack.getCount();
-		lines.add(Component.empty());
-		lines.add(Component.translatable("loothub.tooltip.header").withStyle(ChatFormatting.GOLD));
-		// Laut API: BUY = Preis beim Kaufen (günstigstes Angebot), SELL = Preis beim Verkaufen (bester Kaufauftrag)
-		lines.add(sideLine("loothub.tooltip.buy", entry.buy(), count, ChatFormatting.GOLD));
-		lines.add(sideLine("loothub.tooltip.sell", entry.sell(), count, ChatFormatting.GREEN));
+		if (entry != null) {
+			lines.add(Component.empty());
+			lines.add(Component.translatable("loothub.tooltip.header").withStyle(ChatFormatting.GOLD));
+			// Laut API: BUY = Preis beim Kaufen (günstigstes Angebot), SELL = Preis beim Verkaufen (bester Kaufauftrag)
+			lines.add(sideLine("loothub.tooltip.buy", entry.buy(), count, ChatFormatting.GOLD));
+			lines.add(sideLine("loothub.tooltip.sell", entry.sell(), count, ChatFormatting.GREEN));
+		}
+		if (ah != null) {
+			if (entry == null) {
+				lines.add(Component.empty());
+			}
+			lines.add(Component.translatable("loothub.tooltip.ah.header").withStyle(ChatFormatting.LIGHT_PURPLE));
+			MutableComponent l = Component.literal("  ")
+					.append(Component.translatable("loothub.tooltip.ah.from").withStyle(ChatFormatting.GRAY))
+					.append(Component.literal(money(ah.minPerUnit())).withStyle(ChatFormatting.LIGHT_PURPLE));
+			if (count > 1) {
+				l.append(Component.literal(" (" + count + "× = " + money(ah.minPerUnit() * count) + ")").withStyle(ChatFormatting.DARK_GRAY));
+			}
+			l.append(Component.literal(" · ").withStyle(ChatFormatting.DARK_GRAY))
+					.append(Component.translatable("loothub.tooltip.ah.offers", ah.offers()).withStyle(ChatFormatting.DARK_GRAY));
+			lines.add(l);
+			double w1 = AuctionPrices.average(itemId, 7);
+			double w4 = AuctionPrices.average(itemId, 28);
+			if (!Double.isNaN(w1) || !Double.isNaN(w4)) {
+				MutableComponent t = Component.literal("  ").append(Component.translatable("loothub.tooltip.ah.avg").withStyle(ChatFormatting.GRAY));
+				t.append(Component.literal(Double.isNaN(w1) ? "–" : money(w1)).withStyle(ChatFormatting.WHITE))
+						.append(Component.literal(" (7 T) · ").withStyle(ChatFormatting.DARK_GRAY))
+						.append(Component.literal(Double.isNaN(w4) ? "–" : money(w4)).withStyle(ChatFormatting.WHITE))
+						.append(Component.literal(" (4 W)").withStyle(ChatFormatting.DARK_GRAY));
+				lines.add(t);
+			}
+		}
+		double shards = ShardValue.perItem(stack);
+		if (!Double.isNaN(shards)) {
+			lines.add(Component.literal("  ").append(Component.translatable("loothub.tooltip.shards").withStyle(ChatFormatting.GRAY))
+					.append(Component.literal(Fmt.exact(shards * count) + " OPShards").withStyle(ChatFormatting.AQUA)));
+		}
 		lines.add(ageLine());
 	}
 

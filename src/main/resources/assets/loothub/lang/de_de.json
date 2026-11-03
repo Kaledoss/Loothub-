@@ -210,5 +210,10 @@
 	"loothub.settings.music.status.not_running": "App nicht erreichbar",
 	"loothub.settings.music.status.waiting_for_approval": "In der App bestätigen",
 	"loothub.settings.music.status.denied": "Abgelehnt",
-	"loothub.settings.music.status.ok": "Verbunden"
+	"loothub.settings.music.status.ok": "Verbunden",
+	"loothub.tooltip.ah.header": "Auktionshaus",
+	"loothub.tooltip.ah.from": "Sofortkauf ab ",
+	"loothub.tooltip.ah.offers": "%s Angebote",
+	"loothub.tooltip.ah.avg": "Ø günstigster: ",
+	"loothub.tooltip.shards": "Händler: "
 }
