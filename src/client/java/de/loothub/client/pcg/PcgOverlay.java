@@ -43,7 +43,11 @@ public final class PcgOverlay {
 
 	private static String time(PcgState.Spawn s) {
 		if (s.result() != null) {
-			return s.result().equals("gefangen") ? "Gefangen!" : "Entkommen";
+			return switch (s.result()) {
+				case "gefangen" -> "Gefangen!";
+				case "verpasst" -> "Verpasst";
+				default -> "Entkommen";
+			};
 		}
 		long ms = s.remainingMs();
 		return ms <= 0 ? "Zeit um" : Fmt.clock(ms);

@@ -20,6 +20,7 @@ public final class PcgState {
 	private static final long RESULT_MS = 12_000;
 
 	private static final Pattern WILD = Pattern.compile("(?i)wild\\s+(.+?)\\s+(?:appears|appeared|has appeared|spawned)");
+	private static final Pattern CAUGHT_BY = Pattern.compile("(?i)([\\p{L}][\\p{L}\\p{N} .'\\-♀♂]*?)\\s+(?:has been|was)\\s+caught\\s+by");
 	private static final Pattern SECONDS = Pattern.compile("(?i)(\\d{1,3})\\s*(?:s\\b|sec|seconds|sekunden)");
 
 	public record Spawn(String name, long start, long end, String result, long resultUntil) {
@@ -59,7 +60,24 @@ public final class PcgState {
 		}
 		String lowerAll = text.toLowerCase(Locale.ROOT);
 		String me = de.loothub.client.jobs.WidgetConfig.get().pcgUser.strip().toLowerCase(Locale.ROOT);
-		boolean aboutMe = !me.isEmpty() && lowerAll.contains(me);
+		// Twitch-Namen bestehen aus Buchstaben, Ziffern und _ – nur als ganzes Wort zählen (sonst passt „wolf“ zu „Wolf_MP“)
+		boolean aboutMe = !me.isEmpty() && Pattern.compile("(?i)(?<![A-Za-z0-9_])" + Pattern.quote(me) + "(?![A-Za-z0-9_])")
+				.matcher(text).find();
+
+		// „Jigglypuff has been caught by: user1, user2, …“ – Name steht in der Nachricht
+		Matcher caughtBy = CAUGHT_BY.matcher(text);
+		if (caughtBy.find()) {
+			String name = clean(caughtBy.group(1));
+			if (aboutMe) {
+				Pokedex.addCaught(name); // selbst gefangen → neuer Eintrag im eigenen Pokédex
+			}
+			Spawn sp = current;
+			if (sp != null && sp.result() == null) {
+				long now = System.currentTimeMillis();
+				current = new Spawn(sp.name(), sp.start(), now, aboutMe ? "gefangen" : "verpasst", now + RESULT_MS);
+			}
+			return;
+		}
 
 		// Antwort des Bots auf den eigenen Befehl (z. B. „keine Bälle“) kurz in der Leiste anzeigen
 		if (aboutMe && System.currentTimeMillis() - TwitchChat.lastSentAt() < 12_000 && !lowerAll.contains("caught")) {
@@ -100,8 +118,12 @@ public final class PcgState {
 		} else if (lower.contains("escaped") || lower.contains("fled") || lower.contains("ran away") || lower.contains("broke free")) {
 			result = "entkommen";
 		}
-		if (result != null && result.equals("gefangen") && aboutMe) {
-			Pokedex.addCaught(s.name()); // selbst gefangen → neuer Eintrag im eigenen Pokédex
+		if (result != null && result.equals("gefangen")) {
+			if (aboutMe) {
+				Pokedex.addCaught(s.name());
+			} else {
+				result = "verpasst";
+			}
 		}
 		if (result != null) {
 			long now = System.currentTimeMillis();
