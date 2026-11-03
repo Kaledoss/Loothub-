@@ -251,5 +251,6 @@
 	"loothub.settings.music.status.windows_idle": "Bereit – nichts läuft",
 	"loothub.update.changes": "Neu in dieser Version:",
 	"loothub.update.more": "… und %s weitere Änderungen",
-	"loothub.stats.col.used": "Genutzt"
+	"loothub.stats.col.used": "Genutzt",
+	"loothub.merchant.new_today": "★ Tagesitem"
 }

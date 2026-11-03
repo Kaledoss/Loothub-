@@ -48,7 +48,9 @@ public class MerchantScreen extends LoothubScreen {
 	@Override
 	public void render(GuiGraphics g, int mouseX, int mouseY, float delta) {
 		super.render(g, mouseX, mouseY, delta);
-		List<MerchantRates.Rate> list = MerchantRates.rates();
+		// Tagesitems (heute neu) zuerst
+		List<MerchantRates.Rate> list = new java.util.ArrayList<>(MerchantRates.rates());
+		list.sort(java.util.Comparator.comparing((MerchantRates.Rate r) -> !MerchantRates.isNewToday(r)));
 		if (list.isEmpty()) {
 			String key = MerchantRates.isLoading() || MerchantRates.lastFetch() == 0 ? "loothub.merchant.loading"
 					: MerchantRates.failed() ? "loothub.merchant.error" : "loothub.merchant.empty";
@@ -80,6 +82,12 @@ public class MerchantScreen extends LoothubScreen {
 			g.renderItem(icon(r.itemId()), cl + 5, y + 2);
 			String name = r.name() != null ? r.name() : itemName(r.itemId());
 			g.drawString(font, name, cl + 28, y + 7, r.name() != null ? GOLD : TEXT, false);
+			if (MerchantRates.isNewToday(r)) {
+				String tag = Component.translatable("loothub.merchant.new_today").getString();
+				int tx = cl + 28 + font.width(name) + 8;
+				g.fill(tx - 2, y + 5, tx + font.width(tag) + 2, y + 16, 0xFF1F5A2C);
+				g.drawString(font, tag, tx, y + 7, GREEN, false);
+			}
 
 			double change = r.changePercent();
 			int changeColor = change > 0.05 ? GREEN : change < -0.05 ? RED : FAINT;

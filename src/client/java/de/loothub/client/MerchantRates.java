@@ -79,6 +79,7 @@ public final class MerchantRates {
 					throw error instanceof RuntimeException r ? r : new IllegalStateException(error);
 				}
 				rates = parse(json);
+				recordDay(rates);
 				failed = false;
 			} catch (RuntimeException e) {
 				Loothub.LOGGER.warn("Händler-Kurse konnten nicht geladen werden", e);
@@ -89,6 +90,73 @@ public final class MerchantRates {
 				version++;
 			}
 		});
+	}
+
+	// ------------------------------------------------------------------ Tageswechsel
+
+	/** Datum → angenommene Items an diesem Tag (Schlüssel aus {@link #key}). */
+	private static java.util.Map<String, java.util.Set<String>> days;
+	private static volatile java.util.Set<String> newToday = java.util.Set.of();
+
+	private static String key(Rate r) {
+		return r.itemId() + "|" + (r.name() == null ? "" : r.name()) + "|" + r.target();
+	}
+
+	/** Ist das Item heute neu dazugekommen (gestern nicht im Angebot)? */
+	public static boolean isNewToday(Rate r) {
+		return newToday.contains(key(r));
+	}
+
+	private static java.nio.file.Path daysFile() {
+		return net.fabricmc.loader.api.FabricLoader.getInstance().getConfigDir().resolve("loothub-merchant-days.json");
+	}
+
+	private static synchronized void recordDay(List<Rate> list) {
+		com.google.gson.Gson gson = new com.google.gson.Gson();
+		if (days == null) {
+			days = new java.util.TreeMap<>();
+			try {
+				java.nio.file.Path p = daysFile();
+				if (java.nio.file.Files.exists(p)) {
+					java.util.Map<String, java.util.Set<String>> m = gson.fromJson(java.nio.file.Files.readString(p),
+							new com.google.gson.reflect.TypeToken<java.util.Map<String, java.util.Set<String>>>() { }.getType());
+					if (m != null) {
+						days.putAll(m);
+					}
+				}
+			} catch (java.io.IOException | RuntimeException e) {
+				Loothub.LOGGER.warn("Händler-Verlauf nicht lesbar", e);
+			}
+		}
+		java.time.LocalDate today = java.time.LocalDate.now();
+		java.util.Set<String> keys = new java.util.TreeSet<>();
+		for (Rate r : list) {
+			keys.add(key(r));
+		}
+		days.put(today.toString(), keys);
+		String cutoff = today.minusDays(14).toString();
+		days.keySet().removeIf(d -> d.compareTo(cutoff) < 0);
+		// Vergleich mit dem letzten Tag davor, an dem Daten geholt wurden
+		java.util.Set<String> before = null;
+		for (java.util.Map.Entry<String, java.util.Set<String>> e : days.entrySet()) {
+			if (e.getKey().compareTo(today.toString()) < 0) {
+				before = e.getValue();
+			}
+		}
+		java.util.Set<String> fresh = new java.util.HashSet<>();
+		if (before != null) {
+			for (String k : keys) {
+				if (!before.contains(k)) {
+					fresh.add(k);
+				}
+			}
+		}
+		newToday = fresh;
+		try {
+			java.nio.file.Files.writeString(daysFile(), gson.toJson(days));
+		} catch (java.io.IOException e) {
+			Loothub.LOGGER.warn("Händler-Verlauf nicht speicherbar", e);
+		}
 	}
 
 	private static List<Rate> parse(JsonElement json) {
