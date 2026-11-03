@@ -159,7 +159,7 @@ public class SettingsScreen extends LoothubScreen {
 
 		// Job-Widget: Schalter + zwei Knöpfe unter der Beschreibung + Kästchen für jede Zeile
 		int jobY = y;
-		int end = card(jobY, 92, "loothub.settings.section.job_widget", "loothub.settings.job_widget.tooltip",
+		int end = card(jobY, 64 + ((JobWidget.ROW_IDS.size() + 3) / 4) * 14, "loothub.settings.section.job_widget", "loothub.settings.job_widget.tooltip",
 				() -> c.jobWidgetEnabled, v -> c.jobWidgetEnabled = v);
 		int descX = cl + labelW + 12;
 		int half = (cr - 8 - descX - 4) / 2;
@@ -176,7 +176,7 @@ public class SettingsScreen extends LoothubScreen {
 
 		rowsLabelY = jobY + 60;
 		List<String> ids = JobWidget.ROW_IDS;
-		int perRow = (ids.size() + 1) / 2;
+		int perRow = 4;
 		int colW = (cr - 8 - descX) / perRow;
 		for (int i = 0; i < ids.size(); i++) {
 			int col = i % perRow;

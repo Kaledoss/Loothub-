@@ -34,7 +34,8 @@ public final class JobWidget {
 	private static final int MUTED = 0xFFAAAAAA;
 
 	/** Zeilen-IDs in Anzeigereihenfolge; Sprachschlüssel: loothub.job.row.&lt;id&gt;. In den Einstellungen einzeln schaltbar. */
-	public static final List<String> ROW_IDS = List.of("job", "level", "progress", "time", "money", "money_rate", "xp", "xp_rate", "inv_market", "inv_shards");
+	public static final List<String> ROW_IDS = List.of("job", "level", "progress", "time", "money", "money_rate", "xp", "xp_rate",
+			"money_total", "xp_total", "inv_market", "inv_shards");
 
 	/** Eine Zeile des Widgets. */
 	public record Row(String label, String value, int color) {
@@ -46,7 +47,7 @@ public final class JobWidget {
 
 	/** Platzhalter, solange in dieser Sitzung noch keine Job-Aktion erkannt wurde. */
 	private static final JobTracker.Snapshot EMPTY = new JobTracker.Snapshot("–", -1, Double.NaN, 0, 0,
-			Double.NaN, Double.NaN, -1, 0, false, false);
+			Double.NaN, Double.NaN, -1, 0, false, false, 0, 0);
 
 	private JobWidget() {
 	}
@@ -100,6 +101,8 @@ public final class JobWidget {
 		addRow(rows, c, "money_rate", orDash(s.moneyPerHour(), " $"));
 		addRow(rows, c, "xp", Fmt.exact(s.sessionXp()) + " XP");
 		addRow(rows, c, "xp_rate", orDash(s.xpPerHour(), " XP"));
+		addRow(rows, c, "money_total", Fmt.exact(s.totalMoney()) + " $");
+		addRow(rows, c, "xp_total", Fmt.exact(s.totalXp()) + " XP");
 		if (c.jobRowVisible("inv_market")) {
 			rows.add(new Row(tr("loothub.job.row.inv_market"), Fmt.exact(de.loothub.client.quick.InventoryValue.market()) + " $", 0xFF55E06A));
 		}

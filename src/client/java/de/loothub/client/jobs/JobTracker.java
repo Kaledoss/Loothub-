@@ -13,8 +13,8 @@ import de.loothub.Loothub;
  * des Servers beginnt eine neue Sitzung.
  */
 public final class JobTracker {
-	/** Längere Lücken zwischen zwei Job-Aktionen gelten als Pause (60 s – manche Jobs zahlen nur alle 20–40 s). */
-	public static final long PAUSE_AFTER_MS = 60_000;
+	/** Längere Lücken zwischen zwei Job-Aktionen gelten als Pause. */
+	public static final long PAUSE_AFTER_MS = 20_000;
 	public static final long SESSION_TIMEOUT_MS = 10 * 60_000;
 	/** Unter dieser aktiven Zeit sind Stundenwerte zu ungenau und werden nicht angezeigt. */
 	private static final long MIN_ACTIVE_FOR_RATES_MS = 20_000;
@@ -34,7 +34,8 @@ public final class JobTracker {
 
 	/** Momentaufnahme für die Anzeige. Werte, die (noch) nicht bekannt sind, sind NaN bzw. -1. */
 	public record Snapshot(String job, int level, double progress, double sessionXp, double sessionMoney,
-						   double xpPerHour, double moneyPerHour, long etaMs, long trackingMs, boolean paused, boolean demo) {
+						   double xpPerHour, double moneyPerHour, long etaMs, long trackingMs, boolean paused, boolean demo,
+						   double totalXp, double totalMoney) {
 	}
 
 	private static final Map<String, JobStats> JOBS = new HashMap<>();
@@ -74,6 +75,9 @@ public final class JobTracker {
 			sessionStart = now;
 		}
 		String job = gain.job() != null ? gain.job() : currentJob != null ? currentJob : "Job";
+		if (currentJob != null && !job.equals(currentJob)) {
+			active = 0; // Jobwechsel: die Lücke gehört keinem Job
+		}
 		JobStats s = JOBS.computeIfAbsent(job, k -> new JobStats());
 		if (!s.seen) {
 			s.seen = true;
@@ -141,8 +145,13 @@ public final class JobTracker {
 		}
 		JobStats s = JOBS.get(currentJob);
 
+		// Werte des aktuellen Jobs – jeder Job zählt für sich und macht beim Zurückwechseln weiter
 		double xpPerHour = s.activeMs >= MIN_ACTIVE_FOR_RATES_MS ? s.xp / (s.activeMs / 3_600_000.0) : Double.NaN;
-		double moneyPerHour = totalActiveMs >= MIN_ACTIVE_FOR_RATES_MS ? totalMoney / (totalActiveMs / 3_600_000.0) : Double.NaN;
+		double moneyPerHour = s.activeMs >= MIN_ACTIVE_FOR_RATES_MS ? s.money / (s.activeMs / 3_600_000.0) : Double.NaN;
+		double totalXp = 0;
+		for (JobStats st : JOBS.values()) {
+			totalXp += st.xp;
+		}
 
 		// Zeit bis Level-Up: aus XP pro Prozentpunkt im aktuellen Level hochgerechnet
 		long eta = -1;
@@ -152,8 +161,9 @@ public final class JobTracker {
 			eta = (long) (xpToNext / xpPerHour * 3_600_000.0);
 		}
 
-		return new Snapshot(currentJob, s.level, s.progress, s.xp, totalMoney, xpPerHour, moneyPerHour, eta,
-				totalActiveMs + Math.min(now - lastGain, PAUSE_AFTER_MS), now - lastGain > PAUSE_AFTER_MS, false);
+		return new Snapshot(currentJob, s.level, s.progress, s.xp, s.money, xpPerHour, moneyPerHour, eta,
+				s.activeMs + Math.min(now - lastGain, PAUSE_AFTER_MS), now - lastGain > PAUSE_AFTER_MS, false,
+				totalXp, totalMoney);
 	}
 
 	/** Die laufende Sitzung für die Anzeige im Verlauf, oder null. Wird nicht gespeichert. */
@@ -194,6 +204,7 @@ public final class JobTracker {
 
 	/** Beispieldaten für den Editor, solange noch keine echten Daten vorliegen. */
 	public static Snapshot demo() {
-		return new Snapshot("Holzfäller", 58, 13.85, 1240, 6320.5, 4100, 21000, 38 * 60_000L, 49 * 60_000L + 55_000L, false, true);
+		return new Snapshot("Holzfäller", 58, 13.85, 1240, 6320.5, 4100, 21000, 38 * 60_000L, 49 * 60_000L + 55_000L, false, true,
+				3480, 9875.25);
 	}
 }
