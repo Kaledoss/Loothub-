@@ -1,6 +1,10 @@
 package de.loothub.client;
 
+import java.text.Collator;
 import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.IdentityHashMap;
+import java.util.Map;
 import java.util.List;
 import java.util.Locale;
 
@@ -19,7 +23,7 @@ import de.loothub.client.itemdex.Itemdex.Category;
 import de.loothub.client.itemdex.Itemdex.Entry;
 
 /**
- * Seite „Itemdex“: nummerierte Liste aller Server-eigenen Items, die bisher gesehen wurden.
+ * Seite „Itemdex“: nummerierte Liste (A–Z) aller Server-eigenen Items, die bisher gesehen wurden.
  * Suche (Name, Beschreibung, Nummer), Filter nach Art, Rechtsklick blendet einen Eintrag aus.
  */
 public class ItemdexScreen extends LoothubScreen {
@@ -32,6 +36,7 @@ public class ItemdexScreen extends LoothubScreen {
 	private Button categoryButton;
 	private Button hiddenButton;
 	private List<Entry> rows = List.of();
+	private final Map<Entry, Integer> numbers = new IdentityHashMap<>();
 	private int seenVersion = -1;
 	private int scroll;
 	private int listTop;
@@ -83,8 +88,20 @@ public class ItemdexScreen extends LoothubScreen {
 	private void refresh() {
 		seenVersion = Itemdex.version();
 		String q = search.strip().toLowerCase(Locale.ROOT).replaceFirst("^#", "");
+		// A–Z sortiert; Nummern nur für eingeblendete Items, lückenlos und unabhängig von Suche/Filter
+		List<Entry> all = new ArrayList<>(Itemdex.entries());
+		Collator collator = Collator.getInstance(Locale.GERMANY);
+		collator.setStrength(Collator.PRIMARY);
+		all.sort(Comparator.comparing((Entry e) -> e.name, collator).thenComparing(e -> e.itemId));
+		numbers.clear();
+		int n = 0;
+		for (Entry e : all) {
+			if (!e.hidden) {
+				numbers.put(e, ++n);
+			}
+		}
 		List<Entry> out = new ArrayList<>();
-		for (Entry e : Itemdex.entries()) {
+		for (Entry e : all) {
 			if (e.hidden && !showHidden) {
 				continue; // ausgeblendete nur zeigen, wenn eingeschaltet
 			}
@@ -92,7 +109,7 @@ public class ItemdexScreen extends LoothubScreen {
 				continue;
 			}
 			if (!q.isEmpty() && !e.text.contains(q) && !e.itemId.contains(q)
-					&& !String.valueOf(e.number).equals(q.replaceFirst("^0+(?=\\d)", ""))) {
+					&& !String.valueOf(numbers.getOrDefault(e, -1)).equals(q.replaceFirst("^0+(?=\\d)", ""))) {
 				continue;
 			}
 			out.add(e);
@@ -102,7 +119,7 @@ public class ItemdexScreen extends LoothubScreen {
 
 	@Override
 	protected Component headerRight() {
-		return Component.translatable("loothub.itemdex.count", Itemdex.entries().size());
+		return Component.translatable("loothub.itemdex.count", numbers.size());
 	}
 
 	@Override
@@ -138,7 +155,8 @@ public class ItemdexScreen extends LoothubScreen {
 			Entry e = rows.get(i + scroll);
 			int y = listTop + i * ROW_H;
 			g.fill(cl, y, cr, y + ROW_H - 1, e == hovered ? 0x30E23B3B : (i % 2 == 0 ? 0x14FFFFFF : 0x08FFFFFF));
-			g.drawString(font, String.format(Locale.ROOT, "#%04d", e.number), cl + 4, y + 6, MUTED, false);
+			Integer number = numbers.get(e);
+			g.drawString(font, number == null ? "  –" : String.format(Locale.ROOT, "#%04d", number), cl + 4, y + 6, MUTED, false);
 			ItemStack stack = e.stack();
 			g.renderItem(stack, cl + 40, y + 2);
 			Component name = stack.isEmpty() ? Component.literal(e.name) : stack.getHoverName();
