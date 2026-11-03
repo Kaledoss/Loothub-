@@ -12,7 +12,7 @@ public final class QuickCommand {
 	/** Früherer Knopf (öffnete die Kurs-Übersicht) – wird in den Einstellungen durch /shards ersetzt. */
 	public static final String MERCHANT = "loothub:merchant";
 	/** Mit jeder Version neu hinzugekommene Standard-Knöpfe (für bestehende Einstellungen). */
-	public static final int DEFAULTS_VERSION = 5;
+	public static final int DEFAULTS_VERSION = 6;
 
 	public String label;
 	public String command;
@@ -58,6 +58,7 @@ public final class QuickCommand {
 		list.add(new QuickCommand("Erfolge", "achievement", "loothub:trophy"));
 		list.add(new QuickCommand("Minions", "minion", "minecraft:armor_stand"));
 		list.add(new QuickCommand("Wertstoffhändler", "merchant", "minecraft:amethyst_shard"));
+		list.add(new QuickCommand("Enderkiste", "ec", "minecraft:ender_chest"));
 		return list;
 	}
 }
