@@ -116,6 +116,10 @@ public final class StatsTracker {
 		// Nur „richtige“ Blöcke: Kollision, die fast die ganze Grundfläche füllt und mindestens halb so hoch ist.
 		// Damit fallen Schilder, Fackeln, Blumen, Knöpfe, Schienen, Ketten, Laternen, Falltüren, Türen,
 		// Zäune, Mauern und Teppiche heraus (Glasscheiben zählen); Stufen, Treppen, Kisten bleiben drin.
+		// Blöcke mit Inhalt/Funktion (Kisten, Fässer, Öfen, Trichter, Shulkerkisten …) zählen als Item
+		if (block instanceof net.minecraft.world.level.block.EntityBlock) {
+			return false;
+		}
 		// Glasscheiben zählen trotz schmaler Form als Block
 		if (net.minecraft.core.registries.BuiltInRegistries.BLOCK.getKey(block).getPath().endsWith("glass_pane")) {
 			return true;
