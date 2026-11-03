@@ -36,6 +36,12 @@ public final class WidgetConfig {
 	public boolean pulseBorders = true;
 	/** In Markt-Menüs des Servers alle am Marktplatz gehandelten Items grün hinterlegen. */
 	public boolean sellHighlight = true;
+	/** YouTube Music (Desktop-App, API Server): „Läuft gerade“ im HUD. */
+	public boolean musicEnabled = false;
+	public boolean musicLocked = false;
+	public int musicPort = 26538;
+	public double musicX = 0.0;
+	public double musicY = 1.0;
 	/** Pokémon Community Game (Twitch): Spawn-Anzeige und Knöpfe über dem Inventar. */
 	public boolean pcgEnabled = false;
 	/** Twitch-Kanal, in dem gespielt wird. */

@@ -105,6 +105,12 @@ public class LoothubClient implements ClientModInitializer {
 			de.loothub.client.pcg.TwitchChat.ensure(wc.pcgEnabled, wc.pcgChannel, wc.pcgUser);
 		}
 
+		// YouTube Music: „Läuft gerade“ im HUD, im Chat verschiebbar
+		HudElementRegistry.attachElementBefore(VanillaHudElements.CHAT,
+				Identifier.fromNamespaceAndPath(Loothub.MOD_ID, "music"), de.loothub.client.music.MusicWidget::renderHud);
+		de.loothub.client.music.MusicWidget.register();
+		de.loothub.client.music.YtMusic.ensure(de.loothub.client.jobs.WidgetConfig.get().musicEnabled);
+
 		// Beim Verlassen des Servers beginnt eine neue Job-Sitzung
 		ClientPlayConnectionEvents.DISCONNECT.register((handler, client) -> {
 			JobTracker.reset();

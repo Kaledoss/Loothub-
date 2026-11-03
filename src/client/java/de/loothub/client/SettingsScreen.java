@@ -59,6 +59,7 @@ public class SettingsScreen extends LoothubScreen {
 	private boolean needsRebuild;
 	private int rowsLabelY;
 	private int pcgLabelY;
+	private int musicCardY;
 	private int pcgFieldX;
 	private int pcgFieldW;
 	private Button resetButton;
@@ -107,6 +108,12 @@ public class SettingsScreen extends LoothubScreen {
 					() -> !q.hidden, v -> q.hidden = !v));
 		}
 		y = cardNoToggle(y, 28 + qRows * 14, "loothub.settings.quick_buttons", "loothub.settings.quick_buttons.tooltip");
+		y = card(y, 48, "loothub.settings.music", "loothub.settings.music.tooltip",
+				() -> c.musicEnabled, v -> {
+					c.musicEnabled = v;
+					de.loothub.client.music.YtMusic.ensure(v);
+				});
+		musicCardY = y - 48 - GAP;
 		y = card(y, 40, "loothub.settings.pulse", "loothub.settings.pulse.tooltip",
 				() -> c.pulseBorders, v -> c.pulseBorders = v);
 		y = card(y, 40, "loothub.settings.sell_highlight", "loothub.settings.sell_highlight.tooltip",
@@ -298,6 +305,11 @@ public class SettingsScreen extends LoothubScreen {
 			}
 			g.drawString(font, ch.label(), ch.x() + 12, ch.y() + 1, on ? TEXT : FAINT, false);
 		}
+		// YouTube Music: Status unter dem Schalter
+		Component musicStatus = Component.translatable("loothub.settings.music.status."
+				+ de.loothub.client.music.YtMusic.status().name().toLowerCase(java.util.Locale.ROOT));
+		g.drawString(font, musicStatus, cl + 8 + (labelW - font.width(musicStatus)) / 2, musicCardY + 35, FAINT, false);
+
 		// Pokémon Community Game: Feldbeschriftungen und Status
 		g.drawString(font, Component.translatable("loothub.settings.pcg.channel"), pcgFieldX, pcgLabelY, MUTED, false);
 		g.drawString(font, Component.translatable("loothub.settings.pcg.user"), pcgFieldX + pcgFieldW + 4, pcgLabelY, MUTED, false);
