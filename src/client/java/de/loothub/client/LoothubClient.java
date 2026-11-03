@@ -123,6 +123,7 @@ public class LoothubClient implements ClientModInitializer {
 			StatsStore.saveIfDirty(true);
 		});
 
+		Theme.applyColors();
 		Updater.checkOnStartup();
 
 		// /loothub → Einstellungen
@@ -135,6 +136,17 @@ public class LoothubClient implements ClientModInitializer {
 		FabricLoader.getInstance().getModContainer(Loothub.MOD_ID).ifPresent(mod -> {
 			ResourceLoader.registerBuiltinPack(Identifier.fromNamespaceAndPath(Loothub.MOD_ID, "dark_inventory"), mod,
 					Component.literal("Loothub+ Inventar (Schwarz-Rot)"), PackActivationType.DEFAULT_ENABLED);
+			// Farbvarianten – gewählt wird über /loothub → Farbschema
+			for (Theme.Accent a : Theme.Accent.values()) {
+				if (a != Theme.Accent.RED) {
+					String path = "dark_inventory_" + a.name().toLowerCase(java.util.Locale.ROOT);
+					ResourceLoader.registerBuiltinPack(Identifier.fromNamespaceAndPath(Loothub.MOD_ID, path), mod,
+							Component.literal("Loothub+ Inventar (Schwarz-" + a.label + ")"), PackActivationType.NORMAL);
+				}
+			}
+			// Himmel: eigene Sonne, Mond, Wolken und End-Himmel
+			ResourceLoader.registerBuiltinPack(Identifier.fromNamespaceAndPath(Loothub.MOD_ID, "sky"), mod,
+					Component.literal("Loothub+ Himmel"), PackActivationType.DEFAULT_ENABLED);
 			// Bossleisten (z. B. Erfolge, Jobitems) mit Farbverlauf Rot → Orange → Gelb → Grün
 			ResourceLoader.registerBuiltinPack(Identifier.fromNamespaceAndPath(Loothub.MOD_ID, "progress_bars"), mod,
 					Component.literal("Loothub+ Fortschrittsbalken"), PackActivationType.DEFAULT_ENABLED);

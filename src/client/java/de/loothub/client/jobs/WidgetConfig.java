@@ -36,6 +36,12 @@ public final class WidgetConfig {
 	public boolean pulseBorders = true;
 	/** In Markt-Menüs des Servers alle am Marktplatz gehandelten Items grün hinterlegen. */
 	public boolean sellHighlight = true;
+	/** Akzentfarbe (Theme.Accent), steuert auch das eingebaute Ressourcenpaket. */
+	public String accent = "RED";
+	/** Deckkraft der Hintergründe von Widgets und Leisten (0,1–1). */
+	public double backgroundOpacity = 1.0;
+	/** Ob das schwarz-farbige Inventar-Paket beim Farbwechsel aktiviert werden soll. */
+	public boolean themePackWanted = true;
 	/** Werkzeugschutz: warnen und Benutzen sperren, wenn die Haltbarkeit fast aufgebraucht ist. */
 	public boolean toolProtection = true;
 	/** Ab so viel Resthaltbarkeit wird gesperrt. */

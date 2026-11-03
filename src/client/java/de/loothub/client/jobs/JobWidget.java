@@ -166,9 +166,9 @@ public final class JobWidget {
 		int r = x + w;
 		int b = y + h;
 		// Fläche ohne die Eckpixel
-		g.fill(x + 1, y, r - 1, b, BACKGROUND);
-		g.fill(x, y + 1, x + 1, b - 1, BACKGROUND);
-		g.fill(r - 1, y + 1, r, b - 1, BACKGROUND);
+		g.fill(x + 1, y, r - 1, b, de.loothub.client.Theme.bg(BACKGROUND));
+		g.fill(x, y + 1, x + 1, b - 1, de.loothub.client.Theme.bg(BACKGROUND));
+		g.fill(r - 1, y + 1, r, b - 1, de.loothub.client.Theme.bg(BACKGROUND));
 		// Außenlinie, Ecken frei → rund
 		g.fill(x + 2, y, r - 2, y + 1, EDGE);
 		g.fill(x + 2, b - 1, r - 2, b, EDGE);
@@ -184,7 +184,7 @@ public final class JobWidget {
 		g.fill(x + 2, b - 2, r - 2, b - 1, BEVEL_SH);
 		g.fill(r - 2, y + 2, r - 1, b - 2, BEVEL_SH);
 		// roter Streifen oben, mit weichen Enden
-		g.fill(x + 4, y + 2, r - 4, y + 3, BORDER);
+		g.fill(x + 4, y + 2, r - 4, y + 3, de.loothub.client.LoothubScreen.RED);
 		g.fill(x + 3, y + 2, x + 4, y + 3, 0x80B3262E);
 		g.fill(r - 4, y + 2, r - 3, y + 3, 0x80B3262E);
 	}

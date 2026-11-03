@@ -151,7 +151,7 @@ public final class PcgPanel {
 		int[] o = origin(s, font);
 		int x = o[0], y = o[1], w = panelW(font), h = panelH();
 		boolean locked = WidgetConfig.get().pcgPanelLocked;
-		g.fill(x, y, x + w, y + h, 0xE0140B0D);
+		g.fill(x, y, x + w, y + h, de.loothub.client.Theme.bg(0xE0140B0D));
 		Pulse.outline(g, x, y, w, h);
 
 		// Kopf: Griff + Spawn/Zeit, rechts Status und „Sperren“

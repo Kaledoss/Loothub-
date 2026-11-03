@@ -152,6 +152,39 @@ public class SettingsScreen extends LoothubScreen {
 			y = card(tpY, 50 + tRows * 14, "loothub.settings.tool_protection", "loothub.settings.tool_protection.tooltip",
 					() -> c.toolProtection, v -> c.toolProtection = v);
 		}
+		// Farbschema und Deckkraft
+		{
+			int thY = y;
+			int tDescX = cl + labelW + 12;
+			int tW = Math.min(220, cr - 8 - tDescX);
+			buttons.add(addRenderableWidget(Button.builder(
+							Component.translatable("loothub.settings.theme.color", Theme.accent().label), b -> {
+								Theme.Accent[] all = Theme.Accent.values();
+								c.accent = all[(Theme.accent().ordinal() + 1) % all.length].name();
+								c.save();
+								Theme.applyColors();
+								Theme.applyPack();
+								rebuildWidgets();
+							})
+					.bounds(tDescX, thY + 18, tW, 16).build()));
+			buttons.add(addRenderableWidget(new net.minecraft.client.gui.components.AbstractSliderButton(
+					tDescX, thY + 38, tW, 16, Component.empty(), (c.backgroundOpacity - 0.1) / 0.9) {
+				{
+					updateMessage();
+				}
+
+				@Override
+				protected void updateMessage() {
+					setMessage(Component.translatable("loothub.settings.theme.opacity", (int) Math.round((0.1 + value * 0.9) * 100)));
+				}
+
+				@Override
+				protected void applyValue() {
+					c.backgroundOpacity = 0.1 + value * 0.9;
+				}
+			}));
+			y = cardNoToggle(thY, 60, "loothub.settings.theme", "loothub.settings.theme.tooltip");
+		}
 		y = card(y, 40, "loothub.settings.pulse", "loothub.settings.pulse.tooltip",
 				() -> c.pulseBorders, v -> c.pulseBorders = v);
 		y = card(y, 40, "loothub.settings.sell_highlight", "loothub.settings.sell_highlight.tooltip",

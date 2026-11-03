@@ -284,7 +284,7 @@ public final class QuickCommandPanel {
 			Font font = Minecraft.getInstance().font;
 			boolean locked = WidgetConfig.get().quickPanelLocked;
 
-			g.fill(x, y, x + w, y + h, PANEL_BG);
+			g.fill(x, y, x + w, y + h, de.loothub.client.Theme.bg(PANEL_BG));
 			Pulse.outline(g, x, y, w, h);
 
 			// Kopfleiste: Griff zum Verschieben, rechts das Häkchen „Sperren“

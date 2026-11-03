@@ -25,8 +25,8 @@ import de.loothub.client.stats.StatsScreen;
  */
 public abstract class LoothubScreen extends Screen {
 	// Farbschema schwarz-rot
-	public static final int RED = 0xFFE23B3B;
-	public static final int RED_DARK = 0xFF8E1F26;
+	public static int RED = 0xFFE23B3B; // Akzentfarbe, wird von Theme gesetzt
+	public static int RED_DARK = 0xFF8E1F26;
 	public static final int FRAME_BG = 0xF60F0A0B;
 	public static final int FRAME_EDGE = 0xFF4A161B;
 	public static final int TITLE_BG = 0xFF170C0E;

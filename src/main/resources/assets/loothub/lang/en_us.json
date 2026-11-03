@@ -222,5 +222,9 @@
 	"loothub.job.row.inv_market": "Inventar:",
 	"loothub.job.row.inv_shards": "Inv. Shards:",
 	"loothub.job.row.money_total": "Geld gesamt:",
-	"loothub.job.row.xp_total": "XP gesamt:"
+	"loothub.job.row.xp_total": "XP gesamt:",
+	"loothub.settings.theme": "Farbschema",
+	"loothub.settings.theme.tooltip": "Akzentfarbe für Menüs, Ränder und Inventar sowie Deckkraft der Hintergründe.",
+	"loothub.settings.theme.color": "Farbe: %s",
+	"loothub.settings.theme.opacity": "Deckkraft: %s %%"
 }
