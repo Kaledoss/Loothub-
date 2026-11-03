@@ -36,8 +36,6 @@ public final class WidgetConfig {
 	public boolean pulseBorders = true;
 	/** In Markt-Menüs des Servers alle am Marktplatz gehandelten Items grün hinterlegen. */
 	public boolean sellHighlight = true;
-	/** Enderkiste als Vorschau unter der Befehls-Leiste. */
-	public boolean enderChestPreview = true;
 	/** Pokémon Community Game (Twitch): Spawn-Anzeige und Knöpfe über dem Inventar. */
 	public boolean pcgEnabled = false;
 	/** Twitch-Kanal, in dem gespielt wird. */
