@@ -105,7 +105,7 @@ public final class StatsTracker {
 	 * Nur „echte“ Blöcke zählen. Nicht dazu gehören:
 	 * <ul>
 	 *   <li>Überbaubares wie Gras, hohes Gras, Farn, Seegras, Ranken, Schneeschicht,</li>
-	 *   <li>alles ohne Kollision wie Schilder, Getreide, Blumen, Setzlinge, Fackeln, Knöpfe, Schienen.</li>
+	 *   <li>alles ohne oder mit schmaler/flacher Kollision: Schilder, Pflanzen, Fackeln, Ketten, Laternen, Falltüren, Türen, Zäune.</li>
 	 * </ul>
 	 */
 	public static boolean isRealBlock(Block block) {
@@ -113,10 +113,17 @@ public final class StatsTracker {
 		if (state.canBeReplaced()) {
 			return false;
 		}
-		// Ohne Kollision (Schilder, Fackeln, Blumen, Knöpfe, Schienen …) zählt es als Item, nicht als Block
+		// Nur „richtige“ Blöcke: Kollision, die fast die ganze Grundfläche füllt und mindestens halb so hoch ist.
+		// Damit fallen Schilder, Fackeln, Blumen, Knöpfe, Schienen, Ketten, Laternen, Falltüren, Türen,
+		// Zäune, Mauern, Glasscheiben und Teppiche heraus; Stufen, Treppen, Kisten bleiben drin.
 		try {
-			return !state.getCollisionShape(net.minecraft.world.level.EmptyBlockGetter.INSTANCE,
-					net.minecraft.core.BlockPos.ZERO).isEmpty();
+			net.minecraft.world.phys.shapes.VoxelShape shape = state.getCollisionShape(
+					net.minecraft.world.level.EmptyBlockGetter.INSTANCE, net.minecraft.core.BlockPos.ZERO);
+			if (shape.isEmpty()) {
+				return false;
+			}
+			net.minecraft.world.phys.AABB box = shape.bounds();
+			return box.getXsize() >= 0.75 && box.getZsize() >= 0.75 && box.getYsize() >= 0.4;
 		} catch (RuntimeException e) {
 			return state.blocksMotion();
 		}
