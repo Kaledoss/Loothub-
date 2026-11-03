@@ -12,8 +12,8 @@ import com.google.gson.JsonParser;
 import de.loothub.Loothub;
 
 /**
- * „Läuft gerade“ über die Windows-Medienanzeige (dieselbe Info wie im Lautstärke-Fenster). Funktioniert mit
- * YouTube Music im Browser bzw. als installierte Web-App, aber auch mit anderen Playern. Nur unter Windows;
+ * „Läuft gerade“ über die Windows-Medienanzeige (dieselbe Info wie im Lautstärke-Fenster) – nur YouTube Music
+ * (installierte Web-App oder Desktop-App), andere Wiedergaben werden ignoriert. Nur unter Windows;
  * ein PowerShell-Prozess im Hintergrund meldet alle 2 Sekunden Titel, Interpret und Stand. Nur lesend.
  */
 public final class WindowsMedia {
@@ -26,7 +26,9 @@ public final class WindowsMedia {
 			"[Windows.Media.Control.GlobalSystemMediaTransportControlsSessionManager,Windows.Media.Control,ContentType=WindowsRuntime]|Out-Null",
 			"$mgr=Await ([Windows.Media.Control.GlobalSystemMediaTransportControlsSessionManager]::RequestAsync()) ([Windows.Media.Control.GlobalSystemMediaTransportControlsSessionManager])",
 			"while($true){",
-			" $s=$mgr.GetCurrentSession()",
+			// nur YouTube Music: Web-App (Chrome/Edge, App-ID cinhimbnkkaeohfgghhklpknlkffjgod) oder Desktop-App
+			" $s=$null",
+			" foreach($x in $mgr.GetSessions()){ $id=[string]$x.SourceAppUserModelId; if($id -match 'cinhimbnkkaeohfgghhklpknlkffjgod|youtube.?music|th-ch|music\\.youtube'){ $s=$x; break } }",
 			" if($s){",
 			"  $p=Await ($s.TryGetMediaPropertiesAsync()) ([Windows.Media.Control.GlobalSystemMediaTransportControlsSessionMediaProperties])",
 			"  $pb=$s.GetPlaybackInfo();$tl=$s.GetTimelineProperties()",
