@@ -74,7 +74,11 @@ public final class Updater {
 
 	/** Verständlicher Grund für die Anzeige: not_found, rate_limited, no_file, offline oder HTTP-Code. */
 	public static net.minecraft.network.chat.Component errorReason() {
-		String e = errorMessage == null ? "offline" : errorMessage;
+		return reasonText(errorMessage == null ? "offline" : errorMessage);
+	}
+
+	/** Fehlercode (not_found, rate_limited, no_file, offline, HTTP …) als lesbarer Text. */
+	public static net.minecraft.network.chat.Component reasonText(String e) {
 		return switch (e) {
 			case "not_found", "rate_limited", "no_file", "offline" ->
 					net.minecraft.network.chat.Component.translatable("loothub.update.reason." + e);

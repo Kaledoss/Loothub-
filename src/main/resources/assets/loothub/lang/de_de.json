@@ -51,7 +51,7 @@
 	"loothub.update.restart": "✔ Neustart",
 	"loothub.update.restart.tooltip": "Minecraft neu starten, dann ist die neue Version aktiv",
 	"loothub.update.failed": "Update fehlgeschlagen",
-	"loothub.update.notice": "[Loothub+] Update %s verfügbar – im Loothub+-Menü (Taste L) installieren.",
+	"loothub.update.notice": "[Loothub+] Update %s verfügbar – im Loothub+-Menü (Taste L) installieren, Änderungen unter „Changelog“.",
 	"loothub.tab.history": "Job Verlauf",
 	"loothub.history.today": "Heute",
 	"loothub.history.clear": "Verlauf löschen",
@@ -249,8 +249,6 @@
 	"loothub.settings.inv_hud.tooltip": "Zeigt dein Inventar dauerhaft über der Hotbar.",
 	"loothub.settings.inv_hud.color": "Hintergrundfarbe",
 	"loothub.settings.music.status.windows_idle": "Bereit – nichts läuft",
-	"loothub.update.changes": "Neu in dieser Version:",
-	"loothub.update.more": "… und %s weitere Änderungen",
 	"loothub.stats.col.used": "Genutzt",
 	"loothub.merchant.new_today": "★ Tagesitem",
 	"loothub.music.editor.title": "Musik-Anzeige verschieben",
@@ -271,5 +269,14 @@
 	"loothub.settings.treasure": "Jobschatz-Zähler",
 	"loothub.settings.treasure.tooltip": "Zählt Job-XP bis 100.000; bei „Jobschatz erhalten“ geht er auf 0. Stand hier korrigieren:",
 	"loothub.settings.treasure.reset": "Zurücksetzen",
-	"loothub.treasure.found": "[Loothub+] Jobschatz erhalten (%s.) – Zähler steht wieder auf 0."
+	"loothub.treasure.found": "[Loothub+] Jobschatz erhalten (%s.) – Zähler steht wieder auf 0.",
+	"loothub.tab.changelog": "Changelog",
+	"loothub.tab.changelog.header": "Alle Änderungen an Loothub+",
+	"loothub.changelog.installed": "Installiert: %s",
+	"loothub.changelog.version": "Version %s · %s",
+	"loothub.changelog.building": "Kommt mit der nächsten Version",
+	"loothub.changelog.tag.installed": "✔ installiert",
+	"loothub.changelog.tag.new": "★ neu – noch nicht installiert",
+	"loothub.changelog.loading": "Änderungen werden geladen …",
+	"loothub.changelog.error": "Changelog konnte nicht geladen werden: %s"
 }

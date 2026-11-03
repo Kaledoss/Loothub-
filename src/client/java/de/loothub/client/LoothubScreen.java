@@ -47,6 +47,7 @@ public abstract class LoothubScreen extends Screen {
 		MERCHANT("loothub.tab.merchant", Items.COMPOSTER),
 		STATS("loothub.tab.stats", Items.FILLED_MAP),
 		POKEDEX("loothub.tab.pokedex", Items.KNOWLEDGE_BOOK),
+		CHANGELOG("loothub.tab.changelog", Items.BOOK),
 		SETTINGS("loothub.tab.settings", Items.COMPARATOR);
 
 		final String translationKey;
@@ -78,6 +79,7 @@ public abstract class LoothubScreen extends Screen {
 			case MERCHANT -> new MerchantScreen();
 			case STATS -> new StatsScreen();
 			case POKEDEX -> new PokedexScreen();
+			case CHANGELOG -> new ChangelogScreen();
 			case SETTINGS -> new SettingsScreen();
 		});
 	}
