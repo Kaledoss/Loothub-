@@ -114,8 +114,6 @@ public class SettingsScreen extends LoothubScreen {
 					de.loothub.client.music.YtMusic.ensure(v);
 				});
 		musicCardY = y - 48 - GAP;
-		y = card(y, 40, "loothub.settings.inventory_value", "loothub.settings.inventory_value.tooltip",
-				() -> c.inventoryValue, v -> c.inventoryValue = v);
 		// Werkzeugschutz: Schalter, Regler für die Grenze, Kästchen je Werkzeugart
 		{
 			int tpY = y;

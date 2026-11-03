@@ -34,7 +34,7 @@ public final class JobWidget {
 	private static final int MUTED = 0xFFAAAAAA;
 
 	/** Zeilen-IDs in Anzeigereihenfolge; Sprachschlüssel: loothub.job.row.&lt;id&gt;. In den Einstellungen einzeln schaltbar. */
-	public static final List<String> ROW_IDS = List.of("job", "level", "progress", "time", "money", "money_rate", "xp", "xp_rate");
+	public static final List<String> ROW_IDS = List.of("job", "level", "progress", "time", "money", "money_rate", "xp", "xp_rate", "inv_market", "inv_shards");
 
 	/** Eine Zeile des Widgets. */
 	public record Row(String label, String value, int color) {
@@ -43,6 +43,10 @@ public final class JobWidget {
 	/** Fertig aufbereitete Anzeige – einmal berechnet, damit Größe und Zeichnen übereinstimmen. */
 	public record Layout(boolean showJob, ItemStack icon, String job, String state, List<Row> rows, int labelW, int width, int height) {
 	}
+
+	/** Platzhalter, solange in dieser Sitzung noch keine Job-Aktion erkannt wurde. */
+	private static final JobTracker.Snapshot EMPTY = new JobTracker.Snapshot("–", -1, Double.NaN, 0, 0,
+			Double.NaN, Double.NaN, -1, 0, false, false);
 
 	private JobWidget() {
 	}
@@ -58,7 +62,7 @@ public final class JobWidget {
 		}
 		JobTracker.Snapshot snap = JobTracker.snapshot();
 		if (snap == null) {
-			return; // noch keine Job-Aktion in dieser Sitzung
+			snap = EMPTY; // immer sichtbar – ohne Job-Aktion mit leeren Werten
 		}
 		Layout layout = layout(mc.font, snap);
 		if (!layout.showJob() && layout.rows().isEmpty()) {
@@ -96,6 +100,12 @@ public final class JobWidget {
 		addRow(rows, c, "money_rate", orDash(s.moneyPerHour(), " $"));
 		addRow(rows, c, "xp", Fmt.exact(s.sessionXp()) + " XP");
 		addRow(rows, c, "xp_rate", orDash(s.xpPerHour(), " XP"));
+		if (c.jobRowVisible("inv_market")) {
+			rows.add(new Row(tr("loothub.job.row.inv_market"), Fmt.exact(de.loothub.client.quick.InventoryValue.market()) + " $", 0xFF55E06A));
+		}
+		if (c.jobRowVisible("inv_shards")) {
+			rows.add(new Row(tr("loothub.job.row.inv_shards"), Fmt.exact(de.loothub.client.quick.InventoryValue.shards()) + " OPShards", 0xFF55D5E0));
+		}
 
 		int labelW = showJob ? font.width(tr("loothub.job.row.job")) : 0;
 		for (Row r : rows) {

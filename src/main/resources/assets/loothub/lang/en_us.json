@@ -116,7 +116,7 @@
 	"loothub.settings.on": "An",
 	"loothub.settings.off": "Aus",
 	"loothub.settings.section.job_widget": "Job-Widget",
-	"loothub.settings.job_widget.tooltip": "Zeigt im Spiel Job, Level, Fortschritt, Tracking-Zeit sowie Geld und XP (gesamt und pro Stunde). Benötigt /job toggle.",
+	"loothub.settings.job_widget.tooltip": "Zeigt im Spiel Job, Level, Fortschritt, Tracking-Zeit, Geld und XP (gesamt und pro Stunde) sowie den Wert deines Inventars. Job-Werte benötigen /job toggle.",
 	"loothub.settings.job_widget.move": "Position ändern",
 	"loothub.settings.job_widget.rows": "Zeilen",
 	"loothub.settings.job_session.reset": "Job-Sitzung zurücksetzen",
@@ -216,9 +216,9 @@
 	"loothub.tooltip.ah.offers": "%s Angebote",
 	"loothub.tooltip.ah.avg": "Ø günstigster: ",
 	"loothub.tooltip.shards": "Händler: ",
-	"loothub.settings.inventory_value": "Inventarwert",
-	"loothub.settings.inventory_value.tooltip": "Zeigt links neben dem Inventar, was es wert ist: am Marktplatz (Verkaufspreis) und beim Wertstoffhändler (OPShards).",
 	"loothub.settings.tool_protection": "Werkzeugschutz",
 	"loothub.settings.tool_protection.tooltip": "Warnt und sperrt das Werkzeug, sobald die Haltbarkeit die Grenze erreicht.",
-	"loothub.settings.tool_protection.min": "Grenze: %s Haltbarkeit"
+	"loothub.settings.tool_protection.min": "Grenze: %s Haltbarkeit",
+	"loothub.job.row.inv_market": "Inventar:",
+	"loothub.job.row.inv_shards": "Inv. Shards:"
 }
