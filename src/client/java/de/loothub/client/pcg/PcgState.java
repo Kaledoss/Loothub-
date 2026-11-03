@@ -32,6 +32,18 @@ public final class PcgState {
 	public static final long SPAWN_INTERVAL_MS = 15 * 60_000L;
 
 	private static volatile Spawn current;
+	private static volatile String pendingCheck;
+	private static volatile long pendingUntil;
+
+	/** Fragt den Bot per {@code !pokecheck}, ob man das Pokémon schon hat. Nur auf Klick aufrufen. */
+	public static boolean requestCheck(String name) {
+		if (TwitchChat.send("!pokecheck " + name)) {
+			pendingCheck = name;
+			pendingUntil = System.currentTimeMillis() + 30_000;
+			return true;
+		}
+		return false;
+	}
 	/** Beginn des letzten erkannten Spawns, 0 = noch keiner gesehen. */
 	private static volatile long lastSpawnStart;
 
@@ -56,6 +68,22 @@ public final class PcgState {
 		if (!BOT.equalsIgnoreCase(sender)) {
 			return;
 		}
+		String lowerAll = text.toLowerCase(Locale.ROOT);
+		String me = de.loothub.client.jobs.WidgetConfig.get().pcgUser.strip().toLowerCase(Locale.ROOT);
+		boolean aboutMe = !me.isEmpty() && lowerAll.contains(me);
+
+		// Antwort auf !pokecheck (Wortlaut unbekannt – locker erkannt)
+		String check = pendingCheck;
+		if (check != null && aboutMe && System.currentTimeMillis() < pendingUntil
+				&& lowerAll.contains(check.toLowerCase(Locale.ROOT))) {
+			boolean not = lowerAll.matches(".*\\b(not|haven't|havent|hasn't|hasnt|never|nicht|noch kein)\\b.*") || text.contains("❌");
+			boolean yes = lowerAll.matches(".*\\b(already|registered|caught|owned|have|has)\\b.*") || text.contains("✅") || text.contains("✔");
+			if (not || yes) {
+				Pokedex.set(check, !not);
+				pendingCheck = null;
+			}
+		}
+
 		Matcher m = WILD.matcher(text);
 		if (m.find()) {
 			String name = clean(m.group(1));
@@ -84,6 +112,9 @@ public final class PcgState {
 			result = "gefangen";
 		} else if (lower.contains("escaped") || lower.contains("fled") || lower.contains("ran away") || lower.contains("broke free")) {
 			result = "entkommen";
+		}
+		if (result != null && result.equals("gefangen") && aboutMe) {
+			Pokedex.set(s.name(), true); // selbst gefangen → im eigenen Pokédex
 		}
 		if (result != null) {
 			long now = System.currentTimeMillis();
