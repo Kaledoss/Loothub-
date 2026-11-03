@@ -94,6 +94,8 @@ public class SettingsScreen extends LoothubScreen {
 
 		y = card(y, 40, "loothub.settings.quick_panel", "loothub.settings.quick_panel.tooltip",
 				() -> c.quickPanelEnabled, v -> c.quickPanelEnabled = v);
+		y = card(y, 40, "loothub.settings.ec_preview", "loothub.settings.ec_preview.tooltip",
+				() -> c.enderChestPreview, v -> c.enderChestPreview = v);
 		// Knöpfe der Befehls-Leiste einzeln an/aus
 		List<de.loothub.client.quick.QuickCommand> qcs = c.quickCommands == null ? List.of() : c.quickCommands;
 		int qCols = 4;

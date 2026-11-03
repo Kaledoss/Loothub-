@@ -197,5 +197,7 @@
 	"loothub.settings.pcg_sound": "Pokémon-Ton",
 	"loothub.settings.pcg_sound.tooltip": "Spielt einen kurzen Ton, wenn im Pokémon Community Game ein neues Pokémon erscheint.",
 	"loothub.settings.quick_buttons": "Leisten-Knöpfe",
-	"loothub.settings.quick_buttons.tooltip": "Welche Knöpfe die Befehls-Leiste zeigt:"
+	"loothub.settings.quick_buttons.tooltip": "Welche Knöpfe die Befehls-Leiste zeigt:",
+	"loothub.settings.ec_preview": "Enderkiste",
+	"loothub.settings.ec_preview.tooltip": "Zeigt im Inventar unter der Befehls-Leiste den Inhalt deiner Enderkiste – Stand vom letzten Öffnen (/ec). Klick darauf öffnet sie."
 }

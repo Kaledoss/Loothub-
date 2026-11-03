@@ -43,6 +43,10 @@ public final class QuickCommandPanel {
 	private static final int BTN_BG_HOVER = 0xFF3A1C22;
 	private static final int BTN_EDGE = 0xFF4A2A2F;
 
+	/** Lage der Leiste im zuletzt gezeichneten Bild – damit andere Felder darunter andocken können. */
+	public static int lastX, lastW, lastBottom;
+	public static long lastFrame;
+
 	private QuickCommandPanel() {
 	}
 
@@ -278,6 +282,10 @@ public final class QuickCommandPanel {
 
 		void render(GuiGraphics g, int mx, int my) {
 			layout();
+			lastX = x;
+			lastW = w;
+			lastBottom = y + h;
+			lastFrame = System.nanoTime();
 			Font font = Minecraft.getInstance().font;
 			boolean locked = WidgetConfig.get().quickPanelLocked;
 
