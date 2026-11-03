@@ -73,6 +73,18 @@ public final class StatsTracker {
 			return;
 		}
 		lastToolUseTick = tick;
+		if (stack.isEmpty()) {
+			return;
+		}
+		if (!stack.isDamageableItem()) {
+			// Sonstige Items, die man benutzt (Enderperle, Feuerwerk, Schneeball …); Essen zählt extra beim Verzehr
+			if (stack.has(net.minecraft.core.component.DataComponents.CONSUMABLE)
+					|| stack.has(net.minecraft.core.component.DataComponents.FOOD)) {
+				return;
+			}
+			StatsStore.add("used." + BuiltInRegistries.ITEM.getKey(stack.getItem()), 1);
+			return;
+		}
 		toolStat("tool_used.", stack);
 	}
 

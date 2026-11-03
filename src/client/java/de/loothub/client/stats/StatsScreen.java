@@ -195,8 +195,9 @@ public class StatsScreen extends LoothubScreen {
 		rows = switch (category) {
 			case GENERAL -> List.of();
 			case BLOCKS -> buildRows(new String[]{"mined.", "placed.", "picked."}, Kind.BLOCK);
-			case ITEMS -> buildRows(new String[]{"picked.", "eaten."}, Kind.ITEM);
-			case TOOLS -> buildRows(new String[]{"tool_mined.", "tool_hits.", "tool_used."}, Kind.ITEM);
+			// „Genutzt“ = benutzt (Enderperle …) + gegessen
+			case ITEMS -> buildRows(new String[]{"picked.", "used.", "eaten."}, new int[]{0, 1, 1}, 2, Kind.ITEM);
+			case TOOLS -> buildRows(new String[]{"tool_mined.", "tool_hits.", "tool_used.", "picked."}, Kind.ITEM);
 			case MOBS -> buildRows(new String[]{"killed."}, Kind.MOB);
 		};
 		clampScroll();
@@ -207,16 +208,29 @@ public class StatsScreen extends LoothubScreen {
 	}
 
 	private List<Row> buildRows(String[] prefixes, Kind kind) {
+		int[] cols = new int[prefixes.length];
+		for (int i = 0; i < cols.length; i++) {
+			cols[i] = i;
+		}
+		return buildRows(prefixes, cols, prefixes.length, kind);
+	}
+
+	/** {@code cols[i]} = Spalte für Präfix i (mehrere Präfixe können in eine Spalte fallen). */
+	private List<Row> buildRows(String[] prefixes, int[] cols, int columnCount, Kind kind) {
 		Map<String, long[]> byId = new LinkedHashMap<>();
 		for (Map.Entry<String, Long> e : sums.entrySet()) {
 			for (int i = 0; i < prefixes.length; i++) {
 				if (e.getKey().startsWith(prefixes[i])) {
 					String id = e.getKey().substring(prefixes[i].length());
 					// Aufgesammelte Blöcke (Erde, Stein …) gehören zu „Blöcke“, echte Items zu „Items“
-					if (prefixes[i].equals("picked.") && (kind == Kind.BLOCK) != isBlockItem(id)) {
-						continue;
+					if (prefixes[i].equals("picked.")) {
+						boolean tool = isTool(id);
+						// Werkzeuge nur unter „Tools“, Blöcke nur unter „Blöcke“, der Rest unter „Items“
+						if (category == Category.TOOLS ? !tool : tool || (kind == Kind.BLOCK) != isBlockItem(id)) {
+							continue;
+						}
 					}
-					byId.computeIfAbsent(id, k -> new long[prefixes.length])[i] += e.getValue();
+					byId.computeIfAbsent(id, k -> new long[columnCount])[cols[i]] += e.getValue();
 				}
 			}
 		}
@@ -272,6 +286,13 @@ public class StatsScreen extends LoothubScreen {
 	}
 
 	/** Für ältere Einträge: Pflanzen wie Gras nicht als Block zählen. */
+	/** Hat das Item Haltbarkeit (Werkzeug, Waffe, Rüstung …)? */
+	private static boolean isTool(String id) {
+		Identifier identifier = Identifier.tryParse(id);
+		Item item = identifier == null ? null : BuiltInRegistries.ITEM.getOptional(identifier).orElse(null);
+		return item != null && new ItemStack(item).isDamageableItem();
+	}
+
 	private static boolean isRealBlock(String id) {
 		Identifier identifier = Identifier.tryParse(id);
 		Block block = identifier == null ? null : BuiltInRegistries.BLOCK.getOptional(identifier).orElse(null);
@@ -432,8 +453,9 @@ public class StatsScreen extends LoothubScreen {
 	private List<String> columnKeys() {
 		return switch (category) {
 			case BLOCKS -> List.of("loothub.stats.col.mined", "loothub.stats.col.placed", "loothub.stats.col.picked");
-			case ITEMS -> List.of("loothub.stats.col.picked", "loothub.stats.col.eaten");
-			case TOOLS -> List.of("loothub.stats.col.tool_mined", "loothub.stats.col.tool_hits", "loothub.stats.col.tool_used");
+			case ITEMS -> List.of("loothub.stats.col.picked", "loothub.stats.col.used");
+			case TOOLS -> List.of("loothub.stats.col.tool_mined", "loothub.stats.col.tool_hits", "loothub.stats.col.tool_used",
+					"loothub.stats.col.picked");
 			case MOBS -> List.of("loothub.stats.col.killed");
 			case GENERAL -> List.of();
 		};
