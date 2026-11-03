@@ -44,7 +44,7 @@ public final class PriceTooltip {
 			double special = ShardValue.perItem(stack);
 			if (!Double.isNaN(special)) {
 				lines.add(Component.empty());
-				lines.add(Component.literal("  ").append(Component.translatable("loothub.tooltip.shards").withStyle(ChatFormatting.GRAY))
+				lines.add(Component.empty().append(Component.translatable("loothub.tooltip.shards").withStyle(ChatFormatting.GRAY))
 						.append(Component.literal(Fmt.exact(special * stack.getCount()) + " OPShards").withStyle(ChatFormatting.AQUA)));
 			}
 			return;
@@ -103,7 +103,7 @@ public final class PriceTooltip {
 		}
 		double shards = ShardValue.perItem(stack);
 		if (!Double.isNaN(shards)) {
-			lines.add(Component.literal("  ").append(Component.translatable("loothub.tooltip.shards").withStyle(ChatFormatting.GRAY))
+			lines.add(Component.empty().append(Component.translatable("loothub.tooltip.shards").withStyle(ChatFormatting.GRAY))
 					.append(Component.literal(Fmt.exact(shards * count) + " OPShards").withStyle(ChatFormatting.AQUA)));
 		}
 		lines.add(ageLine());

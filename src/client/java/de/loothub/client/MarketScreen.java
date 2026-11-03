@@ -50,7 +50,7 @@ public class MarketScreen extends LoothubScreen {
 
 	private static final int PAD = 8;
 	private static final int TILE_MIN_W = 118; // so breit, dass Name und beide Preise passen
-	private static final int TILE_H = 30;
+	private static final int TILE_H = 40; // Platz für zweizeilige Namen
 	private static final int TILE_GAP = 4;
 	private static final int TILE_BG = 0xFF1E1416;
 	private static final int TILE_BG_HOVER = 0xFF2E1C20;
@@ -341,18 +341,28 @@ public class MarketScreen extends LoothubScreen {
 			// Feld: Rahmen (rot beim Überfahren), Hintergrund
 			g.fill(tx, ty, tx + tileW, ty + TILE_H, hovered ? ITEM_BORDER_HOVER : TILE_EDGE);
 			g.fill(tx + 1, ty + 1, tx + tileW - 1, ty + TILE_H - 1, hovered ? TILE_BG_HOVER : TILE_BG);
-			g.renderItem(stack(l), tx + 5, ty + 7);
+			g.renderItem(stack(l), tx + 5, ty + 12);
 
-			// Zeile 1: Name · Zeile 2: Kaufen (gold) links, Verkaufen (grün) rechts
+			// Name (bei Bedarf zweizeilig, nicht abgeschnitten) · darunter Kaufen (gold) links, Verkaufen (grün) rechts
 			int textX = tx + 26;
 			int textW = tileW - 26 - 5;
-			g.drawString(font, ellipsize(name(l), textW), textX, ty + 5, TEXT, false);
+			java.util.List<net.minecraft.util.FormattedCharSequence> nameLines =
+					font.split(net.minecraft.network.chat.Component.literal(name(l)), textW);
+			if (nameLines.size() > 2) {
+				g.drawString(font, nameLines.get(0), textX, ty + 4, TEXT, false);
+				g.drawString(font, ellipsize(name(l).substring(Math.min(name(l).length(),
+						firstLineLength(name(l), textW))).strip(), textW), textX, ty + 14, TEXT, false);
+			} else {
+				for (int li = 0; li < nameLines.size(); li++) {
+					g.drawString(font, nameLines.get(li), textX, ty + (nameLines.size() == 1 ? 9 : 4) + li * 10, TEXT, false);
+				}
+			}
 			Side buy = l.entry().buy();
 			Side sell = l.entry().sell();
 			String buyText = buy.available() ? Fmt.compact(buy.price()) + " $" : "–";
 			String sellText = sell.available() ? Fmt.compact(sell.price()) + " $" : "–";
-			g.drawString(font, buyText, textX, ty + 17, buy.available() ? GOLD : FAINT, false);
-			g.drawString(font, sellText, tx + tileW - 5 - font.width(sellText), ty + 17, sell.available() ? GREEN : FAINT, false);
+			g.drawString(font, buyText, textX, ty + 27, buy.available() ? GOLD : FAINT, false);
+			g.drawString(font, sellText, tx + tileW - 5 - font.width(sellText), ty + 27, sell.available() ? GREEN : FAINT, false);
 		}
 		g.disableScissor();
 
@@ -770,6 +780,20 @@ public class MarketScreen extends LoothubScreen {
 
 	private void clampScroll() {
 		scroll = Mth.clamp(scroll, 0, Math.max(0, contentHeight() - listH));
+	}
+
+	/** Länge der ersten Zeile beim Umbrechen nach Wörtern. */
+	private int firstLineLength(String s, int maxWidth) {
+		String[] words = s.split(" ");
+		StringBuilder line = new StringBuilder();
+		for (String w : words) {
+			String next = line.isEmpty() ? w : line + " " + w;
+			if (font.width(next) > maxWidth && !line.isEmpty()) {
+				break;
+			}
+			line = new StringBuilder(next);
+		}
+		return line.length();
 	}
 
 	private String ellipsize(String s, int maxWidth) {
