@@ -43,6 +43,8 @@ public final class WidgetConfig {
 	public int treasureChances = 0;
 	/** Erhaltene Jobschätze (erkannt per Nachricht/Item). */
 	public int treasuresFound = 0;
+	/** Zeitpunkt des letzten Jobschatzes (für die Hervorhebung im Widget). */
+	public long treasureFoundAt = 0;
 	/** Talismanrucksack in der eigenen Zweithand nicht anzeigen. */
 	public boolean hideOffhandBackpack = false;
 	/** Inventar über der Hotbar anzeigen, mit eigener Hintergrundfarbe und Deckkraft. */
