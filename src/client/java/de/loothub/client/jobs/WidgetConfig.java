@@ -36,8 +36,10 @@ public final class WidgetConfig {
 	public boolean pulseBorders = true;
 	/** In Markt-Menüs des Servers alle am Marktplatz gehandelten Items grün hinterlegen. */
 	public boolean sellHighlight = true;
-	/** Akzentfarbe (Theme.Accent), steuert auch das eingebaute Ressourcenpaket. */
-	public String accent = "RED";
+	/** Farben (RGB): innen = Akzente in Menüs/Inventar, außen = Rahmen, Puls = pulsierender Rand. */
+	public int colorInner = de.loothub.client.Theme.DEFAULT_INNER;
+	public int colorOuter = de.loothub.client.Theme.DEFAULT_OUTER;
+	public int colorPulse = de.loothub.client.Theme.DEFAULT_PULSE;
 	/** Deckkraft der Hintergründe von Widgets und Leisten (0,1–1). */
 	public double backgroundOpacity = 1.0;
 	/** Ob das schwarz-farbige Inventar-Paket beim Farbwechsel aktiviert werden soll. */

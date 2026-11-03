@@ -59,6 +59,8 @@ public class SettingsScreen extends LoothubScreen {
 	private boolean needsRebuild;
 	private int rowsLabelY;
 	private int pcgLabelY;
+	/** Position der kleinen Farbfelder auf den drei Farbknöpfen. */
+	private final int[][] colorSwatches = new int[3][];
 	private int musicCardY;
 	private int pcgFieldX;
 	private int pcgFieldW;
@@ -156,17 +158,36 @@ public class SettingsScreen extends LoothubScreen {
 		{
 			int thY = y;
 			int tDescX = cl + labelW + 12;
-			int tW = Math.min(220, cr - 8 - tDescX);
-			buttons.add(addRenderableWidget(Button.builder(
-							Component.translatable("loothub.settings.theme.color", Theme.accent().label), b -> {
-								Theme.Accent[] all = Theme.Accent.values();
-								c.accent = all[(Theme.accent().ordinal() + 1) % all.length].name();
-								c.save();
-								Theme.applyColors();
-								Theme.applyPack();
-								rebuildWidgets();
-							})
-					.bounds(tDescX, thY + 18, tW, 16).build()));
+			int tW = Math.min(300, cr - 8 - tDescX);
+			// Drei Farbknöpfe: innen, außen, pulsieren – je ein Farbwähler
+			int third = (tW - 8) / 3;
+			String[] keys = {"inner", "outer", "pulse"};
+			for (int i = 0; i < 3; i++) {
+				String key = keys[i];
+				buttons.add(addRenderableWidget(Button.builder(
+								Component.translatable("loothub.settings.theme." + key), b -> {
+									int current = switch (key) {
+										case "inner" -> Theme.inner();
+										case "outer" -> Theme.outer();
+										default -> Theme.pulse();
+									};
+									minecraft.setScreen(new ColorPickerScreen(this,
+											Component.translatable("loothub.settings.theme." + key + ".title"), current, rgb -> {
+										switch (key) {
+											case "inner" -> c.colorInner = rgb;
+											case "outer" -> c.colorOuter = rgb;
+											default -> c.colorPulse = rgb;
+										}
+										c.save();
+										Theme.applyColors();
+										if (key.equals("inner")) {
+											Theme.applyPack();
+										}
+									}));
+								})
+						.bounds(tDescX + i * (third + 4), thY + 18, third, 16).build()));
+				colorSwatches[i] = new int[]{tDescX + i * (third + 4) + third - 12, thY + 22};
+			}
 			buttons.add(addRenderableWidget(new net.minecraft.client.gui.components.AbstractSliderButton(
 					tDescX, thY + 38, tW, 16, Component.empty(), (c.backgroundOpacity - 0.1) / 0.9) {
 				{
@@ -376,6 +397,17 @@ public class SettingsScreen extends LoothubScreen {
 			}
 			g.drawString(font, ch.label(), ch.x() + 12, ch.y() + 1, on ? TEXT : FAINT, false);
 		}
+		// Farbfelder auf den Farbknöpfen
+		int[] cols = {Theme.inner(), Theme.outer(), Theme.pulse()};
+		for (int i = 0; i < 3; i++) {
+			if (colorSwatches[i] != null) {
+				int sx = colorSwatches[i][0];
+				int sy = colorSwatches[i][1];
+				g.fill(sx - 1, sy - 1, sx + 9, sy + 9, 0xFF000000);
+				g.fill(sx, sy, sx + 8, sy + 8, 0xFF000000 | cols[i]);
+			}
+		}
+
 		// YouTube Music: Status unter dem Schalter
 		Component musicStatus = Component.translatable("loothub.settings.music.status."
 				+ de.loothub.client.music.YtMusic.status().name().toLowerCase(java.util.Locale.ROOT));
