@@ -42,15 +42,17 @@ public class MusicEditScreen extends Screen {
 		int[] p = MusicWidget.pos(width, height);
 		MusicWidget.draw(g, font, sample(), p[0], p[1]);
 		int c = dragging || over(mouseX, mouseY) ? 0xFFFFFFFF : 0xFFE23B3B;
-		g.fill(p[0] - 1, p[1] - 1, p[0] + MusicWidget.W + 1, p[1], c);
-		g.fill(p[0] - 1, p[1] + MusicWidget.H, p[0] + MusicWidget.W + 1, p[1] + MusicWidget.H + 1, c);
-		g.fill(p[0] - 1, p[1], p[0], p[1] + MusicWidget.H, c);
+		int l = MusicWidget.left(font, sample(), p[0]);
+		g.fill(l - 1, p[1] - 1, p[0] + MusicWidget.W + 1, p[1], c);
+		g.fill(l - 1, p[1] + MusicWidget.H, p[0] + MusicWidget.W + 1, p[1] + MusicWidget.H + 1, c);
+		g.fill(l - 1, p[1], l, p[1] + MusicWidget.H, c);
 		g.fill(p[0] + MusicWidget.W, p[1], p[0] + MusicWidget.W + 1, p[1] + MusicWidget.H, c);
 	}
 
 	private boolean over(double mx, double my) {
 		int[] p = MusicWidget.pos(width, height);
-		return mx >= p[0] && mx < p[0] + MusicWidget.W && my >= p[1] && my < p[1] + MusicWidget.H;
+		int l = MusicWidget.left(font, sample(), p[0]);
+		return mx >= l && mx < p[0] + MusicWidget.W && my >= p[1] && my < p[1] + MusicWidget.H;
 	}
 
 	@Override

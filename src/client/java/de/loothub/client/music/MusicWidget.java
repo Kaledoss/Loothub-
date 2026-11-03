@@ -98,18 +98,36 @@ public final class MusicWidget {
 		return s.substring(0, end) + "…";
 	}
 
-	static void draw(GuiGraphics g, Font font, YtMusic.Song s, int x, int y) {
+	/** Benötigte Breite: mindestens W, wächst mit langen Titeln (höchstens 420). */
+	static int width(Font font, YtMusic.Song s) {
+		int title = font.width(s.title()) + 24;
+		int artist = font.width(s.artist()) + 24 + (s.duration() > 0 ? font.width("00:00 / 00:00") + 10 : 0);
+		return Math.max(W, Math.min(420, Math.max(title, artist)));
+	}
+
+	/** Linke Kante: die rechte Kante bleibt fest, das Feld wächst nach links. */
+	static int left(Font font, YtMusic.Song s, int x) {
+		return x + W - width(font, s);
+	}
+
+	static void draw(GuiGraphics g, Font font, YtMusic.Song s, int baseX, int y) {
+		int Wd = width(font, s);
+		int x = baseX + W - Wd;
+		draw(g, font, s, x, y, Wd);
+	}
+
+	private static void draw(GuiGraphics g, Font font, YtMusic.Song s, int x, int y, int W) {
 		g.fill(x + 1, y, x + W - 1, y + H, de.loothub.client.Theme.bg(BG));
 		g.fill(x, y + 1, x + 1, y + H - 1, de.loothub.client.Theme.bg(BG));
 		g.fill(x + W - 1, y + 1, x + W, y + H - 1, de.loothub.client.Theme.bg(BG));
 		g.fill(x + 2, y, x + W - 2, y + 1, de.loothub.client.Theme.bg(EDGE));
 		g.fill(x + 2, y + H - 1, x + W - 2, y + H, de.loothub.client.Theme.bg(EDGE));
-		g.fill(x + 4, y + 2, x + W - 4, y + 3, de.loothub.client.LoothubScreen.RED);
 
 		String icon = s.paused() ? "⏸" : "♪";
 		g.drawString(font, icon, x + 6, y + 7, s.paused() ? 0xFF9A9A9A : 0xFFE07A7A, true);
 		g.drawString(font, fit(font, s.title(), W - 24), x + 17, y + 7, 0xFFFFD66B, true);
-		g.drawString(font, fit(font, s.artist(), W - 24), x + 17, y + 17, 0xFFB9A9AB, true);
+		int timeW = s.duration() > 0 ? font.width("00:00 / 00:00") + 10 : 0;
+		g.drawString(font, fit(font, s.artist(), W - 24 - timeW), x + 17, y + 17, 0xFFB9A9AB, true);
 
 		// Fortschritt (bei Quellen ohne Länge weglassen)
 		if (s.duration() <= 0) {
@@ -153,10 +171,11 @@ public final class MusicWidget {
 		Component lock = Component.translatable("loothub.quick.lock");
 		g.drawString(font, lock, lx - 3 - font.width(lock), ly, locked ? 0xFFFFFFFF : LoothubScreen.FAINT, true);
 		if (!locked) {
-			int c = dragging || (mx >= x && mx < x + W && my >= y && my < y + H) ? 0xFFFFFFFF : 0x80E23B3B;
-			g.fill(x - 1, y - 1, x + W + 1, y, c);
-			g.fill(x - 1, y + H, x + W + 1, y + H + 1, c);
-			g.fill(x - 1, y, x, y + H, c);
+			int lx0 = left(font, s, x);
+			int c = dragging || (mx >= lx0 && mx < x + W && my >= y && my < y + H) ? 0xFFFFFFFF : 0x80E23B3B;
+			g.fill(lx0 - 1, y - 1, x + W + 1, y, c);
+			g.fill(lx0 - 1, y + H, x + W + 1, y + H + 1, c);
+			g.fill(lx0 - 1, y, lx0, y + H, c);
 			g.fill(x + W, y, x + W + 1, y + H, c);
 		}
 	}
@@ -175,7 +194,8 @@ public final class MusicWidget {
 			c.save();
 			return true;
 		}
-		if (!c.musicLocked && e.x() >= p[0] && e.x() < p[0] + W && e.y() >= p[1] && e.y() < p[1] + H) {
+		int lx0 = left(font, shownSong(), p[0]);
+		if (!c.musicLocked && e.x() >= lx0 && e.x() < p[0] + W && e.y() >= p[1] && e.y() < p[1] + H) {
 			dragging = true;
 			grabX = e.x() - p[0];
 			grabY = e.y() - p[1];
