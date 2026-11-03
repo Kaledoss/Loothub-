@@ -244,7 +244,10 @@ public class SettingsScreen extends LoothubScreen {
 					c.invHudOpacity = value;
 				}
 			}));
-			y = card(ihY, 52, "loothub.settings.inv_hud", "loothub.settings.inv_hud.tooltip",
+			buttons.add(addRenderableWidget(Button.builder(Component.translatable("loothub.settings.job_widget.move"),
+							b -> minecraft.setScreen(new de.loothub.client.quick.InventoryHudEditScreen(this)))
+					.bounds(iDescX, ihY + 50, half, 16).build()));
+			y = card(ihY, 72, "loothub.settings.inv_hud", "loothub.settings.inv_hud.tooltip",
 					() -> c.invHudEnabled, v -> c.invHudEnabled = v);
 		}
 		y = card(y, 40, "loothub.settings.hide_head", "loothub.settings.hide_head.tooltip",

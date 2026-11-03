@@ -261,5 +261,7 @@
 	"loothub.rename.codes": "Klick fügt den Code ein",
 	"loothub.rename.preview": "Vorschau",
 	"loothub.settings.hide_head": "Kopf-Item ausblenden",
-	"loothub.settings.hide_head.tooltip": "Blendet das Item auf deinem eigenen Kopf aus (z. B. das Auto). Nur du siehst den Unterschied – die Wirkung des Items bleibt."
+	"loothub.settings.hide_head.tooltip": "Blendet das Item auf deinem eigenen Kopf aus (z. B. das Auto). Nur du siehst den Unterschied – die Wirkung des Items bleibt.",
+	"loothub.inv_hud.editor.title": "Inventar-Anzeige verschieben",
+	"loothub.inv_hud.editor.reset": "Standard (über Hotbar)"
 }

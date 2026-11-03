@@ -42,6 +42,9 @@ public final class WidgetConfig {
 	public boolean invHudEnabled = false;
 	public int invHudColor = 0x140B0D;
 	public double invHudOpacity = 0.6;
+	/** Position (relativ); -1 = Standard über der Hotbar. */
+	public double invHudX = -1;
+	public double invHudY = -1;
 	/** Farben (RGB): innen = Akzente in Menüs/Inventar, außen = Rahmen, Puls = pulsierender Rand. */
 	public int colorInner = de.loothub.client.Theme.DEFAULT_INNER;
 	public int colorOuter = de.loothub.client.Theme.DEFAULT_OUTER;
