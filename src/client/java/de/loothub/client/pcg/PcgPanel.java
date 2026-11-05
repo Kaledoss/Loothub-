@@ -99,14 +99,19 @@ public final class PcgPanel {
 
 	private static int panelW(Font font) {
 		if (!expanded()) {
-			return 2 * PAD + font.width("⠿ ◎ Nächstes: warte auf Spawn") + 8 + font.width("Verbinde …") + 8 + lockW(font);
+			return 2 * PAD + font.width("⠿ ◎ Nächstes: warte auf Spawn") + 12 + statusW(font) + 8 + lockW(font);
 		}
 		int buttons = 2 * PAD + COUNT * BTN + (COUNT - 2) * GAP + SEP;
 		// Breite ohne die laufende Uhr berechnen, damit die Leiste nicht im Sekundentakt zappelt
 		PcgState.Spawn spawn = PcgState.current();
 		String sample = spawn != null && spawn.result() == null ? GermanNames.of(spawn.name()) + " · 00:00 · ✔ im Dex" : "Nächstes: warte auf Spawn";
-		int head = 2 * PAD + font.width("⠿ " + sample) + 8 + font.width("Verbinde …") + 8 + lockW(font);
+		int head = 2 * PAD + font.width("⠿ " + sample) + 12 + statusW(font) + 8 + lockW(font);
 		return Math.max(buttons, head);
+	}
+
+	/** Platz für den Verbindungsstatus (mit Kanalname) – damit sich nichts überlappt. */
+	private static int statusW(Font font) {
+		return Math.max(font.width("Verbinde …"), font.width(statusText()));
 	}
 
 	/** Ohne Pokémon nur die schmale Kopfzeile (Countdown + Status), mit Pokémon die volle Leiste. */
