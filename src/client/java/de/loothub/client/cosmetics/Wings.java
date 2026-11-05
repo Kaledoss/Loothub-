@@ -18,8 +18,8 @@ import de.loothub.Loothub;
  */
 public final class Wings {
 	/** Seitenverhältnis Breite/Höhe eines Flügels (passend zu den erzeugten Texturen). */
-	private static final float ASPECT = 0.9F;
-	private static final float HEIGHT = 1.35F;
+	private static final float ASPECT = 0.52F;
+	private static final float HEIGHT = 2.0F;
 
 	private Wings() {
 	}
@@ -33,12 +33,13 @@ public final class Wings {
 			final float s = side;
 			poseStack.pushPose();
 			// Wurzel zwischen den Schulterblättern, knapp hinter dem Rücken
-			poseStack.translate(s * 0.06F, 0.05F, 0.17F);
-			// nach hinten angewinkelt, schlägt sanft auf und zu
-			poseStack.mulPose(Axis.YP.rotationDegrees(s * (28.0F + flap * 16.0F)));
+			poseStack.translate(s * 0.08F, -0.02F, 0.19F);
+			// weit geöffnet, nur leicht nach hinten angewinkelt, Spitzen etwas nach oben; schlägt sanft auf und zu
+			poseStack.mulPose(Axis.YP.rotationDegrees(s * (16.0F + flap * 15.0F)));
+			poseStack.mulPose(Axis.ZP.rotationDegrees(-s * 10.0F));
 			collector.submitCustomGeometry(poseStack, RenderTypes.entityTranslucent(texture), (pose, vc) -> {
 				float w = HEIGHT * ASPECT * s;
-				float top = -0.62F, bottom = top + HEIGHT;
+				float top = -0.8F, bottom = top + HEIGHT; // Ansatz über der Schulter
 				// u 0 = Wurzel, 1 = Spitze; links gespiegelt durch die negative Breite
 				vertex(pose, vc, 0, top, 0, 0, 0, light);
 				vertex(pose, vc, w, top, 0, 1, 0, light);

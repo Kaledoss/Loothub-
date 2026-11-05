@@ -5,10 +5,9 @@ import java.util.List;
 import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.math.Axis;
 
-import org.joml.Matrix3f;
-import org.joml.Matrix4f;
 
 import net.minecraft.client.model.geom.EntityModelSet;
+import net.minecraft.util.Mth;
 import net.minecraft.client.model.geom.ModelLayers;
 import net.minecraft.client.model.player.PlayerModel;
 import net.minecraft.client.renderer.SubmitNodeCollector;
@@ -94,27 +93,51 @@ public final class MiniMeLayer extends RenderLayer<AvatarRenderState, PlayerMode
 			float side = i % 2 == 0 ? 1.0F : -1.0F; // gerade = rechts, ungerade = links (Modellraum)
 			AvatarRenderState mini = miniState(skin, t);
 			// Platz-Haltung: Position (x, y, z) und Neigung (vorn/hinten, seitlich)
-			float tx, ty, tz, rx, rz = 0.0F;
+			float tx, ty, tz, rx, rz = 0.0F, ry = 0.0F;
+			// Nachziehen: beim Drehen schwenken sie hinterher, beim Laufen bleiben sie etwas zurück
+			float lag = Motion.yawLag(state);
+			float fwd = Mth.clamp(Motion.forward(state), -0.3F, 0.7F);
+			float vy = Mth.clamp(Motion.vertical(state), -0.6F, 0.6F);
+			float fly = Motion.fly(state);
 			if (i < 2) {
 				// sitzend auf der Schulter (Reit-Haltung: Beine nach vorn)
 				tx = side * 0.44F;
 				// Hüfte auf der Schulter: Halspunkt liegt eine Rumpflänge (12 px × SCALE) darüber
 				ty = (state.isCrouching ? 0.075F : -0.105F) - 0.75F * SCALE + (float) Math.sin(t * 0.08F + i) * 0.01F;
 				tz = 0.0F;
-				rx = 0.0F;
+				rx = -fwd * 20.0F; // beim Loslaufen leicht nach hinten
+				rz = Mth.clamp(lag * 0.3F, -12.0F, 12.0F); // wackelt beim Drehen mit
+				ty -= Math.abs((float) Math.sin(state.walkAnimationPos * 0.6662F)) * 0.03F * state.walkAnimationSpeed;
 			} else if (i < 4) {
 				// fliegend: schräg hinter dem Spieler, weich schwebend und leicht nach vorn geneigt
-				tx = side * (0.68F + (float) Math.sin(t * 0.045F + i) * 0.04F);
-				ty = -0.55F + (float) Math.sin(t * 0.07F + i * 1.3F) * 0.07F;
-				tz = 0.6F;
-				rx = 18.0F + Math.min(25.0F, state.walkAnimationSpeed * 30.0F);
-				rz = side * (float) Math.sin(t * 0.05F + i) * 4.0F;
+				// weiter außen und höher als die Schulter-Mini-Mes, damit sie nicht dahinter verschwinden
+				tx = side * (1.0F + (float) Math.sin(t * 0.045F + i) * 0.06F);
+				ty = -0.75F + (float) Math.sin(t * 0.07F + i * 1.3F) * 0.08F + vy * 1.2F;
+				tz = 0.75F + Math.max(0.0F, fwd) * 1.6F;
+				float[] p = rotateY(tx, tz, lag * 0.7F);
+				tx = p[0];
+				tz = p[1];
+				ry = -lag * 0.5F;
+				rx = 15.0F + Math.max(0.0F, fwd) * 60.0F;
+				rx = rx + (75.0F - rx) * fly; // fliegt der Spieler, liegen sie auch waagerecht in der Luft
+				rz = side * (float) Math.sin(t * 0.05F + i) * 5.0F + Mth.clamp(lag * 0.4F, -20.0F, 20.0F);
 			} else {
 				// krabbelnd auf allen vieren: Rumpf waagerecht in Beinlänge über dem Boden, Kopf nach vorn
 				tx = side * 0.72F;
 				ty = 1.5F - 0.75F * SCALE;
-				tz = -0.2F + (float) Math.sin(crawlPhase(state, i) * 2.0F) * 0.01F;
+				tz = -0.2F + (float) Math.sin(crawlPhase(state, i) * 2.0F) * 0.01F + Math.max(0.0F, fwd) * 0.6F;
+				float[] p = rotateY(tx, tz, lag * 0.35F);
+				tx = p[0];
+				tz = p[1];
+				ry = -lag * 0.4F;
 				rx = 90.0F;
+				if (fly > 0.0F) {
+					// fliegt der Spieler, fliegen auch die Krabbler mit – unter den anderen, etwas weiter hinten
+					tx += (side * 0.75F - tx) * fly;
+					ty += (0.25F + (float) Math.sin(t * 0.08F + i) * 0.06F - ty) * fly;
+					tz += (1.1F - tz) * fly;
+					rx += (75.0F - rx) * fly;
+				}
 			}
 			// AFK: liegt der Spieler, legen sich die Mini-Mes neben ihn und schlafen mit
 			float lie = de.loothub.client.quick.AfkView.lying(state);
@@ -133,12 +156,13 @@ public final class MiniMeLayer extends RenderLayer<AvatarRenderState, PlayerMode
 				mini.walkAnimationPos = crawlPhase(state, i);
 				mini.walkAnimationSpeed = Math.min(1.0F, state.walkAnimationSpeed * 1.5F);
 			}
-			boolean crawling = i >= 4 && !sleeping;
+			boolean crawling = i >= 4 && !sleeping && fly < 0.5F;
 			poseStack.pushPose();
-			if (lie > 0.001F) {
-				undoLieDown(poseStack, lie);
-			}
+			BodyPose.undo(poseStack, lie > 0.001F ? lie : 0.0F, i >= 2 ? fly : 0.0F);
 			poseStack.translate(tx, ty, tz);
+			if (ry != 0.0F) {
+				poseStack.mulPose(Axis.YP.rotationDegrees(ry));
+			}
 			poseStack.mulPose(Axis.XP.rotationDegrees(rx));
 			if (rz != 0.0F) {
 				poseStack.mulPose(Axis.ZP.rotationDegrees(rz));
@@ -165,20 +189,11 @@ public final class MiniMeLayer extends RenderLayer<AvatarRenderState, PlayerMode
 	private static final float[][] SLEEP = {{0.75F, -0.1F}, {-0.75F, -0.1F}, {1.2F, 0.5F}, {-1.2F, 0.5F}, {0.9F, -0.8F},
 			{-0.9F, -0.8F}};
 
-	/**
-	 * Hebt das Hinlegen des Spielers (AFK-Ansicht, {@code LieDownMixin}) für die Mini-Mes wieder auf, damit sie aufrecht
-	 * neben ihm liegen statt mit seinem Körper wegzukippen.
-	 */
-	private static void undoLieDown(PoseStack poseStack, float lie) {
-		Matrix4f q = new Matrix4f()
-				.translate(0.0F, 1.501F, 0.0F)
-				.scale(-1.0F, -1.0F, 1.0F)
-				.rotateX((float) Math.toRadians(-90.0F * lie))
-				.translate(0.0F, -0.2F * lie, 0.0F)
-				.scale(-1.0F, -1.0F, 1.0F)
-				.translate(0.0F, -1.501F, 0.0F);
-		poseStack.last().pose().mul(q);
-		poseStack.last().normal().mul(new Matrix3f(q));
+	/** Dreht (x, z) um die Hochachse (Grad) – für das Hinterherschwenken. */
+	private static float[] rotateY(float x, float z, float degrees) {
+		double a = Math.toRadians(degrees);
+		float c = (float) Math.cos(a), s = (float) Math.sin(a);
+		return new float[]{x * c - z * s, x * s + z * c};
 	}
 
 	/** Eigener Zustand für ein Mini-Me: ruhige Grundhaltung, Skin-Ebenen sichtbar; macht nicht mit (kein Abbauen). */

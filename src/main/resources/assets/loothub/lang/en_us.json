@@ -359,5 +359,9 @@
 	"loothub.cosmetics.wings.style.dragon": "Drache",
 	"loothub.cosmetics.wings.style.devil": "Teufel",
 	"loothub.cosmetics.wings.style.angel": "Engel",
-	"loothub.cosmetics.wings.slot": "Mini-Me %s"
+	"loothub.cosmetics.wings.slot": "Mini-Me %s",
+	"loothub.settings.hide_cape": "Eigenes Cape ausblenden",
+	"loothub.settings.hide_cape.tooltip": "Blendet dein Cape an deinem eigenen Spieler aus. Nur du siehst den Unterschied. Capes von LabyMod-Cosmetics zeichnet LabyMod selbst – die bitte dort ausschalten.",
+	"loothub.settings.fly_pose": "Flug-Haltung",
+	"loothub.settings.fly_pose.tooltip": "Fliegst du und bewegst dich, legst du dich waagerecht in die Luft – Kopf voraus, ein Arm nach vorn. Beim Abbauen und Zuschlagen bleiben die Arme normal. Andere mit Loothub+ sehen es auch."
 }

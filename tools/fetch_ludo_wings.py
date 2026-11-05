@@ -3,13 +3,13 @@
 Aufruf: python3 tools/fetch_ludo_wings.py tools/ludo_wings.txt src/main/resources/assets/loothub/textures/entity
 Jede Zeile: <stil> <url>   (z. B. "dragon https://…png") → wing_<stil>.png
 Aus dem symmetrischen Paar wird die rechte Hälfte genommen: Flügelansatz am linken Rand,
-Spitze rechts. Die Textur hat immer das Seitenverhältnis 0,9 (Breite/Höhe), wie Wings.ASPECT.
+Spitze rechts. Die Textur hat immer das Seitenverhältnis 0,52 (Breite/Höhe), wie Wings.ASPECT.
 Läuft im CI, weil die Ludo-Links nur dort erreichbar sind und nach 7 Tagen ablaufen.
 """
 import io, os, sys, urllib.request
 from PIL import Image
 
-H, W = 128, 115  # 115/128 ≈ 0,9
+H, W = 128, 66  # 66/128 ≈ 0,52 (Wings.ASPECT)
 
 def to_wing(data: bytes) -> Image.Image:
     img = Image.open(io.BytesIO(data)).convert("RGBA")
@@ -23,7 +23,7 @@ def to_wing(data: bytes) -> Image.Image:
     scale = min(W / half.width, H / half.height)
     half = half.resize((max(1, round(half.width * scale)), max(1, round(half.height * scale))), Image.LANCZOS)
     out = Image.new("RGBA", (W, H), (0, 0, 0, 0))
-    out.paste(half, (0, (H - half.height) // 2), half)
+    out.paste(half, (0, 0), half)  # Ansatz oben links
     return out
 
 def main():

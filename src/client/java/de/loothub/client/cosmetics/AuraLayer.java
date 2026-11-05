@@ -21,10 +21,10 @@ import de.loothub.Loothub;
  */
 public final class AuraLayer extends RenderLayer<AvatarRenderState, PlayerModel> {
 	private static final Identifier TEXTURE = Identifier.fromNamespaceAndPath(Loothub.MOD_ID, "textures/entity/aura_base.png");
-	private static final int SEGMENTS = 20;
+	private static final int SEGMENTS = 24;
 	/** Höhen (Modellraum, y nach unten: Füße bei 1,5, Kopf oben bei −0,5) und Helligkeit an diesen Höhen. */
-	private static final float[] LEVELS = {1.55F, 0.9F, 0.0F, -0.6F, -1.15F};
-	private static final float[] GLOW = {0.55F, 1.0F, 0.9F, 0.55F, 0.0F};
+	private static final float[] LEVELS = {1.6F, 1.0F, 0.2F, -0.5F, -1.2F, -1.9F};
+	private static final float[] GLOW = {0.7F, 1.25F, 1.2F, 0.95F, 0.45F, 0.0F};
 
 	public AuraLayer(RenderLayerParent<AvatarRenderState, PlayerModel> parent) {
 		super(parent);
@@ -40,8 +40,9 @@ public final class AuraLayer extends RenderLayer<AvatarRenderState, PlayerModel>
 		int rgb = AuraTextures.parse(color);
 		float t = state.ageInTicks;
 		collector.submitCustomGeometry(poseStack, RenderTypes.energySwirl(TEXTURE, 0.0F, 0.0F), (pose, vc) -> {
-			ring(pose, vc, rgb, 0.52F, 0.40F, 1.00F, 3.0F, t * 0.045F, 0.0F);
-			ring(pose, vc, rgb, 0.78F, 0.62F, 0.65F, 4.0F, t * 0.032F, 0.37F);
+			ring(pose, vc, rgb, 0.60F, 0.48F, 1.15F, 3.0F, t * 0.05F, 0.0F);
+			ring(pose, vc, rgb, 0.92F, 0.74F, 0.95F, 4.0F, t * 0.036F, 0.37F);
+			ring(pose, vc, rgb, 1.25F, 1.00F, 0.6F, 5.0F, t * 0.028F, 0.71F);
 		});
 	}
 

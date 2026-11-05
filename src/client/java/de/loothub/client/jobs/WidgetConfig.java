@@ -38,6 +38,10 @@ public final class WidgetConfig {
 	public boolean sellHighlight = true;
 	/** Item auf dem eigenen Kopf (z. B. Auto) nicht anzeigen – nur für einen selbst. */
 	public boolean hideOwnHeadItem = false;
+	/** Eigenes Cape ausblenden (nur eigene Darstellung). */
+	public boolean hideOwnCape = false;
+	/** Flug-Haltung beim Fliegen in Bewegung (Kopf voraus, waagerecht). */
+	public boolean flyPose = true;
 	/** Jobschatz-Zähler: XP seit der letzten 100.000er-Marke und Anzahl erreichter Marken. */
 	public double treasureXp = 0;
 	public int treasureChances = 0;
@@ -177,6 +181,8 @@ public final class WidgetConfig {
 		afkView = false;
 		cosmetics = false;
 		hideOwnHeadItem = false;
+		hideOwnCape = false;
+		flyPose = false;
 		hideOffhandBackpack = false;
 		invHudEnabled = false;
 		musicEnabled = false;

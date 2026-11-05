@@ -24,6 +24,7 @@ public abstract class HumanoidHeadMixin {
 	private static void loothub$hideOwnHead(LivingEntity entity, HumanoidRenderState state, float partialTick,
 			ItemModelResolver resolver, CallbackInfo ci) {
 		de.loothub.client.cosmetics.Cosmetics.mark(state, entity);
+		de.loothub.client.cosmetics.Motion.update(state, entity, partialTick);
 		if (entity != Minecraft.getInstance().player) {
 			// Andere Spieler, die seit 5 Minuten völlig stillstehen, schlafen (nur eigene Darstellung)
 			de.loothub.client.quick.AfkView.markLying(state, de.loothub.client.quick.OtherAfk.lieProgress(entity));
@@ -31,6 +32,9 @@ public abstract class HumanoidHeadMixin {
 		}
 		// AFK-Ansicht: eigener Charakter liegt schlafend da (nur eigene Darstellung)
 		de.loothub.client.quick.AfkView.markLying(state, de.loothub.client.quick.AfkView.lieProgress());
+		if (WidgetConfig.get().hideOwnCape && state instanceof net.minecraft.client.renderer.entity.state.AvatarRenderState avatar) {
+			avatar.showCape = false;
+		}
 		if (WidgetConfig.get().hideOwnHeadItem) {
 			state.headEquipment = ItemStack.EMPTY;
 			state.headItem.clear();

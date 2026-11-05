@@ -15,6 +15,7 @@
 		"AnvilAmountMixin",
 		"CameraZoomMixin",
 		"LieDownMixin",
+		"FlyPoseModelMixin",
 		"LivingEntityRendererInvoker",
 		"AvatarLayersMixin"
 	],

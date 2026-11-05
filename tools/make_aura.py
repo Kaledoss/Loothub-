@@ -26,7 +26,7 @@ for name, (r, g, b) in COLORS.items():
         for x in range(N):
             t = (vals[y][x] - lo) / (hi - lo)
             # schmale helle Flammenzungen, dazwischen fast durchsichtig
-            s = 0.8 * max(0.0, (t - 0.5) / 0.5) ** 1.8  # dünne, weiche Zungen, insgesamt gedämpft
+            s = max(0.0, (t - 0.32) / 0.68) ** 1.25  # breite, kräftige Zungen
             a = int(255 * min(1.0, s * 1.2))
             k = s  # dunkel = unsichtbar (additiv), hell = Flamme
             px[x, y] = (min(255, int(r * k)), min(255, int(g * k)), min(255, int(b * k)), a)
