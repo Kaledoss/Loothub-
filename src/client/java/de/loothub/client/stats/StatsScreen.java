@@ -235,6 +235,9 @@ public class StatsScreen extends LoothubScreen {
 					if (!accepts(prefixes[i], id, kind)) {
 						continue;
 					}
+					if (kind == Kind.PLANT) {
+						id = plantKey(id); // Feldfrucht-Block (z. B. „Wheat Crops“) und Samen in eine Zeile
+					}
 					byId.computeIfAbsent(id, k -> new long[columnCount])[cols[i]] += e.getValue();
 				}
 			}
@@ -314,6 +317,20 @@ public class StatsScreen extends LoothubScreen {
 			case ITEMS -> !isTool(id) && !isFood(id) && !isPlantId(id) && !isBlockItem(id);
 			default -> true;
 		};
+	}
+
+	/** Pflanzen-Block → zugehöriges Item (Weizen-Pflanze → Weizensamen), damit Ernten, Pflanzen und Aufsammeln eine Zeile sind. */
+	private static String plantKey(String id) {
+		Identifier identifier = Identifier.tryParse(id);
+		if (identifier == null) {
+			return id;
+		}
+		Block block = BuiltInRegistries.BLOCK.getOptional(identifier).orElse(null);
+		if (block == null || block == net.minecraft.world.level.block.Blocks.AIR) {
+			return id;
+		}
+		Item item = block.asItem();
+		return item == Items.AIR ? id : BuiltInRegistries.ITEM.getKey(item).toString();
 	}
 
 	/** Essbar (Apfel, Brot, gebratenes Fleisch, Chorusfrucht …)? */
@@ -657,13 +674,13 @@ public class StatsScreen extends LoothubScreen {
 						}
 					}
 					case PLANT -> {
+						Item item = BuiltInRegistries.ITEM.getOptional(identifier).orElse(null);
+						if (item != null && item != Items.AIR) {
+							return new ItemStack(item).getHoverName().getString();
+						}
 						Block b = BuiltInRegistries.BLOCK.getOptional(identifier).orElse(null);
 						if (b != null && b != net.minecraft.world.level.block.Blocks.AIR) {
 							return b.getName().getString();
-						}
-						Item item = BuiltInRegistries.ITEM.getOptional(identifier).orElse(null);
-						if (item != null) {
-							return new ItemStack(item).getHoverName().getString();
 						}
 					}
 					case MOB -> {
@@ -688,8 +705,9 @@ public class StatsScreen extends LoothubScreen {
 				case BLOCK -> BuiltInRegistries.BLOCK.getOptional(identifier).map(Block::asItem).orElse(Items.AIR);
 				case ITEM -> BuiltInRegistries.ITEM.getOptional(identifier).orElse(Items.AIR);
 				case PLANT -> {
-					Item byBlock = BuiltInRegistries.BLOCK.getOptional(identifier).map(Block::asItem).orElse(Items.AIR);
-					yield byBlock != Items.AIR ? byBlock : BuiltInRegistries.ITEM.getOptional(identifier).orElse(Items.AIR);
+					Item direct = BuiltInRegistries.ITEM.getOptional(identifier).orElse(Items.AIR);
+					yield direct != Items.AIR ? direct
+							: BuiltInRegistries.BLOCK.getOptional(identifier).map(Block::asItem).orElse(Items.AIR);
 				}
 				case MOB -> BuiltInRegistries.ITEM.getOptional(
 						Identifier.fromNamespaceAndPath(identifier.getNamespace(), identifier.getPath() + "_spawn_egg")).orElse(Items.AIR);
