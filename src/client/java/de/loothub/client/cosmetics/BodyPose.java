@@ -18,6 +18,15 @@ public final class BodyPose {
 	private BodyPose() {
 	}
 
+	/**
+	 * Neigung der Flug-Haltung: beim Steigen hebt sich der Oberkörper etwas (bis 25°), beim Sinken senkt er sich
+	 * (bis 25°) – passend zur Flugrichtung.
+	 */
+	private static float flyPitch(Object state, float fly) {
+		float climb = net.minecraft.util.Mth.clamp(Motion.vertical(state) / 0.35F, -1.0F, 1.0F);
+		return (FLY_PITCH - 25.0F * climb) * fly;
+	}
+
 	private static float[] pose(Object state) {
 		float[] p = de.loothub.client.quick.AfkView.pose(state);
 		return p == null ? new float[5] : p;
@@ -40,7 +49,7 @@ public final class BodyPose {
 		if (fly > 0.0F) {
 			// um die Körpermitte nach vorn kippen, Kopf voraus
 			poseStack.translate(0.0F, FLY_PIVOT, 0.0F);
-			poseStack.mulPose(Axis.XP.rotationDegrees(-FLY_PITCH * fly));
+			poseStack.mulPose(Axis.XP.rotationDegrees(-flyPitch(state, fly)));
 			poseStack.translate(0.0F, -FLY_PIVOT, 0.0F);
 		}
 	}
@@ -56,7 +65,7 @@ public final class BodyPose {
 		Matrix4f q = new Matrix4f().translate(0.0F, 1.501F, 0.0F).scale(-1.0F, -1.0F, 1.0F);
 		if (fly > 0.0F) {
 			q.translate(0.0F, FLY_PIVOT, 0.0F)
-					.rotateX((float) Math.toRadians(FLY_PITCH * fly))
+					.rotateX((float) Math.toRadians(flyPitch(state, fly)))
 					.translate(0.0F, -FLY_PIVOT, 0.0F);
 		}
 		if (lie) {
