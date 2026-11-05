@@ -25,15 +25,11 @@ public abstract class HumanoidHeadMixin {
 			ItemModelResolver resolver, CallbackInfo ci) {
 		if (entity != Minecraft.getInstance().player) {
 			// Andere Spieler, die seit 5 Minuten völlig stillstehen, schlafen (nur eigene Darstellung)
-			if (de.loothub.client.quick.OtherAfk.isAfk(entity)) {
-				state.pose = net.minecraft.world.entity.Pose.SLEEPING;
-			}
+			de.loothub.client.quick.AfkView.markLying(state, de.loothub.client.quick.OtherAfk.lieProgress(entity));
 			return;
 		}
 		// AFK-Ansicht: eigener Charakter liegt schlafend da (nur eigene Darstellung)
-		if (de.loothub.client.quick.AfkView.sleeping()) {
-			state.pose = net.minecraft.world.entity.Pose.SLEEPING;
-		}
+		de.loothub.client.quick.AfkView.markLying(state, de.loothub.client.quick.AfkView.lieProgress());
 		if (WidgetConfig.get().hideOwnHeadItem) {
 			state.headEquipment = ItemStack.EMPTY;
 			state.headItem.clear();

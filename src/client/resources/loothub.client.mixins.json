@@ -13,7 +13,8 @@
 		"HumanoidHeadMixin",
 		"ItemInHandRendererMixin",
 		"AnvilAmountMixin",
-		"CameraZoomMixin"
+		"CameraZoomMixin",
+		"LieDownMixin"
 	],
 	"injectors": {
 		"defaultRequire": 0

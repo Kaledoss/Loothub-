@@ -320,7 +320,7 @@
 	"loothub.settings.market_sales": "Marktverkäufe",
 	"loothub.settings.market_sales.tooltip": "Geld, das du am Marktplatz einsammelst (einzeln oder alles auf einmal), erscheint als „Markt“ im Job-Verlauf.",
 	"loothub.settings.afk_view": "AFK-Ansicht",
-	"loothub.settings.afk_view.tooltip": "Nach 5 Minuten ohne Bewegung zoomt die Kamera von hinten heraus und dein Charakter schläft – auch bei offenem Chat. Erst Laufen oder Umschauen weckt ihn. Andere Spieler, die 5 Minuten völlig stillstehen, siehst du ebenfalls schlafend. Nur für dich sichtbar.",
+	"loothub.settings.afk_view.tooltip": "Nach 5 Minuten ohne Bewegung legt sich dein Charakter hin und die Kamera gleitet langsam heraus – auch bei offenem Chat. Laufen oder Springen lässt ihn aufstehen, die Kamera fährt zurück. Umschauen mit der Maus zählt nicht. Andere Spieler, die 5 Minuten nicht von der Stelle gehen, legen sich ebenfalls hin. Nur für dich sichtbar.",
 	"loothub.stats.cat.plants": "Pflanzen",
 	"loothub.stats.col.harvested": "Geerntet",
 	"loothub.stats.col.planted": "Gepflanzt",
