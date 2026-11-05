@@ -85,7 +85,7 @@ public class JobHistoryScreen extends LoothubScreen {
 			new JobInfo("Fischer", List.of("Angler"), 0xFF4FB3D9, Items.FISHING_ROD),
 			new JobInfo("Farmer", List.of(), 0xFFE8C547, Items.WHEAT),
 			new JobInfo("Builder", List.of(), 0xFFB57EDC, Items.BRICKS),
-			new JobInfo(MarketSales.JOB, List.of(), 0xFF55E06A, Items.GOLD_INGOT));
+			new JobInfo(MarketSales.JOB, List.of(), 0xFFE070C8, Items.GOLD_INGOT));
 
 	/** Ein Balken im Diagramm. */
 	private record Bucket(long start, long end, String label, String title, int unitOffset) {
