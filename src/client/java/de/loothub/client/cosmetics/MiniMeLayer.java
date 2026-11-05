@@ -210,7 +210,7 @@ public final class MiniMeLayer extends RenderLayer<AvatarRenderState, PlayerMode
 				rz = side * (float) Math.sin(t * 0.05F + i) * 5.0F + Mth.clamp(lag * 0.4F, -20.0F, 20.0F);
 			} else {
 				// krabbelnd auf allen vieren: Rumpf waagerecht in Beinlänge über dem Boden, Kopf nach vorn
-				tx = side * 0.72F;
+				tx = side * 1.0F; // etwas Abstand zum Spieler
 				ty = 1.5F - 0.75F * SCALE;
 				tz = -0.2F;
 				rx = 90.0F;
