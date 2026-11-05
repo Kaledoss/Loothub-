@@ -245,10 +245,72 @@ public final class Itemdex {
 		return !item.endsWith("glass_pane") && !item.equals("barrier") && !item.equals("light");
 	}
 
-	/** Menü-Knopf? (Beschreibung mit „Klick“, z. B. „Klicke zum Öffnen“, „Linksklick: …“) */
-	private static boolean looksLikeButton(ItemStack s) {
+	/** Zeilen, die das Auktionshaus (oder ein Menü) an die Beschreibung anhängt – kommen nicht in den Itemdex. */
+	private static final java.util.regex.Pattern MENU_LINE = java.util.regex.Pattern.compile(
+			"(?i)^\\s*(spieler|verkäufer|startgebot|sofortkauf|höchstgebot|aktuelles gebot|gebote?|endet in|läuft ab|preis"
+					+ "|klicke|linksklick|rechtsklick|shift)\\b.*");
+
+	private static boolean isAuctionLore(ItemLore lore) {
+		if (lore == null) {
+			return false;
+		}
+		for (Component line : lore.lines()) {
+			String t = line.getString().strip().toLowerCase(Locale.ROOT);
+			if (t.startsWith("sofortkauf") || t.startsWith("startgebot") || t.startsWith("endet in") || t.startsWith("höchstgebot")) {
+				return true;
+			}
+		}
+		return false;
+	}
+
+	/** Kopie ohne Verkäufer, Gebote, Restzeit und Klick-Hinweise; doppelte Leerzeilen werden zusammengefasst. */
+	static ItemStack clean(ItemStack s) {
 		ItemLore lore = s.get(DataComponents.LORE);
 		if (lore == null) {
+			return s;
+		}
+		List<Component> out = new ArrayList<>();
+		boolean changed = false;
+		for (Component line : lore.lines()) {
+			String t = line.getString();
+			if (MENU_LINE.matcher(t).matches()) {
+				changed = true;
+				continue;
+			}
+			boolean blank = t.isBlank();
+			if (blank && (out.isEmpty() || out.get(out.size() - 1).getString().isBlank())) {
+				changed = true;
+				continue;
+			}
+			out.add(line);
+		}
+		while (!out.isEmpty() && out.get(out.size() - 1).getString().isBlank()) {
+			out.remove(out.size() - 1);
+			changed = true;
+		}
+		if (!changed) {
+			return s;
+		}
+		ItemStack copy = s.copy();
+		copy.set(DataComponents.LORE, new ItemLore(out));
+		return copy;
+	}
+
+	private static String searchText(ItemStack s) {
+		StringBuilder text = new StringBuilder(s.getHoverName().getString().strip());
+		ItemLore lore = s.get(DataComponents.LORE);
+		if (lore != null) {
+			for (Component line : lore.lines()) {
+				text.append('\n').append(line.getString());
+			}
+		}
+		return text.toString().toLowerCase(Locale.ROOT);
+	}
+
+	/** Menü-Knopf? (Beschreibung mit „Klick“, z. B. „Klicke zum Öffnen“, „Linksklick: …“) – Auktionen nicht. */
+	private static boolean looksLikeButton(ItemStack s) {
+		ItemLore lore = s.get(DataComponents.LORE);
+		if (lore == null || isAuctionLore(lore)) {
 			return false;
 		}
 		for (Component line : lore.lines()) {
@@ -278,7 +340,27 @@ public final class Itemdex {
 			}
 			return drop;
 		});
-		if (entries.size() != before) {
+		// Auktions-Zeilen aus schon gespeicherten Einträgen entfernen
+		boolean cleaned = false;
+		for (Entry e : entries) {
+			ItemStack st = e.stack();
+			ItemStack c = clean(st);
+			if (c != st) {
+				JsonElement json = ItemStack.CODEC.encodeStart(registries().createSerializationContext(JsonOps.INSTANCE), c)
+						.result().orElse(null);
+				if (json != null) {
+					e.stackJson = json;
+					e.cached = null;
+					e.text = searchText(c);
+					cleaned = true;
+				}
+			}
+		}
+		if (cleaned) {
+			dirty = true;
+			version++;
+		}
+		if (entries.size() != before || cleaned) {
 			int n = 1;
 			for (Entry e : entries) {
 				e.number = n++;
@@ -327,6 +409,10 @@ public final class Itemdex {
 			return;
 		}
 		load();
+		s = clean(s);
+		if (!isCustom(s)) {
+			return; // nur Auktions-Zeilen als Beschreibung
+		}
 		String key = key(s);
 		Entry e = byKey.get(key);
 		if (e != null && e.source != null && e.source.priority >= source.priority) {
@@ -349,14 +435,7 @@ public final class Itemdex {
 		}
 		e.itemId = BuiltInRegistries.ITEM.getKey(s.getItem()).toString();
 		e.name = s.getHoverName().getString().strip();
-		StringBuilder text = new StringBuilder(e.name);
-		ItemLore lore = s.get(DataComponents.LORE);
-		if (lore != null) {
-			for (Component line : lore.lines()) {
-				text.append('\n').append(line.getString());
-			}
-		}
-		e.text = text.toString().toLowerCase(Locale.ROOT);
+		e.text = searchText(s);
 		e.category = categorize(s);
 		e.source = source;
 		if (json != null) {
