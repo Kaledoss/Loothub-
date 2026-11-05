@@ -51,9 +51,16 @@ public final class StatsTracker {
 	// ------------------------------------------------------------------ Ereignisse
 
 	public static void onBlockBroken(net.minecraft.core.BlockPos pos, BlockState state) {
-		lastCountedPos = pos.immutable();
-		lastCountedAt = System.currentTimeMillis();
+		net.minecraft.core.BlockPos p = pos.immutable();
+		long now = System.currentTimeMillis();
+		if (recentlyCounted(p, now)) {
+			return; // schon über die Bohrer-Erkennung gezählt
+		}
+		lastCountedPos = p;
+		lastCountedAt = now;
+		markCounted(p, now);
 		onBlockBroken(state);
+		startAreaCheck(p, now);
 	}
 
 	public static void onBlockBroken(BlockState state) {
@@ -231,6 +238,7 @@ public final class StatsTracker {
 	private static long watchUntil, lastCountedAt;
 
 	private static void watchMining(Minecraft mc, long now) {
+		checkArea(mc, now);
 		if (mc.options.keyAttack.isDown() && mc.hitResult instanceof net.minecraft.world.phys.BlockHitResult bhr
 				&& mc.hitResult.getType() == net.minecraft.world.phys.HitResult.Type.BLOCK) {
 			BlockState st = mc.level.getBlockState(bhr.getBlockPos());
@@ -238,6 +246,7 @@ public final class StatsTracker {
 				watchPos = bhr.getBlockPos().immutable();
 				watchState = st;
 				watchUntil = now + 1500;
+				snapshotArea(mc, watchPos);
 			}
 		}
 		if (watchPos == null) {
@@ -245,14 +254,99 @@ public final class StatsTracker {
 		}
 		BlockState now0 = mc.level.getBlockState(watchPos);
 		if (now0.getBlock() != watchState.getBlock()) {
-			// schon über das normale Ereignis gezählt?
-			boolean counted = watchPos.equals(lastCountedPos) && now - lastCountedAt < 2000;
-			if (!counted && (now0.isAir() || now0.canBeReplaced())) {
+			if ((now0.isAir() || now0.canBeReplaced()) && !recentlyCounted(watchPos, now)) {
+				markCounted(watchPos, now);
 				onBlockBroken(watchState);
+				startAreaCheck(watchPos, now);
 			}
 			watchPos = null;
 		} else if (now > watchUntil) {
 			watchPos = null;
+		}
+	}
+
+	// ---- Bohrer & Co.: bauen mehrere Blöcke um den anvisierten herum auf einmal ab (das erledigt der Server).
+	// Vor dem Abbauen wird die Umgebung (3×3×3) gemerkt; verschwinden dort kurz nach dem Hauptblock weitere
+	// Blöcke, zählen sie mit. Nur mit Spezial-Werkzeugen (eigener Name/eigenes Modell), damit z. B. fallender
+	// Sand oder Wasser nicht mitgezählt werden.
+	private static final java.util.Map<net.minecraft.core.BlockPos, BlockState> AREA = new java.util.HashMap<>();
+	private static net.minecraft.core.BlockPos areaCenter;
+	private static java.util.Map<net.minecraft.core.BlockPos, BlockState> pendingArea = java.util.Map.of();
+	private static long pendingUntil;
+	private static final java.util.Map<net.minecraft.core.BlockPos, Long> COUNTED = new java.util.HashMap<>();
+
+	private static boolean isSpecialTool(ItemStack stack) {
+		return isTool(stack) && (stack.get(net.minecraft.core.component.DataComponents.CUSTOM_NAME) != null
+				|| stack.get(net.minecraft.core.component.DataComponents.CUSTOM_MODEL_DATA) != null);
+	}
+
+	private static void snapshotArea(Minecraft mc, net.minecraft.core.BlockPos center) {
+		if (!isSpecialTool(mc.player.getMainHandItem())) {
+			AREA.clear();
+			areaCenter = null;
+			return;
+		}
+		if (!center.equals(areaCenter)) {
+			AREA.clear();
+			areaCenter = center;
+		}
+		for (int x = -1; x <= 1; x++) {
+			for (int y = -1; y <= 1; y++) {
+				for (int z = -1; z <= 1; z++) {
+					if (x == 0 && y == 0 && z == 0) {
+						continue;
+					}
+					net.minecraft.core.BlockPos p = center.offset(x, y, z);
+					BlockState st = mc.level.getBlockState(p);
+					if (isRealBlock(st.getBlock()) || isPlant(st.getBlock())) {
+						AREA.put(p, st);
+					} else {
+						AREA.remove(p);
+					}
+				}
+			}
+		}
+	}
+
+	private static void startAreaCheck(net.minecraft.core.BlockPos center, long now) {
+		if (center.equals(areaCenter) && !AREA.isEmpty()) {
+			pendingArea = new java.util.HashMap<>(AREA);
+			pendingUntil = now + 700;
+		}
+		AREA.clear();
+		areaCenter = null;
+	}
+
+	private static void checkArea(Minecraft mc, long now) {
+		if (pendingArea.isEmpty()) {
+			return;
+		}
+		var it = pendingArea.entrySet().iterator();
+		while (it.hasNext()) {
+			var e = it.next();
+			BlockState cur = mc.level.getBlockState(e.getKey());
+			if (cur.getBlock() != e.getValue().getBlock()) {
+				if ((cur.isAir() || cur.canBeReplaced()) && !recentlyCounted(e.getKey(), now)) {
+					markCounted(e.getKey(), now);
+					onBlockBroken(e.getValue());
+				}
+				it.remove();
+			}
+		}
+		if (now > pendingUntil) {
+			pendingArea = java.util.Map.of();
+		}
+	}
+
+	private static boolean recentlyCounted(net.minecraft.core.BlockPos p, long now) {
+		Long t = COUNTED.get(p);
+		return t != null && now - t < 2000;
+	}
+
+	private static void markCounted(net.minecraft.core.BlockPos p, long now) {
+		COUNTED.put(p, now);
+		if (COUNTED.size() > 256) {
+			COUNTED.values().removeIf(t -> now - t > 2000);
 		}
 	}
 
