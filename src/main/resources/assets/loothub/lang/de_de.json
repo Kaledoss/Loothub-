@@ -409,5 +409,5 @@
 	"loothub.cosmetics.risetrail": "Steigflug",
 	"loothub.cosmetics.risetrail.desc": "Fliegst du hoch oder runter, zieht ein heller Energie-Kegel hinter dir her – unter den Füßen beim Steigen, über dem Kopf beim Sinken.",
 	"loothub.settings.look_info": "Block-Info",
-	"loothub.settings.look_info.tooltip": "Zeigt oben in der Mitte, was du anschaust: Block mit Symbol und Namen, das passende Werkzeug (mit Stufe) samt ✔/✖, ob dein Werkzeug taugt, und den Verkaufspreis am Marktplatz. Bei Lebewesen Name und Leben."
+	"loothub.settings.look_info.tooltip": "Zeigt oben in der Mitte, was du anschaust: Block mit Symbol und Namen, das passende Werkzeug (mit Stufe) samt ✔/✖, ob dein Werkzeug taugt, und den Verkaufspreis am Marktplatz. Bei Lebewesen den Namen."
 }

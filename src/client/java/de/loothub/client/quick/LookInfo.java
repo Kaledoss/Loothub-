@@ -8,7 +8,6 @@ import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.network.chat.Component;
 import net.minecraft.tags.BlockTags;
 import net.minecraft.world.entity.Entity;
-import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
 import net.minecraft.world.level.block.state.BlockState;
@@ -24,7 +23,7 @@ import de.loothub.client.jobs.WidgetConfig;
 /**
  * Block-Info oben in der Mitte: was man gerade anschaut – Block mit Symbol und Namen, das passende Werkzeug (mit
  * Stufe, z. B. Eisen-Spitzhacke) samt Häkchen, ob das gehaltene Werkzeug taugt, und den Verkaufspreis am Marktplatz.
- * Bei Lebewesen: Name und Leben. Nur Anzeige.
+ * Bei Lebewesen nur der Name. Nur Anzeige.
  */
 public final class LookInfo {
 	private static final int PAD = 5;
@@ -95,18 +94,11 @@ public final class LookInfo {
 	private static void entity(GuiGraphics g, Minecraft mc, Entity e) {
 		Font font = mc.font;
 		Component name = e.getDisplayName();
-		String hp = null;
-		if (e instanceof LivingEntity le) {
-			hp = "❤ " + Fmt.exact(Math.ceil(le.getHealth())) + " / " + Fmt.exact(Math.ceil(le.getMaxHealth()));
-		}
-		int w = PAD + Math.max(font.width(name), hp == null ? 0 : font.width(hp)) + PAD;
-		int h = hp == null ? 18 : 30;
+		int w = PAD + font.width(name) + PAD;
+		int h = 18;
 		int x = (g.guiWidth() - w) / 2, y = 4;
 		panel(g, x, y, w, h);
 		g.drawString(font, name, x + PAD, y + 5, 0xFFFFFFFF, true);
-		if (hp != null) {
-			g.drawString(font, hp, x + PAD, y + 17, 0xFFFF5D6C, true);
-		}
 	}
 
 	private static void panel(GuiGraphics g, int x, int y, int w, int h) {
