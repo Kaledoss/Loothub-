@@ -78,6 +78,9 @@ public final class WidgetConfig {
 	public java.util.List<String> miniMes = new java.util.ArrayList<>();
 	/** Eigene Aura-Farbe als „#RRGGBB“ (leer = keine Aura). */
 	public String auraColor = "";
+	/** Flügel für einen selbst und für die Mini-Mes (dragon, devil, angel; leer = keine). */
+	public String wings = "";
+	public String miniMeWings = "";
 	/** Zuletzt gewählte Aura-Farbe (zum Wiedereinschalten). */
 	public String auraLast = "";
 	/** AFK-Ansicht: nach 5 Minuten ohne Eingabe herauszoomen und den Charakter schlafen legen. */

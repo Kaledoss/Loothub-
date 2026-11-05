@@ -34,6 +34,10 @@ import de.loothub.client.jobs.WidgetConfig;
 public final class Cosmetics {
 	public static final String MINI_ME = "minime";
 	public static final String AURA = "aura";
+	public static final String WINGS = "wings";
+	public static final String MINI_ME_WINGS = "minimewings";
+	/** Flügel-Stile (Textur textures/entity/wing_<stil>.png). */
+	public static final List<String> WING_STYLES = List.of("dragon", "devil", "angel");
 
 	private static final String URL = "https://raw.githubusercontent.com/Kaledoss/Loothub-/main/cosmetics.json";
 	private static final long REFRESH_MS = 10 * 60_000L;
@@ -47,6 +51,8 @@ public final class Cosmetics {
 	private static volatile Map<String, List<String>> miniMeSkins = Map.of();
 	/** Spieler → Farbe seiner Aura („#RRGGBB“ oder Name wie gold, blue …). */
 	private static volatile Map<String, String> auraColors = Map.of();
+	/** Spieler → einfache Werte je Cosmetic (z. B. "wings" → "angel"). */
+	private static volatile Map<String, Map<String, String>> singles = Map.of();
 	private static volatile long lastFetch;
 	private static volatile boolean loading;
 
@@ -54,6 +60,7 @@ public final class Cosmetics {
 	private static final Map<Object, Set<String>> STATES = new WeakHashMap<>();
 	private static final Map<Object, List<String>> SKINS = new WeakHashMap<>();
 	private static final Map<Object, String> AURAS = new WeakHashMap<>();
+	private static final Map<Object, Map<String, String>> VALUES = new WeakHashMap<>();
 
 	private Cosmetics() {
 	}
@@ -76,7 +83,9 @@ public final class Cosmetics {
 				if (t == null && r.statusCode() == 200) {
 					Map<String, List<String>> skins = new HashMap<>();
 					Map<String, String> auras = new HashMap<>();
-					owners = parse(r.body(), skins, auras);
+					Map<String, Map<String, String>> single = new HashMap<>();
+					owners = parse(r.body(), skins, auras, single);
+					singles = single;
 					miniMeSkins = skins;
 					auraColors = auras;
 				}
@@ -92,7 +101,8 @@ public final class Cosmetics {
 	 * {"minime": ["Kaledoss", …]} – ein Mini-Me mit eigenem Skin; {"minime": {"Kaledoss": "Notch"}} – mit fremdem Skin;
 	 * {"minime": {"Kaledoss": ["Notch", "", "jeb_"]}} – bis zu 4 Mini-Mes ("" = eigener Skin). Weitere Cosmetics als Liste.
 	 */
-	private static Map<String, Set<String>> parse(String json, Map<String, List<String>> skins, Map<String, String> auras) {
+	private static Map<String, Set<String>> parse(String json, Map<String, List<String>> skins, Map<String, String> auras,
+			Map<String, Map<String, String>> single) {
 		Map<String, Set<String>> out = new HashMap<>();
 		JsonObject root = JsonParser.parseString(json).getAsJsonObject();
 		for (String cosmetic : root.keySet()) {
@@ -108,6 +118,9 @@ public final class Cosmetics {
 				for (String who : map.keySet()) {
 					String key = who.strip().toLowerCase(Locale.ROOT);
 					out.computeIfAbsent(key, k -> new HashSet<>()).add(c);
+					if (map.get(who).isJsonPrimitive()) {
+						single.computeIfAbsent(key, k -> new HashMap<>()).put(c, map.get(who).getAsString().strip());
+					}
 					if (c.equals(AURA) && map.get(who).isJsonPrimitive()) {
 						auras.put(key, map.get(who).getAsString().strip());
 					}
@@ -137,6 +150,7 @@ public final class Cosmetics {
 	public static void mark(Object state, LivingEntity entity) {
 		SKINS.remove(state);
 		AURAS.remove(state);
+		VALUES.remove(state);
 		if (!(entity instanceof Player p) || !WidgetConfig.get().cosmetics) {
 			STATES.remove(state);
 			return;
@@ -167,10 +181,27 @@ public final class Cosmetics {
 			set = mine;
 			aura = ownAura;
 		}
+		Map<String, String> values = new HashMap<>(singles.getOrDefault(key, Map.of()));
+		if (p == net.minecraft.client.Minecraft.getInstance().player) {
+			WidgetConfig cfg = WidgetConfig.get();
+			Set<String> mine = new HashSet<>(set == null ? Set.of() : set);
+			if (cfg.wings != null && !cfg.wings.isBlank()) {
+				values.put(WINGS, cfg.wings);
+				mine.add(WINGS);
+			}
+			if (cfg.miniMeWings != null && !cfg.miniMeWings.isBlank()) {
+				values.put(MINI_ME_WINGS, cfg.miniMeWings);
+				mine.add(MINI_ME_WINGS);
+			}
+			set = mine.isEmpty() ? set : mine;
+		}
 		if (set == null || set.isEmpty()) {
 			STATES.remove(state);
 		} else {
 			STATES.put(state, set);
+			if (!values.isEmpty()) {
+				VALUES.put(state, values);
+			}
 			if (skins != null && !skins.isEmpty()) {
 				SKINS.put(state, skins);
 			}
@@ -183,6 +214,16 @@ public final class Cosmetics {
 	public static boolean has(Object state, String cosmetic) {
 		Set<String> set = STATES.get(state);
 		return set != null && set.contains(cosmetic);
+	}
+
+	/** Einfacher Wert eines Cosmetics (z. B. Flügel-Stil), oder null. */
+	public static String value(Object state, String cosmetic) {
+		if (!has(state, cosmetic)) {
+			return null;
+		}
+		Map<String, String> v = VALUES.get(state);
+		String s = v == null ? null : v.get(cosmetic);
+		return s == null || !WING_STYLES.contains(s.toLowerCase(Locale.ROOT)) ? null : s.toLowerCase(Locale.ROOT);
 	}
 
 	/** Farbe der Aura dieses Spielers, oder null ohne Aura. */

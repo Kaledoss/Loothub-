@@ -105,13 +105,39 @@ public class CosmeticsScreen extends LoothubScreen {
 		sections.add(new Section(y, 54, "loothub.settings.aura", "loothub.settings.aura.tooltip"));
 		y += 54 + GAP;
 
-		// 4 · Für alle sichtbar
+		// 4 · Flügel: für mich und für die Mini-Mes
+		addRenderableWidget(Button.builder(wingLabel("loothub.cosmetics.wings.me", c.wings), b -> {
+			c.wings = nextWing(c.wings);
+			b.setMessage(wingLabel("loothub.cosmetics.wings.me", c.wings));
+			c.save();
+		}).bounds(descX, y + 30, 150, 16).build());
+		addRenderableWidget(Button.builder(wingLabel("loothub.cosmetics.wings.minime", c.miniMeWings), b -> {
+			c.miniMeWings = nextWing(c.miniMeWings);
+			b.setMessage(wingLabel("loothub.cosmetics.wings.minime", c.miniMeWings));
+			c.save();
+		}).bounds(descX + 156, y + 30, 170, 16).build());
+		sections.add(new Section(y, 54, "loothub.cosmetics.wings", "loothub.cosmetics.wings.desc"));
+		y += 54 + GAP;
+
+		// 5 · Für alle sichtbar
 		addRenderableWidget(Button.builder(Component.translatable("loothub.cosmetics.copy"), b -> {
 			minecraft.keyboardHandler.setClipboard(jsonLine());
 			b.setMessage(Component.translatable("loothub.cosmetics.copied").withStyle(ChatFormatting.GREEN));
 		}).bounds(cl + 8, y + 20, labelW - 16, 16).build());
 		jsonY = y + 34;
 		sections.add(new Section(y, 64, "loothub.cosmetics.share", "loothub.cosmetics.share.desc"));
+	}
+
+	private static final String[] WING_CYCLE = {"", "dragon", "devil", "angel"};
+
+	private static String nextWing(String current) {
+		int i = java.util.Arrays.asList(WING_CYCLE).indexOf(current == null ? "" : current);
+		return WING_CYCLE[(i + 1) % WING_CYCLE.length];
+	}
+
+	private static Component wingLabel(String key, String style) {
+		return Component.translatable(key, Component.translatable("loothub.cosmetics.wings.style."
+				+ (style == null || style.isEmpty() ? "off" : style)));
 	}
 
 	private static String lastAura(WidgetConfig c) {
@@ -144,6 +170,12 @@ public class CosmeticsScreen extends LoothubScreen {
 		}
 		if (c.auraColor != null && !c.auraColor.isBlank()) {
 			parts.add("\"aura\": {\"" + me + "\": \"" + c.auraColor + "\"}");
+		}
+		if (c.wings != null && !c.wings.isBlank()) {
+			parts.add("\"wings\": {\"" + me + "\": \"" + c.wings + "\"}");
+		}
+		if (c.miniMeWings != null && !c.miniMeWings.isBlank()) {
+			parts.add("\"minimewings\": {\"" + me + "\": \"" + c.miniMeWings + "\"}");
 		}
 		return parts.isEmpty() ? "–" : String.join(", ", parts);
 	}

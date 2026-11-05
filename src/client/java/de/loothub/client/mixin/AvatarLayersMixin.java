@@ -21,6 +21,7 @@ public abstract class AvatarLayersMixin {
 	private void loothub$cosmetics(EntityRendererProvider.Context context, boolean slim, CallbackInfo ci) {
 		RenderLayerParent<AvatarRenderState, PlayerModel> parent = (RenderLayerParent<AvatarRenderState, PlayerModel>) (Object) this;
 		((LivingEntityRendererInvoker) this).loothub$addLayer(new de.loothub.client.cosmetics.AuraLayer(parent));
+		((LivingEntityRendererInvoker) this).loothub$addLayer(new de.loothub.client.cosmetics.WingsLayer(parent));
 		((LivingEntityRendererInvoker) this).loothub$addLayer(new MiniMeLayer(parent, context.getModelSet()));
 	}
 }
