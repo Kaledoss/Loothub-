@@ -12,8 +12,8 @@ import com.google.gson.JsonParser;
 import de.loothub.Loothub;
 
 /**
- * „Läuft gerade“ über die Windows-Medienanzeige (dieselbe Info wie im Lautstärke-Fenster) – nur YouTube Music
- * (installierte Web-App oder Desktop-App), andere Wiedergaben werden ignoriert. Nur unter Windows;
+ * „Läuft gerade“ über die Windows-Medienanzeige (dieselbe Info wie im Lautstärke-Fenster). Funktioniert mit
+ * YouTube Music im Browser bzw. als installierte Web-App, aber auch mit anderen Playern. Nur unter Windows;
  * ein PowerShell-Prozess im Hintergrund meldet alle 2 Sekunden Titel, Interpret und Stand. Nur lesend.
  */
 public final class WindowsMedia {
@@ -26,16 +26,9 @@ public final class WindowsMedia {
 			"[Windows.Media.Control.GlobalSystemMediaTransportControlsSessionManager,Windows.Media.Control,ContentType=WindowsRuntime]|Out-Null",
 			"$mgr=Await ([Windows.Media.Control.GlobalSystemMediaTransportControlsSessionManager]::RequestAsync()) ([Windows.Media.Control.GlobalSystemMediaTransportControlsSessionManager])",
 			"while($true){",
-			// Welche Apps gerade Medien melden – einmal pro Änderung fürs Log
-			" $all=(@($mgr.GetSessions())|%{[string]$_.SourceAppUserModelId}) -join '|'",
-			" if($all -ne $lastAll){ 'APPS:'+$all; $lastAll=$all }",
-			// 1. YouTube Music eindeutig erkennbar: Web-App-ID oder Desktop-App
-			" $s=$null;$p=$null",
-			" foreach($x in $mgr.GetSessions()){ $id=[string]$x.SourceAppUserModelId; if($id -match 'cinhimbnkkaeohfgghhklpknlkffjgod|youtube.?music|th-ch|music\\.youtube'){ $s=$x; break } }",
-			// 2. Browser (YouTube Music im Tab oder als App ohne eigene ID): nur mit Album – normale YouTube-Videos haben keins
-			" if(-not $s){ foreach($x in $mgr.GetSessions()){ $id=[string]$x.SourceAppUserModelId; if($id -match 'chrome|msedge|edge|brave|opera|vivaldi|firefox|arc'){ $q=Await ($x.TryGetMediaPropertiesAsync()) ([Windows.Media.Control.GlobalSystemMediaTransportControlsSessionMediaProperties]); if($q -and $q.AlbumTitle){ $s=$x;$p=$q;break } } } }",
+			" $s=$mgr.GetCurrentSession()",
 			" if($s){",
-			"  if(-not $p){ $p=Await ($s.TryGetMediaPropertiesAsync()) ([Windows.Media.Control.GlobalSystemMediaTransportControlsSessionMediaProperties]) }",
+			"  $p=Await ($s.TryGetMediaPropertiesAsync()) ([Windows.Media.Control.GlobalSystemMediaTransportControlsSessionMediaProperties])",
 			"  $pb=$s.GetPlaybackInfo();$tl=$s.GetTimelineProperties()",
 			"  @{title=$p.Title;artist=$p.Artist;app=$s.SourceAppUserModelId;status=[string]$pb.PlaybackStatus;pos=$tl.Position.TotalSeconds;end=$tl.EndTime.TotalSeconds}|ConvertTo-Json -Compress",
 			" } else { '{}' }",
@@ -113,8 +106,6 @@ public final class WindowsMedia {
 						if (l.startsWith("{")) {
 							active = true;
 							parse(l);
-						} else if (l.startsWith("APPS:")) {
-							Loothub.LOGGER.info("Windows-Medien-Apps: {}", l.substring(5));
 						} else if (!l.isEmpty() && junk++ < 5 && !loggedOutput) {
 							Loothub.LOGGER.warn("Windows-Medieninfo: {}", l); // Fehlermeldungen von PowerShell
 						}
