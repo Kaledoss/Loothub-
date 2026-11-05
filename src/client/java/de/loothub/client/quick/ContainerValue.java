@@ -62,9 +62,15 @@ public final class ContainerValue {
 		Font font = mc.font;
 		String title = "Marktwert";
 		String market = Fmt.exact(v[0]) + " $";
-		String shards = v[1] > 0 ? Fmt.exact(v[1]) + " OPShards" : null;
-		int w = Math.max(font.width(title), Math.max(font.width(market), shards == null ? 0 : font.width(shards))) + 2 * PAD;
-		int h = PAD + 10 + 10 + (shards == null ? 0 : 10) + PAD - 2;
+		boolean hasShards = v[1] > 0; // z. B. Gemische oder Bündel für den Wertstoffhändler
+		String shardTitle = "OPShards";
+		String shards = Fmt.exact(v[1]);
+		int w = Math.max(font.width(title), font.width(market));
+		if (hasShards) {
+			w = Math.max(w, Math.max(font.width(shardTitle), font.width(shards)));
+		}
+		w += 2 * PAD;
+		int h = PAD + 20 + (hasShards ? 25 : 0) + PAD - 2;
 		AbstractContainerScreenAccessor acc = (AbstractContainerScreenAccessor) screen;
 		int x = acc.loothub$leftPos() - w - 6;
 		int y = acc.loothub$topPos();
@@ -75,8 +81,11 @@ public final class ContainerValue {
 		Pulse.outline(g, x, y, w, h);
 		g.drawString(font, title, x + PAD, y + PAD, 0xFFB9A9AB, false);
 		g.drawString(font, market, x + PAD, y + PAD + 10, 0xFF55E06A, false);
-		if (shards != null) {
-			g.drawString(font, shards, x + PAD, y + PAD + 20, 0xFF55D5E0, false);
+		if (hasShards) {
+			int sy = y + PAD + 23;
+			g.fill(x + PAD, sy - 3, x + w - PAD, sy - 2, 0x40FFFFFF);
+			g.drawString(font, shardTitle, x + PAD, sy, 0xFFB9A9AB, false);
+			g.drawString(font, shards, x + PAD, sy + 10, 0xFF55D5E0, false);
 		}
 	}
 }
