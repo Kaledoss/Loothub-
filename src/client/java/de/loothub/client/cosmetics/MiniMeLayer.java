@@ -22,18 +22,53 @@ import net.minecraft.world.entity.player.PlayerSkin;
 
 /**
  * Cosmetic „Mini-Me“: bis zu 6 kleine Ausgaben eines Spielers (eigener oder fremder Skin) mit eigenen Haltungen:
- * 1–2 sitzen auf den Schultern, 3–4 fliegen links und rechts hinterher, 5–6 krabbeln links und rechts am Boden.
+ * 1–2 sitzen auf den Schultern, 3–4 fliegen links und rechts hinterher, 5–6 krabbeln auf allen vieren links und rechts am Boden.
  * Jedes Mini-Me hat einen eigenen Render-Zustand, damit es nicht einfach die Laufbewegung des Spielers mitmacht.
  */
 public final class MiniMeLayer extends RenderLayer<AvatarRenderState, PlayerModel> {
 	private static final float SCALE = 0.5F;
 	private final PlayerModel wide;
 	private final PlayerModel slim;
+	private final CrawlModel crawlWide;
+	private final CrawlModel crawlSlim;
+
+	/**
+	 * Mini-Me auf allen vieren: Arme und Beine stehen senkrecht zum Körper (nach dem Vorkippen also zum Boden), der Kopf
+	 * schaut nach vorn. Arme und Beine greifen über Kreuz abwechselnd vor (rechter Arm mit linkem Bein).
+	 * Phase steckt in {@code walkAnimationPos}, Ausschlag (0..1) in {@code walkAnimationSpeed}.
+	 */
+	private static final class CrawlModel extends PlayerModel {
+		CrawlModel(net.minecraft.client.model.geom.ModelPart root, boolean slim) {
+			super(root, slim);
+		}
+
+		@Override
+		public void setupAnim(AvatarRenderState s) {
+			super.setupAnim(s);
+			float p = s.walkAnimationPos;
+			float amp = 0.18F + 0.4F * s.walkAnimationSpeed;
+			float swing = (float) Math.sin(p) * amp;
+			float down = (float) (-Math.PI / 2);
+			rightArm.xRot = down + swing;
+			leftLeg.xRot = down + swing * 0.8F;
+			leftArm.xRot = down - swing;
+			rightLeg.xRot = down - swing * 0.8F;
+			rightArm.yRot = rightArm.zRot = leftArm.yRot = leftArm.zRot = 0.0F;
+			rightLeg.yRot = rightLeg.zRot = leftLeg.yRot = leftLeg.zRot = 0.0F;
+			// Kopf nach vorn, nickt beim Krabbeln leicht mit
+			head.xRot = (float) Math.toRadians(-80.0) + (float) Math.sin(p * 2.0F) * 0.04F * (1.0F + s.walkAnimationSpeed);
+			head.yRot = (float) Math.sin(p * 0.25F) * 0.15F;
+			head.zRot = 0.0F;
+			body.xRot = body.yRot = body.zRot = 0.0F;
+		}
+	}
 
 	public MiniMeLayer(RenderLayerParent<AvatarRenderState, PlayerModel> parent, EntityModelSet models) {
 		super(parent);
 		this.wide = new PlayerModel(models.bakeLayer(ModelLayers.PLAYER), false);
 		this.slim = new PlayerModel(models.bakeLayer(ModelLayers.PLAYER_SLIM), true);
+		this.crawlWide = new CrawlModel(models.bakeLayer(ModelLayers.PLAYER), false);
+		this.crawlSlim = new CrawlModel(models.bakeLayer(ModelLayers.PLAYER_SLIM), true);
 	}
 
 	@Override
@@ -74,11 +109,11 @@ public final class MiniMeLayer extends RenderLayer<AvatarRenderState, PlayerMode
 				rx = 18.0F + Math.min(25.0F, state.walkAnimationSpeed * 30.0F);
 				rz = side * (float) Math.sin(t * 0.05F + i) * 4.0F;
 			} else {
-				// krabbelnd: bäuchlings am Boden, schiebt sich leicht vor und zurück
+				// krabbelnd auf allen vieren: Rumpf waagerecht in Beinlänge über dem Boden, Kopf nach vorn
 				tx = side * 0.9F;
-				ty = 1.375F;
-				tz = -0.2F + (float) Math.sin(t * 0.45F * 0.6662F) * 0.025F;
-				rx = 90.0F; // Gesicht nach unten, Kopf nach vorn
+				ty = 1.5F - 0.75F * SCALE;
+				tz = -0.2F + (float) Math.sin(crawlPhase(state, i) * 2.0F) * 0.01F;
+				rx = 90.0F;
 			}
 			// AFK: liegt der Spieler, legen sich die Mini-Mes neben ihn und schlafen mit
 			float lie = de.loothub.client.quick.AfkView.lying(state);
@@ -94,10 +129,10 @@ public final class MiniMeLayer extends RenderLayer<AvatarRenderState, PlayerMode
 			if (i < 2 && !sleeping) {
 				mini.isPassenger = true;
 			} else if (i >= 4 && !sleeping) {
-				mini.swimAmount = 1.0F;
-				mini.walkAnimationPos = t * 0.45F;
-				mini.walkAnimationSpeed = 0.7F;
+				mini.walkAnimationPos = crawlPhase(state, i);
+				mini.walkAnimationSpeed = Math.min(1.0F, state.walkAnimationSpeed * 1.5F);
 			}
+			boolean crawling = i >= 4 && !sleeping;
 			poseStack.pushPose();
 			if (lie > 0.001F) {
 				undoLieDown(poseStack, lie);
@@ -108,7 +143,8 @@ public final class MiniMeLayer extends RenderLayer<AvatarRenderState, PlayerMode
 				poseStack.mulPose(Axis.ZP.rotationDegrees(rz));
 			}
 			poseStack.scale(SCALE, SCALE, SCALE);
-			PlayerModel model = skin.model() == PlayerModelType.SLIM ? slim : wide;
+			boolean slimSkin = skin.model() == PlayerModelType.SLIM;
+			PlayerModel model = crawling ? (slimSkin ? crawlSlim : crawlWide) : (slimSkin ? slim : wide);
 			collector.submitModel(model, mini, poseStack, RenderTypes.entityTranslucent(skin.body().texturePath()), light,
 					OverlayTexture.NO_OVERLAY, 0, null);
 			String wings = Cosmetics.miniMeWing(state, i);
@@ -117,6 +153,11 @@ public final class MiniMeLayer extends RenderLayer<AvatarRenderState, PlayerMode
 			}
 			poseStack.popPose();
 		}
+	}
+
+	/** Krabbel-Takt: langsam im Stand, schneller wenn der Spieler läuft; beide Mini-Mes leicht versetzt. */
+	private static float crawlPhase(AvatarRenderState state, int slot) {
+		return state.ageInTicks * 0.12F + state.walkAnimationPos * 0.9F + slot * 1.7F;
 	}
 
 	/** Schlafplätze (x, z) neben dem Spieler, wenn er in der AFK-Ansicht liegt. */
