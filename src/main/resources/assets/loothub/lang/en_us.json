@@ -250,7 +250,6 @@
 	"loothub.settings.inv_hud.color": "Hintergrundfarbe",
 	"loothub.settings.music.status.windows_idle": "Bereit – nichts läuft",
 	"loothub.stats.col.used": "Genutzt",
-	"loothub.merchant.new_today": "★ Tagesitem",
 	"loothub.music.editor.title": "Musik-Anzeige verschieben",
 	"loothub.rename.title.rename": "Item umbenennen (/rename)",
 	"loothub.rename.title.sign": "Item signieren (/sign)",
@@ -312,5 +311,9 @@
 	"loothub.settings.tab.look": "Aussehen",
 	"loothub.settings.tab.inventory": "Inventar",
 	"loothub.settings.tab.jobs": "Jobs",
-	"loothub.settings.tab.extras": "Extras"
+	"loothub.settings.tab.extras": "Extras",
+	"loothub.merchant.daily": "★ Tauschitem des Tages",
+	"loothub.merchant.daily.unknown": "Einmal den Rohstoffhändler im Spiel öffnen – dann erscheint es hier.",
+	"loothub.merchant.daily.old": "Stand von einem früheren Tag – Händler öffnen",
+	"loothub.merchant.daily.limit": "Tageslimit %s / %s"
 }

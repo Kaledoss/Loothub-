@@ -62,6 +62,14 @@ public final class WidgetConfig {
 	public double backgroundOpacity = 1.0;
 	/** Ob das schwarz-farbige Inventar-Paket beim Farbwechsel aktiviert werden soll. */
 	public boolean themePackWanted = true;
+	/** Tauschitem des Tages beim Rohstoffhändler (aus dem Händler-Menü gelesen). */
+	public String dailyItemDate = "";
+	public String dailyItemId = "";
+	public String dailyItemName = "";
+	public double dailyItemRate = 0;
+	public String dailyItemCurrency = "";
+	public long dailyItemUsed = -1;
+	public long dailyItemLimit = -1;
 	/** Inventar-Design: schwarz-rotes Paket, „Loothub+“-Überschrift und Knöpfe im Inventar, helle Menü-Titel. */
 	public boolean inventoryDesign = true;
 	/** Betrags-Abkürzungen (1m, 2,5k …) in Bank-, Pay- und Auktionshaus-Befehlen. */

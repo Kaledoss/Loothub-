@@ -48,14 +48,13 @@ public class MerchantScreen extends LoothubScreen {
 	@Override
 	public void render(GuiGraphics g, int mouseX, int mouseY, float delta) {
 		super.render(g, mouseX, mouseY, delta);
-		// Tagesitems (heute neu) zuerst
-		List<MerchantRates.Rate> list = new java.util.ArrayList<>(MerchantRates.rates());
-		list.sort(java.util.Comparator.comparing((MerchantRates.Rate r) -> !MerchantRates.isNewToday(r)));
+		int listTop = ct + drawDaily(g) + 6;
+		List<MerchantRates.Rate> list = MerchantRates.rates();
 		if (list.isEmpty()) {
 			String key = MerchantRates.isLoading() || MerchantRates.lastFetch() == 0 ? "loothub.merchant.loading"
 					: MerchantRates.failed() ? "loothub.merchant.error" : "loothub.merchant.empty";
 			Component msg = Component.translatable(key);
-			g.drawString(font, msg, cl + (cw - font.width(msg)) / 2, ct + 20, FAINT, false);
+			g.drawString(font, msg, cl + (cw - font.width(msg)) / 2, listTop + 20, FAINT, false);
 			return;
 		}
 
@@ -63,14 +62,14 @@ public class MerchantScreen extends LoothubScreen {
 		int colRate = cr - 8;
 		int colBase = cr - 120;
 		int colChange = cr - 200;
-		int hy = ct + 2;
+		int hy = listTop + 2;
 		g.drawString(font, Component.translatable("loothub.merchant.col.item"), cl + 28, hy, FAINT, false);
 		rightText(g, Component.translatable("loothub.merchant.col.change").getString(), colChange, hy, FAINT);
 		rightText(g, Component.translatable("loothub.merchant.col.base").getString(), colBase, hy, FAINT);
 		rightText(g, Component.translatable("loothub.merchant.col.rate").getString(), colRate, hy, FAINT);
-		g.fill(cl, ct + 12, cr, ct + 13, RED_DARK);
+		g.fill(cl, listTop + 12, cr, listTop + 13, RED_DARK);
 
-		int top = ct + 15;
+		int top = listTop + 15;
 		int visible = Math.max(1, (cb - top) / ROW_H);
 		scroll = Math.max(0, Math.min(scroll, Math.max(0, list.size() - visible)));
 		g.enableScissor(cl, top, cr, cb);
@@ -82,12 +81,6 @@ public class MerchantScreen extends LoothubScreen {
 			g.renderItem(icon(r.itemId()), cl + 5, y + 2);
 			String name = r.name() != null ? r.name() : itemName(r.itemId());
 			g.drawString(font, name, cl + 28, y + 7, r.name() != null ? GOLD : TEXT, false);
-			if (MerchantRates.isNewToday(r)) {
-				String tag = Component.translatable("loothub.merchant.new_today").getString();
-				int tx = cl + 28 + font.width(name) + 8;
-				g.fill(tx - 2, y + 5, tx + font.width(tag) + 2, y + 16, 0xFF1F5A2C);
-				g.drawString(font, tag, tx, y + 7, GREEN, false);
-			}
 
 			double change = r.changePercent();
 			int changeColor = change > 0.05 ? GREEN : change < -0.05 ? RED : FAINT;
@@ -96,6 +89,38 @@ public class MerchantScreen extends LoothubScreen {
 			rightText(g, Fmt.exact(r.rate()) + " " + r.targetLabel(), colRate, y + 7, TEXT);
 		}
 		g.disableScissor();
+	}
+
+	/** Karte „Tauschitem des Tages“ oben; liefert ihre Höhe. */
+	private int drawDaily(GuiGraphics g) {
+		de.loothub.client.jobs.WidgetConfig c = de.loothub.client.jobs.WidgetConfig.get();
+		int h = 32;
+		int y = ct;
+		boolean today = DailyMerchantItem.isToday();
+		g.fill(cl, y, cr, y + h, today ? 0x401F5A2C : 0x20FFFFFF);
+		g.fill(cl, y, cl + 2, y + h, today ? GREEN : FAINT);
+		String tag = Component.translatable("loothub.merchant.daily").getString();
+		if (!DailyMerchantItem.known()) {
+			g.drawString(font, tag, cl + 8, y + 5, GREEN, false);
+			g.drawString(font, Component.translatable("loothub.merchant.daily.unknown"), cl + 8, y + 18, FAINT, false);
+			return h;
+		}
+		g.renderItem(icon(c.dailyItemId), cl + 8, y + 8);
+		g.drawString(font, tag, cl + 30, y + 5, today ? GREEN : FAINT, false);
+		g.drawString(font, c.dailyItemName, cl + 30, y + 18, today ? GOLD : MUTED, false);
+		if (c.dailyItemRate > 0) {
+			rightText(g, Fmt.exact(c.dailyItemRate) + " " + DailyMerchantItem.currencyLabel(c.dailyItemCurrency), cr - 8, y + 5,
+					today ? TEXT : MUTED);
+		}
+		if (!today) {
+			rightText(g, Component.translatable("loothub.merchant.daily.old").getString(), cr - 8, y + 18, FAINT);
+		} else if (c.dailyItemLimit > 0) {
+			boolean full = c.dailyItemUsed >= c.dailyItemLimit;
+			String limit = Component.translatable("loothub.merchant.daily.limit", Fmt.whole(Math.max(0, c.dailyItemUsed)),
+					Fmt.whole(c.dailyItemLimit)).getString();
+			rightText(g, limit, cr - 8, y + 18, full ? RED : MUTED);
+		}
+		return h;
 	}
 
 	private void rightText(GuiGraphics g, String s, int right, int y, int color) {

@@ -149,6 +149,7 @@ public class LoothubClient implements ClientModInitializer {
 		de.loothub.client.quick.ToolProtection.register();
 		de.loothub.client.quick.RenameScreen.register();
 		de.loothub.client.quick.AmountShortcut.register();
+		DailyMerchantItem.register();
 		de.loothub.client.itemdex.Itemdex.register();
 		de.loothub.client.jobs.TreasureWatcher.register();
 		// Preise gleich beim Start im Hintergrund laden, damit der erste Tooltip schon Daten hat
