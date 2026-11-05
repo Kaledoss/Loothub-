@@ -23,6 +23,7 @@ public abstract class HumanoidHeadMixin {
 	@Inject(method = "extractHumanoidRenderState", at = @At("TAIL"))
 	private static void loothub$hideOwnHead(LivingEntity entity, HumanoidRenderState state, float partialTick,
 			ItemModelResolver resolver, CallbackInfo ci) {
+		de.loothub.client.cosmetics.Cosmetics.mark(state, entity);
 		if (entity != Minecraft.getInstance().player) {
 			// Andere Spieler, die seit 5 Minuten völlig stillstehen, schlafen (nur eigene Darstellung)
 			de.loothub.client.quick.AfkView.markLying(state, de.loothub.client.quick.OtherAfk.lieProgress(entity));

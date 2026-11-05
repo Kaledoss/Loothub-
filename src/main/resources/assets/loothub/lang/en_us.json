@@ -330,5 +330,7 @@
 	"loothub.market.favorites": "Favoriten",
 	"loothub.market.count": "%s Items",
 	"loothub.market.count.one": "%s Item",
-	"loothub.market.fav_hint": "Rechtsklick oder Stern: Favorit an/aus"
+	"loothub.market.fav_hint": "Rechtsklick oder Stern: Favorit an/aus",
+	"loothub.settings.cosmetics": "Cosmetics",
+	"loothub.settings.cosmetics.tooltip": "Zeigt Loothub-Cosmetics wie das Mini-Me bei Spielern, die eins haben. Sehen können sie alle mit Loothub+."
 }

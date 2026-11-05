@@ -14,7 +14,9 @@
 		"ItemInHandRendererMixin",
 		"AnvilAmountMixin",
 		"CameraZoomMixin",
-		"LieDownMixin"
+		"LieDownMixin",
+		"LivingEntityRendererInvoker",
+		"AvatarLayersMixin"
 	],
 	"injectors": {
 		"defaultRequire": 0

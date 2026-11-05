@@ -70,6 +70,8 @@ public final class WidgetConfig {
 	public String dailyItemCurrency = "";
 	public long dailyItemUsed = -1;
 	public long dailyItemLimit = -1;
+	/** Loothub-Cosmetics (z. B. Mini-Me) bei Spielern anzeigen. */
+	public boolean cosmetics = true;
 	/** AFK-Ansicht: nach 5 Minuten ohne Eingabe herauszoomen und den Charakter schlafen legen. */
 	public boolean afkView = true;
 	/** Eingesammelte Marktverkäufe als „Markt“ im Job-Verlauf. */
@@ -161,6 +163,7 @@ public final class WidgetConfig {
 		containerValue = false;
 		marketSales = false;
 		afkView = false;
+		cosmetics = false;
 		hideOwnHeadItem = false;
 		hideOffhandBackpack = false;
 		invHudEnabled = false;

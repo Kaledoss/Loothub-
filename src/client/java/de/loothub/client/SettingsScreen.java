@@ -208,6 +208,8 @@ public class SettingsScreen extends LoothubScreen {
 						() -> c.hideOffhandBackpack, v -> c.hideOffhandBackpack = v);
 				y = card(y, 40, "loothub.settings.afk_view", "loothub.settings.afk_view.tooltip",
 						() -> c.afkView, v -> c.afkView = v);
+				y = card(y, 40, "loothub.settings.cosmetics", "loothub.settings.cosmetics.tooltip",
+						() -> c.cosmetics, v -> c.cosmetics = v);
 			}
 			case INVENTORY -> {
 				y = card(y, 40, "loothub.settings.quick_panel", "loothub.settings.quick_panel.tooltip",
