@@ -26,7 +26,19 @@ public final class Wings {
 
 	public static void submit(PoseStack poseStack, SubmitNodeCollector collector, String style, float ageInTicks, int light,
 			boolean slowFlap) {
-		Identifier texture = Identifier.fromNamespaceAndPath(Loothub.MOD_ID, "textures/entity/wing_" + style + ".png");
+		submit(poseStack, collector, style, ageInTicks, light, slowFlap, null);
+	}
+
+	/**
+	 * Mit Farbe ({@code color} = „#RRGGBB“ oder null für die Originalfarben): dann wird eine helle Graustufen-Fassung
+	 * des Flügels eingefärbt, damit jede Farbe kräftig wirkt.
+	 */
+	public static void submit(PoseStack poseStack, SubmitNodeCollector collector, String style, float ageInTicks, int light,
+			boolean slowFlap, String color) {
+		boolean tinted = color != null && !color.isBlank();
+		Identifier texture = Identifier.fromNamespaceAndPath(Loothub.MOD_ID,
+				"textures/entity/wing_" + style + (tinted ? "_gray" : "") + ".png");
+		int argb = tinted ? 0xFF000000 | AuraTextures.parse(color) : 0xFFFFFFFF;
 		float speed = slowFlap ? 0.08F : 0.16F;
 		float flap = (float) Math.sin(ageInTicks * speed);
 		for (int side = -1; side <= 1; side += 2) {
@@ -43,17 +55,18 @@ public final class Wings {
 				float w = HEIGHT * ASPECT * s;
 				float top = -0.8F, bottom = top + HEIGHT; // Ansatz über der Schulter
 				// u 0 = Wurzel, 1 = Spitze; links gespiegelt durch die negative Breite
-				vertex(pose, vc, 0, top, 0, 0, 0, light);
-				vertex(pose, vc, w, top, 0, 1, 0, light);
-				vertex(pose, vc, w, bottom, 0, 1, 1, light);
-				vertex(pose, vc, 0, bottom, 0, 0, 1, light);
+				vertex(pose, vc, 0, top, 0, 0, 0, light, argb);
+				vertex(pose, vc, w, top, 0, 1, 0, light, argb);
+				vertex(pose, vc, w, bottom, 0, 1, 1, light, argb);
+				vertex(pose, vc, 0, bottom, 0, 0, 1, light, argb);
 			});
 			poseStack.popPose();
 		}
 	}
 
-	private static void vertex(PoseStack.Pose pose, VertexConsumer vc, float x, float y, float z, float u, float v, int light) {
-		vc.addVertex(pose, x, y, z).setColor(0xFFFFFFFF).setUv(u, v).setOverlay(OverlayTexture.NO_OVERLAY).setLight(light)
+	private static void vertex(PoseStack.Pose pose, VertexConsumer vc, float x, float y, float z, float u, float v, int light,
+			int argb) {
+		vc.addVertex(pose, x, y, z).setColor(argb).setUv(u, v).setOverlay(OverlayTexture.NO_OVERLAY).setLight(light)
 				.setNormal(pose, 0.0F, 0.0F, 1.0F);
 	}
 }

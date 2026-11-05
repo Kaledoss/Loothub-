@@ -41,6 +41,11 @@ public final class WidgetConfig {
 	/** Eigenes Cape ausblenden (nur eigene Darstellung). */
 	public boolean hideOwnCape = false;
 	/** Leuchtende Augen ("" = aus, sonst „#RRGGBB“). */
+	/** Flügelfarben („#RRGGBB“, leer = Originalfarben). */
+	public String wingColor = "";
+	public String wingColorLast = "";
+	public String miniMeWingColor = "";
+	public String miniMeWingColorLast = "";
 	/** Stärke der Aura in Prozent. */
 	public int auraStrength = 60;
 	public String eyeColor = "";

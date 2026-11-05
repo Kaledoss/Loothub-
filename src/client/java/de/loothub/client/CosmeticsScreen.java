@@ -34,6 +34,7 @@ public class CosmeticsScreen extends LoothubScreen {
 
 	private enum Tab {
 		COMPANIONS("loothub.cosmetics.tab.companions"),
+		PETS("loothub.cosmetics.tab.pets"),
 		BODY("loothub.cosmetics.tab.body"),
 		EFFECTS("loothub.cosmetics.tab.effects");
 
@@ -142,7 +143,13 @@ public class CosmeticsScreen extends LoothubScreen {
 				}
 				sections.add(new Section(y, 74, "loothub.cosmetics.minime_wings", "loothub.cosmetics.minime_wings.desc"));
 				y += 74 + GAP;
+				y = colorSection(y, lx, lw, "loothub.cosmetics.minime_wing_color", "loothub.cosmetics.wing_color.desc",
+						() -> c.miniMeWingColor, v -> c.miniMeWingColor = v, () -> c.miniMeWingColorLast,
+						v -> c.miniMeWingColorLast = v, "#8A2BE2");
 
+			}
+			case PETS -> {
+				int dw = ddWidth();
 				// Haustiere (2 Plätze)
 				for (int k = 0; k < Cosmetics.MAX_PETS; k++) {
 					final int slot = k;
@@ -187,6 +194,8 @@ public class CosmeticsScreen extends LoothubScreen {
 						v -> c.wings = v);
 				sections.add(new Section(y, 54, "loothub.cosmetics.wings", "loothub.cosmetics.wings.desc"));
 				y += 54 + GAP;
+				y = colorSection(y, lx, lw, "loothub.cosmetics.wing_color", "loothub.cosmetics.wing_color.desc",
+						() -> c.wingColor, v -> c.wingColor = v, () -> c.wingColorLast, v -> c.wingColorLast = v, "#8A2BE2");
 				// Augen: an/aus + Farbe
 				y = colorSection(y, lx, lw, "loothub.cosmetics.eyes", "loothub.cosmetics.eyes.desc",
 						() -> c.eyeColor, v -> c.eyeColor = v, () -> c.eyeLast, v -> c.eyeLast = v, "#7FE8FF");
@@ -203,8 +212,6 @@ public class CosmeticsScreen extends LoothubScreen {
 				toggle(lx, y + 20, lw, () -> c.flyTrail, v -> c.flyTrail = v);
 				sections.add(new Section(y, 42, "loothub.cosmetics.flytrail", "loothub.cosmetics.flytrail.desc"));
 				y += 42 + GAP;
-				toggle(lx, y + 20, lw, () -> c.auraLevels, v -> c.auraLevels = v);
-				sections.add(new Section(y, 42, "loothub.cosmetics.auralevels", "loothub.cosmetics.auralevels.desc"));
 			}
 		}
 	}
@@ -405,7 +412,6 @@ public class CosmeticsScreen extends LoothubScreen {
 		perSlot(parts, Cosmetics.PETS, me, c.pets, Cosmetics.MAX_PETS);
 		flag(parts, Cosmetics.CROWN, me, c.crown);
 		flag(parts, Cosmetics.FLY_TRAIL, me, c.flyTrail);
-		flag(parts, Cosmetics.AURA_LEVELS, me, c.auraLevels);
 		flag(parts, Cosmetics.EMOTES, me, c.miniMeEmotes);
 		return parts.isEmpty() ? "–" : String.join(", ", parts);
 	}

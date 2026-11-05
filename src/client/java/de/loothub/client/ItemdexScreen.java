@@ -163,9 +163,9 @@ public class ItemdexScreen extends LoothubScreen {
 			g.enableScissor(cl + 40, Math.max(y + 2, listTop), cl + 56, Math.min(y + 18, cb));
 			g.renderItem(stack, cl + 40, y + 2);
 			g.disableScissor();
-			Component name = stack.isEmpty() ? Component.literal(e.name) : stack.getHoverName();
+			Component name = stack.isEmpty() ? Component.literal(Itemdex.clean(e.name)) : cleanOr(stack.getHoverName(), e.name);
 			int nameX = cl + 60;
-			String right = Fmt.date(e.firstSeen, false) + " · " + e.where;
+			String right = Fmt.date(e.firstSeen, false) + " · " + Itemdex.clean(e.where);
 			String cat = Component.translatable(e.category.key).getString();
 			int rightW = font.width(right);
 			int catX = cr - 6 - rightW - 12 - font.width(cat);
@@ -183,13 +183,16 @@ public class ItemdexScreen extends LoothubScreen {
 			ItemStack stack = hovered.stack();
 			if (!stack.isEmpty()) {
 				for (Component line : Screen.getTooltipFromItem(minecraft, stack)) {
-					tip.add(line.getVisualOrderText());
+					Component cleaned = Itemdex.cleanLine(line); // Menü-Bilder des Servers nicht mitzeichnen
+					if (cleaned != null) {
+						tip.add(cleaned.getVisualOrderText());
+					}
 				}
 			} else {
-				tip.add(Component.literal(hovered.name).getVisualOrderText());
+				tip.add(Component.literal(Itemdex.clean(hovered.name)).getVisualOrderText());
 			}
 			tip.add(FormattedCharSequence.EMPTY);
-			tip.add(Component.translatable("loothub.itemdex.first_seen", Fmt.date(hovered.firstSeen, true), hovered.where)
+			tip.add(Component.translatable("loothub.itemdex.first_seen", Fmt.date(hovered.firstSeen, true), Itemdex.clean(hovered.where))
 					.withStyle(ChatFormatting.DARK_GRAY).getVisualOrderText());
 			tip.add(Component.translatable(hovered.hidden ? "loothub.itemdex.unhide_hint" : "loothub.itemdex.hide_hint")
 					.withStyle(ChatFormatting.DARK_GRAY).getVisualOrderText());
@@ -288,5 +291,10 @@ public class ItemdexScreen extends LoothubScreen {
 			return true;
 		}
 		return super.mouseScrolled(mx, my, horizontal, vertical);
+	}
+
+	private static Component cleanOr(Component name, String fallback) {
+		Component c = Itemdex.cleanLine(name);
+		return c != null ? c : Component.literal(Itemdex.clean(fallback));
 	}
 }

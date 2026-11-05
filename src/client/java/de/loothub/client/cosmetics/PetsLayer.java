@@ -76,7 +76,7 @@ public final class PetsLayer extends RenderLayer<AvatarRenderState, PlayerModel>
 				case "vex" -> 0.6F;
 				default -> 0.65F;
 			};
-			float tx = side * 1.35F, tz = 0.35F + Math.max(0.0F, fwd) * (ground ? 0.8F : 1.4F);
+			float tx = side * 1.35F, tz = 0.35F;
 			float ty;
 			float squish = 0.0F;
 			if (ground && fly < 0.5F) {
@@ -86,18 +86,21 @@ public final class PetsLayer extends RenderLayer<AvatarRenderState, PlayerModel>
 				ty = -hop * 0.35F;
 				squish = (float) Math.cos(phase) * (hop > 0.02F ? 0.25F : -0.45F);
 			} else {
-				ty = -1.1F + (float) Math.sin(t * 0.09F + slot * 2.0F) * 0.1F + vy * 1.3F;
+				ty = -1.1F + (float) Math.sin(t * 0.09F + slot * 2.0F) * 0.1F;
 			}
 			ty += 1.5F - 1.5F * scale; // Füße des Modells auf Höhe des Bodens bzw. darüber
 			if (fly > 0.0F) {
 				tx += (side * 1.2F - tx) * fly;
 				tz += (1.4F - tz) * fly;
 			}
-			float[] p = rotateY(tx, tz, lag * 0.75F);
+			// eigenständig: gefedert hinterher, schwebt bzw. hüpft um seinen Platz, schaut in Laufrichtung
+			float hopY = ground && fly < 0.5F ? ty - (1.5F - 1.5F * scale) : 0.0F;
+			float[] p = Followers.follow(state, 8 + slot, tx, ty - hopY, tz, ground ? 7.0F : 4.5F, ground ? 0.45F : 0.6F,
+					ground && fly < 0.5F ? 0.0F : 0.6F);
 			poseStack.pushPose();
 			BodyPose.undo(poseStack, state, true);
-			poseStack.translate(p[0], ty, p[1]);
-			poseStack.mulPose(Axis.YP.rotationDegrees(-lag * 0.6F + (float) Math.sin(t * 0.03F + slot) * 10.0F));
+			poseStack.translate(p[0], p[1] + hopY, p[2]);
+			poseStack.mulPose(Axis.YP.rotationDegrees(p[3]));
 			poseStack.scale(scale, scale, scale);
 			switch (type) {
 				case "slime" -> {

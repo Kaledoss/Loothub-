@@ -22,12 +22,18 @@ public final class WingsLayer extends RenderLayer<AvatarRenderState, PlayerModel
 			return;
 		}
 		poseStack.pushPose();
+		// Flug-Haltung: Flügel tiefer an den Rücken und nach hinten gelegt, damit sie nicht in den Kopf ragen
+		float fly = Motion.fly(state);
+		if (fly > 0.0F) {
+			poseStack.translate(0.0F, 0.3F * fly, 0.05F * fly);
+			poseStack.mulPose(com.mojang.math.Axis.XP.rotationDegrees(-55.0F * fly));
+		}
 		if (state.isCrouching) {
 			// beim Ducken neigt sich der Oberkörper nach vorn – Flügel mitnehmen
 			poseStack.translate(0.0F, 0.2F, 0.0F);
 			poseStack.mulPose(com.mojang.math.Axis.XP.rotationDegrees(28.6F));
 		}
-		Wings.submit(poseStack, collector, style, state.ageInTicks, light, false);
+		Wings.submit(poseStack, collector, style, state.ageInTicks, light, false, Cosmetics.raw(state, Cosmetics.WING_COLOR));
 		poseStack.popPose();
 	}
 }

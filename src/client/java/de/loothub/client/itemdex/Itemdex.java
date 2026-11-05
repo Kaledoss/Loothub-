@@ -177,7 +177,7 @@ public final class Itemdex {
 		if (ticks % 10 == 5 && mc.screen instanceof AbstractContainerScreen<?> screen
 				&& !(screen instanceof InventoryScreen) && !(screen instanceof CreativeModeInventoryScreen)
 				&& allowedContainer(screen.getTitle())) {
-			String where = screen.getTitle().getString().strip();
+			String where = clean(screen.getTitle().getString());
 			for (Slot slot : screen.getMenu().slots) {
 				if (slot.container != mc.player.getInventory()) {
 					see(slot.getItem(), Source.CONTAINER, where.isEmpty() ? "Menü" : where);
@@ -314,6 +314,43 @@ public final class Itemdex {
 			}
 		}
 		return text.toString().toLowerCase(Locale.ROOT);
+	}
+
+	private static boolean isPua(int cp) {
+		return (cp >= 0xE000 && cp <= 0xF8FF) || cp >= 0xF0000;
+	}
+
+	/** Text ohne Sonderzeichen aus dem Private-Use-Bereich (Menü-Bilder, Abstandshalter des Servers). */
+	public static String clean(String s) {
+		if (s == null) {
+			return "";
+		}
+		StringBuilder b = new StringBuilder(s.length());
+		s.codePoints().filter(cp -> !isPua(cp)).forEach(b::appendCodePoint);
+		return b.toString().replaceAll("\\s{2,}", " ").strip();
+	}
+
+	/**
+	 * Zeile ohne Menü-Grafiken: Teile in eigener Server-Schrift und Sonderzeichen werden entfernt, Farben und
+	 * Formatierung bleiben. Gibt null zurück, wenn danach nichts Lesbares übrig ist.
+	 */
+	public static Component cleanLine(Component line) {
+		Object defaultFont = net.minecraft.network.chat.Style.EMPTY.getFont();
+		net.minecraft.network.chat.MutableComponent out = Component.empty();
+		boolean[] any = {false};
+		line.visit((style, part) -> {
+			if (!Objects.equals(style.getFont(), defaultFont)) {
+				return Optional.empty(); // Menü-Bild in eigener Schrift
+			}
+			StringBuilder b = new StringBuilder(part.length());
+			part.codePoints().filter(cp -> !isPua(cp)).forEach(b::appendCodePoint);
+			if (b.length() > 0) {
+				out.append(Component.literal(b.toString()).withStyle(style));
+				any[0] |= !b.toString().isBlank();
+			}
+			return Optional.empty();
+		}, net.minecraft.network.chat.Style.EMPTY);
+		return any[0] ? out : null;
 	}
 
 	/**

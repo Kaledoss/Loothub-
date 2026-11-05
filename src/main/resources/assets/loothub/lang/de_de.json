@@ -364,7 +364,7 @@
 	"loothub.settings.hide_cape.tooltip": "Blendet dein Cape an deinem eigenen Spieler aus. Nur du siehst den Unterschied. Capes von LabyMod-Cosmetics zeichnet LabyMod selbst – die bitte dort ausschalten.",
 	"loothub.settings.fly_pose": "Flug-Haltung",
 	"loothub.settings.fly_pose.tooltip": "Fliegst du schnell nach vorn (z. B. Sprint-Flug), legst du dich waagerecht in die Luft – Kopf voraus, ein Arm nach vorn. Normales Schweben bleibt aufrecht. Beim Abbauen und Zuschlagen bleiben die Arme normal.",
-	"loothub.cosmetics.tab.companions": "Begleiter",
+	"loothub.cosmetics.tab.companions": "Mini-Mes",
 	"loothub.cosmetics.tab.body": "Körper",
 	"loothub.cosmetics.tab.effects": "Effekte",
 	"loothub.cosmetics.tab.share": "Teilen",
@@ -395,5 +395,9 @@
 	"loothub.cosmetics.flytrail.desc": "In der Flug-Haltung ziehst du einen Schweif aus Aura-Flammen hinter dir her (nur mit eingeschalteter Aura).",
 	"loothub.cosmetics.auralevels": "Aura-Stufen",
 	"loothub.cosmetics.auralevels.desc": "Sprintest oder fliegst du, wird die Aura größer und heller – auf der höchsten Stufe zucken Blitze.",
-	"loothub.cosmetics.aura.strength": "Stärke: %s %%"
+	"loothub.cosmetics.aura.strength": "Stärke: %s %%",
+	"loothub.cosmetics.wing_color": "Flügelfarbe",
+	"loothub.cosmetics.minime_wing_color": "Farbe der Mini-Me-Flügel",
+	"loothub.cosmetics.wing_color.desc": "Aus = Originalfarben. An = die Flügel in deiner Wahlfarbe.",
+	"loothub.cosmetics.tab.pets": "Haustiere"
 }

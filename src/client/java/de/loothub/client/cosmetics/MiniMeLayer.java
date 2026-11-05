@@ -160,12 +160,8 @@ public final class MiniMeLayer extends RenderLayer<AvatarRenderState, PlayerMode
 				// fliegend: schräg hinter dem Spieler, weich schwebend und leicht nach vorn geneigt
 				// weiter außen und höher als die Schulter-Mini-Mes, damit sie nicht dahinter verschwinden
 				tx = side * (1.0F + (float) Math.sin(t * 0.045F + i) * 0.06F);
-				ty = -0.75F + (float) Math.sin(t * 0.07F + i * 1.3F) * 0.08F + vy * 1.2F;
-				tz = 0.75F + Math.max(0.0F, fwd) * 1.6F;
-				float[] p = rotateY(tx, tz, lag * 0.7F);
-				tx = p[0];
-				tz = p[1];
-				ry = -lag * 0.5F;
+				ty = -0.75F + (float) Math.sin(t * 0.07F + i * 1.3F) * 0.08F;
+				tz = 0.75F;
 				rx = 15.0F + Math.max(0.0F, fwd) * 60.0F;
 				rx = rx + (75.0F - rx) * fly; // fliegt der Spieler, liegen sie auch waagerecht in der Luft
 				rz = side * (float) Math.sin(t * 0.05F + i) * 5.0F + Mth.clamp(lag * 0.4F, -20.0F, 20.0F);
@@ -173,11 +169,7 @@ public final class MiniMeLayer extends RenderLayer<AvatarRenderState, PlayerMode
 				// krabbelnd auf allen vieren: Rumpf waagerecht in Beinlänge über dem Boden, Kopf nach vorn
 				tx = side * 0.72F;
 				ty = 1.5F - 0.75F * SCALE;
-				tz = -0.2F + (float) Math.sin(crawlPhase(state, i) * 2.0F) * 0.01F + Math.max(0.0F, fwd) * 0.6F;
-				float[] p = rotateY(tx, tz, lag * 0.35F);
-				tx = p[0];
-				tz = p[1];
-				ry = -lag * 0.4F;
+				tz = -0.2F;
 				rx = 90.0F;
 				if (fly > 0.0F) {
 					// fliegt der Spieler, fliegen auch die Krabbler mit – unter den anderen, etwas weiter hinten
@@ -196,6 +188,15 @@ public final class MiniMeLayer extends RenderLayer<AvatarRenderState, PlayerMode
 				tz = tz + (bed[1] - tz) * lie;
 				rx = rx + (-90.0F - rx) * lie; // auf dem Rücken
 				rz = rz * (1.0F - lie);
+			}
+			if (i >= 2) {
+				// eigenständig: folgt seinem Platz gefedert, schwebt/krabbelt etwas herum, schaut in Laufrichtung
+				boolean air = i < 4 || fly > 0.5F;
+				float[] f = Followers.follow(state, i, tx, ty, tz, air ? 6.0F : 9.0F, air ? 0.35F : 0.2F, air ? 0.5F : 0.0F);
+				tx = f[0];
+				ty = f[1];
+				tz = f[2];
+				ry = f[3];
 			}
 			boolean sleeping = lie > 0.5F;
 			if (i < 2 && !sleeping) {
@@ -227,7 +228,8 @@ public final class MiniMeLayer extends RenderLayer<AvatarRenderState, PlayerMode
 					OverlayTexture.NO_OVERLAY, 0, null);
 			String wings = Cosmetics.miniMeWing(state, i);
 			if (wings != null) {
-				Wings.submit(poseStack, collector, wings, t + i * 7.0F, light, sleeping);
+				Wings.submit(poseStack, collector, wings, t + i * 7.0F, light, sleeping,
+						Cosmetics.raw(state, Cosmetics.MINI_WING_COLOR));
 			}
 			poseStack.popPose();
 		}

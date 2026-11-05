@@ -50,6 +50,9 @@ public final class Cosmetics {
 	public static final String PETS = "pets";
 	/** Mini-Mes winken, jubeln und gähnen. */
 	public static final String EMOTES = "emotes";
+	/** Farbe der eigenen Flügel bzw. der Mini-Me-Flügel („#RRGGBB“, leer = Originalfarben). */
+	public static final String WING_COLOR = "wingcolor";
+	public static final String MINI_WING_COLOR = "minimewingcolor";
 	/** Stärke der Aura in Prozent (0–100). */
 	public static final String AURA_STRENGTH = "aurastrength";
 	public static final List<String> FOOTSTEP_STYLES = List.of("sparks", "flames");
@@ -226,6 +229,8 @@ public final class Cosmetics {
 			}
 			values.put(AURA_STRENGTH, String.valueOf(cfg.auraStrength));
 			putOwn(mine, values, EYES, cfg.eyeColor);
+			putOwn(mine, values, WING_COLOR, cfg.wingColor);
+			putOwn(mine, values, MINI_WING_COLOR, cfg.miniMeWingColor);
 			putOwn(mine, values, FOOTSTEPS, cfg.footsteps);
 			putOwn(mine, values, PETS, cfg.pets == null || cfg.pets.replace(",", "").isBlank() ? "" : cfg.pets);
 			if (cfg.crown) {
