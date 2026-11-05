@@ -26,7 +26,7 @@ import net.minecraft.world.entity.player.PlayerSkin;
  * Jedes Mini-Me hat einen eigenen Render-Zustand, damit es nicht einfach die Laufbewegung des Spielers mitmacht.
  */
 public final class MiniMeLayer extends RenderLayer<AvatarRenderState, PlayerModel> {
-	private static final float SCALE = 0.5F;
+	private static final float SCALE = 0.36F;
 	private final PlayerModel wide;
 	private final PlayerModel slim;
 	private final CrawlModel crawlWide;
@@ -97,20 +97,21 @@ public final class MiniMeLayer extends RenderLayer<AvatarRenderState, PlayerMode
 			float tx, ty, tz, rx, rz = 0.0F;
 			if (i < 2) {
 				// sitzend auf der Schulter (Reit-Haltung: Beine nach vorn)
-				tx = side * 0.5F;
-				ty = (state.isCrouching ? -0.3F : -0.48F) + (float) Math.sin(t * 0.08F + i) * 0.01F;
+				tx = side * 0.44F;
+				// Hüfte auf der Schulter: Halspunkt liegt eine Rumpflänge (12 px × SCALE) darüber
+				ty = (state.isCrouching ? 0.075F : -0.105F) - 0.75F * SCALE + (float) Math.sin(t * 0.08F + i) * 0.01F;
 				tz = 0.0F;
 				rx = 0.0F;
 			} else if (i < 4) {
 				// fliegend: schräg hinter dem Spieler, weich schwebend und leicht nach vorn geneigt
-				tx = side * (0.8F + (float) Math.sin(t * 0.045F + i) * 0.04F);
+				tx = side * (0.68F + (float) Math.sin(t * 0.045F + i) * 0.04F);
 				ty = -0.55F + (float) Math.sin(t * 0.07F + i * 1.3F) * 0.07F;
 				tz = 0.6F;
 				rx = 18.0F + Math.min(25.0F, state.walkAnimationSpeed * 30.0F);
 				rz = side * (float) Math.sin(t * 0.05F + i) * 4.0F;
 			} else {
 				// krabbelnd auf allen vieren: Rumpf waagerecht in Beinlänge über dem Boden, Kopf nach vorn
-				tx = side * 0.9F;
+				tx = side * 0.72F;
 				ty = 1.5F - 0.75F * SCALE;
 				tz = -0.2F + (float) Math.sin(crawlPhase(state, i) * 2.0F) * 0.01F;
 				rx = 90.0F;
@@ -120,7 +121,7 @@ public final class MiniMeLayer extends RenderLayer<AvatarRenderState, PlayerMode
 			if (lie > 0.001F) {
 				float[] bed = SLEEP[i];
 				tx = tx + (bed[0] - tx) * lie;
-				ty = ty + (1.375F - ty) * lie;
+				ty = ty + (1.5F - 0.25F * SCALE - ty) * lie;
 				tz = tz + (bed[1] - tz) * lie;
 				rx = rx + (-90.0F - rx) * lie; // auf dem Rücken
 				rz = rz * (1.0F - lie);
