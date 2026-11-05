@@ -51,7 +51,9 @@ public final class Wings {
 			// Vorzeichen: YP dreht +x Richtung −z (nach vorn) – daher −s, damit die Flügel nach hinten zeigen
 			poseStack.mulPose(Axis.YP.rotationDegrees(-s * (18.0F + flap * 15.0F)));
 			poseStack.mulPose(Axis.ZP.rotationDegrees(-s * 10.0F));
-			collector.submitCustomGeometry(poseStack, RenderTypes.entityTranslucent(texture), (pose, vc) -> {
+			// Cutout statt durchscheinend: die Flügel schreiben sauber in die Tiefe, so liegt die Aura (leuchtend,
+			// durchscheinend) korrekt davor bzw. dahinter statt sie zu überdecken oder zu verschlucken
+			collector.submitCustomGeometry(poseStack, RenderTypes.entityCutoutNoCull(texture), (pose, vc) -> {
 				float w = HEIGHT * ASPECT * s;
 				float top = -0.8F, bottom = top + HEIGHT; // Ansatz über der Schulter
 				// u 0 = Wurzel, 1 = Spitze; links gespiegelt durch die negative Breite
