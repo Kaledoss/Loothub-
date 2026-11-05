@@ -255,7 +255,16 @@ public class StatsScreen extends LoothubScreen {
 			if (!q.isEmpty() && !name.toLowerCase(Locale.ROOT).contains(q) && !e.getKey().contains(q.replace(' ', '_'))) {
 				continue;
 			}
-			out.add(new Row(e.getKey(), name, icon(e.getKey(), kind), e.getValue()));
+			long[] vals = e.getValue();
+			if (category == Category.TOOLS) {
+				boolean[] use = toolColumns(e.getKey());
+				for (int c = 0; c < vals.length && c < use.length; c++) {
+					if (!use[c]) {
+						vals[c] = -1; // passt nicht zu diesem Gegenstand → leer
+					}
+				}
+			}
+			out.add(new Row(e.getKey(), name, icon(e.getKey(), kind), vals));
 		}
 		Comparator<Row> cmp = sortColumn == 0
 				? Comparator.comparing(Row::name, String.CASE_INSENSITIVE_ORDER)
@@ -331,6 +340,40 @@ public class StatsScreen extends LoothubScreen {
 		}
 		Item item = block.asItem();
 		return item == Items.AIR ? id : BuiltInRegistries.ITEM.getKey(item).toString();
+	}
+
+	/**
+	 * Welche Spalten (Abgebaut, Treffer, Benutzt, Aufgesammelt) passen zu diesem Werkzeug? Spitzhacke: nur Abbauen;
+	 * Waffen: Treffer; Axt: Abbauen, Treffer, Benutzen (Entrinden); Schaufel/Hacke: Abbauen und Benutzen (Wege, Felder);
+	 * Rüstung: nur Aufsammeln; Bogen, Angel, Schere, Feuerzeug … : Benutzen.
+	 */
+	private static boolean[] toolColumns(String id) {
+		Identifier identifier = Identifier.tryParse(id);
+		Item item = identifier == null ? null : BuiltInRegistries.ITEM.getOptional(identifier).orElse(null);
+		if (item == null) {
+			return new boolean[]{true, true, true, true};
+		}
+		ItemStack st = new ItemStack(item);
+		if (st.is(net.minecraft.tags.ItemTags.PICKAXES)) {
+			return new boolean[]{true, false, false, true};
+		}
+		if (st.is(net.minecraft.tags.ItemTags.AXES)) {
+			return new boolean[]{true, true, true, true};
+		}
+		if (st.is(net.minecraft.tags.ItemTags.SHOVELS) || st.is(net.minecraft.tags.ItemTags.HOES)) {
+			return new boolean[]{true, false, true, true};
+		}
+		if (st.is(net.minecraft.tags.ItemTags.SWORDS) || item instanceof net.minecraft.world.item.TridentItem
+				|| item instanceof net.minecraft.world.item.MaceItem) {
+			return new boolean[]{false, true, false, true};
+		}
+		if (item instanceof net.minecraft.world.item.ShearsItem) {
+			return new boolean[]{true, false, true, true};
+		}
+		if (st.has(net.minecraft.core.component.DataComponents.EQUIPPABLE)) {
+			return new boolean[]{false, false, false, true}; // Rüstung, Elytren …
+		}
+		return new boolean[]{false, false, true, true};
 	}
 
 	/** Essbar (Apfel, Brot, gebratenes Fleisch, Chorusfrucht …)? */
@@ -570,6 +613,9 @@ public class StatsScreen extends LoothubScreen {
 			g.drawString(font, ellipsize(row.name(), nameMax), tableX + 24, ry + 5, TEXT, false);
 			for (int c = 0; c < cols.size(); c++) {
 				long v = row.values()[c];
+				if (v < 0) {
+					continue; // Spalte gilt für diesen Gegenstand nicht
+				}
 				String s = v == 0 ? "–" : Fmt.whole(v);
 				int r = columnRight(c, cols.size());
 				g.drawString(font, s, r - font.width(s), ry + 5, v == 0 ? FAINT : TEXT, false);
