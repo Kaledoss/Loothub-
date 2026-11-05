@@ -34,7 +34,11 @@ public final class WingsLayer extends RenderLayer<AvatarRenderState, PlayerModel
 			poseStack.translate(0.0F, 0.22F, 0.14F);
 			poseStack.mulPose(com.mojang.math.Axis.XP.rotationDegrees(8.0F));
 		}
-		Wings.submit(poseStack, collector, style, state.ageInTicks, light, false, Cosmetics.raw(state, Cosmetics.WING_COLOR),
+		// Haltung aus der Bewegung: im Stand halb angelegt, beim Laufen offen, beim Fallen zum Gleiten aufgespannt,
+		// Schlag passend zu Steigen/Sinken, beim Absprung ein kräftiger Schlag, schwingt beim Anhalten nach
+		Wings.Pose pose = new Wings.Pose(Motion.wingOpen(state), Motion.wingPhase(state), Motion.wingAmp(state),
+				Motion.yawLag(state));
+		Wings.submit(poseStack, collector, style, pose, light, Cosmetics.raw(state, Cosmetics.WING_COLOR),
 				Cosmetics.raw(state, Cosmetics.WING_COLOR_OUTER));
 		poseStack.popPose();
 	}

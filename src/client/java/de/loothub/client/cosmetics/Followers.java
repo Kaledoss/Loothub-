@@ -26,6 +26,44 @@ public final class Followers {
 	private Followers() {
 	}
 
+	/** Oberkante des Bodens an (x, z), gesucht von etwas über {@code refY} nach unten; sonst refY. */
+	public static double groundY(double x, double refY, double z) {
+		var level = net.minecraft.client.Minecraft.getInstance().level;
+		if (level == null) {
+			return refY;
+		}
+		int bx = Mth.floor(x), bz = Mth.floor(z);
+		int top = Mth.floor(refY + 1.2);
+		for (int by = top; by >= top - 4; by--) {
+			net.minecraft.core.BlockPos pos = new net.minecraft.core.BlockPos(bx, by, bz);
+			var shape = level.getBlockState(pos).getCollisionShape(level, pos);
+			if (!shape.isEmpty()) {
+				double h = by + shape.max(net.minecraft.core.Direction.Axis.Y);
+				if (h <= refY + 1.25) {
+					return h;
+				}
+			}
+		}
+		return refY;
+	}
+
+	/** Weltpunkt → Ebenen-Raum des Spielers (aufrecht; für Ziele wie andere Tiere). */
+	public static float[] worldToLayer(AvatarRenderState s, double wx, double wy, double wz) {
+		double theta = Math.toRadians(180.0F - s.bodyRot);
+		double c = Math.cos(theta), sn = Math.sin(theta);
+		double dx = wx - s.x, dz = wz - s.z;
+		double lx = dx * c - dz * sn, lz = dx * sn + dz * c;
+		return new float[]{(float) -lx, (float) (1.501 - (wy - s.y)), (float) lz};
+	}
+
+	/** Ebenen-Raum des Spielers → Weltpunkt. */
+	public static double[] layerToWorld(AvatarRenderState s, float x, float y, float z) {
+		double theta = Math.toRadians(180.0F - s.bodyRot);
+		double c = Math.cos(theta), sn = Math.sin(theta);
+		double X = -x, Z = z;
+		return new double[]{s.x + X * c + Z * sn, s.y + 1.501 - y, s.z - X * sn + Z * c};
+	}
+
 	/**
 	 * @param tx,ty,tz Zielplatz im Ebenen-Raum (aufrecht, y nach unten, Füße bei 1,5, +z = hinter dem Spieler)
 	 * @param stiffness wie fest die Feder zieht (höher = folgt enger)
@@ -35,6 +73,12 @@ public final class Followers {
 	 */
 	public static float[] follow(AvatarRenderState s, int slot, float tx, float ty, float tz, float stiffness, float wander,
 			float wanderY) {
+		return follow(s, slot, tx, ty, tz, stiffness, wander, wanderY, false);
+	}
+
+	/** Mit {@code ground}: folgt der Bodenhöhe unter sich (klettert Stufen hoch, geht Absätze hinunter). */
+	public static float[] follow(AvatarRenderState s, int slot, float tx, float ty, float tz, float stiffness, float wander,
+			float wanderY, boolean ground) {
 		long key = ((long) s.id << 5) | slot;
 		F f = MAP.computeIfAbsent(key, k -> new F());
 		long now = System.nanoTime();
@@ -51,6 +95,9 @@ public final class Followers {
 		double gx = X * c + Z * sn;
 		double gz = -X * sn + Z * c;
 		double gy = 1.501 - wy;
+		if (ground && f.init) {
+			gy += Mth.clamp(groundY(s.x + f.ox, s.y, s.z + f.oz) - s.y, -2.0, 1.2);
+		}
 		float dt = f.last == 0 ? 0.0F : Math.min(0.05F, (now - f.last) / 1.0e9F);
 		if (!f.init || (now - f.last) > 2_000_000_000L) {
 			f.ox = gx;

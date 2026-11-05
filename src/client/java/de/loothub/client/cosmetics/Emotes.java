@@ -8,7 +8,12 @@ import java.util.WeakHashMap;
  * sich strecken und gähnen, wenn sie in der AFK-Ansicht mitschlafen. Jedes Mini-Me zu seiner eigenen Zeit.
  */
 public final class Emotes {
-	public static final int NONE = 0, WAVE = 1, CHEER = 2, YAWN = 3;
+	public static final int NONE = 0, WAVE = 1, CHEER = 2, YAWN = 3, SCRATCH = 4, HOLD = 5, RAIN = 6, SHIVER = 7, FAN = 8,
+			DANGLE = 9;
+	/** Dauerhafte Gesten (kein Ein-/Ausblenden über den Verlauf). */
+	public static boolean steady(int type) {
+		return type == HOLD || type == RAIN || type == SHIVER || type == DANGLE;
+	}
 	private static final long CHEER_MS = 3200L;
 	private static volatile long cheerAt;
 	/** Geste je Mini-Me-Zustand: {Art, Fortschritt 0..1}. */
@@ -22,22 +27,50 @@ public final class Emotes {
 		cheerAt = System.currentTimeMillis();
 	}
 
-	/** Welche Geste Mini-Me {@code slot} des Spielers gerade macht: {Art, Fortschritt}. */
-	public static float[] pick(Object playerState, int slot, boolean sleeping) {
-		if (!Cosmetics.has(playerState, Cosmetics.EMOTES)) {
-			return null;
-		}
+	/**
+	 * Welche Geste Mini-Me {@code slot} des Spielers gerade macht: {Art, Fortschritt}. Reaktionen auf die Umgebung
+	 * (festhalten beim Sprinten, Regen, Lava, Schnee) kommen immer; Gesten im Stand nur mit eingeschalteten Gesten.
+	 */
+	public static float[] pick(Object playerState, int slot, boolean sleeping, boolean sitting) {
 		long now = System.currentTimeMillis();
-		if (Motion.local(playerState) && now - cheerAt < CHEER_MS) {
+		float tick = (now % 100_000L) / 1000.0F;
+		boolean gestures = Cosmetics.has(playerState, Cosmetics.EMOTES);
+		if (gestures && Motion.local(playerState) && now - cheerAt < CHEER_MS) {
 			return new float[]{CHEER, (now - cheerAt) / (float) CHEER_MS};
 		}
 		if (sleeping) {
 			float p = window(now, 17_000L, slot * 2_700L, 2_200L);
-			return p < 0 ? null : new float[]{YAWN, p};
+			return !gestures || p < 0 ? null : new float[]{YAWN, p};
 		}
-		if (Motion.idle(playerState) > 6.0F) {
-			float p = window(now, 13_000L, slot * 2_100L, 2_400L);
-			return p < 0 ? null : new float[]{WAVE, p};
+		int env = Motion.env(playerState);
+		// auf der Schulter beim Sprinten: am Kopf festhalten
+		if (slot < 2 && Motion.forward(playerState) > 0.18F) {
+			return new float[]{HOLD, tick};
+		}
+		if ((env & Motion.ENV_RAIN) != 0 && (env & Motion.ENV_WATER) == 0) {
+			return new float[]{RAIN, tick};
+		}
+		if ((env & Motion.ENV_LAVA) != 0) {
+			float p = window(now, 5_000L, slot * 900L, 2_500L);
+			if (p >= 0) {
+				return new float[]{FAN, p};
+			}
+		}
+		if ((env & Motion.ENV_SNOW) != 0) {
+			return new float[]{SHIVER, tick};
+		}
+		if (gestures && Motion.idle(playerState) > 4.0F) {
+			float p = window(now, 16_000L, slot * 2_100L, 2_400L);
+			if (p >= 0) {
+				return new float[]{WAVE, p};
+			}
+			p = window(now, 16_000L, slot * 2_100L + 6_000L, 2_000L);
+			if (p >= 0) {
+				return new float[]{SCRATCH, p};
+			}
+			if (sitting) {
+				return new float[]{DANGLE, tick}; // Beine baumeln lassen
+			}
 		}
 		return null;
 	}

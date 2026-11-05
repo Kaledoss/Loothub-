@@ -93,12 +93,27 @@ public final class PetsLayer extends RenderLayer<AvatarRenderState, PlayerModel>
 				tx += (side * 1.2F - tx) * fly;
 				tz += (1.4F - tz) * fly;
 			}
+			// Neugier: ab und zu kurz zu einem Tier oder Spieler in der Nähe und wieder zurück
+			float[] curious = lie < 0.5F && fly < 0.5F ? Curiosity.target(state, slot, ground) : null;
+			if (curious != null) {
+				tx = curious[0];
+				tz = curious[2];
+				if (!ground) {
+					ty = curious[1];
+				}
+			}
 			// eigenständig: gefedert hinterher, schwebt bzw. hüpft um seinen Platz, schaut in Laufrichtung
-			float hopY = ground && fly < 0.5F ? ty - (1.5F - 1.5F * scale) : 0.0F;
-			float[] p = Followers.follow(state, 8 + slot, tx, ty - hopY, tz, ground ? 7.0F : 4.5F, ground ? 0.45F : 0.6F,
-					ground && fly < 0.5F ? 0.0F : 0.6F);
+			boolean hopping = ground && fly < 0.5F;
+			float hopY = hopping ? ty - (1.5F - 1.5F * scale) : 0.0F;
+			float[] p = Followers.follow(state, 8 + slot, tx, ty - hopY, tz, ground ? 7.0F : 4.5F,
+					curious != null ? 0.1F : ground ? 0.45F : 0.6F, hopping ? 0.0F : 0.6F, hopping && lie < 0.5F);
+			// Landestaub: beim Aufkommen ein paar Partikel des Bodens
+			if (hopping) {
+				Curiosity.landing(state, slot, hopY > -0.005F, p);
+			}
 			poseStack.pushPose();
 			BodyPose.undo(poseStack, state, true);
+			shadow(poseStack, collector, state, p, scale, ground);
 			poseStack.translate(p[0], p[1] + hopY, p[2]);
 			poseStack.mulPose(Axis.YP.rotationDegrees(p[3]));
 			poseStack.scale(scale, scale, scale);
@@ -124,6 +139,37 @@ public final class PetsLayer extends RenderLayer<AvatarRenderState, PlayerModel>
 			}
 			poseStack.popPose();
 		}
+	}
+
+	private static final Identifier SHADOW = Identifier.withDefaultNamespace("textures/misc/shadow.png");
+
+	/** Weicher runder Schatten am Boden unter dem Haustier – blasser, je höher es schwebt. */
+	private static void shadow(PoseStack poseStack, SubmitNodeCollector collector, AvatarRenderState s, float[] p, float scale,
+			boolean ground) {
+		double[] w = Followers.layerToWorld(s, p[0], p[1], p[2]);
+		double feetY = s.y + 1.501 - (p[1] + 1.5F * scale); // Modell-Füße in Weltkoordinaten
+		double gy = Followers.groundY(w[0], feetY, w[2]);
+		double h = feetY - gy;
+		if (h > 4.0) {
+			return;
+		}
+		float alpha = (float) Math.max(0.0, 0.55 * (1.0 - h / 4.0));
+		float r = 0.32F * scale / 0.65F;
+		float ly = (float) (1.501 - (gy - s.y)) - 0.01F;
+		float cx = p[0], cz = p[2];
+		int col = ((int) (alpha * 255) << 24) | 0xFFFFFF;
+		collector.submitCustomGeometry(poseStack, RenderTypes.entityShadow(SHADOW), (pose, vc) -> {
+			sv(pose, vc, cx - r, ly, cz - r, 0, 0, col);
+			sv(pose, vc, cx - r, ly, cz + r, 0, 1, col);
+			sv(pose, vc, cx + r, ly, cz + r, 1, 1, col);
+			sv(pose, vc, cx + r, ly, cz - r, 1, 0, col);
+		});
+	}
+
+	private static void sv(PoseStack.Pose pose, com.mojang.blaze3d.vertex.VertexConsumer vc, float x, float y, float z, float u,
+			float v, int color) {
+		vc.addVertex(pose, x, y, z).setColor(color).setUv(u, v).setOverlay(OverlayTexture.NO_OVERLAY).setLight(0xF000F0)
+				.setNormal(pose, 0.0F, -1.0F, 0.0F);
 	}
 
 	private static <S extends LivingEntityRenderState> void submit(SubmitNodeCollector collector, PoseStack poseStack,

@@ -50,7 +50,24 @@ public final class CosmeticEffects {
 				double yaw = Math.toRadians(p.yBodyRot);
 				double side = (p.tickCount / 2 % 2 == 0 ? 0.18 : -0.18);
 				double x = p.getX() + Math.cos(yaw) * side, z = p.getZ() + Math.sin(yaw) * side, y = p.getY() + 0.05;
-				if (steps.equals("flames")) {
+				var below = mc.level.getBlockState(net.minecraft.core.BlockPos.containing(x, p.getY() - 0.2, z));
+				boolean wet = p.isInWater() || mc.level.isRainingAt(p.blockPosition().above());
+				// passend zum Boden: ein paar Krümel des Blocks (Gras, Sand, Schnee …)
+				if (!below.isAir() && r.nextInt(2) == 0) {
+					mc.level.addParticle(new net.minecraft.core.particles.BlockParticleOption(ParticleTypes.BLOCK, below),
+							x + (r.nextDouble() - 0.5) * 0.2, y + 0.02, z + (r.nextDouble() - 0.5) * 0.2, 0.0, 0.03, 0.0);
+				}
+				if (steps.equals("flames") && wet) {
+					// im Wasser bzw. Regen verlöschen die Flammen zischend: Rauch statt Feuer
+					mc.level.addParticle(ParticleTypes.SMOKE, x, y + 0.05, z, 0.0, 0.03, 0.0);
+					if (p.isInWater()) {
+						mc.level.addParticle(ParticleTypes.BUBBLE, x, y + 0.1, z, 0.0, 0.05, 0.0);
+					}
+					if (p.tickCount % 10 == 0) {
+						mc.level.playLocalSound(x, y, z, net.minecraft.sounds.SoundEvents.FIRE_EXTINGUISH,
+								net.minecraft.sounds.SoundSource.PLAYERS, 0.08F, 1.6F + r.nextFloat() * 0.3F, false);
+					}
+				} else if (steps.equals("flames")) {
 					for (int i = 0; i < 3; i++) {
 						mc.level.addParticle(ParticleTypes.SMALL_FLAME, x + (r.nextDouble() - 0.5) * 0.2, y,
 								z + (r.nextDouble() - 0.5) * 0.2, 0.0, 0.01 + r.nextDouble() * 0.015, 0.0);

@@ -36,6 +36,12 @@ public final class EyesLayer extends RenderLayer<AvatarRenderState, PlayerModel>
 		int rgb = AuraTextures.parse(color);
 		// sanftes Pulsieren
 		float pulse = 0.85F + 0.15F * (float) Math.sin(state.ageInTicks * 0.15F);
+		// Blinzeln: alle 3–6 Sekunden für einen Augenblick dunkel (je Spieler versetzt)
+		if (blinking(state.ageInTicks, state.id)) {
+			return;
+		}
+		// im Dunkeln stärker als bei Tageslicht (Block- und Himmelslicht an der Stelle des Spielers)
+		pulse *= 0.55F + 0.95F * (1.0F - brightness(light));
 		poseStack.pushPose();
 		getParentModel().head.translateAndRotate(poseStack);
 		collector.submitCustomGeometry(poseStack, RenderTypes.energySwirl(GLOW, 0.0F, 0.0F), (pose, vc) -> {
@@ -46,6 +52,21 @@ public final class EyesLayer extends RenderLayer<AvatarRenderState, PlayerModel>
 			}
 		});
 		poseStack.popPose();
+	}
+
+	private static boolean blinking(float ageInTicks, int id) {
+		float sec = ageInTicks / 20.0F + (id % 13) * 0.77F;
+		// Abstand zwischen zwei Blinzlern schwankt zwischen 3 und 6 s
+		float cycle = 3.0F + 3.0F * (0.5F + 0.5F * (float) Math.sin(Math.floor(sec / 4.5F) * 12.9898F));
+		return sec % cycle < 0.13F;
+	}
+
+	/** Helligkeit 0..1 aus dem gepackten Licht (Block- und Himmelslicht, Himmel nachts gedämpft). */
+	private static float brightness(int light) {
+		int block = (light >> 4) & 0xF, sky = (light >> 20) & 0xF;
+		var level = net.minecraft.client.Minecraft.getInstance().level;
+		float day = level == null ? 1.0F : 1.0F - level.getSkyDarken() / 11.0F;
+		return Math.max(block, sky * day) / 15.0F;
 	}
 
 	private static int color(int rgb, float k) {

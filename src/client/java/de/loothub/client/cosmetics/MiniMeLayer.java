@@ -44,7 +44,7 @@ public final class MiniMeLayer extends RenderLayer<AvatarRenderState, PlayerMode
 				return;
 			}
 			float p = e[1];
-			float k = Emotes.envelope(p);
+			float k = Emotes.steady((int) e[0]) ? 1.0F : Emotes.envelope(p);
 			float up = (float) Math.toRadians(-165.0);
 			switch ((int) e[0]) {
 				case Emotes.WAVE -> {
@@ -67,6 +67,48 @@ public final class MiniMeLayer extends RenderLayer<AvatarRenderState, PlayerMode
 					rightArm.zRot = mix(rightArm.zRot, -0.2F, k);
 					leftArm.zRot = mix(leftArm.zRot, 0.2F, k);
 					head.xRot = mix(head.xRot, -0.5F, k);
+				}
+				case Emotes.SCRATCH -> {
+					// am Kopf kratzen
+					rightArm.xRot = mix(rightArm.xRot, (float) Math.toRadians(-150.0) + (float) Math.sin(p * 45.0F) * 0.12F, k);
+					rightArm.zRot = mix(rightArm.zRot, -0.55F, k);
+					head.zRot = mix(head.zRot, 0.12F, k);
+				}
+				case Emotes.HOLD -> {
+					// beide Hände nach innen oben – halten sich am Kopf des Spielers fest
+					rightArm.xRot = mix(rightArm.xRot, (float) Math.toRadians(-140.0), k);
+					leftArm.xRot = mix(leftArm.xRot, (float) Math.toRadians(-140.0), k);
+					rightArm.zRot = mix(rightArm.zRot, -0.6F, k);
+					leftArm.zRot = mix(leftArm.zRot, 0.6F, k);
+				}
+				case Emotes.RAIN -> {
+					// Hände über dem Kopf als Regenschutz
+					rightArm.xRot = mix(rightArm.xRot, (float) Math.toRadians(-170.0), k);
+					leftArm.xRot = mix(leftArm.xRot, (float) Math.toRadians(-170.0), k);
+					rightArm.zRot = mix(rightArm.zRot, -0.32F, k);
+					leftArm.zRot = mix(leftArm.zRot, 0.32F, k);
+					head.xRot = mix(head.xRot, 0.2F, k);
+				}
+				case Emotes.SHIVER -> {
+					// Arme vor der Brust verschränkt, zittert
+					float j = (float) Math.sin(p * 40.0F) * 0.05F;
+					rightArm.xRot = mix(rightArm.xRot, -0.95F + j, k);
+					leftArm.xRot = mix(leftArm.xRot, -0.95F - j, k);
+					rightArm.yRot = mix(rightArm.yRot, -0.65F, k);
+					leftArm.yRot = mix(leftArm.yRot, 0.65F, k);
+					head.zRot = mix(head.zRot, j, k);
+				}
+				case Emotes.FAN -> {
+					// sich Luft zufächeln
+					rightArm.xRot = mix(rightArm.xRot, -1.7F + (float) Math.sin(p * 60.0F) * 0.35F, k);
+					rightArm.zRot = mix(rightArm.zRot, -0.35F, k);
+					head.xRot = mix(head.xRot, -0.15F, k);
+				}
+				case Emotes.DANGLE -> {
+					// Beine baumeln abwechselnd
+					float swing = (float) Math.sin(p * 4.5F) * 0.35F;
+					rightLeg.xRot += swing;
+					leftLeg.xRot -= swing;
 				}
 				default -> {
 				}
@@ -156,6 +198,7 @@ public final class MiniMeLayer extends RenderLayer<AvatarRenderState, PlayerMode
 				rx = -fwd * 20.0F; // beim Loslaufen leicht nach hinten
 				rz = Mth.clamp(lag * 0.3F, -12.0F, 12.0F); // wackelt beim Drehen mit
 				ty -= Math.abs((float) Math.sin(state.walkAnimationPos * 0.6662F)) * 0.03F * state.walkAnimationSpeed;
+				ty += vy * 0.35F; // Trägheit: beim Absprung kurz eingedrückt, beim Fallen kurz angehoben
 			} else if (i < 4) {
 				// fliegend: schräg hinter dem Spieler, weich schwebend und leicht nach vorn geneigt
 				// weiter außen und höher als die Schulter-Mini-Mes, damit sie nicht dahinter verschwinden
@@ -189,24 +232,41 @@ public final class MiniMeLayer extends RenderLayer<AvatarRenderState, PlayerMode
 				rx = rx + (-90.0F - rx) * lie; // auf dem Rücken
 				rz = rz * (1.0F - lie);
 			}
+			int env = Motion.env(state);
+			boolean idleLong = Motion.idle(state) > 5.0F;
+			boolean swimming = i >= 4 && (env & Motion.ENV_WATER) != 0 && fly < 0.5F && lie < 0.5F;
+			// Krabbler setzen sich hin, wenn der Spieler eine Weile stillsteht
+			boolean sitDown = i >= 4 && idleLong && !swimming && fly < 0.5F && lie < 0.5F;
+			if (sitDown) {
+				rx = 0.0F;
+			}
 			if (i >= 2) {
-				// eigenständig: folgt seinem Platz gefedert, schwebt/krabbelt etwas herum, schaut in Laufrichtung
+				// eigenständig: folgt seinem Platz gefedert, schwebt/krabbelt etwas herum, schaut in Laufrichtung;
+				// am Boden klettern sie Stufen hoch statt durch Blöcke zu laufen
 				boolean air = i < 4 || fly > 0.5F;
-				float[] f = Followers.follow(state, i, tx, ty, tz, air ? 6.0F : 9.0F, air ? 0.35F : 0.2F, air ? 0.5F : 0.0F);
+				float[] f = Followers.follow(state, i, tx, ty, tz, air ? 6.0F : 9.0F, air ? 0.35F : (sitDown ? 0.0F : 0.2F),
+						air ? 0.5F : 0.0F, !air && lie < 0.5F && !swimming);
 				tx = f[0];
 				ty = f[1];
 				tz = f[2];
 				ry = f[3];
 			}
 			boolean sleeping = lie > 0.5F;
-			if (i < 2 && !sleeping) {
+			if ((i < 2 || sitDown) && !sleeping) {
 				mini.isPassenger = true;
+			} else if (swimming) {
+				mini.swimAmount = 1.0F;
+				mini.walkAnimationPos = t * 0.35F + i;
+				mini.walkAnimationSpeed = 0.8F;
 			} else if (i >= 4 && !sleeping) {
 				mini.walkAnimationPos = crawlPhase(state, i);
 				mini.walkAnimationSpeed = Math.min(1.0F, state.walkAnimationSpeed * 1.5F);
 			}
-			boolean crawling = i >= 4 && !sleeping && fly < 0.5F;
-			float[] emote = crawling ? null : Emotes.pick(state, i, sleeping);
+			boolean crawling = i >= 4 && !sleeping && fly < 0.5F && !sitDown && !swimming;
+			if (!sleeping && !crawling && !swimming) {
+				look(mini, state, i, side, t, sitDown);
+			}
+			float[] emote = crawling || swimming ? null : Emotes.pick(state, i, sleeping, i < 2 || sitDown);
 			Emotes.attach(mini, emote);
 			if (emote != null && emote[0] == Emotes.CHEER) {
 				ty -= Math.abs((float) Math.sin(emote[1] * Math.PI * 4.0)) * 0.12F; // Freudensprünge
@@ -235,11 +295,39 @@ public final class MiniMeLayer extends RenderLayer<AvatarRenderState, PlayerMode
 					poseStack.translate(0.0F, 0.3F * flat, 0.05F * flat);
 					poseStack.mulPose(Axis.XP.rotationDegrees(-55.0F * flat));
 				}
-				Wings.submit(poseStack, collector, wings, t + i * 7.0F, light, sleeping,
-						Cosmetics.miniMeWingColor(state, i), Cosmetics.miniMeWingColorOuter(state, i));
+				// Flügel je Haltung: fliegend offen und lebhaft, sitzend halb offen, krabbelnd/schlafend angelegt
+				Wings.Pose wp = sleeping ? new Wings.Pose(0.1F, t * 0.05F + i, 0.1F, 0.0F)
+						: (i == 2 || i == 3 || fly > 0.5F) ? new Wings.Pose(0.9F, t * 0.25F + i * 1.3F, 0.8F, -ry)
+						: crawling ? new Wings.Pose(0.35F, t * 0.08F + i, 0.2F, 0.0F)
+						: new Wings.Pose(0.5F, t * 0.1F + i, 0.35F, 0.0F);
+				Wings.submit(poseStack, collector, wings, wp, light, Cosmetics.miniMeWingColor(state, i),
+						Cosmetics.miniMeWingColorOuter(state, i));
 			}
 			poseStack.popPose();
 		}
+	}
+
+	/**
+	 * Blickkontakt: im eigenen Takt schaut jedes Mini-Me mal zum Spieler hoch, mal dorthin, wohin der Spieler schaut,
+	 * mal neugierig umher – mit weichen Übergängen.
+	 */
+	private static void look(AvatarRenderState mini, AvatarRenderState player, int i, float side, float t, boolean grounded) {
+		float sec = t / 20.0F + i * 1.7F;
+		float cyc = sec % 10.0F;
+		// Blick zum Spieler (Kopf): Richtung Mitte und je nach Platz nach oben/unten
+		float toYaw = side * (i < 2 ? 50.0F : 35.0F);
+		float toPitch = i < 2 ? -25.0F : i < 4 ? 12.0F : -40.0F;
+		float[][] targets = {
+				{toYaw, toPitch},
+				{Mth.clamp(player.yRot, -60.0F, 60.0F), Mth.clamp(player.xRot, -40.0F, 40.0F)},
+				{(float) Math.sin(sec * 0.7F) * 60.0F, (float) Math.sin(sec * 0.5F + i) * 15.0F}};
+		int a = cyc < 3.5F ? 0 : cyc < 6.5F ? 1 : 2;
+		int b = (a + 1) % 3;
+		float edge = a == 0 ? 3.5F : a == 1 ? 6.5F : 10.0F;
+		float blend = Mth.clamp((cyc - (edge - 0.6F)) / 0.6F, 0.0F, 1.0F);
+		blend = blend * blend * (3.0F - 2.0F * blend);
+		mini.yRot = targets[a][0] + (targets[b][0] - targets[a][0]) * blend;
+		mini.xRot = targets[a][1] + (targets[b][1] - targets[a][1]) * blend;
 	}
 
 	/** Krabbel-Takt: langsam im Stand, schneller wenn der Spieler läuft; beide Mini-Mes leicht versetzt. */
