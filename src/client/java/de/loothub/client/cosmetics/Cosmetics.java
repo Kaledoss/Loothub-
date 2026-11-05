@@ -45,7 +45,7 @@ public final class Cosmetics {
 	public static final int MAX_MINI_MES = 4;
 	/** Spieler → Skins seiner Mini-Mes (Spielernamen; "" = eigener Skin). Fehlt = ein Mini-Me mit eigenem Skin. */
 	private static volatile Map<String, List<String>> miniMeSkins = Map.of();
-	/** Spieler → Farbe seiner Aura (gold, blue, red, green, purple, white). */
+	/** Spieler → Farbe seiner Aura („#RRGGBB“ oder Name wie gold, blue …). */
 	private static volatile Map<String, String> auraColors = Map.of();
 	private static volatile long lastFetch;
 	private static volatile boolean loading;
@@ -109,7 +109,7 @@ public final class Cosmetics {
 					String key = who.strip().toLowerCase(Locale.ROOT);
 					out.computeIfAbsent(key, k -> new HashSet<>()).add(c);
 					if (c.equals(AURA) && map.get(who).isJsonPrimitive()) {
-						auras.put(key, map.get(who).getAsString().strip().toLowerCase(Locale.ROOT));
+						auras.put(key, map.get(who).getAsString().strip());
 					}
 					if (c.equals(MINI_ME)) {
 						List<String> list = new ArrayList<>();
@@ -175,7 +175,7 @@ public final class Cosmetics {
 				SKINS.put(state, skins);
 			}
 			if (set.contains(AURA)) {
-				AURAS.put(state, aura != null && AuraLayer.COLORS.contains(aura) ? aura : "gold");
+				AURAS.put(state, aura != null && !aura.isBlank() ? aura : "gold");
 			}
 		}
 	}

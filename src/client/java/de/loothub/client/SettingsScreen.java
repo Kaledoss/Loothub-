@@ -63,7 +63,6 @@ public class SettingsScreen extends LoothubScreen {
 	private final int[][] colorSwatches = new int[3][];
 	private int[] invHudSwatch;
 	private int musicCardY;
-	private final int[][] miniMeStatus = new int[de.loothub.client.cosmetics.Cosmetics.MAX_MINI_MES][];
 	private int pcgFieldX;
 	private int pcgFieldW;
 	private Button resetButton;
@@ -103,7 +102,6 @@ public class SettingsScreen extends LoothubScreen {
 		WidgetConfig c = WidgetConfig.get();
 		labelW = Math.min(130, cw / 3);
 		colorSwatches[0] = colorSwatches[1] = colorSwatches[2] = null;
-		java.util.Arrays.fill(miniMeStatus, null);
 		invHudSwatch = null;
 
 		// Reiter oben (fest, scrollt nicht mit)
@@ -210,49 +208,6 @@ public class SettingsScreen extends LoothubScreen {
 						() -> c.hideOffhandBackpack, v -> c.hideOffhandBackpack = v);
 				y = card(y, 40, "loothub.settings.afk_view", "loothub.settings.afk_view.tooltip",
 						() -> c.afkView, v -> c.afkView = v);
-				y = card(y, 40, "loothub.settings.cosmetics", "loothub.settings.cosmetics.tooltip",
-						() -> c.cosmetics, v -> c.cosmetics = v);
-				// Bis zu 4 Mini-Mes, je mit dem Skin eines beliebigen Spielers
-				{
-					int mY = y;
-					int mx = cl + labelW + 12;
-					int fw = Math.min(110, (cr - 8 - mx - 3 * 18 - 100) / 4);
-					List<net.minecraft.client.gui.components.EditBox> boxes = new ArrayList<>();
-					for (int i = 0; i < de.loothub.client.cosmetics.Cosmetics.MAX_MINI_MES; i++) {
-						net.minecraft.client.gui.components.EditBox box = new net.minecraft.client.gui.components.EditBox(
-								font, mx + i * (fw + 18), mY + 30, fw, 16, Component.translatable("loothub.settings.minime"));
-						box.setMaxLength(16);
-						box.setHint(Component.translatable("loothub.settings.minime.hint", i + 1).withStyle(ChatFormatting.DARK_GRAY));
-						box.setValue(i < c.miniMes.size() ? c.miniMes.get(i) : "");
-						boxes.add(box);
-						buttons.add(addRenderableWidget(box));
-						miniMeStatus[i] = new int[]{mx + i * (fw + 18) + fw + 4, mY + 34};
-					}
-					buttons.add(addRenderableWidget(Button.builder(Component.translatable("loothub.settings.minime.apply"), b -> {
-						c.miniMes.clear();
-						for (net.minecraft.client.gui.components.EditBox box : boxes) {
-							String v = box.getValue().strip();
-							if (!v.isEmpty()) {
-								c.miniMes.add(v);
-								de.loothub.client.cosmetics.SkinLookup.forget(v);
-							}
-						}
-						c.save();
-					}).bounds(mx + 4 * (fw + 18), mY + 30, 90, 16).build()));
-					y = cardNoToggle(mY, 54, "loothub.settings.minime", "loothub.settings.minime.tooltip");
-				}
-				// Aura: Farbe durchschalten (aus → Gold → Blau → …)
-				{
-					int aY = y;
-					String[] colors = {"", "gold", "blue", "red", "green", "purple", "white"};
-					buttons.add(addRenderableWidget(Button.builder(auraLabel(c.auraColor), b -> {
-						int i = java.util.Arrays.asList(colors).indexOf(c.auraColor == null ? "" : c.auraColor);
-						c.auraColor = colors[(i + 1) % colors.length];
-						b.setMessage(auraLabel(c.auraColor));
-						c.save();
-					}).bounds(cl + labelW + 12, aY + 30, 140, 16).build()));
-					y = cardNoToggle(aY, 54, "loothub.settings.aura", "loothub.settings.aura.tooltip");
-				}
 			}
 			case INVENTORY -> {
 				y = card(y, 40, "loothub.settings.quick_panel", "loothub.settings.quick_panel.tooltip",
@@ -484,11 +439,6 @@ public class SettingsScreen extends LoothubScreen {
 		}
 	}
 
-	private static Component auraLabel(String color) {
-		return Component.translatable("loothub.settings.aura.color",
-				Component.translatable("loothub.aura." + (color == null || color.isEmpty() ? "off" : color)));
-	}
-
 	/** Ordner im Datei-Explorer öffnen (Windows, macOS, Linux). */
 	private static void openFolder(java.nio.file.Path dir) {
 		String os = System.getProperty("os.name", "").toLowerCase(java.util.Locale.ROOT);
@@ -609,20 +559,6 @@ public class SettingsScreen extends LoothubScreen {
 			g.fill(invHudSwatch[0], invHudSwatch[1], invHudSwatch[0] + 8, invHudSwatch[1] + 8, 0xFF000000 | WidgetConfig.get().invHudColor);
 		}
 
-		if (tab == Tab.LOOK) {
-			List<String> mm = WidgetConfig.get().miniMes;
-			for (int i = 0; i < miniMeStatus.length; i++) {
-				if (miniMeStatus[i] == null || i >= mm.size()) {
-					continue;
-				}
-				var st = de.loothub.client.cosmetics.SkinLookup.state(mm.get(i));
-				String mark = st == de.loothub.client.cosmetics.SkinLookup.State.READY ? "✔"
-						: st == de.loothub.client.cosmetics.SkinLookup.State.NOT_FOUND ? "✖" : "…";
-				int color = st == de.loothub.client.cosmetics.SkinLookup.State.READY ? GREEN
-						: st == de.loothub.client.cosmetics.SkinLookup.State.NOT_FOUND ? RED : FAINT;
-				g.drawString(font, mark, miniMeStatus[i][0], miniMeStatus[i][1], color, false);
-			}
-		}
 		if (tab == Tab.EXTRAS) {
 		// YouTube Music: Status unter dem Schalter
 		Component musicStatus;

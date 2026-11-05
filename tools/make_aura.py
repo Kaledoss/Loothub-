@@ -5,7 +5,7 @@ from PIL import Image
 
 out = sys.argv[1]
 os.makedirs(out, exist_ok=True)
-COLORS = {"gold": (255, 205, 60), "blue": (70, 170, 255), "red": (255, 70, 60), "green": (90, 235, 110),
+COLORS = {"base": (255, 255, 255)}
           "purple": (190, 90, 255), "white": (235, 240, 255)}
 N = 64
 random.seed(7)

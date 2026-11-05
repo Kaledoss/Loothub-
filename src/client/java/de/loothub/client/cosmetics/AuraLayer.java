@@ -1,7 +1,5 @@
 package de.loothub.client.cosmetics;
 
-import java.util.Set;
-
 import com.mojang.blaze3d.vertex.PoseStack;
 
 import net.minecraft.client.model.player.PlayerModel;
@@ -13,15 +11,11 @@ import net.minecraft.client.renderer.rendertype.RenderTypes;
 import net.minecraft.client.renderer.texture.OverlayTexture;
 import net.minecraft.resources.Identifier;
 
-import de.loothub.Loothub;
-
 /**
  * Cosmetic „Aura“: zwei leuchtende, nach oben züngelnde Energie-Hüllen um den ganzen Körper (eigenes Design),
- * in wählbarer Farbe. Leuchtet auch im Dunkeln.
+ * in jeder Farbe. Leuchtet auch im Dunkeln.
  */
 public final class AuraLayer extends RenderLayer<AvatarRenderState, PlayerModel> {
-	public static final Set<String> COLORS = Set.of("gold", "blue", "red", "green", "purple", "white");
-
 	public AuraLayer(RenderLayerParent<AvatarRenderState, PlayerModel> parent) {
 		super(parent);
 	}
@@ -33,7 +27,10 @@ public final class AuraLayer extends RenderLayer<AvatarRenderState, PlayerModel>
 		if (color == null || state.isInvisible) {
 			return;
 		}
-		Identifier texture = Identifier.fromNamespaceAndPath(Loothub.MOD_ID, "textures/entity/aura_" + color + ".png");
+		Identifier texture = AuraTextures.get(AuraTextures.parse(color));
+		if (texture == null) {
+			return;
+		}
 		float t = state.ageInTicks;
 		shell(poseStack, collector, state, texture, 1.10F, 0.013F * t, -0.045F * t);
 		shell(poseStack, collector, state, texture, 1.24F, -0.009F * t, -0.030F * t);

@@ -48,6 +48,7 @@ public abstract class LoothubScreen extends Screen {
 		STATS("loothub.tab.stats", Items.FILLED_MAP),
 		POKEDEX("loothub.tab.pokedex", Items.KNOWLEDGE_BOOK),
 		ITEMDEX("loothub.tab.itemdex", Items.NETHER_STAR),
+		COSMETICS("loothub.tab.cosmetics", Items.ARMOR_STAND),
 		CHANGELOG("loothub.tab.changelog", Items.BOOK),
 		SETTINGS("loothub.tab.settings", Items.COMPARATOR);
 
@@ -81,6 +82,7 @@ public abstract class LoothubScreen extends Screen {
 			case STATS -> new StatsScreen();
 			case POKEDEX -> new PokedexScreen();
 			case ITEMDEX -> new ItemdexScreen();
+			case COSMETICS -> new CosmeticsScreen();
 			case CHANGELOG -> new ChangelogScreen();
 			case SETTINGS -> new SettingsScreen();
 		});
