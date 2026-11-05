@@ -19,7 +19,8 @@ public abstract class AvatarLayersMixin {
 	@SuppressWarnings("unchecked")
 	@Inject(method = "<init>", at = @At("RETURN"))
 	private void loothub$cosmetics(EntityRendererProvider.Context context, boolean slim, CallbackInfo ci) {
-		((LivingEntityRendererInvoker) this).loothub$addLayer(
-				new MiniMeLayer((RenderLayerParent<AvatarRenderState, PlayerModel>) (Object) this));
+		RenderLayerParent<AvatarRenderState, PlayerModel> parent = (RenderLayerParent<AvatarRenderState, PlayerModel>) (Object) this;
+		((LivingEntityRendererInvoker) this).loothub$addLayer(new de.loothub.client.cosmetics.AuraLayer(parent));
+		((LivingEntityRendererInvoker) this).loothub$addLayer(new MiniMeLayer(parent));
 	}
 }

@@ -336,5 +336,15 @@
 	"loothub.settings.minime": "Mini-Mes",
 	"loothub.settings.minime.tooltip": "Bis zu 4 Mini-Mes, je mit dem Skin eines beliebigen Spielers (eigenen Namen eintragen für den eigenen Skin). Leere Felder = kein Mini-Me. Du siehst sie sofort, andere mit Loothub+ sobald sie in cosmetics.json stehen.",
 	"loothub.settings.minime.hint": "Spieler %s …",
-	"loothub.settings.minime.apply": "Übernehmen"
+	"loothub.settings.minime.apply": "Übernehmen",
+	"loothub.settings.aura": "Aura",
+	"loothub.settings.aura.tooltip": "Leuchtende Energie-Aura, die um deinen Körper nach oben züngelt. Du siehst sie sofort, andere mit Loothub+ sobald sie in cosmetics.json steht.",
+	"loothub.settings.aura.color": "Aura: %s",
+	"loothub.aura.off": "Aus",
+	"loothub.aura.gold": "Gold",
+	"loothub.aura.blue": "Blau",
+	"loothub.aura.red": "Rot",
+	"loothub.aura.green": "Grün",
+	"loothub.aura.purple": "Lila",
+	"loothub.aura.white": "Weiß"
 }

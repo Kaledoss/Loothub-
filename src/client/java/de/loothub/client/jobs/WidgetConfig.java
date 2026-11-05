@@ -76,6 +76,8 @@ public final class WidgetConfig {
 	public String miniMeSkin = "";
 	/** Bis zu 4 eigene Mini-Mes – je ein Spielername, dessen Skin es trägt. */
 	public java.util.List<String> miniMes = new java.util.ArrayList<>();
+	/** Eigene Aura-Farbe (leer = keine). */
+	public String auraColor = "";
 	/** AFK-Ansicht: nach 5 Minuten ohne Eingabe herauszoomen und den Charakter schlafen legen. */
 	public boolean afkView = true;
 	/** Eingesammelte Marktverkäufe als „Markt“ im Job-Verlauf. */

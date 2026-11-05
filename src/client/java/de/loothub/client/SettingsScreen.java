@@ -241,6 +241,18 @@ public class SettingsScreen extends LoothubScreen {
 					}).bounds(mx + 4 * (fw + 18), mY + 30, 90, 16).build()));
 					y = cardNoToggle(mY, 54, "loothub.settings.minime", "loothub.settings.minime.tooltip");
 				}
+				// Aura: Farbe durchschalten (aus → Gold → Blau → …)
+				{
+					int aY = y;
+					String[] colors = {"", "gold", "blue", "red", "green", "purple", "white"};
+					buttons.add(addRenderableWidget(Button.builder(auraLabel(c.auraColor), b -> {
+						int i = java.util.Arrays.asList(colors).indexOf(c.auraColor == null ? "" : c.auraColor);
+						c.auraColor = colors[(i + 1) % colors.length];
+						b.setMessage(auraLabel(c.auraColor));
+						c.save();
+					}).bounds(cl + labelW + 12, aY + 30, 140, 16).build()));
+					y = cardNoToggle(aY, 54, "loothub.settings.aura", "loothub.settings.aura.tooltip");
+				}
 			}
 			case INVENTORY -> {
 				y = card(y, 40, "loothub.settings.quick_panel", "loothub.settings.quick_panel.tooltip",
@@ -470,6 +482,11 @@ public class SettingsScreen extends LoothubScreen {
 		for (net.minecraft.client.gui.components.AbstractWidget b : buttons) {
 			b.visible = b.getY() >= top && b.getY() + b.getHeight() <= cb;
 		}
+	}
+
+	private static Component auraLabel(String color) {
+		return Component.translatable("loothub.settings.aura.color",
+				Component.translatable("loothub.aura." + (color == null || color.isEmpty() ? "off" : color)));
 	}
 
 	/** Ordner im Datei-Explorer öffnen (Windows, macOS, Linux). */
