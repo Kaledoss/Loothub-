@@ -72,6 +72,8 @@ public final class WidgetConfig {
 	public long dailyItemLimit = -1;
 	/** Loothub-Cosmetics (z. B. Mini-Me) bei Spielern anzeigen. */
 	public boolean cosmetics = true;
+	/** Mini-Me mit dem Skin dieses Spielers (leer = kein eigenes Mini-Me per Einstellung). */
+	public String miniMeSkin = "";
 	/** AFK-Ansicht: nach 5 Minuten ohne Eingabe herauszoomen und den Charakter schlafen legen. */
 	public boolean afkView = true;
 	/** Eingesammelte Marktverkäufe als „Markt“ im Job-Verlauf. */

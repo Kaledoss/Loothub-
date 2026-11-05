@@ -63,6 +63,7 @@ public class SettingsScreen extends LoothubScreen {
 	private final int[][] colorSwatches = new int[3][];
 	private int[] invHudSwatch;
 	private int musicCardY;
+	private int miniMeStatusX, miniMeStatusY = -1;
 	private int pcgFieldX;
 	private int pcgFieldW;
 	private Button resetButton;
@@ -102,6 +103,7 @@ public class SettingsScreen extends LoothubScreen {
 		WidgetConfig c = WidgetConfig.get();
 		labelW = Math.min(130, cw / 3);
 		colorSwatches[0] = colorSwatches[1] = colorSwatches[2] = null;
+		miniMeStatusY = -1;
 		invHudSwatch = null;
 
 		// Reiter oben (fest, scrollt nicht mit)
@@ -210,6 +212,31 @@ public class SettingsScreen extends LoothubScreen {
 						() -> c.afkView, v -> c.afkView = v);
 				y = card(y, 40, "loothub.settings.cosmetics", "loothub.settings.cosmetics.tooltip",
 						() -> c.cosmetics, v -> c.cosmetics = v);
+				// Mini-Me mit dem Skin eines beliebigen Spielers
+				{
+					int mY = y;
+					int mx = cl + labelW + 12;
+					net.minecraft.client.gui.components.EditBox skinBox = new net.minecraft.client.gui.components.EditBox(
+							font, mx, mY + 30, 140, 16, Component.translatable("loothub.settings.minime"));
+					skinBox.setMaxLength(16);
+					skinBox.setHint(Component.translatable("loothub.settings.minime.hint")
+							.withStyle(ChatFormatting.DARK_GRAY));
+					skinBox.setValue(c.miniMeSkin == null ? "" : c.miniMeSkin);
+					buttons.add(addRenderableWidget(skinBox));
+					buttons.add(addRenderableWidget(Button.builder(Component.translatable("loothub.settings.minime.apply"), b -> {
+						c.miniMeSkin = skinBox.getValue().strip();
+						de.loothub.client.cosmetics.SkinLookup.forget(c.miniMeSkin);
+						c.save();
+					}).bounds(mx + 144, mY + 30, 90, 16).build()));
+					buttons.add(addRenderableWidget(Button.builder(Component.translatable("loothub.settings.minime.off"), b -> {
+						c.miniMeSkin = "";
+						skinBox.setValue("");
+						c.save();
+					}).bounds(mx + 238, mY + 30, 60, 16).build()));
+					miniMeStatusY = mY + 34;
+					miniMeStatusX = mx + 302;
+					y = cardNoToggle(mY, 54, "loothub.settings.minime", "loothub.settings.minime.tooltip");
+				}
 			}
 			case INVENTORY -> {
 				y = card(y, 40, "loothub.settings.quick_panel", "loothub.settings.quick_panel.tooltip",
@@ -561,6 +588,16 @@ public class SettingsScreen extends LoothubScreen {
 			g.fill(invHudSwatch[0], invHudSwatch[1], invHudSwatch[0] + 8, invHudSwatch[1] + 8, 0xFF000000 | WidgetConfig.get().invHudColor);
 		}
 
+		if (tab == Tab.LOOK && miniMeStatusY >= 0) {
+			String skinName = WidgetConfig.get().miniMeSkin;
+			if (skinName != null && !skinName.isBlank()) {
+				var st = de.loothub.client.cosmetics.SkinLookup.state(skinName);
+				Component status = Component.translatable("loothub.settings.minime.status." + st.name().toLowerCase(java.util.Locale.ROOT));
+				g.drawString(font, status, miniMeStatusX, miniMeStatusY,
+						st == de.loothub.client.cosmetics.SkinLookup.State.READY ? GREEN
+								: st == de.loothub.client.cosmetics.SkinLookup.State.NOT_FOUND ? RED : FAINT, false);
+			}
+		}
 		if (tab == Tab.EXTRAS) {
 		// YouTube Music: Status unter dem Schalter
 		Component musicStatus;

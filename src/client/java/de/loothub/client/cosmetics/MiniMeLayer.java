@@ -29,6 +29,13 @@ public final class MiniMeLayer extends RenderLayer<AvatarRenderState, PlayerMode
 			return;
 		}
 		Identifier texture = state.skin.body().texturePath();
+		String other = Cosmetics.miniMeSkin(state);
+		if (other != null) {
+			net.minecraft.world.entity.player.PlayerSkin s = SkinLookup.get(other);
+			if (s != null) {
+				texture = s.body().texturePath(); // Skin eines anderen Spielers (solange er lädt: eigener)
+			}
+		}
 		float bob = (float) Math.sin(state.ageInTicks * 0.1F) * 0.06F;
 		poseStack.pushPose();
 		// neben der Schulter, etwas nach hinten; im Modellraum zeigt y nach unten
