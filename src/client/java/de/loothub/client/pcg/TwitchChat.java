@@ -24,7 +24,7 @@ import de.loothub.Loothub;
  * Geschrieben wird ausschließlich, wenn der Spieler einen Knopf drückt – nie automatisch.
  */
 public final class TwitchChat {
-	public enum Status { OFF, CONNECTING, READ_ONLY, CONNECTED, ERROR }
+	public enum Status { OFF, CONNECTING, READ_ONLY, CONNECTED, ERROR, NO_CHANNEL }
 
 	private static final String HOST = "irc.chat.twitch.tv";
 	private static final int PORT = 6697;
@@ -41,8 +41,41 @@ public final class TwitchChat {
 	private TwitchChat() {
 	}
 
+	/** Seit wann die Verbindung steht, ohne dass Twitch das Betreten des Kanals bestätigt hat (0 = nicht offen). */
+	private static volatile long waitingForJoinSince;
+
 	public static Status status() {
+		long since = waitingForJoinSince;
+		if (status == Status.CONNECTING && since > 0 && System.currentTimeMillis() - since > 15_000) {
+			return Status.NO_CHANNEL; // Kanal gibt es nicht (Tippfehler, Anzeigename statt Kanalname …)
+		}
 		return status;
+	}
+
+	/** Kanal, mit dem gerade verbunden wird bzw. ist. */
+	public static String channel() {
+		return channel;
+	}
+
+	/** Kanalnamen aus allem machen, was man eintippen könnte: Link, @Name, #Name, Großbuchstaben, Leerzeichen. */
+	public static String normalizeChannel(String input) {
+		if (input == null) {
+			return "";
+		}
+		String c = input.strip().toLowerCase(Locale.ROOT);
+		int slash = c.indexOf("twitch.tv/");
+		if (slash >= 0) {
+			c = c.substring(slash + "twitch.tv/".length());
+		}
+		int end = c.indexOf('/');
+		if (end >= 0) {
+			c = c.substring(0, end);
+		}
+		int q = c.indexOf('?');
+		if (q >= 0) {
+			c = c.substring(0, q);
+		}
+		return c.replaceAll("[^a-z0-9_]", "");
 	}
 
 	public static boolean canWrite() {
@@ -55,7 +88,7 @@ public final class TwitchChat {
 
 	/** Startet bzw. wechselt die Verbindung, wenn sich Kanal oder Nutzer geändert haben. */
 	public static synchronized void ensure(boolean enabled, String wantChannel, String wantUser) {
-		String ch = wantChannel == null ? "" : wantChannel.strip().toLowerCase(Locale.ROOT).replaceFirst("^#", "");
+		String ch = normalizeChannel(wantChannel);
 		String us = wantUser == null ? "" : wantUser.strip().toLowerCase(Locale.ROOT);
 		if (!enabled || ch.isEmpty()) {
 			stop();
@@ -90,6 +123,7 @@ public final class TwitchChat {
 		}
 		status = Status.OFF;
 		canWrite = false;
+		waitingForJoinSince = 0;
 	}
 
 	/** Grund, warum die letzte Nachricht nicht gesendet wurde (für die Anzeige). */
@@ -179,6 +213,7 @@ public final class TwitchChat {
 				w.write("JOIN #" + channel + "\r\n");
 				w.flush();
 				out = w;
+				waitingForJoinSince = System.currentTimeMillis();
 				String line;
 				while (thread == me && (line = in.readLine()) != null) {
 					if (line.startsWith("PING")) {
@@ -191,7 +226,8 @@ public final class TwitchChat {
 					if (line.contains(" 001 ")) {
 						backoff = 2000;
 					}
-					if (line.contains(" JOIN #" + channel)) {
+					if (line.contains(" JOIN #" + channel) || line.contains(" ROOMSTATE #" + channel)) {
+						waitingForJoinSince = 0;
 						canWrite = login;
 						status = login ? Status.CONNECTED : Status.READ_ONLY;
 					}
@@ -215,6 +251,7 @@ public final class TwitchChat {
 					Loothub.LOGGER.debug("Twitch-Verbindung getrennt", e);
 				}
 			} finally {
+				waitingForJoinSince = 0;
 				out = null;
 				canWrite = false;
 				socket = null;

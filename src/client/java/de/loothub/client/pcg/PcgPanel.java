@@ -398,9 +398,10 @@ public final class PcgPanel {
 		return switch (TwitchChat.status()) {
 			case OFF -> "Aus";
 			case CONNECTING -> "Verbinde …";
-			case READ_ONLY -> "Nur lesen";
-			case CONNECTED -> "Verbunden";
+			case READ_ONLY -> "Nur lesen · #" + TwitchChat.channel();
+			case CONNECTED -> "Verbunden · #" + TwitchChat.channel();
 			case ERROR -> "Token falsch";
+			case NO_CHANNEL -> "Kanal nicht gefunden";
 		};
 	}
 
@@ -408,7 +409,7 @@ public final class PcgPanel {
 		return switch (TwitchChat.status()) {
 			case CONNECTED -> 0xFF55E06A;
 			case READ_ONLY -> 0xFFFFD66B;
-			case ERROR -> 0xFFFF5050;
+			case ERROR, NO_CHANNEL -> 0xFFFF5050;
 			default -> LoothubScreen.FAINT;
 		};
 	}
