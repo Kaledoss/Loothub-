@@ -266,7 +266,7 @@ public final class StatsTracker {
 	}
 
 	// ---- Bohrer & Co.: bauen mehrere Blöcke um den anvisierten herum auf einmal ab (das erledigt der Server).
-	// Vor dem Abbauen wird die Umgebung (3×3×3) gemerkt; verschwinden dort kurz nach dem Hauptblock weitere
+	// Vor dem Abbauen wird die Umgebung (3×3×3, beim Bohrer V3 5×5×5) gemerkt; verschwinden dort kurz nach dem Hauptblock weitere
 	// Blöcke, zählen sie mit. Nur mit Spezial-Werkzeugen (eigener Name/eigenes Modell), damit z. B. fallender
 	// Sand oder Wasser nicht mitgezählt werden.
 	private static final java.util.Map<net.minecraft.core.BlockPos, BlockState> AREA = new java.util.HashMap<>();
@@ -290,9 +290,10 @@ public final class StatsTracker {
 			AREA.clear();
 			areaCenter = center;
 		}
-		for (int x = -1; x <= 1; x++) {
-			for (int y = -1; y <= 1; y++) {
-				for (int z = -1; z <= 1; z++) {
+		int r = areaRadius(mc.player.getMainHandItem());
+		for (int x = -r; x <= r; x++) {
+			for (int y = -r; y <= r; y++) {
+				for (int z = -r; z <= r; z++) {
 					if (x == 0 && y == 0 && z == 0) {
 						continue;
 					}
@@ -306,6 +307,13 @@ public final class StatsTracker {
 				}
 			}
 		}
+	}
+
+	/** Reichweite um den anvisierten Block: Bohrer V3 baut 5×5 ab (2 Blöcke), alles andere (z. B. Bohrer V2) 3×3. */
+	private static int areaRadius(ItemStack tool) {
+		var name = tool.get(net.minecraft.core.component.DataComponents.CUSTOM_NAME);
+		String n = name == null ? "" : name.getString().toLowerCase(java.util.Locale.ROOT);
+		return n.contains("bohrer") && n.contains("v3") ? 2 : 1;
 	}
 
 	private static void startAreaCheck(net.minecraft.core.BlockPos center, long now) {
