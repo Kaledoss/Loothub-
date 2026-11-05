@@ -37,6 +37,7 @@ public final class Motion {
 		// Umgebung (alle 10 Ticks neu): 1 Regen, 2 Schnee, 4 Wasser, 8 Lava in der Nähe
 		int env;
 		int envTick = -100;
+		float rise;
 	}
 
 	private Motion() {
@@ -136,6 +137,14 @@ public final class Motion {
 		}
 		tr.amp += (targetAmp - tr.amp) * (1.0F - (float) Math.exp(-dt * 3.0F));
 		tr.phase += dt * 20.0F * (rate + tr.jumpKick * 0.5F);
+		// ---- Steig-/Sinkflug (ohne schnellen Vorwärtsflug): Stärke −1 (runter) … +1 (hoch), weich ein-/ausgeblendet
+		boolean airborneFlight = local ? p.getAbilities().flying : (!p.onGround() && Math.abs(dy) > 0.05 && !p.isFallFlying());
+		float riseTarget = airborneFlight && tr.fly < 0.5F && !p.isFallFlying() && !p.isInWater()
+				? Mth.clamp((float) dy / 0.3F, -1.0F, 1.0F) : 0.0F;
+		if (Math.abs(riseTarget) < 0.25F) {
+			riseTarget = 0.0F; // nur bei deutlichem Hoch-/Runterfliegen
+		}
+		tr.rise += (riseTarget - tr.rise) * (1.0F - (float) Math.exp(-dt * 6.0F));
 		// ---- Umgebung ----
 		// nur nötig, wenn Mini-Mes oder Haustiere darauf reagieren können
 		if (Math.abs(p.tickCount - tr.envTick) >= 10
@@ -145,7 +154,7 @@ public final class Motion {
 		}
 		STATES.put(state, new float[]{lag, tr.fwd, tr.vy, flyEased, tr.charge, idle, local ? 1.0F : 0.0F,
 				Mth.clamp(tr.open, -0.15F, 1.2F), tr.phase, tr.amp + tr.jumpKick * 0.8F, (float) tr.env,
-				p.onGround() ? 1.0F : 0.0F});
+				p.onGround() ? 1.0F : 0.0F, tr.rise});
 		if (TRACKS.size() > 200) {
 			TRACKS.values().removeIf(t -> Math.abs(p.tickCount - t.seenTick) > 1200);
 		}
@@ -208,6 +217,12 @@ public final class Motion {
 	/** Umgebung als Bitmaske ({@link #ENV_RAIN} …). */
 	public static int env(Object state) {
 		return (int) get(state, 10);
+	}
+
+	/** Steig-/Sinkflug: +1 = steigt, −1 = sinkt, 0 = keins. */
+	public static float rise(Object state) {
+		float[] v = STATES.get(state);
+		return v == null || v.length < 13 ? 0.0F : v[12];
 	}
 
 	public static boolean onGround(Object state) {

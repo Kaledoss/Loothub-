@@ -206,6 +206,9 @@ public class CosmeticsScreen extends LoothubScreen {
 						v -> c.footsteps = v);
 				sections.add(new Section(y, 54, "loothub.cosmetics.footsteps", "loothub.cosmetics.footsteps.desc"));
 				y += 54 + GAP;
+				toggle(lx, y + 20, lw, () -> c.riseTrail, v -> c.riseTrail = v);
+				sections.add(new Section(y, 42, "loothub.cosmetics.risetrail", "loothub.cosmetics.risetrail.desc"));
+				y += 42 + GAP;
 			}
 		}
 	}

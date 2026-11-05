@@ -58,6 +58,8 @@ public final class WidgetConfig {
 	/** Fußspuren: "" / "sparks" / "flames". */
 	public String footsteps = "";
 	public boolean flyTrail = false;
+	/** Energie-Kegel beim Hoch-/Runterfliegen. */
+	public boolean riseTrail = false;
 	public boolean auraLevels = false;
 	/** Haustiere je Platz als „slime,allay“ ("" = keins). */
 	public String pets = "";

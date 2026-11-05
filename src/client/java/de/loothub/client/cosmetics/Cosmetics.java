@@ -52,6 +52,8 @@ public final class Cosmetics {
 	public static final String PETS = "pets";
 	/** Mini-Mes winken, jubeln und gähnen. */
 	public static final String EMOTES = "emotes";
+	/** Energie-Kegel beim Hoch- und Runterfliegen. */
+	public static final String RISE_TRAIL = "risetrail";
 	/** Farbe der eigenen Flügel bzw. der Mini-Me-Flügel („#RRGGBB“, leer = Originalfarben). */
 	public static final String WING_COLOR = "wingcolor";
 	public static final String MINI_WING_COLOR = "minimewingcolor";
@@ -251,6 +253,9 @@ public final class Cosmetics {
 			}
 			if (cfg.auraLevels) {
 				mine.add(AURA_LEVELS);
+			}
+			if (cfg.riseTrail) {
+				mine.add(RISE_TRAIL);
 			}
 			if (cfg.miniMeEmotes) {
 				mine.add(EMOTES);
