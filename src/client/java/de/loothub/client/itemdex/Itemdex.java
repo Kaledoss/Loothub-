@@ -242,7 +242,9 @@ public final class Itemdex {
 		}
 		// Menü-Knöpfe und Platzhalter aussortieren
 		String item = BuiltInRegistries.ITEM.getKey(s.getItem()).getPath();
-		return !item.endsWith("glass_pane") && !item.equals("barrier") && !item.equals("light");
+		// Karten (z. B. Bilder-Maps in Rahmen) sind keine Server-Items
+		return !item.endsWith("glass_pane") && !item.equals("barrier") && !item.equals("light")
+				&& !item.equals("filled_map") && !item.equals("map");
 	}
 
 	/** Zeilen, die das Auktionshaus (oder ein Menü) an die Beschreibung anhängt – kommen nicht in den Itemdex. */
