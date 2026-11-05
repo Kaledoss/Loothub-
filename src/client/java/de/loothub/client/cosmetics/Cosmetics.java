@@ -50,6 +50,8 @@ public final class Cosmetics {
 	public static final String PETS = "pets";
 	/** Mini-Mes winken, jubeln und gähnen. */
 	public static final String EMOTES = "emotes";
+	/** Stärke der Aura in Prozent (0–100). */
+	public static final String AURA_STRENGTH = "aurastrength";
 	public static final List<String> FOOTSTEP_STYLES = List.of("sparks", "flames");
 	public static final List<String> PET_TYPES = List.of("slime", "allay", "bee", "vex");
 	public static final int MAX_PETS = 2;
@@ -222,6 +224,7 @@ public final class Cosmetics {
 				values.put(MINI_ME_WINGS, cfg.miniMeWings);
 				mine.add(MINI_ME_WINGS);
 			}
+			values.put(AURA_STRENGTH, String.valueOf(cfg.auraStrength));
 			putOwn(mine, values, EYES, cfg.eyeColor);
 			putOwn(mine, values, FOOTSTEPS, cfg.footsteps);
 			putOwn(mine, values, PETS, cfg.pets == null || cfg.pets.replace(",", "").isBlank() ? "" : cfg.pets);
@@ -346,6 +349,17 @@ public final class Cosmetics {
 	/** Farbe der Aura dieses Spielers, oder null ohne Aura. */
 	public static String auraColor(Object state) {
 		return AURAS.get(state);
+	}
+
+	/** Stärke der Aura in Prozent (Standard 60). */
+	public static int auraStrength(Object state) {
+		Map<String, String> v = VALUES.get(state);
+		String s = v == null ? null : v.get(AURA_STRENGTH);
+		try {
+			return s == null ? 60 : Integer.parseInt(s.strip());
+		} catch (NumberFormatException e) {
+			return 60;
+		}
 	}
 
 	/** Eigene Mini-Mes aus den Einstellungen nach Platz (null = Platz frei), oder null wenn keins gewählt ist. */

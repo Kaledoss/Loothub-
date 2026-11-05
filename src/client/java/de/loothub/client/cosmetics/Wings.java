@@ -33,9 +33,11 @@ public final class Wings {
 			final float s = side;
 			poseStack.pushPose();
 			// Wurzel zwischen den Schulterblättern, knapp hinter dem Rücken
-			poseStack.translate(s * 0.08F, -0.02F, 0.19F);
-			// weit geöffnet, nur leicht nach hinten angewinkelt, Spitzen etwas nach oben; schlägt sanft auf und zu
-			poseStack.mulPose(Axis.YP.rotationDegrees(s * (16.0F + flap * 15.0F)));
+			// Wurzel auf dem Rücken, etwas Abstand für Rüstung/Jacke
+			poseStack.translate(s * 0.1F, -0.02F, 0.26F);
+			// nach hinten angewinkelt (Spitzen weg vom Körper), Spitzen etwas nach oben; schlägt sanft auf und zu.
+			// Vorzeichen: YP dreht +x Richtung −z (nach vorn) – daher −s, damit die Flügel nach hinten zeigen
+			poseStack.mulPose(Axis.YP.rotationDegrees(-s * (18.0F + flap * 15.0F)));
 			poseStack.mulPose(Axis.ZP.rotationDegrees(-s * 10.0F));
 			collector.submitCustomGeometry(poseStack, RenderTypes.entityTranslucent(texture), (pose, vc) -> {
 				float w = HEIGHT * ASPECT * s;

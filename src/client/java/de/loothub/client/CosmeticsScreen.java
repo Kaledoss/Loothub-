@@ -35,8 +35,7 @@ public class CosmeticsScreen extends LoothubScreen {
 	private enum Tab {
 		COMPANIONS("loothub.cosmetics.tab.companions"),
 		BODY("loothub.cosmetics.tab.body"),
-		EFFECTS("loothub.cosmetics.tab.effects"),
-		SHARE("loothub.cosmetics.tab.share");
+		EFFECTS("loothub.cosmetics.tab.effects");
 
 		final String key;
 
@@ -160,7 +159,26 @@ public class CosmeticsScreen extends LoothubScreen {
 				sections.add(new Section(y, 42, "loothub.cosmetics.emotes", "loothub.cosmetics.emotes.desc"));
 			}
 			case BODY -> {
-				// Aura: an/aus + Farbe
+				// Aura: an/aus + Farbe + Stärke
+				int auraY = y;
+				int sliderX = descX + 210;
+				addRenderableWidget(new net.minecraft.client.gui.components.AbstractSliderButton(sliderX, auraY + 30,
+						Math.max(80, Math.min(150, cr - 8 - sliderX)), 16, Component.empty(), c.auraStrength / 100.0) {
+					{
+						updateMessage();
+					}
+
+					@Override
+					protected void updateMessage() {
+						setMessage(Component.translatable("loothub.cosmetics.aura.strength", (int) Math.round(value * 100)));
+					}
+
+					@Override
+					protected void applyValue() {
+						c.auraStrength = (int) Math.round(value * 100);
+						c.save();
+					}
+				});
 				y = colorSection(y, lx, lw, "loothub.settings.aura", "loothub.settings.aura.tooltip",
 						() -> c.auraColor, v -> c.auraColor = v, () -> c.auraLast, v -> c.auraLast = v, "#FFCD3C");
 				// Flügel für mich
@@ -187,14 +205,6 @@ public class CosmeticsScreen extends LoothubScreen {
 				y += 42 + GAP;
 				toggle(lx, y + 20, lw, () -> c.auraLevels, v -> c.auraLevels = v);
 				sections.add(new Section(y, 42, "loothub.cosmetics.auralevels", "loothub.cosmetics.auralevels.desc"));
-			}
-			case SHARE -> {
-				addRenderableWidget(Button.builder(Component.translatable("loothub.cosmetics.copy"), b -> {
-					minecraft.keyboardHandler.setClipboard(jsonLine());
-					b.setMessage(Component.translatable("loothub.cosmetics.copied").withStyle(ChatFormatting.GREEN));
-				}).bounds(lx, y + 20, lw, 16).build());
-				jsonY = y + 34;
-				sections.add(new Section(y, 110, "loothub.cosmetics.share", "loothub.cosmetics.share.desc"));
 			}
 		}
 	}

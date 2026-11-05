@@ -41,6 +41,8 @@ public final class WidgetConfig {
 	/** Eigenes Cape ausblenden (nur eigene Darstellung). */
 	public boolean hideOwnCape = false;
 	/** Leuchtende Augen ("" = aus, sonst „#RRGGBB“). */
+	/** Stärke der Aura in Prozent. */
+	public int auraStrength = 60;
 	public String eyeColor = "";
 	public String eyeLast = "";
 	public boolean crown = false;

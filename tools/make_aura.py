@@ -12,8 +12,8 @@ random.seed(7)
 def field(x, y):
     u, v = x / N, y / N
     sway = 0.06 * math.sin(2 * math.pi * (2 * v)) + 0.04 * math.sin(2 * math.pi * (3 * v) + 1.7)
-    stripes = 0.5 + 0.5 * math.sin(2 * math.pi * (7 * u + sway))
-    stripes2 = 0.5 + 0.5 * math.sin(2 * math.pi * (11 * u - sway * 1.5) + 2.1)
+    stripes = 0.5 + 0.5 * math.sin(2 * math.pi * (4 * u + sway))
+    stripes2 = 0.5 + 0.5 * math.sin(2 * math.pi * (6 * u - sway * 1.5) + 2.1)
     breaks = 0.5 + 0.5 * math.sin(2 * math.pi * (2 * v + 3 * u) + 0.8)
     breaks2 = 0.5 + 0.5 * math.sin(2 * math.pi * (3 * v - 5 * u) + 2.4)
     return (0.65 * stripes + 0.35 * stripes2) * (0.45 + 0.55 * breaks) * (0.6 + 0.4 * breaks2)
@@ -26,7 +26,7 @@ for name, (r, g, b) in COLORS.items():
         for x in range(N):
             t = (vals[y][x] - lo) / (hi - lo)
             # schmale helle Flammenzungen, dazwischen fast durchsichtig
-            s = max(0.0, (t - 0.32) / 0.68) ** 1.25  # breite, kräftige Zungen
+            s = 0.75 * max(0.0, (t - 0.3) / 0.7) ** 1.1  # breite, weiche Zungen (wenig Kontrast → flackert nicht)
             a = int(255 * min(1.0, s * 1.2))
             k = s  # dunkel = unsichtbar (additiv), hell = Flamme
             px[x, y] = (min(255, int(r * k)), min(255, int(g * k)), min(255, int(b * k)), a)

@@ -65,7 +65,9 @@ public final class Motion {
 		} else {
 			flying = !p.onGround() && Math.abs(dy) < 0.12 && horiz > 0.12; // andere: schwebend und schnell
 		}
-		boolean target = WidgetConfig.get().flyPose && flying && horiz > 0.06 && !p.isFallFlying() && !p.isInWater()
+		// nur bei schnellem Vorwärtsflug (z. B. Sprint-Flug) – normales Schweben/Bewegen bleibt aufrecht
+		boolean fast = fwd > 0.75F || (p == Minecraft.getInstance().player && p.isSprinting() && fwd > 0.4F);
+		boolean target = WidgetConfig.get().flyPose && flying && fast && !p.isFallFlying() && !p.isInWater()
 				&& !p.isPassenger() && !p.isSleeping();
 		tr.fly = Mth.clamp(tr.fly + (target ? dt : -dt) / 0.35F, 0.0F, 1.0F);
 		float flyEased = tr.fly * tr.fly * (3.0F - 2.0F * tr.fly);

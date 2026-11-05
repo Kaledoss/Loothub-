@@ -22,9 +22,11 @@ import de.loothub.Loothub;
 public final class AuraLayer extends RenderLayer<AvatarRenderState, PlayerModel> {
 	private static final Identifier TEXTURE = Identifier.fromNamespaceAndPath(Loothub.MOD_ID, "textures/entity/aura_base.png");
 	private static final int SEGMENTS = 24;
-	/** Höhen (Modellraum, y nach unten: Füße bei 1,5, Kopf oben bei −0,5) und Helligkeit an diesen Höhen. */
-	private static final float[] LEVELS = {1.6F, 1.0F, 0.2F, -0.5F, -1.2F, -1.9F};
-	private static final float[] GLOW = {0.7F, 1.25F, 1.2F, 0.95F, 0.45F, 0.0F};
+	/** Höhen (Modellraum, y nach unten: Füße bei 1,5, Kopf oben bei −0,5). */
+	private static final float[] LEVELS = {1.55F, 1.1F, 0.6F, 0.0F, -0.45F, -0.95F, -1.4F};
+	/** Körperform: Breite je Höhe (Füße schmal, Schultern am breitesten, nach oben zur Flammenspitze zusammenlaufend). */
+	private static final float[] WIDTH = {0.40F, 0.48F, 0.52F, 0.58F, 0.48F, 0.32F, 0.12F};
+	private static final float[] GLOW = {0.35F, 0.75F, 0.9F, 0.85F, 0.6F, 0.3F, 0.0F};
 
 	public AuraLayer(RenderLayerParent<AvatarRenderState, PlayerModel> parent) {
 		super(parent);
@@ -41,11 +43,15 @@ public final class AuraLayer extends RenderLayer<AvatarRenderState, PlayerModel>
 		float t = state.ageInTicks;
 		// Aura-Stufen: beim Sprinten/Fliegen größer, heller und schneller; ab Stufe 2,5 zucken Blitze
 		float lv = Cosmetics.has(state, Cosmetics.AURA_LEVELS) ? Motion.charge(state) : 0.0F;
-		float w = 1.0F + 0.09F * lv, k = 1.0F + 0.22F * lv, sp = 1.0F + 0.35F * lv;
+		float strength = Math.max(0, Math.min(100, Cosmetics.auraStrength(state))) / 100.0F * 1.4F;
+		if (strength <= 0.01F) {
+			return;
+		}
+		float w = 1.0F + 0.08F * lv, k = strength * (1.0F + 0.2F * lv), sp = 1.0F + 0.25F * lv;
 		collector.submitCustomGeometry(poseStack, RenderTypes.energySwirl(TEXTURE, 0.0F, 0.0F), (pose, vc) -> {
-			ring(pose, vc, rgb, 0.60F * w, 0.48F * w, 1.15F * k, 3.0F, t * 0.05F * sp, 0.0F);
-			ring(pose, vc, rgb, 0.92F * w, 0.74F * w, 0.95F * k, 4.0F, t * 0.036F * sp, 0.37F);
-			ring(pose, vc, rgb, 1.25F * w, 1.00F * w, 0.6F * k, 5.0F, t * 0.028F * sp, 0.71F);
+			// zwei Hüllen eng am Körper: innen kräftig, außen weich
+			shell(pose, vc, rgb, 1.0F * w, k, 3.0F, t * 0.028F * sp, 0.0F);
+			shell(pose, vc, rgb, 1.35F * w, 0.5F * k, 4.0F, t * 0.022F * sp, 0.37F);
 		});
 		if (lv > 2.5F) {
 			float a = (lv - 2.5F) * 2.0F;
@@ -88,26 +94,25 @@ public final class AuraLayer extends RenderLayer<AvatarRenderState, PlayerModel>
 		vc.addVertex(pose, x, y, z).setColor(r, g, b, Math.min(1.0F, a) * 0.8F);
 	}
 
-	/** Ein Flammenring: Ellipse aus senkrechten Streifen, Textur läuft nach oben, oben dunkel = unsichtbar. */
-	private static void ring(PoseStack.Pose pose, VertexConsumer vc, int rgb, float rx, float rz, float strength,
-			float uRepeat, float scroll, float uShift) {
+	/** Eine Flammenhülle in Körperform: Ellipse je Höhe (vorn/hinten schmaler als seitlich), Textur läuft nach oben. */
+	private static void shell(PoseStack.Pose pose, VertexConsumer vc, int rgb, float scale, float strength, float uRepeat,
+			float scroll, float uShift) {
 		float r = ((rgb >> 16) & 0xFF) / 255f, g = ((rgb >> 8) & 0xFF) / 255f, b = (rgb & 0xFF) / 255f;
 		for (int s = 0; s < SEGMENTS; s++) {
 			double a0 = 2 * Math.PI * s / SEGMENTS;
 			double a1 = 2 * Math.PI * (s + 1) / SEGMENTS;
-			float x0 = (float) Math.cos(a0) * rx, z0 = (float) Math.sin(a0) * rz;
-			float x1 = (float) Math.cos(a1) * rx, z1 = (float) Math.sin(a1) * rz;
+			float c0 = (float) Math.cos(a0), s0 = (float) Math.sin(a0), c1 = (float) Math.cos(a1), s1 = (float) Math.sin(a1);
 			float u0 = uShift + uRepeat * s / SEGMENTS, u1 = uShift + uRepeat * (s + 1) / SEGMENTS;
 			float nx = (float) Math.cos((a0 + a1) / 2), nz = (float) Math.sin((a0 + a1) / 2);
 			for (int l = 0; l < LEVELS.length - 1; l++) {
 				float yA = LEVELS[l], yB = LEVELS[l + 1];
-				// v wächst mit der Höhe; „+ scroll“ lässt die Flammen nach oben wandern
-				float vA = -yA * 0.6F + scroll, vB = -yB * 0.6F + scroll;
+				float wA = WIDTH[l] * scale, wB = WIDTH[l + 1] * scale;
+				float vA = -yA * 0.5F + scroll, vB = -yB * 0.5F + scroll;
 				int cA = argb(r, g, b, GLOW[l] * strength), cB = argb(r, g, b, GLOW[l + 1] * strength);
-				vertex(pose, vc, x0, yA, z0, u0, vA, cA, nx, nz);
-				vertex(pose, vc, x1, yA, z1, u1, vA, cA, nx, nz);
-				vertex(pose, vc, x1, yB, z1, u1, vB, cB, nx, nz);
-				vertex(pose, vc, x0, yB, z0, u0, vB, cB, nx, nz);
+				vertex(pose, vc, c0 * wA, yA, s0 * wA * 0.62F, u0, vA, cA, nx, nz);
+				vertex(pose, vc, c1 * wA, yA, s1 * wA * 0.62F, u1, vA, cA, nx, nz);
+				vertex(pose, vc, c1 * wB, yB, s1 * wB * 0.62F, u1, vB, cB, nx, nz);
+				vertex(pose, vc, c0 * wB, yB, s0 * wB * 0.62F, u0, vB, cB, nx, nz);
 			}
 		}
 	}
