@@ -133,8 +133,18 @@ public final class YtMusic {
 			return;
 		}
 		JsonObject o = JsonParser.parseString(r.body()).getAsJsonObject();
-		song = new Song(str(o, "title"), str(o, "artist"), bool(o, "isPaused"), num(o, "elapsedSeconds"),
-				num(o, "songDuration"), System.currentTimeMillis());
+		String title = str(o, "title");
+		boolean paused = bool(o, "isPaused");
+		double elapsed = num(o, "elapsedSeconds");
+		// nicht rückwärts springen, wenn die App eine leicht ältere Position meldet (echtes Spulen wird übernommen)
+		Song prev = song;
+		if (!paused && prev != null && !prev.paused() && prev.title().equals(title)) {
+			double predicted = prev.position();
+			if (elapsed < predicted && predicted - elapsed < 3) {
+				elapsed = predicted;
+			}
+		}
+		song = new Song(title, str(o, "artist"), paused, elapsed, num(o, "songDuration"), System.currentTimeMillis());
 		status = Status.OK;
 	}
 

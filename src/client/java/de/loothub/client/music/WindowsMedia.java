@@ -30,7 +30,7 @@ public final class WindowsMedia {
 			" if($s){",
 			"  $p=Await ($s.TryGetMediaPropertiesAsync()) ([Windows.Media.Control.GlobalSystemMediaTransportControlsSessionMediaProperties])",
 			"  $pb=$s.GetPlaybackInfo();$tl=$s.GetTimelineProperties()",
-			"  @{title=$p.Title;artist=$p.Artist;app=$s.SourceAppUserModelId;status=[string]$pb.PlaybackStatus;pos=$tl.Position.TotalSeconds;end=$tl.EndTime.TotalSeconds}|ConvertTo-Json -Compress",
+			"  @{title=$p.Title;artist=$p.Artist;app=$s.SourceAppUserModelId;status=[string]$pb.PlaybackStatus;pos=$tl.Position.TotalSeconds;end=$tl.EndTime.TotalSeconds;age=([DateTimeOffset]::Now-$tl.LastUpdatedTime).TotalSeconds}|ConvertTo-Json -Compress",
 			" } else { '{}' }",
 			" [Console]::Out.Flush()",
 			" Start-Sleep -Seconds 2",
@@ -149,7 +149,25 @@ public final class WindowsMedia {
 			String status = o.has("status") && !o.get("status").isJsonNull() ? o.get("status").getAsString() : "";
 			double pos = o.has("pos") && !o.get("pos").isJsonNull() ? o.get("pos").getAsDouble() : 0;
 			double end = o.has("end") && !o.get("end").isJsonNull() ? o.get("end").getAsDouble() : 0;
-			song = new YtMusic.Song(title, artist, !status.equalsIgnoreCase("Playing"), pos, end, System.currentTimeMillis());
+			boolean paused = !status.equalsIgnoreCase("Playing");
+			// Windows aktualisiert die Position nur ab und zu – die Zeit seit dieser Aktualisierung dazurechnen
+			double age = o.has("age") && !o.get("age").isJsonNull() ? o.get("age").getAsDouble() : 0;
+			if (!paused && age > 0 && age < 600) {
+				pos += age;
+			}
+			// nicht rückwärts springen: liegt die neue Position nur etwas hinter der weitergezählten, diese behalten
+			// (größere Sprünge sind echtes Spulen und werden übernommen)
+			YtMusic.Song prev = song;
+			if (!paused && prev != null && !prev.paused() && prev.title().equals(title)) {
+				double predicted = prev.position();
+				if (pos < predicted && predicted - pos < 8) {
+					pos = predicted;
+				}
+			}
+			if (end > 0) {
+				pos = Math.min(pos, end);
+			}
+			song = new YtMusic.Song(title, artist, paused, pos, end, System.currentTimeMillis());
 		} catch (RuntimeException ignored) {
 			// unvollständige Zeile
 		}
