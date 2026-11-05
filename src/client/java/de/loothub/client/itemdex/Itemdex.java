@@ -229,6 +229,9 @@ public final class Itemdex {
 		if (isMenuGraphic(s.getHoverName())) {
 			return false; // Menü-Hintergrund des Servers (Bild über eigene Schrift)
 		}
+		if (isInfoDisplay(s, name)) {
+			return false; // Info-Anzeige aus einem Menü (z. B. „Crops des Tages“ mit Restzeit)
+		}
 		// Eigener Name ist Pflicht: Server-Items heißen anders als das Minecraft-Item, auf dem sie beruhen
 		String vanilla = new ItemStack(s.getItem()).getHoverName().getString().strip();
 		if (name.equalsIgnoreCase(vanilla)) {
@@ -343,6 +346,26 @@ public final class Itemdex {
 		return pua > 0 && pua >= letters;
 	}
 
+	private static final java.util.regex.Pattern COUNTDOWN = java.util.regex.Pattern.compile(
+			"(?i)\\d+\\s*(stunden?|minuten?|sekunden?|tagen?)\\b|für die nächsten");
+
+	/** Zeitlich begrenzte Info aus einem Menü (Tagesangebote, Bonus-Anzeigen mit Restzeit) – kein Item. */
+	private static boolean isInfoDisplay(ItemStack s, String name) {
+		if (name.toLowerCase(Locale.ROOT).contains("des tages")) {
+			return true;
+		}
+		ItemLore lore = s.get(DataComponents.LORE);
+		if (lore == null) {
+			return false;
+		}
+		for (Component line : lore.lines()) {
+			if (COUNTDOWN.matcher(line.getString()).find()) {
+				return true;
+			}
+		}
+		return false;
+	}
+
 	/** Menü-Knopf? (Beschreibung mit „Klick“, z. B. „Klicke zum Öffnen“, „Linksklick: …“) – Auktionen nicht. */
 	private static boolean looksLikeButton(ItemStack s) {
 		ItemLore lore = s.get(DataComponents.LORE);
@@ -370,7 +393,7 @@ public final class Itemdex {
 		int before = entries.size();
 		entries.removeIf(e -> {
 			ItemStack st = e.stack();
-			boolean drop = e.stackJson == null || !isCustom(st)
+			boolean drop = e.stackJson == null || !isCustom(clean(st))
 					|| (e.source == Source.CONTAINER && (looksLikeButton(st) || ignoredMenu(e.where)));
 			if (drop) {
 				byKey.remove(e.key);
@@ -457,7 +480,7 @@ public final class Itemdex {
 		if (source == Source.CONTAINER && ignoredMenu(where)) {
 			return;
 		}
-		if (!de.loothub.client.jobs.WidgetConfig.get().itemdexEnabled || !isCustom(s)
+		if (!de.loothub.client.jobs.WidgetConfig.get().itemdexEnabled || !isCustom(clean(s))
 				|| (source == Source.CONTAINER && looksLikeButton(s))) {
 			return;
 		}
