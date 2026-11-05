@@ -334,7 +334,8 @@ public final class Itemdex {
 		int before = entries.size();
 		entries.removeIf(e -> {
 			ItemStack st = e.stack();
-			boolean drop = e.stackJson == null || !isCustom(st) || (e.source == Source.CONTAINER && looksLikeButton(st));
+			boolean drop = e.stackJson == null || !isCustom(st)
+					|| (e.source == Source.CONTAINER && (looksLikeButton(st) || ignoredMenu(e.where)));
 			if (drop) {
 				byKey.remove(e.key);
 			}
@@ -403,7 +404,23 @@ public final class Itemdex {
 				+ s.getHoverName().getString().strip().toLowerCase(Locale.ROOT);
 	}
 
+	/** Menüs, deren Inhalte keine echten Server-Items sind (Markt-Aufträge, Spielerköpfe der Freundesliste …). */
+	private static final String[] IGNORED_MENUS = {"marktplatz", "freunde"};
+
+	private static boolean ignoredMenu(String where) {
+		String w = where == null ? "" : where.toLowerCase(Locale.ROOT);
+		for (String m : IGNORED_MENUS) {
+			if (w.contains(m)) {
+				return true;
+			}
+		}
+		return false;
+	}
+
 	private static synchronized void see(ItemStack s, Source source, String where) {
+		if (source == Source.CONTAINER && ignoredMenu(where)) {
+			return;
+		}
 		if (!de.loothub.client.jobs.WidgetConfig.get().itemdexEnabled || !isCustom(s)
 				|| (source == Source.CONTAINER && looksLikeButton(s))) {
 			return;
