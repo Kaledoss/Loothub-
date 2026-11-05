@@ -40,6 +40,17 @@ public final class WidgetConfig {
 	public boolean hideOwnHeadItem = false;
 	/** Eigenes Cape ausblenden (nur eigene Darstellung). */
 	public boolean hideOwnCape = false;
+	/** Leuchtende Augen ("" = aus, sonst „#RRGGBB“). */
+	public String eyeColor = "";
+	public String eyeLast = "";
+	public boolean crown = false;
+	/** Fußspuren: "" / "sparks" / "flames". */
+	public String footsteps = "";
+	public boolean flyTrail = false;
+	public boolean auraLevels = false;
+	/** Haustiere je Platz als „slime,allay“ ("" = keins). */
+	public String pets = "";
+	public boolean miniMeEmotes = false;
 	/** Flug-Haltung beim Fliegen in Bewegung (Kopf voraus, waagerecht). */
 	public boolean flyPose = true;
 	/** Jobschatz-Zähler: XP seit der letzten 100.000er-Marke und Anzahl erreichter Marken. */

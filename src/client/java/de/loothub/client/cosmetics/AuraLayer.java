@@ -39,11 +39,53 @@ public final class AuraLayer extends RenderLayer<AvatarRenderState, PlayerModel>
 		}
 		int rgb = AuraTextures.parse(color);
 		float t = state.ageInTicks;
+		// Aura-Stufen: beim Sprinten/Fliegen größer, heller und schneller; ab Stufe 2,5 zucken Blitze
+		float lv = Cosmetics.has(state, Cosmetics.AURA_LEVELS) ? Motion.charge(state) : 0.0F;
+		float w = 1.0F + 0.09F * lv, k = 1.0F + 0.22F * lv, sp = 1.0F + 0.35F * lv;
 		collector.submitCustomGeometry(poseStack, RenderTypes.energySwirl(TEXTURE, 0.0F, 0.0F), (pose, vc) -> {
-			ring(pose, vc, rgb, 0.60F, 0.48F, 1.15F, 3.0F, t * 0.05F, 0.0F);
-			ring(pose, vc, rgb, 0.92F, 0.74F, 0.95F, 4.0F, t * 0.036F, 0.37F);
-			ring(pose, vc, rgb, 1.25F, 1.00F, 0.6F, 5.0F, t * 0.028F, 0.71F);
+			ring(pose, vc, rgb, 0.60F * w, 0.48F * w, 1.15F * k, 3.0F, t * 0.05F * sp, 0.0F);
+			ring(pose, vc, rgb, 0.92F * w, 0.74F * w, 0.95F * k, 4.0F, t * 0.036F * sp, 0.37F);
+			ring(pose, vc, rgb, 1.25F * w, 1.00F * w, 0.6F * k, 5.0F, t * 0.028F * sp, 0.71F);
 		});
+		if (lv > 2.5F) {
+			float a = (lv - 2.5F) * 2.0F;
+			collector.submitCustomGeometry(poseStack, RenderTypes.lightning(), (pose, vc) -> bolts(pose, vc, rgb, t, a));
+		}
+	}
+
+	/** Zwei bis drei zuckende Blitze um den Körper, die alle paar Ticks neu springen. */
+	private static void bolts(PoseStack.Pose pose, VertexConsumer vc, int rgb, float t, float alpha) {
+		long seed = (long) (t / 2.5F);
+		java.util.Random r = new java.util.Random(seed * 341873128712L);
+		int n = 2 + r.nextInt(2);
+		float cr = 0.6F + 0.4F * ((rgb >> 16) & 0xFF) / 255F;
+		float cg = 0.6F + 0.4F * ((rgb >> 8) & 0xFF) / 255F;
+		float cb = 0.6F + 0.4F * (rgb & 0xFF) / 255F;
+		for (int b = 0; b < n; b++) {
+			double ang = r.nextDouble() * Math.PI * 2;
+			float rad = 0.55F + r.nextFloat() * 0.45F;
+			float px = (float) Math.cos(ang) * rad, pz = (float) Math.sin(ang) * rad * 0.8F, py = -1.5F;
+			float tx = (float) -Math.sin(ang), tz = (float) Math.cos(ang);
+			for (int seg = 0; seg < 7; seg++) {
+				float nx = px + (r.nextFloat() - 0.5F) * 0.25F, nz = pz + (r.nextFloat() - 0.5F) * 0.25F;
+				float ny = py + 0.42F;
+				float w = 0.035F;
+				for (int cross = 0; cross < 2; cross++) {
+					float dx = cross == 0 ? tx * w : 0, dz = cross == 0 ? tz * w : 0, dy = cross == 0 ? 0 : w;
+					bolt(pose, vc, px - dx, py - dy, pz - dz, cr, cg, cb, alpha);
+					bolt(pose, vc, px + dx, py + dy, pz + dz, cr, cg, cb, alpha);
+					bolt(pose, vc, nx + dx, ny + dy, nz + dz, cr, cg, cb, alpha);
+					bolt(pose, vc, nx - dx, ny - dy, nz - dz, cr, cg, cb, alpha);
+				}
+				px = nx;
+				py = ny;
+				pz = nz;
+			}
+		}
+	}
+
+	private static void bolt(PoseStack.Pose pose, VertexConsumer vc, float x, float y, float z, float r, float g, float b, float a) {
+		vc.addVertex(pose, x, y, z).setColor(r, g, b, Math.min(1.0F, a) * 0.8F);
 	}
 
 	/** Ein Flammenring: Ellipse aus senkrechten Streifen, Textur läuft nach oben, oben dunkel = unsichtbar. */

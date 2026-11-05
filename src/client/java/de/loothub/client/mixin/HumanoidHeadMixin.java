@@ -31,7 +31,7 @@ public abstract class HumanoidHeadMixin {
 			return;
 		}
 		// AFK-Ansicht: eigener Charakter liegt schlafend da (nur eigene Darstellung)
-		de.loothub.client.quick.AfkView.markLying(state, de.loothub.client.quick.AfkView.lieProgress());
+		de.loothub.client.quick.AfkView.markOwn(state);
 		if (WidgetConfig.get().hideOwnCape && state instanceof net.minecraft.client.renderer.entity.state.AvatarRenderState avatar) {
 			avatar.showCape = false;
 		}

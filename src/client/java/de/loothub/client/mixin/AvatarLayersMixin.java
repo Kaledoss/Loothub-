@@ -22,6 +22,9 @@ public abstract class AvatarLayersMixin {
 		RenderLayerParent<AvatarRenderState, PlayerModel> parent = (RenderLayerParent<AvatarRenderState, PlayerModel>) (Object) this;
 		((LivingEntityRendererInvoker) this).loothub$addLayer(new de.loothub.client.cosmetics.AuraLayer(parent));
 		((LivingEntityRendererInvoker) this).loothub$addLayer(new de.loothub.client.cosmetics.WingsLayer(parent));
+		((LivingEntityRendererInvoker) this).loothub$addLayer(new de.loothub.client.cosmetics.EyesLayer(parent));
+		((LivingEntityRendererInvoker) this).loothub$addLayer(new de.loothub.client.cosmetics.CrownLayer(parent));
 		((LivingEntityRendererInvoker) this).loothub$addLayer(new MiniMeLayer(parent, context.getModelSet()));
+		((LivingEntityRendererInvoker) this).loothub$addLayer(new de.loothub.client.cosmetics.PetsLayer(parent, context.getModelSet()));
 	}
 }

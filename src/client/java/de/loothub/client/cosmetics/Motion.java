@@ -26,6 +26,8 @@ public final class Motion {
 		float fwd;
 		float vy;
 		float fly;
+		float charge;
+		long lastMove;
 		int seenTick;
 	}
 
@@ -67,7 +69,16 @@ public final class Motion {
 				&& !p.isPassenger() && !p.isSleeping();
 		tr.fly = Mth.clamp(tr.fly + (target ? dt : -dt) / 0.35F, 0.0F, 1.0F);
 		float flyEased = tr.fly * tr.fly * (3.0F - 2.0F * tr.fly);
-		STATES.put(state, new float[]{lag, tr.fwd, tr.vy, flyEased});
+		// Aura-Stufen: Sprinten oder Fliegen lädt in ~6 s auf Stufe 3, Stillstand entlädt in ~3 s
+		boolean charging = p.isSprinting() || tr.fly > 0.5F;
+		tr.charge = Mth.clamp(tr.charge + (charging ? dt / 2.0F : -dt), 0.0F, 3.0F);
+		// Stillstand (für Mini-Me-Emotes)
+		if (horiz > 0.01 || Math.abs(dy) > 0.01 || Math.abs(lag) > 2.0F || tr.lastMove == 0) {
+			tr.lastMove = now;
+		}
+		float idle = (now - tr.lastMove) / 1.0e9F;
+		boolean local = p == Minecraft.getInstance().player;
+		STATES.put(state, new float[]{lag, tr.fwd, tr.vy, flyEased, tr.charge, idle, local ? 1.0F : 0.0F});
 		if (TRACKS.size() > 200) {
 			TRACKS.values().removeIf(t -> Math.abs(p.tickCount - t.seenTick) > 1200);
 		}
@@ -91,6 +102,27 @@ public final class Motion {
 	/** Geglättetes Steig-/Sinktempo (Blöcke pro Tick, positiv = nach oben). */
 	public static float vertical(Object state) {
 		return get(state, 2);
+	}
+
+	/** Aura-Stufe 0..3 (steigt beim Sprinten/Fliegen). */
+	public static float charge(Object state) {
+		return get(state, 4);
+	}
+
+	/** Sekunden ohne Bewegung. */
+	public static float idle(Object state) {
+		return get(state, 5);
+	}
+
+	/** Ob der Zustand zum eigenen Spieler gehört. */
+	public static boolean local(Object state) {
+		return get(state, 6) > 0.5F;
+	}
+
+	/** Flug-Haltung eines Spielers nach Entity-ID (für Partikel im Tick). */
+	public static float flyOf(int entityId) {
+		Track t = TRACKS.get(entityId);
+		return t == null ? 0.0F : t.fly;
 	}
 
 	/** Flug-Haltung 0..1 (0 = aufrecht, 1 = waagerecht wie beim Superheldenflug). */

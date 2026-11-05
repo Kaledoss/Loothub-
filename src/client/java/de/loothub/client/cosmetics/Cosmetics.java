@@ -36,6 +36,23 @@ public final class Cosmetics {
 	public static final String AURA = "aura";
 	public static final String WINGS = "wings";
 	public static final String MINI_ME_WINGS = "minimewings";
+	/** Leuchtende Augen, Wert = Farbe. */
+	public static final String EYES = "eyes";
+	/** Schwebende Krone über dem Kopf. */
+	public static final String CROWN = "crown";
+	/** Fußspuren, Wert = "sparks" oder "flames". */
+	public static final String FOOTSTEPS = "footsteps";
+	/** Energiestreifen hinter dem Spieler in der Flug-Haltung. */
+	public static final String FLY_TRAIL = "flytrail";
+	/** Aura wird beim Sprinten/Fliegen stärker, mit Blitzen auf der höchsten Stufe. */
+	public static final String AURA_LEVELS = "auralevels";
+	/** Haustiere neben den Mini-Mes, Wert = "slime,allay" (je Platz). */
+	public static final String PETS = "pets";
+	/** Mini-Mes winken, jubeln und gähnen. */
+	public static final String EMOTES = "emotes";
+	public static final List<String> FOOTSTEP_STYLES = List.of("sparks", "flames");
+	public static final List<String> PET_TYPES = List.of("slime", "allay", "bee", "vex");
+	public static final int MAX_PETS = 2;
 	/** Flügel-Stile (Textur textures/entity/wing_<stil>.png). */
 	public static final List<String> WING_STYLES = List.of("dragon", "devil", "angel");
 
@@ -61,6 +78,11 @@ public final class Cosmetics {
 	private static final Map<Object, List<String>> SKINS = new WeakHashMap<>();
 	private static final Map<Object, String> AURAS = new WeakHashMap<>();
 	private static final Map<Object, Map<String, String>> VALUES = new WeakHashMap<>();
+	/** Zuletzt gesehene Cosmetics je Spieler (Entity-ID) – für Partikel im Tick. */
+	private static final Map<Integer, Snapshot> BY_PLAYER = new HashMap<>();
+
+	public record Snapshot(Set<String> set, Map<String, String> values, long time) {
+	}
 
 	private Cosmetics() {
 	}
@@ -200,7 +222,34 @@ public final class Cosmetics {
 				values.put(MINI_ME_WINGS, cfg.miniMeWings);
 				mine.add(MINI_ME_WINGS);
 			}
+			putOwn(mine, values, EYES, cfg.eyeColor);
+			putOwn(mine, values, FOOTSTEPS, cfg.footsteps);
+			putOwn(mine, values, PETS, cfg.pets == null || cfg.pets.replace(",", "").isBlank() ? "" : cfg.pets);
+			if (cfg.crown) {
+				mine.add(CROWN);
+			}
+			if (cfg.flyTrail) {
+				mine.add(FLY_TRAIL);
+			}
+			if (cfg.auraLevels) {
+				mine.add(AURA_LEVELS);
+			}
+			if (cfg.miniMeEmotes) {
+				mine.add(EMOTES);
+			}
 			set = mine.isEmpty() ? set : mine;
+		}
+		if (aura != null && !aura.isBlank()) {
+			values.put(AURA, aura);
+		}
+		if (set != null && !set.isEmpty()) {
+			BY_PLAYER.put(p.getId(), new Snapshot(set, values, System.currentTimeMillis()));
+		} else {
+			BY_PLAYER.remove(p.getId());
+		}
+		if (BY_PLAYER.size() > 300) {
+			long cut = System.currentTimeMillis() - 60_000L;
+			BY_PLAYER.values().removeIf(s -> s.time() < cut);
 		}
 		if (set == null || set.isEmpty()) {
 			STATES.remove(state);
@@ -216,6 +265,39 @@ public final class Cosmetics {
 				AURAS.put(state, aura != null && !aura.isBlank() ? aura : "gold");
 			}
 		}
+	}
+
+	private static void putOwn(Set<String> mine, Map<String, String> values, String cosmetic, String value) {
+		if (value != null && !value.isBlank()) {
+			values.put(cosmetic, value);
+			mine.add(cosmetic);
+		}
+	}
+
+	/** Cosmetics eines Spielers, wie sie beim letzten Zeichnen galten (oder null, wenn er nicht sichtbar war). */
+	public static Snapshot of(int entityId) {
+		Snapshot s = BY_PLAYER.get(entityId);
+		return s == null || System.currentTimeMillis() - s.time() > 2_000L ? null : s;
+	}
+
+	/** Roher Wert eines Cosmetics (ohne Prüfung), oder null. */
+	public static String raw(Object state, String cosmetic) {
+		if (!has(state, cosmetic)) {
+			return null;
+		}
+		Map<String, String> v = VALUES.get(state);
+		return v == null ? null : v.get(cosmetic);
+	}
+
+	/** Haustier auf Platz {@code slot} ("slime", "allay" …), oder null. */
+	public static String pet(Object state, int slot) {
+		String raw = raw(state, PETS);
+		if (raw == null) {
+			return null;
+		}
+		String[] parts = raw.split(",", -1);
+		String s = slot < parts.length ? parts[slot].strip().toLowerCase(Locale.ROOT) : "";
+		return PET_TYPES.contains(s) ? s : null;
 	}
 
 	public static boolean has(Object state, String cosmetic) {

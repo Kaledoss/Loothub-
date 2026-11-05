@@ -3,6 +3,8 @@ package de.loothub.client;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
+import java.util.function.Consumer;
+import java.util.function.Supplier;
 
 import net.minecraft.ChatFormatting;
 import net.minecraft.client.gui.GuiGraphics;
@@ -18,22 +20,46 @@ import de.loothub.client.cosmetics.SkinLookup;
 import de.loothub.client.jobs.WidgetConfig;
 
 /**
- * Seite „Cosmetics“: Anzeige an/aus, bis zu 6 Mini-Mes (je mit beliebigem Spieler-Skin), Aura in jeder Farbe und
- * der fertige Eintrag für {@code cosmetics.json}, damit alle mit Loothub+ die Cosmetics sehen.
+ * Seite „Cosmetics“ mit Reitern: Begleiter (Mini-Mes, Flügel der Mini-Mes, Haustiere, Gesten), Körper (Aura, Flügel,
+ * Augen, Krone), Effekte (Fußspuren, Flug-Spur, Aura-Stufen) und Teilen (Eintrag für {@code cosmetics.json}).
+ * Jede Auswahl ist eine Auswahlliste.
  */
 public class CosmeticsScreen extends LoothubScreen {
 	private static final int CARD = 0xE01C1315;
 	private static final int CARD_EDGE = 0xFF3A1F23;
 	private static final int GREEN = 0xFF5BD68A;
 	private static final int GAP = 6;
+	private static final int TAB_H = 22;
+	private static final int DD_ROW = 14;
+
+	private enum Tab {
+		COMPANIONS("loothub.cosmetics.tab.companions"),
+		BODY("loothub.cosmetics.tab.body"),
+		EFFECTS("loothub.cosmetics.tab.effects"),
+		SHARE("loothub.cosmetics.tab.share");
+
+		final String key;
+
+		Tab(String key) {
+			this.key = key;
+		}
+	}
+
+	private static Tab tab = Tab.COMPANIONS;
 
 	private record Section(int y, int h, String title, String desc) {
 	}
 
+	/** Farbfeld neben einem „Farbe wählen“-Knopf. */
+	private record Swatch(int x, int y, Supplier<String> value, Supplier<String> fallback) {
+	}
+
 	private final List<Section> sections = new ArrayList<>();
+	private final List<Swatch> swatches = new ArrayList<>();
 	private final int[][] skinStatus = new int[Cosmetics.MAX_MINI_MES][];
-	private int auraSwatchX, auraSwatchY;
-	private int jsonY;
+	private final List<Dropdown> dropdowns = new ArrayList<>();
+	private Dropdown openDropdown;
+	private int jsonY = -1;
 	private int descX;
 
 	public CosmeticsScreen() {
@@ -43,151 +69,241 @@ public class CosmeticsScreen extends LoothubScreen {
 	@Override
 	protected void initPage() {
 		sections.clear();
+		swatches.clear();
+		dropdowns.clear();
+		openDropdown = null;
+		jsonY = -1;
+		for (int i = 0; i < skinStatus.length; i++) {
+			skinStatus[i] = null;
+		}
 		WidgetConfig c = WidgetConfig.get();
 		int labelW = Math.min(130, cw / 3);
 		descX = cl + labelW + 12;
-		int y = ct;
 
-		// 1 · Anzeige
-		addRenderableWidget(Button.builder(onOff(c.cosmetics), b -> {
-			c.cosmetics = !c.cosmetics;
-			b.setMessage(onOff(c.cosmetics));
-			c.save();
-		}).bounds(cl + 8, y + 20, labelW - 16, 16).build());
-		sections.add(new Section(y, 42, "loothub.cosmetics.show", "loothub.cosmetics.show.desc"));
-		y += 42 + GAP;
-
-		// 2 · Mini-Mes: Reihe 1 = Schultern + schwebend (1–4), Reihe 2 = krabbelnd (5–6) + Übernehmen
-		int fw = Math.max(60, Math.min(110, (cr - 8 - descX - 3 * 16) / 4));
-		List<EditBox> boxes = new ArrayList<>();
-		for (int i = 0; i < Cosmetics.MAX_MINI_MES; i++) {
-			int col = i < 4 ? i : i - 4;
-			int row = i < 4 ? 0 : 1;
-			int bx = descX + col * (fw + 16);
-			int by = y + 30 + row * 20;
-			EditBox box = new EditBox(font, bx, by, fw, 16, Component.translatable("loothub.settings.minime"));
-			box.setMaxLength(16);
-			box.setHint(Component.translatable("loothub.cosmetics.minime.slot" + (i + 1)).withStyle(ChatFormatting.DARK_GRAY));
-			box.setValue(i < c.miniMes.size() && c.miniMes.get(i) != null ? c.miniMes.get(i) : "");
-			boxes.add(addRenderableWidget(box));
-			skinStatus[i] = new int[]{bx + fw + 4, by + 4};
+		// Reiter
+		int tabX = cl;
+		int tabW = (cw - (Tab.values().length - 1) * 3) / Tab.values().length;
+		for (Tab t : Tab.values()) {
+			Button tb = Button.builder(Component.translatable(t.key), b -> {
+				tab = t;
+				rebuildWidgets();
+			}).bounds(tabX, ct, tabW, 16).build();
+			tb.active = t != tab;
+			addRenderableWidget(tb);
+			tabX += tabW + 3;
 		}
-		addRenderableWidget(Button.builder(Component.translatable("loothub.settings.minime.apply"), b -> {
-			c.miniMes.clear();
-			for (EditBox box : boxes) {
-				String v = box.getValue().strip();
-				c.miniMes.add(v); // Platz bleibt erhalten, leer = frei
-				if (!v.isEmpty()) {
-					SkinLookup.forget(v);
-				}
-			}
-			c.save();
-		}).bounds(descX + 2 * (fw + 16), y + 50, 90, 16).build());
-		sections.add(new Section(y, 74, "loothub.settings.minime", "loothub.settings.minime.tooltip"));
-		y += 74 + GAP;
+		int y = ct + TAB_H;
+		int lx = cl + 8, lw = labelW - 16;
 
-		// 3 · Aura
-		boolean auraOn = c.auraColor != null && !c.auraColor.isBlank();
-		addRenderableWidget(Button.builder(onOff(auraOn), b -> {
-			c.auraColor = c.auraColor == null || c.auraColor.isBlank() ? lastAura(c) : "";
+		switch (tab) {
+			case COMPANIONS -> {
+				// Anzeige an/aus (gilt für alle Cosmetics)
+				toggle(lx, y + 20, lw, () -> c.cosmetics, v -> c.cosmetics = v);
+				sections.add(new Section(y, 42, "loothub.cosmetics.show", "loothub.cosmetics.show.desc"));
+				y += 42 + GAP;
+
+				// Mini-Mes: Reihe 1 = Schultern + schwebend (1–4), Reihe 2 = krabbelnd (5–6) + Übernehmen
+				int fw = Math.max(60, Math.min(110, (cr - 8 - descX - 3 * 16) / 4));
+				List<EditBox> boxes = new ArrayList<>();
+				for (int i = 0; i < Cosmetics.MAX_MINI_MES; i++) {
+					int col = i < 4 ? i : i - 4;
+					int row = i < 4 ? 0 : 1;
+					int bx = descX + col * (fw + 16);
+					int by = y + 30 + row * 20;
+					EditBox box = new EditBox(font, bx, by, fw, 16, Component.translatable("loothub.settings.minime"));
+					box.setMaxLength(16);
+					box.setHint(Component.translatable("loothub.cosmetics.minime.slot" + (i + 1)).withStyle(ChatFormatting.DARK_GRAY));
+					box.setValue(i < c.miniMes.size() && c.miniMes.get(i) != null ? c.miniMes.get(i) : "");
+					boxes.add(addRenderableWidget(box));
+					skinStatus[i] = new int[]{bx + fw + 4, by + 4};
+				}
+				addRenderableWidget(Button.builder(Component.translatable("loothub.settings.minime.apply"), b -> {
+					c.miniMes.clear();
+					for (EditBox box : boxes) {
+						String v = box.getValue().strip();
+						c.miniMes.add(v); // Platz bleibt erhalten, leer = frei
+						if (!v.isEmpty()) {
+							SkinLookup.forget(v);
+						}
+					}
+					c.save();
+				}).bounds(descX + 2 * (fw + 16), y + 50, 90, 16).build());
+				sections.add(new Section(y, 74, "loothub.settings.minime", "loothub.settings.minime.tooltip"));
+				y += 74 + GAP;
+
+				// Flügel der Mini-Mes, je Platz
+				int dw = ddWidth();
+				for (int k = 0; k < Cosmetics.MAX_MINI_MES; k++) {
+					final int slot = k;
+					int bx = descX + (k % 3) * (dw + 6);
+					int by = y + 30 + (k / 3) * 20;
+					dropdown(bx, by, dw, Component.translatable("loothub.cosmetics.wings.slot", slot + 1).getString(),
+							WING_OPTIONS, "loothub.cosmetics.wings.style.", () -> slotValue(c.miniMeWings, slot),
+							v -> c.miniMeWings = setSlot(c.miniMeWings, slot, v, Cosmetics.MAX_MINI_MES));
+				}
+				sections.add(new Section(y, 74, "loothub.cosmetics.minime_wings", "loothub.cosmetics.minime_wings.desc"));
+				y += 74 + GAP;
+
+				// Haustiere (2 Plätze)
+				for (int k = 0; k < Cosmetics.MAX_PETS; k++) {
+					final int slot = k;
+					dropdown(descX + k * (dw + 6), y + 30, dw,
+							Component.translatable(slot == 0 ? "loothub.cosmetics.pets.right" : "loothub.cosmetics.pets.left").getString(),
+							PET_OPTIONS, "loothub.cosmetics.pets.type.", () -> slotValue(c.pets, slot),
+							v -> c.pets = setSlot(c.pets, slot, v, Cosmetics.MAX_PETS));
+				}
+				sections.add(new Section(y, 54, "loothub.cosmetics.pets", "loothub.cosmetics.pets.desc"));
+				y += 54 + GAP;
+
+				// Gesten
+				toggle(lx, y + 20, lw, () -> c.miniMeEmotes, v -> c.miniMeEmotes = v);
+				sections.add(new Section(y, 42, "loothub.cosmetics.emotes", "loothub.cosmetics.emotes.desc"));
+			}
+			case BODY -> {
+				// Aura: an/aus + Farbe
+				y = colorSection(y, lx, lw, "loothub.settings.aura", "loothub.settings.aura.tooltip",
+						() -> c.auraColor, v -> c.auraColor = v, () -> c.auraLast, v -> c.auraLast = v, "#FFCD3C");
+				// Flügel für mich
+				dropdown(descX, y + 30, ddWidth(), Component.translatable("loothub.cosmetics.wings.me").getString(),
+						WING_OPTIONS, "loothub.cosmetics.wings.style.", () -> Cosmetics.wingAt(c.wings, 0) == null ? "" : Cosmetics.wingAt(c.wings, 0),
+						v -> c.wings = v);
+				sections.add(new Section(y, 54, "loothub.cosmetics.wings", "loothub.cosmetics.wings.desc"));
+				y += 54 + GAP;
+				// Augen: an/aus + Farbe
+				y = colorSection(y, lx, lw, "loothub.cosmetics.eyes", "loothub.cosmetics.eyes.desc",
+						() -> c.eyeColor, v -> c.eyeColor = v, () -> c.eyeLast, v -> c.eyeLast = v, "#7FE8FF");
+				// Krone
+				toggle(lx, y + 20, lw, () -> c.crown, v -> c.crown = v);
+				sections.add(new Section(y, 42, "loothub.cosmetics.crown", "loothub.cosmetics.crown.desc"));
+			}
+			case EFFECTS -> {
+				dropdown(descX, y + 30, ddWidth(), Component.translatable("loothub.cosmetics.footsteps.label").getString(),
+						STEP_OPTIONS, "loothub.cosmetics.footsteps.style.", () -> c.footsteps == null ? "" : c.footsteps,
+						v -> c.footsteps = v);
+				sections.add(new Section(y, 54, "loothub.cosmetics.footsteps", "loothub.cosmetics.footsteps.desc"));
+				y += 54 + GAP;
+				toggle(lx, y + 20, lw, () -> c.flyTrail, v -> c.flyTrail = v);
+				sections.add(new Section(y, 42, "loothub.cosmetics.flytrail", "loothub.cosmetics.flytrail.desc"));
+				y += 42 + GAP;
+				toggle(lx, y + 20, lw, () -> c.auraLevels, v -> c.auraLevels = v);
+				sections.add(new Section(y, 42, "loothub.cosmetics.auralevels", "loothub.cosmetics.auralevels.desc"));
+			}
+			case SHARE -> {
+				addRenderableWidget(Button.builder(Component.translatable("loothub.cosmetics.copy"), b -> {
+					minecraft.keyboardHandler.setClipboard(jsonLine());
+					b.setMessage(Component.translatable("loothub.cosmetics.copied").withStyle(ChatFormatting.GREEN));
+				}).bounds(lx, y + 20, lw, 16).build());
+				jsonY = y + 34;
+				sections.add(new Section(y, 110, "loothub.cosmetics.share", "loothub.cosmetics.share.desc"));
+			}
+		}
+	}
+
+	private int ddWidth() {
+		return Math.max(80, Math.min(120, (cr - 8 - descX - 2 * 6) / 3));
+	}
+
+	// ------------------------------------------------------------------ Bausteine
+
+	private void toggle(int x, int y, int w, Supplier<Boolean> get, Consumer<Boolean> set) {
+		addRenderableWidget(Button.builder(onOff(get.get()), b -> {
+			set.accept(!get.get());
+			b.setMessage(onOff(get.get()));
+			WidgetConfig.get().save();
+		}).bounds(x, y, w, 16).build());
+	}
+
+	/** Abschnitt mit an/aus (merkt sich die letzte Farbe) und „Farbe wählen …“ samt Farbfeld. */
+	private int colorSection(int y, int lx, int lw, String title, String desc, Supplier<String> get, Consumer<String> set,
+			Supplier<String> getLast, Consumer<String> setLast, String fallback) {
+		WidgetConfig c = WidgetConfig.get();
+		Supplier<String> last = () -> getLast.get() == null || getLast.get().isBlank() ? fallback : getLast.get();
+		boolean on = get.get() != null && !get.get().isBlank();
+		addRenderableWidget(Button.builder(onOff(on), b -> {
+			set.accept(get.get() == null || get.get().isBlank() ? last.get() : "");
 			c.save();
 			rebuildWidgets();
-		}).bounds(cl + 8, y + 20, labelW - 16, 16).build());
+		}).bounds(lx, y + 20, lw, 16).build());
 		addRenderableWidget(Button.builder(Component.translatable("loothub.cosmetics.aura.pick"), b ->
-				minecraft.setScreen(new ColorPickerScreen(this, Component.translatable("loothub.settings.aura"),
-						AuraTextures.parse(lastAura(c)), rgb -> {
-							c.auraColor = String.format(Locale.ROOT, "#%06X", rgb & 0xFFFFFF);
-							c.auraLast = c.auraColor;
+				minecraft.setScreen(new ColorPickerScreen(this, Component.translatable(title), AuraTextures.parse(last.get()),
+						rgb -> {
+							String hex = String.format(Locale.ROOT, "#%06X", rgb & 0xFFFFFF);
+							set.accept(hex);
+							setLast.accept(hex);
 							c.save();
 						})))
 				.bounds(descX, y + 30, 120, 16).build());
-		auraSwatchX = descX + 126;
-		auraSwatchY = y + 33;
-		sections.add(new Section(y, 54, "loothub.settings.aura", "loothub.settings.aura.tooltip"));
-		y += 54 + GAP;
-
-		// 4 · Flügel: für mich und jedes Mini-Me einzeln, je als Auswahlliste
-		dropdowns.clear();
-		openDropdown = null;
-		int dw = Math.max(70, Math.min(110, (cr - 8 - descX - 3 * 6) / 4));
-		for (int k = 0; k <= Cosmetics.MAX_MINI_MES; k++) {
-			final int slot = k - 1; // -1 = ich
-			int bx = descX + (k % 4) * (dw + 6);
-			int by = y + 30 + (k / 4) * 20;
-			String prefix = slot < 0 ? Component.translatable("loothub.cosmetics.wings.me").getString()
-					: Component.translatable("loothub.cosmetics.wings.slot", slot + 1).getString();
-			Dropdown d = new Dropdown(prefix, () -> slot < 0 ? normWing(c.wings) : slotWing(c, slot), v -> {
-				if (slot < 0) {
-					c.wings = v;
-				} else {
-					setSlotWing(c, slot, v);
-				}
-				c.save();
-			});
-			d.button = addRenderableWidget(Button.builder(d.label(), b -> toggle(d)).bounds(bx, by, dw, 16).build());
-			dropdowns.add(d);
-		}
-		sections.add(new Section(y, 74, "loothub.cosmetics.wings", "loothub.cosmetics.wings.desc"));
-		y += 74 + GAP;
-
-		// 5 · Für alle sichtbar
-		addRenderableWidget(Button.builder(Component.translatable("loothub.cosmetics.copy"), b -> {
-			minecraft.keyboardHandler.setClipboard(jsonLine());
-			b.setMessage(Component.translatable("loothub.cosmetics.copied").withStyle(ChatFormatting.GREEN));
-		}).bounds(cl + 8, y + 20, labelW - 16, 16).build());
-		jsonY = y + 34;
-		sections.add(new Section(y, 64, "loothub.cosmetics.share", "loothub.cosmetics.share.desc"));
+		swatches.add(new Swatch(descX + 126, y + 33, get, last));
+		sections.add(new Section(y, 54, title, desc));
+		return y + 54 + GAP;
 	}
 
-	// ------------------------------------------------------------------ Auswahllisten (Flügel)
+	private static Component onOff(boolean on) {
+		return Component.translatable(on ? "loothub.settings.on" : "loothub.settings.off")
+				.withStyle(on ? ChatFormatting.GREEN : ChatFormatting.GRAY);
+	}
+
+	/** Wert auf Platz {@code slot} aus „a,b,,c“ ("" wenn leer). */
+	private static String slotValue(String raw, int slot) {
+		if (raw == null || raw.isBlank()) {
+			return "";
+		}
+		if (raw.indexOf(',') < 0) {
+			return raw.strip(); // alte Form: ein Wert für alle
+		}
+		String[] parts = raw.split(",", -1);
+		return slot < parts.length ? parts[slot].strip() : "";
+	}
+
+	private static String setSlot(String raw, int slot, String value, int slots) {
+		String[] all = new String[slots];
+		for (int i = 0; i < slots; i++) {
+			all[i] = i == slot ? value : slotValue(raw, i);
+		}
+		return String.join(",", all); // immer mit Kommas → je Platz einzeln
+	}
+
+	// ------------------------------------------------------------------ Auswahllisten
 
 	private static final String[] WING_OPTIONS = {"", "dragon", "devil", "angel"};
-	private static final int DD_ROW = 14;
-	private final List<Dropdown> dropdowns = new ArrayList<>();
-	private Dropdown openDropdown;
+	private static final String[] PET_OPTIONS = {"", "slime", "allay", "bee", "vex"};
+	private static final String[] STEP_OPTIONS = {"", "sparks", "flames"};
 
-	/** Eine Auswahlliste: Knopf zeigt „Präfix: Wahl ▾“, Klick klappt die Optionen darunter auf. */
+	/** Knopf „Präfix: Wahl ▾“, Klick klappt die Optionen darunter auf. */
 	private static final class Dropdown {
 		final String prefix;
-		final java.util.function.Supplier<String> get;
-		final java.util.function.Consumer<String> set;
+		final String[] options;
+		final String keyPrefix;
+		final Supplier<String> get;
+		final Consumer<String> set;
 		Button button;
 
-		Dropdown(String prefix, java.util.function.Supplier<String> get, java.util.function.Consumer<String> set) {
+		Dropdown(String prefix, String[] options, String keyPrefix, Supplier<String> get, Consumer<String> set) {
 			this.prefix = prefix;
+			this.options = options;
+			this.keyPrefix = keyPrefix;
 			this.get = get;
 			this.set = set;
 		}
 
+		Component name(String option) {
+			return Component.translatable(keyPrefix + (option == null || option.isEmpty() ? "off" : option));
+		}
+
 		Component label() {
-			return Component.literal(prefix + ": ").append(styleName(get.get())).append(" ▾");
+			return Component.literal(prefix + ": ").append(name(get.get())).append(" ▾");
 		}
 	}
 
-	private static Component styleName(String style) {
-		return Component.translatable("loothub.cosmetics.wings.style." + (style == null || style.isEmpty() ? "off" : style));
-	}
-
-	private void toggle(Dropdown d) {
-		openDropdown = openDropdown == d ? null : d;
-	}
-
-	private static String normWing(String s) {
-		String w = Cosmetics.wingAt(s, 0);
-		return w == null ? "" : w;
-	}
-
-	private static String slotWing(WidgetConfig c, int slot) {
-		String w = Cosmetics.wingAt(c.miniMeWings, slot);
-		return w == null ? "" : w;
-	}
-
-	private static void setSlotWing(WidgetConfig c, int slot, String style) {
-		String[] all = new String[Cosmetics.MAX_MINI_MES];
-		for (int i = 0; i < all.length; i++) {
-			all[i] = i == slot ? style : slotWing(c, i);
-		}
-		c.miniMeWings = String.join(",", all); // immer mit Kommas → je Platz einzeln
+	private void dropdown(int x, int y, int w, String prefix, String[] options, String keyPrefix, Supplier<String> get,
+			Consumer<String> set) {
+		Dropdown d = new Dropdown(prefix, options, keyPrefix, get, v -> {
+			set.accept(v);
+			WidgetConfig.get().save();
+		});
+		d.button = addRenderableWidget(Button.builder(d.label(), b -> openDropdown = openDropdown == d ? null : d)
+				.bounds(x, y, w, 16).build());
+		dropdowns.add(d);
 	}
 
 	private int optionAt(double mx, double my) {
@@ -196,7 +312,7 @@ public class CosmeticsScreen extends LoothubScreen {
 		}
 		Button b = openDropdown.button;
 		int y = b.getY() + b.getHeight() + 1;
-		if (mx < b.getX() || mx >= b.getX() + b.getWidth() || my < y || my >= y + WING_OPTIONS.length * DD_ROW) {
+		if (mx < b.getX() || mx >= b.getX() + b.getWidth() || my < y || my >= y + openDropdown.options.length * DD_ROW) {
 			return -1;
 		}
 		return (int) ((my - y) / DD_ROW);
@@ -207,20 +323,21 @@ public class CosmeticsScreen extends LoothubScreen {
 			return;
 		}
 		g.nextStratum();
-		Button b = openDropdown.button;
+		Dropdown d = openDropdown;
+		Button b = d.button;
 		int x = b.getX(), y = b.getY() + b.getHeight() + 1, w = b.getWidth();
-		int n = WING_OPTIONS.length;
+		int n = d.options.length;
 		g.fill(x - 1, y - 1, x + w + 1, y + n * DD_ROW + 1, RED);
 		g.fill(x, y, x + w, y + n * DD_ROW, 0xF0140B0D);
 		int hover = optionAt(mx, my);
-		String current = openDropdown.get.get();
+		String current = d.get.get();
 		for (int i = 0; i < n; i++) {
 			int ry = y + i * DD_ROW;
 			if (i == hover) {
 				g.fill(x, ry, x + w, ry + DD_ROW, 0x40E23B3B);
 			}
-			boolean selected = WING_OPTIONS[i].equals(current);
-			g.drawString(font, (selected ? "✔ " : "   ") + styleName(WING_OPTIONS[i]).getString(), x + 4, ry + 3,
+			boolean selected = d.options[i].equals(current);
+			g.drawString(font, (selected ? "✔ " : "   ") + d.name(d.options[i]).getString(), x + 4, ry + 3,
 					selected ? TEXT : MUTED, false);
 		}
 	}
@@ -231,33 +348,25 @@ public class CosmeticsScreen extends LoothubScreen {
 			int i = optionAt(event.x(), event.y());
 			Dropdown d = openDropdown;
 			if (i >= 0) {
-				d.set.accept(WING_OPTIONS[i]);
+				d.set.accept(d.options[i]);
 				d.button.setMessage(d.label());
 				openDropdown = null;
 				return true;
 			}
 			if (!d.button.isMouseOver(event.x(), event.y())) {
 				openDropdown = null;
-				// Klick auf eine andere Auswahlliste öffnet gleich diese
 				for (Dropdown other : dropdowns) {
 					if (other.button.isMouseOver(event.x(), event.y())) {
-						return super.mouseClicked(event, doubleClick);
+						return super.mouseClicked(event, doubleClick); // gleich die andere Liste öffnen
 					}
 				}
-				return true;
+				return true; // Klick daneben schließt nur
 			}
 		}
 		return super.mouseClicked(event, doubleClick);
 	}
 
-	private static String lastAura(WidgetConfig c) {
-		return c.auraLast == null || c.auraLast.isBlank() ? "#FFCD3C" : c.auraLast;
-	}
-
-	private static Component onOff(boolean on) {
-		return Component.translatable(on ? "loothub.settings.on" : "loothub.settings.off")
-				.withStyle(on ? ChatFormatting.GREEN : ChatFormatting.GRAY);
-	}
+	// ------------------------------------------------------------------ Teilen
 
 	/** Eintrag für cosmetics.json mit den eigenen Einstellungen. */
 	private String jsonLine() {
@@ -278,26 +387,47 @@ public class CosmeticsScreen extends LoothubScreen {
 			}
 			parts.add("\"minime\": {\"" + me + "\": [" + String.join(", ", q) + "]}");
 		}
-		if (c.auraColor != null && !c.auraColor.isBlank()) {
-			parts.add("\"aura\": {\"" + me + "\": \"" + c.auraColor + "\"}");
-		}
-		if (c.wings != null && !c.wings.isBlank()) {
-			parts.add("\"wings\": {\"" + me + "\": \"" + c.wings + "\"}");
-		}
-		List<String> mw = new ArrayList<>();
-		int lastWing = -1;
-		for (int i = 0; i < Cosmetics.MAX_MINI_MES; i++) {
-			String w = slotWing(c, i);
-			mw.add(w.isEmpty() ? "null" : "\"" + w + "\"");
-			if (!w.isEmpty()) {
-				lastWing = i;
-			}
-		}
-		if (lastWing >= 0) {
-			parts.add("\"minimewings\": {\"" + me + "\": [" + String.join(", ", mw.subList(0, lastWing + 1)) + "]}");
-		}
+		single(parts, Cosmetics.AURA, me, c.auraColor);
+		single(parts, Cosmetics.WINGS, me, c.wings);
+		perSlot(parts, Cosmetics.MINI_ME_WINGS, me, c.miniMeWings, Cosmetics.MAX_MINI_MES);
+		single(parts, Cosmetics.EYES, me, c.eyeColor);
+		single(parts, Cosmetics.FOOTSTEPS, me, c.footsteps);
+		perSlot(parts, Cosmetics.PETS, me, c.pets, Cosmetics.MAX_PETS);
+		flag(parts, Cosmetics.CROWN, me, c.crown);
+		flag(parts, Cosmetics.FLY_TRAIL, me, c.flyTrail);
+		flag(parts, Cosmetics.AURA_LEVELS, me, c.auraLevels);
+		flag(parts, Cosmetics.EMOTES, me, c.miniMeEmotes);
 		return parts.isEmpty() ? "–" : String.join(", ", parts);
 	}
+
+	private static void single(List<String> parts, String key, String me, String value) {
+		if (value != null && !value.isBlank()) {
+			parts.add("\"" + key + "\": {\"" + me + "\": \"" + value + "\"}");
+		}
+	}
+
+	private static void flag(List<String> parts, String key, String me, boolean on) {
+		if (on) {
+			parts.add("\"" + key + "\": [\"" + me + "\"]");
+		}
+	}
+
+	private static void perSlot(List<String> parts, String key, String me, String raw, int slots) {
+		List<String> list = new ArrayList<>();
+		int lastSet = -1;
+		for (int i = 0; i < slots; i++) {
+			String v = slotValue(raw, i);
+			list.add(v.isEmpty() ? "null" : "\"" + v + "\"");
+			if (!v.isEmpty()) {
+				lastSet = i;
+			}
+		}
+		if (lastSet >= 0) {
+			parts.add("\"" + key + "\": {\"" + me + "\": [" + String.join(", ", list.subList(0, lastSet + 1)) + "]}");
+		}
+	}
+
+	// ------------------------------------------------------------------ Zeichnen
 
 	@Override
 	public void renderBackground(GuiGraphics g, int mouseX, int mouseY, float delta) {
@@ -316,7 +446,11 @@ public class CosmeticsScreen extends LoothubScreen {
 		int labelW = descX - 12 - cl;
 		for (Section s : sections) {
 			Component title = Component.translatable(s.title());
-			g.drawString(font, title, cl + 8 + (labelW - 16 - font.width(title)) / 2, s.y() + 6, TEXT, false);
+			int ty0 = s.y() + 6;
+			for (FormattedCharSequence line : font.split(title, labelW - 8)) {
+				g.drawString(font, line, cl + 8 + (labelW - 16 - font.width(line)) / 2, ty0, TEXT, false);
+				ty0 += 10;
+			}
 			int ty = s.y() + 6;
 			for (FormattedCharSequence line : font.split(Component.translatable(s.desc()), cr - 8 - descX)) {
 				g.drawString(font, line, descX, ty, MUTED, false);
@@ -326,8 +460,8 @@ public class CosmeticsScreen extends LoothubScreen {
 				}
 			}
 		}
-		// Status je Mini-Me
 		WidgetConfig c = WidgetConfig.get();
+		// Status je Mini-Me
 		for (int i = 0; i < skinStatus.length && i < c.miniMes.size(); i++) {
 			if (skinStatus[i] == null || c.miniMes.get(i) == null || c.miniMes.get(i).isBlank()) {
 				continue;
@@ -337,19 +471,24 @@ public class CosmeticsScreen extends LoothubScreen {
 			int color = st == SkinLookup.State.READY ? GREEN : st == SkinLookup.State.NOT_FOUND ? RED : FAINT;
 			g.drawString(font, mark, skinStatus[i][0], skinStatus[i][1], color, false);
 		}
-		// Aura-Farbe
-		boolean auraOn = c.auraColor != null && !c.auraColor.isBlank();
-		int rgb = AuraTextures.parse(auraOn ? c.auraColor : lastAura(c));
-		g.fill(auraSwatchX - 1, auraSwatchY - 1, auraSwatchX + 11, auraSwatchY + 11, 0xFF000000);
-		g.fill(auraSwatchX, auraSwatchY, auraSwatchX + 10, auraSwatchY + 10, 0xFF000000 | rgb);
-		g.drawString(font, String.format(Locale.ROOT, "#%06X", rgb) + (auraOn ? "" : " · " + Component.translatable("loothub.settings.off").getString()),
-				auraSwatchX + 16, auraSwatchY + 1, auraOn ? TEXT : FAINT, false);
+		// Farbfelder
+		for (Swatch sw : swatches) {
+			String v = sw.value().get();
+			boolean on = v != null && !v.isBlank();
+			int rgb = AuraTextures.parse(on ? v : sw.fallback().get());
+			g.fill(sw.x() - 1, sw.y() - 1, sw.x() + 11, sw.y() + 11, 0xFF000000);
+			g.fill(sw.x(), sw.y(), sw.x() + 10, sw.y() + 10, 0xFF000000 | rgb);
+			g.drawString(font, String.format(Locale.ROOT, "#%06X", rgb)
+					+ (on ? "" : " · " + Component.translatable("loothub.settings.off").getString()), sw.x() + 16, sw.y() + 1,
+					on ? TEXT : FAINT, false);
+		}
 		// fertiger Eintrag für cosmetics.json
-		String json = jsonLine();
-		int y = jsonY;
-		for (FormattedCharSequence line : font.split(Component.literal(json), cr - 8 - descX)) {
-			g.drawString(font, line, descX, y, 0xFFFFD66B, false);
-			y += 10;
+		if (jsonY >= 0) {
+			int y = jsonY;
+			for (FormattedCharSequence line : font.split(Component.literal(jsonLine()), cr - 8 - descX)) {
+				g.drawString(font, line, descX, y, 0xFFFFD66B, false);
+				y += 10;
+			}
 		}
 		drawDropdown(g, mouseX, mouseY);
 	}

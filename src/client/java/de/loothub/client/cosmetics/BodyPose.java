@@ -18,11 +18,24 @@ public final class BodyPose {
 	private BodyPose() {
 	}
 
+	private static float[] pose(Object state) {
+		float[] p = de.loothub.client.quick.AfkView.pose(state);
+		return p == null ? new float[5] : p;
+	}
+
+	/** Anheben aus der AFK-Haltung: beim Liegen etwas hoch, damit der Körper nicht im Boden steckt, plus Sprung. */
+	private static float lift(float[] p) {
+		float lie = Math.max(0.0F, Math.min(1.0F, p[0] / 90.0F));
+		return 0.2F * lie + p[1];
+	}
+
 	/** In setupRotations (Welt-Ausrichtung, y nach oben, Füße bei 0). */
-	public static void apply(PoseStack poseStack, float lie, float fly) {
-		if (lie > 0.0F) {
-			poseStack.translate(0.0F, 0.2F * lie, 0.0F);
-			poseStack.mulPose(Axis.XP.rotationDegrees(90.0F * lie));
+	public static void apply(PoseStack poseStack, Object state) {
+		float[] p = pose(state);
+		float fly = Motion.fly(state);
+		if (p[0] != 0.0F || p[1] != 0.0F) {
+			poseStack.translate(0.0F, lift(p), 0.0F);
+			poseStack.mulPose(Axis.XP.rotationDegrees(p[0]));
 		}
 		if (fly > 0.0F) {
 			// um die Körpermitte nach vorn kippen, Kopf voraus
@@ -33,8 +46,11 @@ public final class BodyPose {
 	}
 
 	/** Hebt {@link #apply} im Ebenen-Raum (y nach unten, Hals bei 0, Füße bei 1,5) wieder auf. */
-	public static void undo(PoseStack poseStack, float lie, float fly) {
-		if (lie <= 0.0F && fly <= 0.0F) {
+	public static void undo(PoseStack poseStack, Object state, boolean withFly) {
+		float[] p = pose(state);
+		float fly = withFly ? Motion.fly(state) : 0.0F;
+		boolean lie = p[0] != 0.0F || p[1] != 0.0F;
+		if (!lie && fly <= 0.0F) {
 			return;
 		}
 		Matrix4f q = new Matrix4f().translate(0.0F, 1.501F, 0.0F).scale(-1.0F, -1.0F, 1.0F);
@@ -43,8 +59,8 @@ public final class BodyPose {
 					.rotateX((float) Math.toRadians(FLY_PITCH * fly))
 					.translate(0.0F, -FLY_PIVOT, 0.0F);
 		}
-		if (lie > 0.0F) {
-			q.rotateX((float) Math.toRadians(-90.0F * lie)).translate(0.0F, -0.2F * lie, 0.0F);
+		if (lie) {
+			q.rotateX((float) Math.toRadians(-p[0])).translate(0.0F, -lift(p), 0.0F);
 		}
 		q.scale(-1.0F, -1.0F, 1.0F).translate(0.0F, -1.501F, 0.0F);
 		poseStack.last().pose().mul(q);

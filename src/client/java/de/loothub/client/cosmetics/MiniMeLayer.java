@@ -29,6 +29,54 @@ public final class MiniMeLayer extends RenderLayer<AvatarRenderState, PlayerMode
 	private final PlayerModel wide;
 	private final PlayerModel slim;
 	private final CrawlModel crawlWide;
+
+	/** Normales Mini-Me-Modell mit Gesten (winken, jubeln, strecken). */
+	private static final class EmoteModel extends PlayerModel {
+		EmoteModel(net.minecraft.client.model.geom.ModelPart root, boolean slim) {
+			super(root, slim);
+		}
+
+		@Override
+		public void setupAnim(AvatarRenderState s) {
+			super.setupAnim(s);
+			float[] e = Emotes.of(s);
+			if (e == null) {
+				return;
+			}
+			float p = e[1];
+			float k = Emotes.envelope(p);
+			float up = (float) Math.toRadians(-165.0);
+			switch ((int) e[0]) {
+				case Emotes.WAVE -> {
+					rightArm.xRot = mix(rightArm.xRot, up, k);
+					rightArm.zRot = mix(rightArm.zRot, -0.35F + (float) Math.sin(p * 28.0F) * 0.45F, k);
+					head.zRot = mix(head.zRot, (float) Math.sin(p * 14.0F) * 0.08F, k);
+				}
+				case Emotes.CHEER -> {
+					float pump = (float) Math.sin(p * 30.0F) * 0.25F;
+					rightArm.xRot = mix(rightArm.xRot, up + pump, k);
+					leftArm.xRot = mix(leftArm.xRot, up - pump, k);
+					rightArm.zRot = mix(rightArm.zRot, -0.45F, k);
+					leftArm.zRot = mix(leftArm.zRot, 0.45F, k);
+					head.xRot = mix(head.xRot, -0.35F, k);
+				}
+				case Emotes.YAWN -> {
+					// strecken: beide Arme langsam nach oben, Kopf in den Nacken
+					rightArm.xRot = mix(rightArm.xRot, up, k);
+					leftArm.xRot = mix(leftArm.xRot, up, k);
+					rightArm.zRot = mix(rightArm.zRot, -0.2F, k);
+					leftArm.zRot = mix(leftArm.zRot, 0.2F, k);
+					head.xRot = mix(head.xRot, -0.5F, k);
+				}
+				default -> {
+				}
+			}
+		}
+
+		private static float mix(float a, float b, float k) {
+			return a + (b - a) * k;
+		}
+	}
 	private final CrawlModel crawlSlim;
 
 	/**
@@ -64,8 +112,8 @@ public final class MiniMeLayer extends RenderLayer<AvatarRenderState, PlayerMode
 
 	public MiniMeLayer(RenderLayerParent<AvatarRenderState, PlayerModel> parent, EntityModelSet models) {
 		super(parent);
-		this.wide = new PlayerModel(models.bakeLayer(ModelLayers.PLAYER), false);
-		this.slim = new PlayerModel(models.bakeLayer(ModelLayers.PLAYER_SLIM), true);
+		this.wide = new EmoteModel(models.bakeLayer(ModelLayers.PLAYER), false);
+		this.slim = new EmoteModel(models.bakeLayer(ModelLayers.PLAYER_SLIM), true);
 		this.crawlWide = new CrawlModel(models.bakeLayer(ModelLayers.PLAYER), false);
 		this.crawlSlim = new CrawlModel(models.bakeLayer(ModelLayers.PLAYER_SLIM), true);
 	}
@@ -157,8 +205,13 @@ public final class MiniMeLayer extends RenderLayer<AvatarRenderState, PlayerMode
 				mini.walkAnimationSpeed = Math.min(1.0F, state.walkAnimationSpeed * 1.5F);
 			}
 			boolean crawling = i >= 4 && !sleeping && fly < 0.5F;
+			float[] emote = crawling ? null : Emotes.pick(state, i, sleeping);
+			Emotes.attach(mini, emote);
+			if (emote != null && emote[0] == Emotes.CHEER) {
+				ty -= Math.abs((float) Math.sin(emote[1] * Math.PI * 4.0)) * 0.12F; // Freudensprünge
+			}
 			poseStack.pushPose();
-			BodyPose.undo(poseStack, lie > 0.001F ? lie : 0.0F, i >= 2 ? fly : 0.0F);
+			BodyPose.undo(poseStack, state, i >= 2);
 			poseStack.translate(tx, ty, tz);
 			if (ry != 0.0F) {
 				poseStack.mulPose(Axis.YP.rotationDegrees(ry));

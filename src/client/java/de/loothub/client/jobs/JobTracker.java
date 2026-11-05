@@ -96,6 +96,9 @@ public final class JobTracker {
 		} else {
 			s.xpSinceLevelStart += gain.xp();
 		}
+		if (levelChanged && gain.level() > s.level) {
+			de.loothub.client.cosmetics.Emotes.cheer(); // Mini-Mes jubeln mit
+		}
 		if (gain.level() >= 0) {
 			s.level = gain.level();
 		}
