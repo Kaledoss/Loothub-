@@ -53,7 +53,7 @@ public class LoothubClient implements ClientModInitializer {
 
 		// Eigene Statistik
 		ClientTickEvents.END_CLIENT_TICK.register(StatsTracker::tick);
-		ClientPlayerBlockBreakEvents.AFTER.register((world, player, pos, state) -> StatsTracker.onBlockBroken(state));
+		ClientPlayerBlockBreakEvents.AFTER.register((world, player, pos, state) -> StatsTracker.onBlockBroken(pos, state));
 		// Werkzeug-Einsätze per Rechtsklick (in die Luft bzw. auf einen Block, z. B. Hacke, Axt, Schaufel)
 		UseItemCallback.EVENT.register((player, world, hand) -> {
 			if (world.isClientSide() && player == net.minecraft.client.Minecraft.getInstance().player) {

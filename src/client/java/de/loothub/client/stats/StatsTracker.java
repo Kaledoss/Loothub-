@@ -50,6 +50,12 @@ public final class StatsTracker {
 
 	// ------------------------------------------------------------------ Ereignisse
 
+	public static void onBlockBroken(net.minecraft.core.BlockPos pos, BlockState state) {
+		lastCountedPos = pos.immutable();
+		lastCountedAt = System.currentTimeMillis();
+		onBlockBroken(state);
+	}
+
 	public static void onBlockBroken(BlockState state) {
 		Minecraft mc = Minecraft.getInstance();
 		if (!tracking(mc)) {
@@ -145,7 +151,14 @@ public final class StatsTracker {
 				|| state.is(net.minecraft.tags.BlockTags.CROPS);
 	}
 
+	/** Blöcke, die trotz Sonderform/Funktion als „echter“ Block zählen (z. B. Spawner). */
+	private static final java.util.Set<String> ALWAYS_BLOCK = java.util.Set.of("minecraft:spawner", "minecraft:trial_spawner",
+			"minecraft:reinforced_deepslate", "minecraft:vault");
+
 	public static boolean isRealBlock(Block block) {
+		if (ALWAYS_BLOCK.contains(BuiltInRegistries.BLOCK.getKey(block).toString())) {
+			return true;
+		}
 		BlockState state = block.defaultBlockState();
 		if (state.canBeReplaced() || isPlant(block)) {
 			return false;
@@ -201,12 +214,46 @@ public final class StatsTracker {
 		}
 		lastTickTime = now;
 
+		watchMining(mc, now);
 		trackMovement(mc, p);
 		trackHealth(p);
 		trackEating(p);
 		trackTargets(mc, now);
 
 		StatsStore.saveIfDirty(false);
+	}
+
+	// ---- Abbauen, das der Server selbst erledigt (Spawner, verstärkter Tiefenschiefer, Spezial-Werkzeuge):
+	// Minecraft meldet dafür kein „Block abgebaut“. Deshalb den anvisierten Block beobachten – verschwindet er
+	// kurz nach dem Abbauen, zählt er auch.
+	private static net.minecraft.core.BlockPos watchPos, lastCountedPos;
+	private static BlockState watchState;
+	private static long watchUntil, lastCountedAt;
+
+	private static void watchMining(Minecraft mc, long now) {
+		if (mc.options.keyAttack.isDown() && mc.hitResult instanceof net.minecraft.world.phys.BlockHitResult bhr
+				&& mc.hitResult.getType() == net.minecraft.world.phys.HitResult.Type.BLOCK) {
+			BlockState st = mc.level.getBlockState(bhr.getBlockPos());
+			if (!st.isAir()) {
+				watchPos = bhr.getBlockPos().immutable();
+				watchState = st;
+				watchUntil = now + 1500;
+			}
+		}
+		if (watchPos == null) {
+			return;
+		}
+		BlockState now0 = mc.level.getBlockState(watchPos);
+		if (now0.getBlock() != watchState.getBlock()) {
+			// schon über das normale Ereignis gezählt?
+			boolean counted = watchPos.equals(lastCountedPos) && now - lastCountedAt < 2000;
+			if (!counted && (now0.isAir() || now0.canBeReplaced())) {
+				onBlockBroken(watchState);
+			}
+			watchPos = null;
+		} else if (now > watchUntil) {
+			watchPos = null;
+		}
 	}
 
 	private static void trackMovement(Minecraft mc, LocalPlayer p) {
