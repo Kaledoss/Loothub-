@@ -236,7 +236,7 @@ public final class MiniMeLayer extends RenderLayer<AvatarRenderState, PlayerMode
 					poseStack.mulPose(Axis.XP.rotationDegrees(-55.0F * flat));
 				}
 				Wings.submit(poseStack, collector, wings, t + i * 7.0F, light, sleeping,
-						Cosmetics.raw(state, Cosmetics.MINI_WING_COLOR));
+						Cosmetics.miniMeWingColor(state, i), Cosmetics.miniMeWingColorOuter(state, i));
 			}
 			poseStack.popPose();
 		}

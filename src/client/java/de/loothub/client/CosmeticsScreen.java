@@ -47,11 +47,18 @@ public class CosmeticsScreen extends LoothubScreen {
 
 	private static Tab tab = Tab.COMPANIONS;
 
-	private record Section(int y, int h, String title, String desc) {
+	/** {@code divH}: so weit reicht die Trennlinie zwischen Titel und Beschreibung (breite Abschnitte nutzen darunter die volle Breite). */
+	private record Section(int y, int h, String title, String desc, int divH) {
+		Section(int y, int h, String title, String desc) {
+			this(y, h, title, desc, h);
+		}
 	}
 
 	/** Farbfeld neben einem „Farbe wählen“-Knopf. */
-	private record Swatch(int x, int y, Supplier<String> value, Supplier<String> fallback) {
+	private record Swatch(int x, int y, Supplier<String> value, Supplier<String> fallback, boolean label) {
+		Swatch(int x, int y, Supplier<String> value, Supplier<String> fallback) {
+			this(x, y, value, fallback, true);
+		}
 	}
 
 	private final List<Section> sections = new ArrayList<>();
@@ -102,20 +109,33 @@ public class CosmeticsScreen extends LoothubScreen {
 				sections.add(new Section(y, 42, "loothub.cosmetics.show", "loothub.cosmetics.show.desc"));
 				y += 42 + GAP;
 
-				// Mini-Mes: Reihe 1 = Schultern + schwebend (1–4), Reihe 2 = krabbelnd (5–6) + Übernehmen
-				int fw = Math.max(60, Math.min(110, (cr - 8 - descX - 3 * 16) / 4));
+				// Mini-Mes: je Zeile ein Mini-Me mit Spielername, Flügeln und Flügelfarbe
+				int x0 = cl + 8;
+				int ddW = 110, colW = 46;
+				int nameW = Math.max(70, Math.min(130, cw - 16 - 14 - ddW - 6 - 2 * (colW + 16) - 18));
+				int x1 = x0 + nameW + 14, x2 = x1 + ddW + 6;
 				List<EditBox> boxes = new ArrayList<>();
 				for (int i = 0; i < Cosmetics.MAX_MINI_MES; i++) {
-					int col = i < 4 ? i : i - 4;
-					int row = i < 4 ? 0 : 1;
-					int bx = descX + col * (fw + 16);
-					int by = y + 30 + row * 20;
-					EditBox box = new EditBox(font, bx, by, fw, 16, Component.translatable("loothub.settings.minime"));
+					final int slot = i;
+					int by = y + 30 + i * 20;
+					EditBox box = new EditBox(font, x0, by, nameW, 16, Component.translatable("loothub.settings.minime"));
 					box.setMaxLength(16);
 					box.setHint(Component.translatable("loothub.cosmetics.minime.slot" + (i + 1)).withStyle(ChatFormatting.DARK_GRAY));
 					box.setValue(i < c.miniMes.size() && c.miniMes.get(i) != null ? c.miniMes.get(i) : "");
 					boxes.add(addRenderableWidget(box));
-					skinStatus[i] = new int[]{bx + fw + 4, by + 4};
+					skinStatus[i] = new int[]{x0 + nameW + 3, by + 4};
+					dropdown(x1, by, ddW, Component.translatable("loothub.cosmetics.wings.short").getString(),
+							WING_OPTIONS, "loothub.cosmetics.wings.style.", () -> slotValue(c.miniMeWings, slot),
+							v -> c.miniMeWings = setSlot(c.miniMeWings, slot, v, Cosmetics.MAX_MINI_MES));
+					// zwei Farben: innen (Flughaut/Federn) und außen (Knochen/Rand); ↺ = Originalfarben
+					int nx = colorPick(x2, by, colW, "loothub.cosmetics.color.inner", () -> slotValue(c.miniMeWingColor, slot),
+							v -> c.miniMeWingColor = setSlot(c.miniMeWingColor, slot, v, Cosmetics.MAX_MINI_MES));
+					nx = colorPick(nx, by, colW, "loothub.cosmetics.color.outer", () -> slotValue(c.miniMeWingColorOuter, slot),
+							v -> c.miniMeWingColorOuter = setSlot(c.miniMeWingColorOuter, slot, v, Cosmetics.MAX_MINI_MES));
+					resetButton(nx, by, () -> {
+						c.miniMeWingColor = setSlot(c.miniMeWingColor, slot, "", Cosmetics.MAX_MINI_MES);
+						c.miniMeWingColorOuter = setSlot(c.miniMeWingColorOuter, slot, "", Cosmetics.MAX_MINI_MES);
+					});
 				}
 				addRenderableWidget(Button.builder(Component.translatable("loothub.settings.minime.apply"), b -> {
 					c.miniMes.clear();
@@ -127,26 +147,10 @@ public class CosmeticsScreen extends LoothubScreen {
 						}
 					}
 					c.save();
-				}).bounds(descX + 2 * (fw + 16), y + 50, 90, 16).build());
-				sections.add(new Section(y, 74, "loothub.settings.minime", "loothub.settings.minime.tooltip"));
-				y += 74 + GAP;
-
-				// Flügel der Mini-Mes, je Platz
-				int dw = ddWidth();
-				for (int k = 0; k < Cosmetics.MAX_MINI_MES; k++) {
-					final int slot = k;
-					int bx = descX + (k % 3) * (dw + 6);
-					int by = y + 30 + (k / 3) * 20;
-					dropdown(bx, by, dw, Component.translatable("loothub.cosmetics.wings.slot", slot + 1).getString(),
-							WING_OPTIONS, "loothub.cosmetics.wings.style.", () -> slotValue(c.miniMeWings, slot),
-							v -> c.miniMeWings = setSlot(c.miniMeWings, slot, v, Cosmetics.MAX_MINI_MES));
-				}
-				sections.add(new Section(y, 74, "loothub.cosmetics.minime_wings", "loothub.cosmetics.minime_wings.desc"));
-				y += 74 + GAP;
-				y = colorSection(y, lx, lw, "loothub.cosmetics.minime_wing_color", "loothub.cosmetics.wing_color.desc",
-						() -> c.miniMeWingColor, v -> c.miniMeWingColor = v, () -> c.miniMeWingColorLast,
-						v -> c.miniMeWingColorLast = v, "#8A2BE2");
-
+				}).bounds(x0, y + 30 + Cosmetics.MAX_MINI_MES * 20, nameW, 16).build());
+				int h = 30 + Cosmetics.MAX_MINI_MES * 20 + 22;
+				sections.add(new Section(y, h, "loothub.settings.minime", "loothub.cosmetics.minime.rows.desc", 28));
+				y += h + GAP;
 			}
 			case PETS -> {
 				int dw = ddWidth();
@@ -194,8 +198,14 @@ public class CosmeticsScreen extends LoothubScreen {
 						v -> c.wings = v);
 				sections.add(new Section(y, 54, "loothub.cosmetics.wings", "loothub.cosmetics.wings.desc"));
 				y += 54 + GAP;
-				y = colorSection(y, lx, lw, "loothub.cosmetics.wing_color", "loothub.cosmetics.wing_color.desc",
-						() -> c.wingColor, v -> c.wingColor = v, () -> c.wingColorLast, v -> c.wingColorLast = v, "#8A2BE2");
+				int nx = colorPick(descX, y + 30, 70, "loothub.cosmetics.color.inner", () -> c.wingColor, v -> c.wingColor = v);
+				nx = colorPick(nx + 6, y + 30, 70, "loothub.cosmetics.color.outer", () -> c.wingColorOuter, v -> c.wingColorOuter = v);
+				resetButton(nx + 6, y + 30, () -> {
+					c.wingColor = "";
+					c.wingColorOuter = "";
+				});
+				sections.add(new Section(y, 54, "loothub.cosmetics.wing_color", "loothub.cosmetics.wing_color.desc"));
+				y += 54 + GAP;
 				// Augen: an/aus + Farbe
 				y = colorSection(y, lx, lw, "loothub.cosmetics.eyes", "loothub.cosmetics.eyes.desc",
 						() -> c.eyeColor, v -> c.eyeColor = v, () -> c.eyeLast, v -> c.eyeLast = v, "#7FE8FF");
@@ -253,6 +263,28 @@ public class CosmeticsScreen extends LoothubScreen {
 		swatches.add(new Swatch(descX + 126, y + 33, get, last));
 		sections.add(new Section(y, 54, title, desc));
 		return y + 54 + GAP;
+	}
+
+	/** Knopf „Innen/Außen …“ öffnet den Farbwähler, daneben ein Farbfeld. Gibt die x-Position dahinter zurück. */
+	private int colorPick(int x, int y, int w, String key, Supplier<String> get, Consumer<String> set) {
+		addRenderableWidget(Button.builder(Component.translatable(key), b ->
+				minecraft.setScreen(new ColorPickerScreen(this, Component.translatable("loothub.cosmetics.wing_color"),
+						AuraTextures.parse(get.get() == null || get.get().isBlank() ? "#8A2BE2" : get.get()), rgb -> {
+							set.accept(String.format(Locale.ROOT, "#%06X", rgb & 0xFFFFFF));
+							WidgetConfig.get().save();
+						})))
+				.bounds(x, y, w, 16).build());
+		swatches.add(new Swatch(x + w + 3, y + 3, get, () -> "#8A2BE2", false));
+		return x + w + 16;
+	}
+
+	private void resetButton(int x, int y, Runnable reset) {
+		Button b = Button.builder(Component.literal("↺"), btn -> {
+			reset.run();
+			WidgetConfig.get().save();
+		}).bounds(x, y, 16, 16).build();
+		b.setTooltip(net.minecraft.client.gui.components.Tooltip.create(Component.translatable("loothub.cosmetics.color.reset")));
+		addRenderableWidget(b);
 	}
 
 	private static Component onOff(boolean on) {
@@ -452,7 +484,7 @@ public class CosmeticsScreen extends LoothubScreen {
 		for (Section s : sections) {
 			g.fill(cl, s.y(), cl + cw, s.y() + s.h(), Theme.bg(CARD));
 			g.fill(cl, s.y() + s.h() - 1, cl + cw, s.y() + s.h(), Theme.bg(CARD_EDGE));
-			g.fill(cl + labelW + 6, s.y() + 5, cl + labelW + 7, s.y() + s.h() - 5, Theme.bg(CARD_EDGE));
+			g.fill(cl + labelW + 6, s.y() + 5, cl + labelW + 7, s.y() + Math.min(s.h(), s.divH()) - 5, Theme.bg(CARD_EDGE));
 		}
 	}
 
@@ -494,9 +526,14 @@ public class CosmeticsScreen extends LoothubScreen {
 			int rgb = AuraTextures.parse(on ? v : sw.fallback().get());
 			g.fill(sw.x() - 1, sw.y() - 1, sw.x() + 11, sw.y() + 11, 0xFF000000);
 			g.fill(sw.x(), sw.y(), sw.x() + 10, sw.y() + 10, 0xFF000000 | rgb);
-			g.drawString(font, String.format(Locale.ROOT, "#%06X", rgb)
-					+ (on ? "" : " · " + Component.translatable("loothub.settings.off").getString()), sw.x() + 16, sw.y() + 1,
-					on ? TEXT : FAINT, false);
+			if (sw.label()) {
+				g.drawString(font, String.format(Locale.ROOT, "#%06X", rgb)
+						+ (on ? "" : " · " + Component.translatable("loothub.settings.off").getString()), sw.x() + 16, sw.y() + 1,
+						on ? TEXT : FAINT, false);
+			} else if (!on) {
+				// Originalfarben: Feld durchgestrichen
+				g.fill(sw.x(), sw.y() + 4, sw.x() + 10, sw.y() + 6, 0xFF000000);
+			}
 		}
 		// fertiger Eintrag für cosmetics.json
 		if (jsonY >= 0) {

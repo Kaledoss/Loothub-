@@ -29,16 +29,35 @@ public final class Wings {
 		submit(poseStack, collector, style, ageInTicks, light, slowFlap, null);
 	}
 
-	/**
-	 * Mit Farbe ({@code color} = „#RRGGBB“ oder null für die Originalfarben): dann wird eine helle Graustufen-Fassung
-	 * des Flügels eingefärbt, damit jede Farbe kräftig wirkt.
-	 */
+	/** Eine Farbe für die Fläche (der Rand behält seine Originalfarben). */
 	public static void submit(PoseStack poseStack, SubmitNodeCollector collector, String style, float ageInTicks, int light,
 			boolean slowFlap, String color) {
-		boolean tinted = color != null && !color.isBlank();
-		Identifier texture = Identifier.fromNamespaceAndPath(Loothub.MOD_ID,
-				"textures/entity/wing_" + style + (tinted ? "_gray" : "") + ".png");
-		int argb = tinted ? 0xFF000000 | AuraTextures.parse(color) : 0xFFFFFFFF;
+		submit(poseStack, collector, style, ageInTicks, light, slowFlap, color, null);
+	}
+
+	/**
+	 * Zwei Farben: {@code inner} für die Fläche (Flughaut bzw. Federn), {@code outer} für Knochen und Rand. Ist nur eine
+	 * gesetzt, behält der andere Teil seine Originalfarben – so wird der Flügel nicht einfarbig „zugekleistert“.
+	 */
+	public static void submit(PoseStack poseStack, SubmitNodeCollector collector, String style, float ageInTicks, int light,
+			boolean slowFlap, String inner, String outer) {
+		boolean in = inner != null && !inner.isBlank(), out = outer != null && !outer.isBlank();
+		if (!in && !out) {
+			draw(poseStack, collector, tex(style, ""), 0xFFFFFFFF, ageInTicks, light, slowFlap);
+			return;
+		}
+		draw(poseStack, collector, tex(style, in ? "_in_gray" : "_in"), in ? 0xFF000000 | AuraTextures.parse(inner) : 0xFFFFFFFF,
+				ageInTicks, light, slowFlap);
+		draw(poseStack, collector, tex(style, out ? "_out_gray" : "_out"), out ? 0xFF000000 | AuraTextures.parse(outer) : 0xFFFFFFFF,
+				ageInTicks, light, slowFlap);
+	}
+
+	private static Identifier tex(String style, String part) {
+		return Identifier.fromNamespaceAndPath(Loothub.MOD_ID, "textures/entity/wing_" + style + part + ".png");
+	}
+
+	private static void draw(PoseStack poseStack, SubmitNodeCollector collector, Identifier texture, int argb, float ageInTicks,
+			int light, boolean slowFlap) {
 		float speed = slowFlap ? 0.08F : 0.16F;
 		float flap = (float) Math.sin(ageInTicks * speed);
 		for (int side = -1; side <= 1; side += 2) {

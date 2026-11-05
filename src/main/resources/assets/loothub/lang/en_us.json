@@ -398,6 +398,12 @@
 	"loothub.cosmetics.aura.strength": "Stärke: %s %%",
 	"loothub.cosmetics.wing_color": "Flügelfarbe",
 	"loothub.cosmetics.minime_wing_color": "Farbe der Mini-Me-Flügel",
-	"loothub.cosmetics.wing_color.desc": "Aus = Originalfarben. An = die Flügel in deiner Wahlfarbe.",
-	"loothub.cosmetics.tab.pets": "Haustiere"
+	"loothub.cosmetics.wing_color.desc": "Innen = Flughaut bzw. Federn, außen = Knochen und Rand. ↺ = Originalfarben.",
+	"loothub.cosmetics.tab.pets": "Haustiere",
+	"loothub.cosmetics.wings.short": "Flügel",
+	"loothub.cosmetics.color": "Farbe …",
+	"loothub.cosmetics.color.reset": "Originalfarben",
+	"loothub.cosmetics.minime.rows.desc": "Je Mini-Me: Spielername (leer = Platz frei), Flügel und zwei Flügelfarben (innen/außen). Namen mit „Übernehmen“ speichern.",
+	"loothub.cosmetics.color.inner": "Innen …",
+	"loothub.cosmetics.color.outer": "Außen …"
 }

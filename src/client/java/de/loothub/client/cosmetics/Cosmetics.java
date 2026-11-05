@@ -53,6 +53,9 @@ public final class Cosmetics {
 	/** Farbe der eigenen Flügel bzw. der Mini-Me-Flügel („#RRGGBB“, leer = Originalfarben). */
 	public static final String WING_COLOR = "wingcolor";
 	public static final String MINI_WING_COLOR = "minimewingcolor";
+	/** Zweite Flügelfarbe: Knochen und Rand. */
+	public static final String WING_COLOR_OUTER = "wingcolorouter";
+	public static final String MINI_WING_COLOR_OUTER = "minimewingcolorouter";
 	/** Stärke der Aura in Prozent (0–100). */
 	public static final String AURA_STRENGTH = "aurastrength";
 	public static final List<String> FOOTSTEP_STYLES = List.of("sparks", "flames");
@@ -231,6 +234,8 @@ public final class Cosmetics {
 			putOwn(mine, values, EYES, cfg.eyeColor);
 			putOwn(mine, values, WING_COLOR, cfg.wingColor);
 			putOwn(mine, values, MINI_WING_COLOR, cfg.miniMeWingColor);
+			putOwn(mine, values, WING_COLOR_OUTER, cfg.wingColorOuter);
+			putOwn(mine, values, MINI_WING_COLOR_OUTER, cfg.miniMeWingColorOuter);
 			putOwn(mine, values, FOOTSTEPS, cfg.footsteps);
 			putOwn(mine, values, PETS, cfg.pets == null || cfg.pets.replace(",", "").isBlank() ? "" : cfg.pets);
 			if (cfg.crown) {
@@ -295,6 +300,30 @@ public final class Cosmetics {
 		}
 		Map<String, String> v = VALUES.get(state);
 		return v == null ? null : v.get(cosmetic);
+	}
+
+	/** Flügelfarbe des Mini-Mes auf Platz {@code slot} („#RRGGBB“), oder null für Originalfarben. */
+	public static String miniMeWingColor(Object state, int slot) {
+		return slotColor(raw(state, MINI_WING_COLOR), slot);
+	}
+
+	/** Zweite Farbe (Knochen und Rand) des Mini-Mes auf Platz {@code slot}, oder null. */
+	public static String miniMeWingColorOuter(Object state, int slot) {
+		return slotColor(raw(state, MINI_WING_COLOR_OUTER), slot);
+	}
+
+	private static String slotColor(String raw, int slot) {
+		if (raw == null || raw.isBlank()) {
+			return null;
+		}
+		String s;
+		if (raw.indexOf(',') < 0) {
+			s = raw.strip(); // ein Wert für alle
+		} else {
+			String[] parts = raw.split(",", -1);
+			s = slot < parts.length ? parts[slot].strip() : "";
+		}
+		return s.isEmpty() ? null : s;
 	}
 
 	/** Haustier auf Platz {@code slot} ("slime", "allay" …), oder null. */

@@ -44,8 +44,12 @@ public final class WidgetConfig {
 	/** Flügelfarben („#RRGGBB“, leer = Originalfarben). */
 	public String wingColor = "";
 	public String wingColorLast = "";
+	/** Flügelfarbe je Mini-Me-Platz als „#RRGGBB,,#RRGGBB,…“ (leer = Originalfarben). */
 	public String miniMeWingColor = "";
 	public String miniMeWingColorLast = "";
+	/** Zweite Flügelfarbe (Knochen und Rand), für mich bzw. je Mini-Me-Platz. */
+	public String wingColorOuter = "";
+	public String miniMeWingColorOuter = "";
 	/** Stärke der Aura in Prozent. */
 	public int auraStrength = 60;
 	public String eyeColor = "";

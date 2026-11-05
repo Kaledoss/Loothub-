@@ -34,7 +34,8 @@ public final class WingsLayer extends RenderLayer<AvatarRenderState, PlayerModel
 			poseStack.translate(0.0F, 0.22F, 0.14F);
 			poseStack.mulPose(com.mojang.math.Axis.XP.rotationDegrees(8.0F));
 		}
-		Wings.submit(poseStack, collector, style, state.ageInTicks, light, false, Cosmetics.raw(state, Cosmetics.WING_COLOR));
+		Wings.submit(poseStack, collector, style, state.ageInTicks, light, false, Cosmetics.raw(state, Cosmetics.WING_COLOR),
+				Cosmetics.raw(state, Cosmetics.WING_COLOR_OUTER));
 		poseStack.popPose();
 	}
 }
