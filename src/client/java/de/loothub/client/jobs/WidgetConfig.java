@@ -72,8 +72,10 @@ public final class WidgetConfig {
 	public long dailyItemLimit = -1;
 	/** Loothub-Cosmetics (z. B. Mini-Me) bei Spielern anzeigen. */
 	public boolean cosmetics = true;
-	/** Mini-Me mit dem Skin dieses Spielers (leer = kein eigenes Mini-Me per Einstellung). */
+	/** Früher: ein Mini-Me-Skin (wird in {@link #miniMes} übernommen). */
 	public String miniMeSkin = "";
+	/** Bis zu 4 eigene Mini-Mes – je ein Spielername, dessen Skin es trägt. */
+	public java.util.List<String> miniMes = new java.util.ArrayList<>();
 	/** AFK-Ansicht: nach 5 Minuten ohne Eingabe herauszoomen und den Charakter schlafen legen. */
 	public boolean afkView = true;
 	/** Eingesammelte Marktverkäufe als „Markt“ im Job-Verlauf. */
@@ -223,6 +225,13 @@ public final class WidgetConfig {
 					}
 					if (c.pcgUser == null) {
 						c.pcgUser = "";
+					}
+					if (c.miniMes == null) {
+						c.miniMes = new java.util.ArrayList<>();
+					}
+					if (c.miniMes.isEmpty() && c.miniMeSkin != null && !c.miniMeSkin.isBlank()) {
+						c.miniMes.add(c.miniMeSkin.strip());
+						c.miniMeSkin = "";
 					}
 					if (c.marketFavorites == null) {
 						c.marketFavorites = new java.util.ArrayList<>();

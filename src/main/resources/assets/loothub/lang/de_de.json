@@ -333,12 +333,8 @@
 	"loothub.market.fav_hint": "Rechtsklick oder Stern: Favorit an/aus",
 	"loothub.settings.cosmetics": "Cosmetics",
 	"loothub.settings.cosmetics.tooltip": "Zeigt Loothub-Cosmetics wie das Mini-Me bei Spielern, die eins haben. Sehen können sie alle mit Loothub+.",
-	"loothub.settings.minime": "Mini-Me",
-	"loothub.settings.minime.tooltip": "Dein Mini-Me mit dem Skin eines beliebigen Spielers. Du siehst es sofort, andere mit Loothub+ sobald es in cosmetics.json steht.",
-	"loothub.settings.minime.hint": "Spielername …",
-	"loothub.settings.minime.apply": "Übernehmen",
-	"loothub.settings.minime.off": "Aus",
-	"loothub.settings.minime.status.loading": "Lädt …",
-	"loothub.settings.minime.status.ready": "✔ Skin geladen",
-	"loothub.settings.minime.status.not_found": "Spieler nicht gefunden"
+	"loothub.settings.minime": "Mini-Mes",
+	"loothub.settings.minime.tooltip": "Bis zu 4 Mini-Mes, je mit dem Skin eines beliebigen Spielers (eigenen Namen eintragen für den eigenen Skin). Leere Felder = kein Mini-Me. Du siehst sie sofort, andere mit Loothub+ sobald sie in cosmetics.json stehen.",
+	"loothub.settings.minime.hint": "Spieler %s …",
+	"loothub.settings.minime.apply": "Übernehmen"
 }

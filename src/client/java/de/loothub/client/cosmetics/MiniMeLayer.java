@@ -12,11 +12,17 @@ import net.minecraft.client.renderer.texture.OverlayTexture;
 import net.minecraft.resources.Identifier;
 
 /**
- * Cosmetic „Mini-Me“: eine kleine Ausgabe des Spielers (mit seinem eigenen Skin) schwebt neben seiner Schulter,
- * wippt leicht auf und ab und macht seine Bewegungen mit.
+ * Cosmetic „Mini-Me“: bis zu 4 kleine Ausgaben des Spielers (eigener oder fremder Skin) schweben um ihn herum,
+ * wippen leicht auf und ab und machen seine Bewegungen mit.
  */
 public final class MiniMeLayer extends RenderLayer<AvatarRenderState, PlayerModel> {
 	private static final float SCALE = 0.35F;
+	/** Plätze der bis zu 4 Mini-Mes (Modellraum, y nach unten): beide Schultern, dahinter etwas höher. */
+	private static final float[][] SLOTS = {
+			{0.62F, 0.05F, 0.15F},
+			{-0.62F, 0.05F, 0.15F},
+			{0.45F, -0.35F, 0.55F},
+			{-0.45F, -0.35F, 0.55F}};
 
 	public MiniMeLayer(RenderLayerParent<AvatarRenderState, PlayerModel> parent) {
 		super(parent);
@@ -28,21 +34,26 @@ public final class MiniMeLayer extends RenderLayer<AvatarRenderState, PlayerMode
 		if (state.isInvisible || !Cosmetics.has(state, Cosmetics.MINI_ME) || state.skin == null) {
 			return;
 		}
-		Identifier texture = state.skin.body().texturePath();
-		String other = Cosmetics.miniMeSkin(state);
-		if (other != null) {
-			net.minecraft.world.entity.player.PlayerSkin s = SkinLookup.get(other);
-			if (s != null) {
-				texture = s.body().texturePath(); // Skin eines anderen Spielers (solange er lädt: eigener)
+		Identifier own = state.skin.body().texturePath();
+		java.util.List<String> skins = Cosmetics.miniMes(state);
+		for (int i = 0; i < skins.size(); i++) {
+			Identifier texture = own;
+			String other = skins.get(i);
+			if (!other.isEmpty()) {
+				net.minecraft.world.entity.player.PlayerSkin s = SkinLookup.get(other);
+				if (s != null) {
+					texture = s.body().texturePath(); // fremder Skin (solange er lädt: eigener)
+				}
 			}
+			float[] slot = SLOTS[i];
+			// jedes Mini-Me wippt etwas versetzt
+			float bob = (float) Math.sin(state.ageInTicks * 0.1F + i * 1.7F) * 0.06F;
+			poseStack.pushPose();
+			poseStack.translate(slot[0], slot[1] + bob, slot[2]);
+			poseStack.scale(SCALE, SCALE, SCALE);
+			collector.submitModel(getParentModel(), state, poseStack, RenderTypes.entityTranslucent(texture), light,
+					OverlayTexture.NO_OVERLAY, state.outlineColor, null);
+			poseStack.popPose();
 		}
-		float bob = (float) Math.sin(state.ageInTicks * 0.1F) * 0.06F;
-		poseStack.pushPose();
-		// neben der Schulter, etwas nach hinten; im Modellraum zeigt y nach unten
-		poseStack.translate(0.62F, 0.05F + bob, 0.15F);
-		poseStack.scale(SCALE, SCALE, SCALE);
-		collector.submitModel(getParentModel(), state, poseStack, RenderTypes.entityTranslucent(texture), light,
-				OverlayTexture.NO_OVERLAY, state.outlineColor, null);
-		poseStack.popPose();
 	}
 }

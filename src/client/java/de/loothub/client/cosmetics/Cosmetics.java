@@ -6,7 +6,9 @@ import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.nio.charset.StandardCharsets;
 import java.time.Duration;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.HashSet;
 import java.util.Locale;
 import java.util.Map;
@@ -39,14 +41,15 @@ public final class Cosmetics {
 
 	/** Spieler (Name klein oder UUID) → seine Cosmetics. */
 	private static volatile Map<String, Set<String>> owners = Map.of();
-	/** Spieler → Name des Spielers, dessen Skin sein Mini-Me trägt (fehlt = eigener Skin). */
-	private static volatile Map<String, String> miniMeSkins = Map.of();
+	public static final int MAX_MINI_MES = 4;
+	/** Spieler → Skins seiner Mini-Mes (Spielernamen; "" = eigener Skin). Fehlt = ein Mini-Me mit eigenem Skin. */
+	private static volatile Map<String, List<String>> miniMeSkins = Map.of();
 	private static volatile long lastFetch;
 	private static volatile boolean loading;
 
 	/** Cosmetics je Render-Zustand (nur für den aktuellen Frame). */
 	private static final Map<Object, Set<String>> STATES = new WeakHashMap<>();
-	private static final Map<Object, String> SKINS = new WeakHashMap<>();
+	private static final Map<Object, List<String>> SKINS = new WeakHashMap<>();
 
 	private Cosmetics() {
 	}
@@ -67,7 +70,7 @@ public final class Cosmetics {
 		HTTP.sendAsync(req, HttpResponse.BodyHandlers.ofString(StandardCharsets.UTF_8)).whenComplete((r, t) -> {
 			try {
 				if (t == null && r.statusCode() == 200) {
-					Map<String, String> skins = new HashMap<>();
+					Map<String, List<String>> skins = new HashMap<>();
 					owners = parse(r.body(), skins);
 					miniMeSkins = skins;
 				}
@@ -80,10 +83,10 @@ public final class Cosmetics {
 	}
 
 	/**
-	 * {"minime": ["Kaledoss", …]} – Mini-Me mit eigenem Skin, oder {"minime": {"Kaledoss": "Notch"}} – Mini-Me mit dem
-	 * Skin eines anderen Spielers (leerer Text = eigener Skin). Weitere Cosmetics als Liste.
+	 * {"minime": ["Kaledoss", …]} – ein Mini-Me mit eigenem Skin; {"minime": {"Kaledoss": "Notch"}} – mit fremdem Skin;
+	 * {"minime": {"Kaledoss": ["Notch", "", "jeb_"]}} – bis zu 4 Mini-Mes ("" = eigener Skin). Weitere Cosmetics als Liste.
 	 */
-	private static Map<String, Set<String>> parse(String json, Map<String, String> skins) {
+	private static Map<String, Set<String>> parse(String json, Map<String, List<String>> skins) {
 		Map<String, Set<String>> out = new HashMap<>();
 		JsonObject root = JsonParser.parseString(json).getAsJsonObject();
 		for (String cosmetic : root.keySet()) {
@@ -99,9 +102,21 @@ public final class Cosmetics {
 				for (String who : map.keySet()) {
 					String key = who.strip().toLowerCase(Locale.ROOT);
 					out.computeIfAbsent(key, k -> new HashSet<>()).add(c);
-					String skin = map.get(who).isJsonPrimitive() ? map.get(who).getAsString().strip() : "";
-					if (c.equals(MINI_ME) && !skin.isEmpty()) {
-						skins.put(key, skin);
+					if (c.equals(MINI_ME)) {
+						List<String> list = new ArrayList<>();
+						JsonElement v = map.get(who);
+						if (v.isJsonArray()) {
+							for (JsonElement e : v.getAsJsonArray()) {
+								if (list.size() < MAX_MINI_MES) {
+									list.add(e.getAsString().strip());
+								}
+							}
+						} else if (v.isJsonPrimitive()) {
+							list.add(v.getAsString().strip());
+						}
+						if (!list.isEmpty()) {
+							skins.put(key, list);
+						}
 					}
 				}
 			}
@@ -125,33 +140,28 @@ public final class Cosmetics {
 			set = o.get(name);
 			key = name;
 		}
-		String skin = miniMeSkins.get(key);
-		// Eigene Wahl in den Einstellungen: eigenes Mini-Me (mit gewähltem Skin) – sofort sichtbar, für andere erst
-		// nach Eintrag in cosmetics.json
-		String own = WidgetConfig.get().miniMeSkin;
-		if (p == net.minecraft.client.Minecraft.getInstance().player && own != null && !own.isBlank()) {
+		List<String> skins = miniMeSkins.get(key);
+		// Eigene Wahl in den Einstellungen: sofort sichtbar, für andere erst nach Eintrag in cosmetics.json
+		List<String> own = WidgetConfig.get().miniMes;
+		if (p == net.minecraft.client.Minecraft.getInstance().player && own != null && !own.isEmpty()) {
 			Set<String> mine = new HashSet<>(set == null ? Set.of() : set);
 			mine.add(MINI_ME);
 			set = mine;
-			skin = own.strip();
+			skins = own;
 		}
 		if (set == null || set.isEmpty()) {
 			STATES.remove(state);
 		} else {
 			STATES.put(state, set);
-			if (skin != null && !skin.isEmpty()) {
-				SKINS.put(state, skin);
+			if (skins != null && !skins.isEmpty()) {
+				SKINS.put(state, skins);
 			}
 		}
 	}
 
-	/** Name des Spielers, dessen Skin das Mini-Me tragen soll (null = eigener Skin). */
-	public static String miniMeSkin(Object state) {
-		return SKINS.get(state);
-	}
-
-	public static boolean has(Object state, String cosmetic) {
-		Set<String> set = STATES.get(state);
-		return set != null && set.contains(cosmetic);
+	/** Skins der Mini-Mes dieses Spielers (Spielernamen, "" = eigener Skin); mindestens eins. */
+	public static List<String> miniMes(Object state) {
+		List<String> l = SKINS.get(state);
+		return l == null || l.isEmpty() ? List.of("") : l.subList(0, Math.min(MAX_MINI_MES, l.size()));
 	}
 }

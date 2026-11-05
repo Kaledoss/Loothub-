@@ -63,7 +63,7 @@ public class SettingsScreen extends LoothubScreen {
 	private final int[][] colorSwatches = new int[3][];
 	private int[] invHudSwatch;
 	private int musicCardY;
-	private int miniMeStatusX, miniMeStatusY = -1;
+	private final int[][] miniMeStatus = new int[de.loothub.client.cosmetics.Cosmetics.MAX_MINI_MES][];
 	private int pcgFieldX;
 	private int pcgFieldW;
 	private Button resetButton;
@@ -103,7 +103,7 @@ public class SettingsScreen extends LoothubScreen {
 		WidgetConfig c = WidgetConfig.get();
 		labelW = Math.min(130, cw / 3);
 		colorSwatches[0] = colorSwatches[1] = colorSwatches[2] = null;
-		miniMeStatusY = -1;
+		java.util.Arrays.fill(miniMeStatus, null);
 		invHudSwatch = null;
 
 		// Reiter oben (fest, scrollt nicht mit)
@@ -212,29 +212,33 @@ public class SettingsScreen extends LoothubScreen {
 						() -> c.afkView, v -> c.afkView = v);
 				y = card(y, 40, "loothub.settings.cosmetics", "loothub.settings.cosmetics.tooltip",
 						() -> c.cosmetics, v -> c.cosmetics = v);
-				// Mini-Me mit dem Skin eines beliebigen Spielers
+				// Bis zu 4 Mini-Mes, je mit dem Skin eines beliebigen Spielers
 				{
 					int mY = y;
 					int mx = cl + labelW + 12;
-					net.minecraft.client.gui.components.EditBox skinBox = new net.minecraft.client.gui.components.EditBox(
-							font, mx, mY + 30, 140, 16, Component.translatable("loothub.settings.minime"));
-					skinBox.setMaxLength(16);
-					skinBox.setHint(Component.translatable("loothub.settings.minime.hint")
-							.withStyle(ChatFormatting.DARK_GRAY));
-					skinBox.setValue(c.miniMeSkin == null ? "" : c.miniMeSkin);
-					buttons.add(addRenderableWidget(skinBox));
+					int fw = Math.min(110, (cr - 8 - mx - 3 * 18 - 100) / 4);
+					List<net.minecraft.client.gui.components.EditBox> boxes = new ArrayList<>();
+					for (int i = 0; i < de.loothub.client.cosmetics.Cosmetics.MAX_MINI_MES; i++) {
+						net.minecraft.client.gui.components.EditBox box = new net.minecraft.client.gui.components.EditBox(
+								font, mx + i * (fw + 18), mY + 30, fw, 16, Component.translatable("loothub.settings.minime"));
+						box.setMaxLength(16);
+						box.setHint(Component.translatable("loothub.settings.minime.hint", i + 1).withStyle(ChatFormatting.DARK_GRAY));
+						box.setValue(i < c.miniMes.size() ? c.miniMes.get(i) : "");
+						boxes.add(box);
+						buttons.add(addRenderableWidget(box));
+						miniMeStatus[i] = new int[]{mx + i * (fw + 18) + fw + 4, mY + 34};
+					}
 					buttons.add(addRenderableWidget(Button.builder(Component.translatable("loothub.settings.minime.apply"), b -> {
-						c.miniMeSkin = skinBox.getValue().strip();
-						de.loothub.client.cosmetics.SkinLookup.forget(c.miniMeSkin);
+						c.miniMes.clear();
+						for (net.minecraft.client.gui.components.EditBox box : boxes) {
+							String v = box.getValue().strip();
+							if (!v.isEmpty()) {
+								c.miniMes.add(v);
+								de.loothub.client.cosmetics.SkinLookup.forget(v);
+							}
+						}
 						c.save();
-					}).bounds(mx + 144, mY + 30, 90, 16).build()));
-					buttons.add(addRenderableWidget(Button.builder(Component.translatable("loothub.settings.minime.off"), b -> {
-						c.miniMeSkin = "";
-						skinBox.setValue("");
-						c.save();
-					}).bounds(mx + 238, mY + 30, 60, 16).build()));
-					miniMeStatusY = mY + 34;
-					miniMeStatusX = mx + 302;
+					}).bounds(mx + 4 * (fw + 18), mY + 30, 90, 16).build()));
 					y = cardNoToggle(mY, 54, "loothub.settings.minime", "loothub.settings.minime.tooltip");
 				}
 			}
@@ -588,14 +592,18 @@ public class SettingsScreen extends LoothubScreen {
 			g.fill(invHudSwatch[0], invHudSwatch[1], invHudSwatch[0] + 8, invHudSwatch[1] + 8, 0xFF000000 | WidgetConfig.get().invHudColor);
 		}
 
-		if (tab == Tab.LOOK && miniMeStatusY >= 0) {
-			String skinName = WidgetConfig.get().miniMeSkin;
-			if (skinName != null && !skinName.isBlank()) {
-				var st = de.loothub.client.cosmetics.SkinLookup.state(skinName);
-				Component status = Component.translatable("loothub.settings.minime.status." + st.name().toLowerCase(java.util.Locale.ROOT));
-				g.drawString(font, status, miniMeStatusX, miniMeStatusY,
-						st == de.loothub.client.cosmetics.SkinLookup.State.READY ? GREEN
-								: st == de.loothub.client.cosmetics.SkinLookup.State.NOT_FOUND ? RED : FAINT, false);
+		if (tab == Tab.LOOK) {
+			List<String> mm = WidgetConfig.get().miniMes;
+			for (int i = 0; i < miniMeStatus.length; i++) {
+				if (miniMeStatus[i] == null || i >= mm.size()) {
+					continue;
+				}
+				var st = de.loothub.client.cosmetics.SkinLookup.state(mm.get(i));
+				String mark = st == de.loothub.client.cosmetics.SkinLookup.State.READY ? "✔"
+						: st == de.loothub.client.cosmetics.SkinLookup.State.NOT_FOUND ? "✖" : "…";
+				int color = st == de.loothub.client.cosmetics.SkinLookup.State.READY ? GREEN
+						: st == de.loothub.client.cosmetics.SkinLookup.State.NOT_FOUND ? RED : FAINT;
+				g.drawString(font, mark, miniMeStatus[i][0], miniMeStatus[i][1], color, false);
 			}
 		}
 		if (tab == Tab.EXTRAS) {
