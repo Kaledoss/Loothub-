@@ -19,7 +19,7 @@ def to_wing(data: bytes) -> Image.Image:
     half = img.crop((img.width // 2, 0, img.width, img.height))
     hb = half.getchannel("A").point(lambda a: 255 if a > 24 else 0).getbbox()
     if hb:
-        half = half.crop((0, hb[1], hb[2], hb[3]))  # linken Rand (Ansatz) behalten
+        half = half.crop(hb)  # Lücke zwischen den Flügeln weg → Ansatz am linken Rand
     scale = min(W / half.width, H / half.height)
     half = half.resize((max(1, round(half.width * scale)), max(1, round(half.height * scale))), Image.LANCZOS)
     out = Image.new("RGBA", (W, H), (0, 0, 0, 0))
