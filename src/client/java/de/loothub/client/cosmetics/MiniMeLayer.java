@@ -22,10 +22,10 @@ public final class MiniMeLayer extends RenderLayer<AvatarRenderState, PlayerMode
 	 * Schulter-Begleitern auf den Schultern, die anderen beiden schweben etwas tiefer seitlich daneben.
 	 */
 	private static final float[][] SLOTS = {
-			{0.44F, -0.75F, 0.0F},
-			{-0.44F, -0.75F, 0.0F},
-			{0.95F, -0.35F, 0.05F},
-			{-0.95F, -0.35F, 0.05F}};
+			{0.60F, -0.75F, 0.0F},
+			{-0.60F, -0.75F, 0.0F},
+			{1.10F, -0.35F, 0.05F},
+			{-1.10F, -0.35F, 0.05F}};
 
 	public MiniMeLayer(RenderLayerParent<AvatarRenderState, PlayerModel> parent) {
 		super(parent);
