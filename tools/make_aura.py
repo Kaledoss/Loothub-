@@ -6,7 +6,6 @@ from PIL import Image
 out = sys.argv[1]
 os.makedirs(out, exist_ok=True)
 COLORS = {"base": (255, 255, 255)}
-          "purple": (190, 90, 255), "white": (235, 240, 255)}
 N = 64
 random.seed(7)
 # kachelbar: senkrechte, wellige Flammenzungen (ganzzahlige Frequenzen), entlang y in Stücke gebrochen
@@ -27,9 +26,9 @@ for name, (r, g, b) in COLORS.items():
         for x in range(N):
             t = (vals[y][x] - lo) / (hi - lo)
             # schmale helle Flammenzungen, dazwischen fast durchsichtig
-            s = max(0.0, (t - 0.42) / 0.58) ** 1.3
-            a = int(255 * min(1.0, s * 1.4))
-            k = 0.65 + 0.35 * s
-            px[x, y] = (min(255, int(r * k + 60 * s)), min(255, int(g * k + 60 * s)), min(255, int(b * k + 60 * s)), a)
+            s = 0.8 * max(0.0, (t - 0.5) / 0.5) ** 1.8  # dünne, weiche Zungen, insgesamt gedämpft
+            a = int(255 * min(1.0, s * 1.2))
+            k = s  # dunkel = unsichtbar (additiv), hell = Flamme
+            px[x, y] = (min(255, int(r * k)), min(255, int(g * k)), min(255, int(b * k)), a)
     img.save(os.path.join(out, f"aura_{name}.png"))
 print("ok", list(COLORS))

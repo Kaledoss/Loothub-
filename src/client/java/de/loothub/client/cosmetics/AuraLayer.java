@@ -32,21 +32,22 @@ public final class AuraLayer extends RenderLayer<AvatarRenderState, PlayerModel>
 			return;
 		}
 		float t = state.ageInTicks;
-		shell(poseStack, collector, state, texture, 1.10F, 0.013F * t, -0.045F * t);
-		shell(poseStack, collector, state, texture, 1.24F, -0.009F * t, -0.030F * t);
+		// drei weiche Hüllen, nach außen breiter; seitlich deutlich mehr als in der Höhe, damit die Aura „aufbläht“
+		shell(poseStack, collector, state, texture, 1.18F, 1.06F, 0.013F * t, -0.050F * t);
+		shell(poseStack, collector, state, texture, 1.42F, 1.12F, -0.009F * t, -0.036F * t);
+		shell(poseStack, collector, state, texture, 1.70F, 1.20F, 0.006F * t, -0.026F * t);
 	}
 
 	/** Eine Hülle: um die Körpermitte vergrößert, Textur läuft nach oben. */
 	private void shell(PoseStack poseStack, SubmitNodeCollector collector, AvatarRenderState state, Identifier texture,
-			float scale, float u, float v) {
+			float wide, float tall, float u, float v) {
 		poseStack.pushPose();
 		// Modellraum: y zeigt nach unten, Kopf oben bei −0,5, Füße bei 1,5 → Mitte bei 0,5
 		poseStack.translate(0.0F, 0.5F, 0.0F);
-		poseStack.scale(scale, scale, scale);
+		poseStack.scale(wide, tall, wide);
 		poseStack.translate(0.0F, -0.5F, 0.0F);
 		collector.submitModel(getParentModel(), state, poseStack,
-				RenderTypes.energySwirl(texture, u % 1.0F, v % 1.0F), 0xF000F0, OverlayTexture.NO_OVERLAY,
-				state.outlineColor, null);
+				RenderTypes.energySwirl(texture, u % 1.0F, v % 1.0F), 0xF000F0, OverlayTexture.NO_OVERLAY, 0, null);
 		poseStack.popPose();
 	}
 }

@@ -12,17 +12,20 @@ import net.minecraft.client.renderer.texture.OverlayTexture;
 import net.minecraft.resources.Identifier;
 
 /**
- * Cosmetic „Mini-Me“: bis zu 4 kleine Ausgaben des Spielers (eigener oder fremder Skin) schweben um ihn herum,
- * wippen leicht auf und ab und machen seine Bewegungen mit.
+ * Cosmetic „Mini-Me“: bis zu 4 kleine Ausgaben des Spielers (eigener oder fremder Skin) – zwei stehen auf den
+ * Schultern, zwei schweben daneben – und machen seine Bewegungen mit.
  */
 public final class MiniMeLayer extends RenderLayer<AvatarRenderState, PlayerModel> {
-	private static final float SCALE = 0.35F;
-	/** Plätze der bis zu 4 Mini-Mes (Modellraum, y nach unten): beide Schultern, dahinter etwas höher. */
+	private static final float SCALE = 0.5F;
+	/**
+	 * Plätze der bis zu 4 Mini-Mes (Modellraum, y nach unten, 0 = Schulterhöhe): die ersten beiden stehen wie bei
+	 * Schulter-Begleitern auf den Schultern, die anderen beiden schweben etwas tiefer seitlich daneben.
+	 */
 	private static final float[][] SLOTS = {
-			{0.62F, 0.05F, 0.15F},
-			{-0.62F, 0.05F, 0.15F},
-			{0.45F, -0.35F, 0.55F},
-			{-0.45F, -0.35F, 0.55F}};
+			{0.44F, -0.75F, 0.0F},
+			{-0.44F, -0.75F, 0.0F},
+			{0.95F, -0.35F, 0.05F},
+			{-0.95F, -0.35F, 0.05F}};
 
 	public MiniMeLayer(RenderLayerParent<AvatarRenderState, PlayerModel> parent) {
 		super(parent);
@@ -47,12 +50,13 @@ public final class MiniMeLayer extends RenderLayer<AvatarRenderState, PlayerMode
 			}
 			float[] slot = SLOTS[i];
 			// jedes Mini-Me wippt etwas versetzt
-			float bob = (float) Math.sin(state.ageInTicks * 0.1F + i * 1.7F) * 0.06F;
+			// auf den Schultern nur leicht wippen, die schwebenden etwas mehr
+			float bob = (float) Math.sin(state.ageInTicks * 0.1F + i * 1.7F) * (i < 2 ? 0.015F : 0.06F);
 			poseStack.pushPose();
 			poseStack.translate(slot[0], slot[1] + bob, slot[2]);
 			poseStack.scale(SCALE, SCALE, SCALE);
 			collector.submitModel(getParentModel(), state, poseStack, RenderTypes.entityTranslucent(texture), light,
-					OverlayTexture.NO_OVERLAY, state.outlineColor, null);
+					OverlayTexture.NO_OVERLAY, 0, null);
 			poseStack.popPose();
 		}
 	}
