@@ -407,7 +407,7 @@ public final class Itemdex {
 	}
 
 	/** Menüs, deren Inhalte keine echten Server-Items sind (Markt-Aufträge, Spielerköpfe der Freundesliste …). */
-	private static final String[] IGNORED_MENUS = {"marktplatz", "freunde"};
+	private static final String[] IGNORED_MENUS = {"marktplatz", "freunde", "login"};
 
 	private static boolean ignoredMenu(String where) {
 		String w = where == null ? "" : where.toLowerCase(Locale.ROOT);
