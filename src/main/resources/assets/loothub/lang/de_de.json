@@ -353,11 +353,11 @@
 	"loothub.cosmetics.minime.slot5": "5 · krabbelt",
 	"loothub.cosmetics.minime.slot6": "6 · krabbelt",
 	"loothub.cosmetics.wings": "Flügel",
-	"loothub.cosmetics.wings.desc": "Flügel, die sanft schlagen – für dich und für alle deine Mini-Mes (sitzend, fliegend, krabbelnd).",
-	"loothub.cosmetics.wings.me": "Ich: %s",
-	"loothub.cosmetics.wings.minime": "Mini-Mes: %s",
+	"loothub.cosmetics.wings.desc": "Flügel für dich und jedes Mini-Me einzeln – sitzend, fliegend oder krabbelnd.",
+	"loothub.cosmetics.wings.me": "Ich",
 	"loothub.cosmetics.wings.style.off": "Aus",
 	"loothub.cosmetics.wings.style.dragon": "Drache",
 	"loothub.cosmetics.wings.style.devil": "Teufel",
-	"loothub.cosmetics.wings.style.angel": "Engel"
+	"loothub.cosmetics.wings.style.angel": "Engel",
+	"loothub.cosmetics.wings.slot": "Mini-Me %s"
 }

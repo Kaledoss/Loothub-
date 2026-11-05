@@ -80,6 +80,7 @@ public final class WidgetConfig {
 	public String auraColor = "";
 	/** Flügel für einen selbst und für die Mini-Mes (dragon, devil, angel; leer = keine). */
 	public String wings = "";
+	/** Flügel je Mini-Me-Platz als „stil1,stil2,,…“ (leer = keine); ein Stil ohne Komma gilt für alle. */
 	public String miniMeWings = "";
 	/** Zuletzt gewählte Aura-Farbe (zum Wiedereinschalten). */
 	public String auraLast = "";

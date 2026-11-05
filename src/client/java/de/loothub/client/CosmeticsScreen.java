@@ -8,6 +8,7 @@ import net.minecraft.ChatFormatting;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.components.EditBox;
+import net.minecraft.client.input.MouseButtonEvent;
 import net.minecraft.network.chat.Component;
 import net.minecraft.util.FormattedCharSequence;
 
@@ -105,19 +106,29 @@ public class CosmeticsScreen extends LoothubScreen {
 		sections.add(new Section(y, 54, "loothub.settings.aura", "loothub.settings.aura.tooltip"));
 		y += 54 + GAP;
 
-		// 4 · Flügel: für mich und für die Mini-Mes
-		addRenderableWidget(Button.builder(wingLabel("loothub.cosmetics.wings.me", c.wings), b -> {
-			c.wings = nextWing(c.wings);
-			b.setMessage(wingLabel("loothub.cosmetics.wings.me", c.wings));
-			c.save();
-		}).bounds(descX, y + 30, 150, 16).build());
-		addRenderableWidget(Button.builder(wingLabel("loothub.cosmetics.wings.minime", c.miniMeWings), b -> {
-			c.miniMeWings = nextWing(c.miniMeWings);
-			b.setMessage(wingLabel("loothub.cosmetics.wings.minime", c.miniMeWings));
-			c.save();
-		}).bounds(descX + 156, y + 30, 170, 16).build());
-		sections.add(new Section(y, 54, "loothub.cosmetics.wings", "loothub.cosmetics.wings.desc"));
-		y += 54 + GAP;
+		// 4 · Flügel: für mich und jedes Mini-Me einzeln, je als Auswahlliste
+		dropdowns.clear();
+		openDropdown = null;
+		int dw = Math.max(70, Math.min(110, (cr - 8 - descX - 3 * 6) / 4));
+		for (int k = 0; k <= Cosmetics.MAX_MINI_MES; k++) {
+			final int slot = k - 1; // -1 = ich
+			int bx = descX + (k % 4) * (dw + 6);
+			int by = y + 30 + (k / 4) * 20;
+			String prefix = slot < 0 ? Component.translatable("loothub.cosmetics.wings.me").getString()
+					: Component.translatable("loothub.cosmetics.wings.slot", slot + 1).getString();
+			Dropdown d = new Dropdown(prefix, () -> slot < 0 ? normWing(c.wings) : slotWing(c, slot), v -> {
+				if (slot < 0) {
+					c.wings = v;
+				} else {
+					setSlotWing(c, slot, v);
+				}
+				c.save();
+			});
+			d.button = addRenderableWidget(Button.builder(d.label(), b -> toggle(d)).bounds(bx, by, dw, 16).build());
+			dropdowns.add(d);
+		}
+		sections.add(new Section(y, 74, "loothub.cosmetics.wings", "loothub.cosmetics.wings.desc"));
+		y += 74 + GAP;
 
 		// 5 · Für alle sichtbar
 		addRenderableWidget(Button.builder(Component.translatable("loothub.cosmetics.copy"), b -> {
@@ -128,16 +139,115 @@ public class CosmeticsScreen extends LoothubScreen {
 		sections.add(new Section(y, 64, "loothub.cosmetics.share", "loothub.cosmetics.share.desc"));
 	}
 
-	private static final String[] WING_CYCLE = {"", "dragon", "devil", "angel"};
+	// ------------------------------------------------------------------ Auswahllisten (Flügel)
 
-	private static String nextWing(String current) {
-		int i = java.util.Arrays.asList(WING_CYCLE).indexOf(current == null ? "" : current);
-		return WING_CYCLE[(i + 1) % WING_CYCLE.length];
+	private static final String[] WING_OPTIONS = {"", "dragon", "devil", "angel"};
+	private static final int DD_ROW = 14;
+	private final List<Dropdown> dropdowns = new ArrayList<>();
+	private Dropdown openDropdown;
+
+	/** Eine Auswahlliste: Knopf zeigt „Präfix: Wahl ▾“, Klick klappt die Optionen darunter auf. */
+	private static final class Dropdown {
+		final String prefix;
+		final java.util.function.Supplier<String> get;
+		final java.util.function.Consumer<String> set;
+		Button button;
+
+		Dropdown(String prefix, java.util.function.Supplier<String> get, java.util.function.Consumer<String> set) {
+			this.prefix = prefix;
+			this.get = get;
+			this.set = set;
+		}
+
+		Component label() {
+			return Component.literal(prefix + ": ").append(styleName(get.get())).append(" ▾");
+		}
 	}
 
-	private static Component wingLabel(String key, String style) {
-		return Component.translatable(key, Component.translatable("loothub.cosmetics.wings.style."
-				+ (style == null || style.isEmpty() ? "off" : style)));
+	private static Component styleName(String style) {
+		return Component.translatable("loothub.cosmetics.wings.style." + (style == null || style.isEmpty() ? "off" : style));
+	}
+
+	private void toggle(Dropdown d) {
+		openDropdown = openDropdown == d ? null : d;
+	}
+
+	private static String normWing(String s) {
+		String w = Cosmetics.wingAt(s, 0);
+		return w == null ? "" : w;
+	}
+
+	private static String slotWing(WidgetConfig c, int slot) {
+		String w = Cosmetics.wingAt(c.miniMeWings, slot);
+		return w == null ? "" : w;
+	}
+
+	private static void setSlotWing(WidgetConfig c, int slot, String style) {
+		String[] all = new String[Cosmetics.MAX_MINI_MES];
+		for (int i = 0; i < all.length; i++) {
+			all[i] = i == slot ? style : slotWing(c, i);
+		}
+		c.miniMeWings = String.join(",", all); // immer mit Kommas → je Platz einzeln
+	}
+
+	private int optionAt(double mx, double my) {
+		if (openDropdown == null) {
+			return -1;
+		}
+		Button b = openDropdown.button;
+		int y = b.getY() + b.getHeight() + 1;
+		if (mx < b.getX() || mx >= b.getX() + b.getWidth() || my < y || my >= y + WING_OPTIONS.length * DD_ROW) {
+			return -1;
+		}
+		return (int) ((my - y) / DD_ROW);
+	}
+
+	private void drawDropdown(GuiGraphics g, int mx, int my) {
+		if (openDropdown == null) {
+			return;
+		}
+		g.nextStratum();
+		Button b = openDropdown.button;
+		int x = b.getX(), y = b.getY() + b.getHeight() + 1, w = b.getWidth();
+		int n = WING_OPTIONS.length;
+		g.fill(x - 1, y - 1, x + w + 1, y + n * DD_ROW + 1, RED);
+		g.fill(x, y, x + w, y + n * DD_ROW, 0xF0140B0D);
+		int hover = optionAt(mx, my);
+		String current = openDropdown.get.get();
+		for (int i = 0; i < n; i++) {
+			int ry = y + i * DD_ROW;
+			if (i == hover) {
+				g.fill(x, ry, x + w, ry + DD_ROW, 0x40E23B3B);
+			}
+			boolean selected = WING_OPTIONS[i].equals(current);
+			g.drawString(font, (selected ? "✔ " : "   ") + styleName(WING_OPTIONS[i]).getString(), x + 4, ry + 3,
+					selected ? TEXT : MUTED, false);
+		}
+	}
+
+	@Override
+	public boolean mouseClicked(MouseButtonEvent event, boolean doubleClick) {
+		if (openDropdown != null) {
+			int i = optionAt(event.x(), event.y());
+			Dropdown d = openDropdown;
+			if (i >= 0) {
+				d.set.accept(WING_OPTIONS[i]);
+				d.button.setMessage(d.label());
+				openDropdown = null;
+				return true;
+			}
+			if (!d.button.isMouseOver(event.x(), event.y())) {
+				openDropdown = null;
+				// Klick auf eine andere Auswahlliste öffnet gleich diese
+				for (Dropdown other : dropdowns) {
+					if (other.button.isMouseOver(event.x(), event.y())) {
+						return super.mouseClicked(event, doubleClick);
+					}
+				}
+				return true;
+			}
+		}
+		return super.mouseClicked(event, doubleClick);
 	}
 
 	private static String lastAura(WidgetConfig c) {
@@ -174,8 +284,17 @@ public class CosmeticsScreen extends LoothubScreen {
 		if (c.wings != null && !c.wings.isBlank()) {
 			parts.add("\"wings\": {\"" + me + "\": \"" + c.wings + "\"}");
 		}
-		if (c.miniMeWings != null && !c.miniMeWings.isBlank()) {
-			parts.add("\"minimewings\": {\"" + me + "\": \"" + c.miniMeWings + "\"}");
+		List<String> mw = new ArrayList<>();
+		int lastWing = -1;
+		for (int i = 0; i < Cosmetics.MAX_MINI_MES; i++) {
+			String w = slotWing(c, i);
+			mw.add(w.isEmpty() ? "null" : "\"" + w + "\"");
+			if (!w.isEmpty()) {
+				lastWing = i;
+			}
+		}
+		if (lastWing >= 0) {
+			parts.add("\"minimewings\": {\"" + me + "\": [" + String.join(", ", mw.subList(0, lastWing + 1)) + "]}");
 		}
 		return parts.isEmpty() ? "–" : String.join(", ", parts);
 	}
@@ -232,5 +351,6 @@ public class CosmeticsScreen extends LoothubScreen {
 			g.drawString(font, line, descX, y, 0xFFFFD66B, false);
 			y += 10;
 		}
+		drawDropdown(g, mouseX, mouseY);
 	}
 }

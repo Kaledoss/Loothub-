@@ -43,7 +43,6 @@ public final class MiniMeLayer extends RenderLayer<AvatarRenderState, PlayerMode
 			return;
 		}
 		List<String> skins = Cosmetics.miniMes(state);
-		String wings = Cosmetics.value(state, Cosmetics.MINI_ME_WINGS);
 		float t = state.ageInTicks;
 		for (int i = 0; i < skins.size() && i < 6; i++) {
 			String other = skins.get(i);
@@ -112,6 +111,7 @@ public final class MiniMeLayer extends RenderLayer<AvatarRenderState, PlayerMode
 			PlayerModel model = skin.model() == PlayerModelType.SLIM ? slim : wide;
 			collector.submitModel(model, mini, poseStack, RenderTypes.entityTranslucent(skin.body().texturePath()), light,
 					OverlayTexture.NO_OVERLAY, 0, null);
+			String wings = Cosmetics.miniMeWing(state, i);
 			if (wings != null) {
 				Wings.submit(poseStack, collector, wings, t + i * 7.0F, light, sleeping);
 			}

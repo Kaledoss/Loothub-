@@ -120,6 +120,13 @@ public final class Cosmetics {
 					out.computeIfAbsent(key, k -> new HashSet<>()).add(c);
 					if (map.get(who).isJsonPrimitive()) {
 						single.computeIfAbsent(key, k -> new HashMap<>()).put(c, map.get(who).getAsString().strip());
+					} else if (map.get(who).isJsonArray()) {
+						// je Platz ein Wert (z. B. Mini-Me-Flügel): als „a,b,,c“ ablegen
+						List<String> parts = new ArrayList<>();
+						for (JsonElement e : map.get(who).getAsJsonArray()) {
+							parts.add(e.isJsonNull() ? "" : e.getAsString().strip());
+						}
+						single.computeIfAbsent(key, k -> new HashMap<>()).put(c, String.join(",", parts) + ",");
 					}
 					if (c.equals(AURA) && map.get(who).isJsonPrimitive()) {
 						auras.put(key, map.get(who).getAsString().strip());
@@ -189,7 +196,7 @@ public final class Cosmetics {
 				values.put(WINGS, cfg.wings);
 				mine.add(WINGS);
 			}
-			if (cfg.miniMeWings != null && !cfg.miniMeWings.isBlank()) {
+			if (cfg.miniMeWings != null && !cfg.miniMeWings.replace(",", "").isBlank()) {
 				values.put(MINI_ME_WINGS, cfg.miniMeWings);
 				mine.add(MINI_ME_WINGS);
 			}
@@ -224,6 +231,34 @@ public final class Cosmetics {
 		Map<String, String> v = VALUES.get(state);
 		String s = v == null ? null : v.get(cosmetic);
 		return s == null || !WING_STYLES.contains(s.toLowerCase(Locale.ROOT)) ? null : s.toLowerCase(Locale.ROOT);
+	}
+
+	/**
+	 * Flügel-Stil des Mini-Mes auf Platz {@code slot}, oder null. Gespeichert als „stil1,stil2,,…“ (je Platz);
+	 * ein einzelner Stil ohne Komma gilt für alle Mini-Mes.
+	 */
+	public static String miniMeWing(Object state, int slot) {
+		if (!has(state, MINI_ME_WINGS)) {
+			return null;
+		}
+		Map<String, String> v = VALUES.get(state);
+		return wingAt(v == null ? null : v.get(MINI_ME_WINGS), slot);
+	}
+
+	/** Stil auf Platz {@code slot} aus „a,b,,c“ (oder einem einzelnen Stil für alle), oder null. */
+	public static String wingAt(String raw, int slot) {
+		if (raw == null || raw.isBlank()) {
+			return null;
+		}
+		String s;
+		if (raw.indexOf(',') < 0) {
+			s = raw.strip();
+		} else {
+			String[] parts = raw.split(",", -1);
+			s = slot < parts.length ? parts[slot].strip() : "";
+		}
+		s = s.toLowerCase(Locale.ROOT);
+		return WING_STYLES.contains(s) ? s : null;
 	}
 
 	/** Farbe der Aura dieses Spielers, oder null ohne Aura. */
