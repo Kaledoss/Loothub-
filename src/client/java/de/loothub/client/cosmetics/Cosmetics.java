@@ -42,7 +42,7 @@ public final class Cosmetics {
 
 	/** Spieler (Name klein oder UUID) → seine Cosmetics. */
 	private static volatile Map<String, Set<String>> owners = Map.of();
-	public static final int MAX_MINI_MES = 4;
+	public static final int MAX_MINI_MES = 6;
 	/** Spieler → Skins seiner Mini-Mes (Spielernamen; "" = eigener Skin). Fehlt = ein Mini-Me mit eigenem Skin. */
 	private static volatile Map<String, List<String>> miniMeSkins = Map.of();
 	/** Spieler → Farbe seiner Aura („#RRGGBB“ oder Name wie gold, blue …). */
@@ -117,7 +117,7 @@ public final class Cosmetics {
 						if (v.isJsonArray()) {
 							for (JsonElement e : v.getAsJsonArray()) {
 								if (list.size() < MAX_MINI_MES) {
-									list.add(e.getAsString().strip());
+									list.add(e.isJsonNull() ? null : e.getAsString().strip()); // null = Platz frei
 								}
 							}
 						} else if (v.isJsonPrimitive()) {
@@ -152,8 +152,8 @@ public final class Cosmetics {
 		}
 		List<String> skins = miniMeSkins.get(key);
 		// Eigene Wahl in den Einstellungen: sofort sichtbar, für andere erst nach Eintrag in cosmetics.json
-		List<String> own = WidgetConfig.get().miniMes;
-		if (p == net.minecraft.client.Minecraft.getInstance().player && own != null && !own.isEmpty()) {
+		List<String> own = ownMiniMes();
+		if (p == net.minecraft.client.Minecraft.getInstance().player && own != null) {
 			Set<String> mine = new HashSet<>(set == null ? Set.of() : set);
 			mine.add(MINI_ME);
 			set = mine;
@@ -190,7 +190,23 @@ public final class Cosmetics {
 		return AURAS.get(state);
 	}
 
-	/** Skins der Mini-Mes dieses Spielers (Spielernamen, "" = eigener Skin); mindestens eins. */
+	/** Eigene Mini-Mes aus den Einstellungen nach Platz (null = Platz frei), oder null wenn keins gewählt ist. */
+	private static List<String> ownMiniMes() {
+		List<String> cfg = WidgetConfig.get().miniMes;
+		if (cfg == null) {
+			return null;
+		}
+		List<String> out = new ArrayList<>();
+		boolean any = false;
+		for (int i = 0; i < Math.min(MAX_MINI_MES, cfg.size()); i++) {
+			String v = cfg.get(i) == null ? "" : cfg.get(i).strip();
+			out.add(v.isEmpty() ? null : v);
+			any |= !v.isEmpty();
+		}
+		return any ? out : null;
+	}
+
+	/** Skins der Mini-Mes nach Platz (Spielername, "" = eigener Skin, null = Platz frei); mindestens eins. */
 	public static List<String> miniMes(Object state) {
 		List<String> l = SKINS.get(state);
 		return l == null || l.isEmpty() ? List.of("") : l.subList(0, Math.min(MAX_MINI_MES, l.size()));

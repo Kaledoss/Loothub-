@@ -17,7 +17,7 @@ import de.loothub.client.cosmetics.SkinLookup;
 import de.loothub.client.jobs.WidgetConfig;
 
 /**
- * Seite „Cosmetics“: Anzeige an/aus, bis zu 4 Mini-Mes (je mit beliebigem Spieler-Skin), Aura in jeder Farbe und
+ * Seite „Cosmetics“: Anzeige an/aus, bis zu 6 Mini-Mes (je mit beliebigem Spieler-Skin), Aura in jeder Farbe und
  * der fertige Eintrag für {@code cosmetics.json}, damit alle mit Loothub+ die Cosmetics sehen.
  */
 public class CosmeticsScreen extends LoothubScreen {
@@ -56,30 +56,34 @@ public class CosmeticsScreen extends LoothubScreen {
 		sections.add(new Section(y, 42, "loothub.cosmetics.show", "loothub.cosmetics.show.desc"));
 		y += 42 + GAP;
 
-		// 2 · Mini-Mes
-		int fw = Math.max(60, Math.min(110, (cr - 8 - descX - 3 * 16 - 96) / 4));
+		// 2 · Mini-Mes: Reihe 1 = Schultern + schwebend (1–4), Reihe 2 = krabbelnd (5–6) + Übernehmen
+		int fw = Math.max(60, Math.min(110, (cr - 8 - descX - 3 * 16) / 4));
 		List<EditBox> boxes = new ArrayList<>();
 		for (int i = 0; i < Cosmetics.MAX_MINI_MES; i++) {
-			EditBox box = new EditBox(font, descX + i * (fw + 16), y + 30, fw, 16, Component.translatable("loothub.settings.minime"));
+			int col = i < 4 ? i : i - 4;
+			int row = i < 4 ? 0 : 1;
+			int bx = descX + col * (fw + 16);
+			int by = y + 30 + row * 20;
+			EditBox box = new EditBox(font, bx, by, fw, 16, Component.translatable("loothub.settings.minime"));
 			box.setMaxLength(16);
-			box.setHint(Component.translatable("loothub.settings.minime.hint", i + 1).withStyle(ChatFormatting.DARK_GRAY));
-			box.setValue(i < c.miniMes.size() ? c.miniMes.get(i) : "");
+			box.setHint(Component.translatable("loothub.cosmetics.minime.slot" + (i + 1)).withStyle(ChatFormatting.DARK_GRAY));
+			box.setValue(i < c.miniMes.size() && c.miniMes.get(i) != null ? c.miniMes.get(i) : "");
 			boxes.add(addRenderableWidget(box));
-			skinStatus[i] = new int[]{descX + i * (fw + 16) + fw + 4, y + 34};
+			skinStatus[i] = new int[]{bx + fw + 4, by + 4};
 		}
 		addRenderableWidget(Button.builder(Component.translatable("loothub.settings.minime.apply"), b -> {
 			c.miniMes.clear();
 			for (EditBox box : boxes) {
 				String v = box.getValue().strip();
+				c.miniMes.add(v); // Platz bleibt erhalten, leer = frei
 				if (!v.isEmpty()) {
-					c.miniMes.add(v);
 					SkinLookup.forget(v);
 				}
 			}
 			c.save();
-		}).bounds(descX + 4 * (fw + 16), y + 30, 90, 16).build());
-		sections.add(new Section(y, 54, "loothub.settings.minime", "loothub.settings.minime.tooltip"));
-		y += 54 + GAP;
+		}).bounds(descX + 2 * (fw + 16), y + 50, 90, 16).build());
+		sections.add(new Section(y, 74, "loothub.settings.minime", "loothub.settings.minime.tooltip"));
+		y += 74 + GAP;
 
 		// 3 · Aura
 		boolean auraOn = c.auraColor != null && !c.auraColor.isBlank();
@@ -124,10 +128,17 @@ public class CosmeticsScreen extends LoothubScreen {
 		WidgetConfig c = WidgetConfig.get();
 		String me = minecraft.player != null ? minecraft.player.getGameProfile().name() : "DeinName";
 		List<String> parts = new ArrayList<>();
-		if (!c.miniMes.isEmpty()) {
+		int last = -1;
+		for (int i = 0; i < c.miniMes.size(); i++) {
+			if (c.miniMes.get(i) != null && !c.miniMes.get(i).isBlank()) {
+				last = i;
+			}
+		}
+		if (last >= 0) {
 			List<String> q = new ArrayList<>();
-			for (String s : c.miniMes) {
-				q.add("\"" + (s.equalsIgnoreCase(me) ? "" : s) + "\"");
+			for (int i = 0; i <= last; i++) {
+				String s = c.miniMes.get(i) == null ? "" : c.miniMes.get(i).strip();
+				q.add(s.isEmpty() ? "null" : "\"" + (s.equalsIgnoreCase(me) ? "" : s) + "\"");
 			}
 			parts.add("\"minime\": {\"" + me + "\": [" + String.join(", ", q) + "]}");
 		}
@@ -167,7 +178,7 @@ public class CosmeticsScreen extends LoothubScreen {
 		// Status je Mini-Me
 		WidgetConfig c = WidgetConfig.get();
 		for (int i = 0; i < skinStatus.length && i < c.miniMes.size(); i++) {
-			if (skinStatus[i] == null) {
+			if (skinStatus[i] == null || c.miniMes.get(i) == null || c.miniMes.get(i).isBlank()) {
 				continue;
 			}
 			SkinLookup.State st = SkinLookup.state(c.miniMes.get(i));
