@@ -256,7 +256,7 @@ public final class Itemdex {
 
 	/** Zeilen, die das Auktionshaus (oder ein Menü) an die Beschreibung anhängt – kommen nicht in den Itemdex. */
 	private static final java.util.regex.Pattern MENU_LINE = java.util.regex.Pattern.compile(
-			"(?i)^\\s*(spieler|verkäufer|startgebot|sofortkauf|höchstgebot|aktuelles gebot|gebote?|endet in|läuft ab|preis"
+			"(?i)^\\s*(spieler|verkäufer|startgebot|sofortkauf|höchstgebot|aktuelles gebot|gesamt\\s*gebote|gebote?|endet in|läuft ab|preis"
 					+ "|klicke|linksklick|rechtsklick|shift)\\b.*");
 
 	private static boolean isAuctionLore(ItemLore lore) {
