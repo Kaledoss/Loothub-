@@ -14,6 +14,8 @@ import net.minecraft.util.Mth;
 public final class Followers {
 	private static final class F {
 		double x, y, z, vx, vy, vz;
+		/** Letzter Zielpunkt – daraus das Tempo des Spielers, damit sie auch beim Rennen/Fliegen mithalten. */
+		double gx, gy, gz;
 		float yaw;
 		long last;
 		boolean init;
@@ -59,19 +61,41 @@ public final class Followers {
 			f.yaw = s.bodyRot;
 			f.init = true;
 			f.last = now;
+			f.gx = gx;
+			f.gy = gy;
+			f.gz = gz;
 		} else if (dt > 0.002F) {
 			f.last = now;
-			// gedämpfte Feder: weich, aber ohne langes Nachschwingen
+			// Tempo des Zielpunkts (= Spieler): die Feder dämpft nur die Abweichung davon,
+			// so bleiben sie auch beim Sprinten und schnellen Fliegen dicht dabei
+			double tvx = (gx - f.gx) / dt, tvy = (gy - f.gy) / dt, tvz = (gz - f.gz) / dt;
+			f.gx = gx;
+			f.gy = gy;
+			f.gz = gz;
 			double damp = 2.0 * Math.sqrt(stiffness) * 0.85;
-			f.vx += (stiffness * (gx - f.x) - damp * f.vx) * dt;
-			f.vy += (stiffness * (gy - f.y) - damp * f.vy) * dt;
-			f.vz += (stiffness * (gz - f.z) - damp * f.vz) * dt;
+			f.vx += (stiffness * (gx - f.x) - damp * (f.vx - tvx)) * dt;
+			f.vy += (stiffness * (gy - f.y) - damp * (f.vy - tvy)) * dt;
+			f.vz += (stiffness * (gz - f.z) - damp * (f.vz - tvz)) * dt;
 			f.x += f.vx * dt;
 			f.y += f.vy * dt;
 			f.z += f.vz * dt;
+			// nie weiter als 1,5 Blöcke von ihrem Platz weg
+			double ex = f.x - gx, ey = f.y - gy, ez = f.z - gz;
+			double dist = Math.sqrt(ex * ex + ey * ey + ez * ez);
+			if (dist > 1.5) {
+				double k = 1.5 / dist;
+				f.x = gx + ex * k;
+				f.y = gy + ey * k;
+				f.z = gz + ez * k;
+			}
 			// Blickrichtung: beim Fliegen/Krabbeln in Bewegungsrichtung, sonst wie der Spieler
-			double speed = Math.sqrt(f.vx * f.vx + f.vz * f.vz);
-			float want = speed > 1.2 ? (float) Math.toDegrees(Math.atan2(-f.vx, f.vz)) : s.bodyRot;
+			// Blickrichtung aus der eigenen Bewegung relativ zum Spieler – beim gemeinsamen Rennen wie der Spieler
+			double rvx = f.vx - tvx, rvz = f.vz - tvz;
+			double own = Math.sqrt(f.vx * f.vx + f.vz * f.vz);
+			float want = own > 1.2 ? (float) Math.toDegrees(Math.atan2(-f.vx, f.vz)) : s.bodyRot;
+			if (Math.sqrt(rvx * rvx + rvz * rvz) < 0.3 && own > 1.2) {
+				want = s.bodyRot;
+			}
 			f.yaw += Mth.wrapDegrees(want - f.yaw) * (1.0F - (float) Math.exp(-dt * 4.0F));
 		}
 		// Welt → Ebenen-Raum
