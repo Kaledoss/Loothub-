@@ -180,6 +180,11 @@ public final class Cosmetics {
 		}
 	}
 
+	public static boolean has(Object state, String cosmetic) {
+		Set<String> set = STATES.get(state);
+		return set != null && set.contains(cosmetic);
+	}
+
 	/** Farbe der Aura dieses Spielers, oder null ohne Aura. */
 	public static String auraColor(Object state) {
 		return AURAS.get(state);
