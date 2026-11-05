@@ -316,5 +316,7 @@
 	"loothub.merchant.daily.unknown": "Einmal den Rohstoffhändler im Spiel öffnen – dann erscheint es hier.",
 	"loothub.merchant.daily.old": "Stand von einem früheren Tag – Händler öffnen",
 	"loothub.settings.container_value": "Kistenwert",
-	"loothub.settings.container_value.tooltip": "Zeigt neben geöffneten Kisten, Fässern und Shulkerkisten den Marktwert des Inhalts (und OPShards beim Wertstoffhändler)."
+	"loothub.settings.container_value.tooltip": "Zeigt neben geöffneten Kisten, Fässern und Shulkerkisten den Marktwert des Inhalts (und OPShards beim Wertstoffhändler).",
+	"loothub.settings.market_sales": "Marktverkäufe",
+	"loothub.settings.market_sales.tooltip": "Geld, das du am Marktplatz einsammelst (einzeln oder alles auf einmal), erscheint als „Markt“ im Job-Verlauf."
 }

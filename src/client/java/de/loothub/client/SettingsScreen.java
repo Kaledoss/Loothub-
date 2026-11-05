@@ -361,6 +361,8 @@ public class SettingsScreen extends LoothubScreen {
 					}).bounds(tx + 106, tY + 26, 110, 16).build()));
 					y = cardNoToggle(tY, 50, "loothub.settings.treasure", "loothub.settings.treasure.tooltip");
 				}
+				y = card(y, 40, "loothub.settings.market_sales", "loothub.settings.market_sales.tooltip",
+						() -> c.marketSales, v -> c.marketSales = v);
 			}
 			case EXTRAS -> {
 				int descX = cl + labelW + 12;

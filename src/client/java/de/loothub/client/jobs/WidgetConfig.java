@@ -70,6 +70,8 @@ public final class WidgetConfig {
 	public String dailyItemCurrency = "";
 	public long dailyItemUsed = -1;
 	public long dailyItemLimit = -1;
+	/** Eingesammelte Marktverkäufe als „Markt“ im Job-Verlauf. */
+	public boolean marketSales = true;
 	/** Marktwert neben geöffneten Kisten, Fässern und Shulkerkisten. */
 	public boolean containerValue = true;
 	/** Inventar-Design: schwarz-rotes Paket, „Loothub+“-Überschrift und Knöpfe im Inventar, helle Menü-Titel. */
@@ -153,6 +155,7 @@ public final class WidgetConfig {
 		itemdexEnabled = false;
 		renameWindow = false;
 		containerValue = false;
+		marketSales = false;
 		hideOwnHeadItem = false;
 		hideOffhandBackpack = false;
 		invHudEnabled = false;

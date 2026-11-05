@@ -84,7 +84,8 @@ public class JobHistoryScreen extends LoothubScreen {
 			new JobInfo("Jäger", List.of(), 0xFFE0645A, Items.BOW),
 			new JobInfo("Fischer", List.of("Angler"), 0xFF4FB3D9, Items.FISHING_ROD),
 			new JobInfo("Farmer", List.of(), 0xFFE8C547, Items.WHEAT),
-			new JobInfo("Builder", List.of(), 0xFFB57EDC, Items.BRICKS));
+			new JobInfo("Builder", List.of(), 0xFFB57EDC, Items.BRICKS),
+			new JobInfo(MarketSales.JOB, List.of(), 0xFF55E06A, Items.GOLD_INGOT));
 
 	/** Ein Balken im Diagramm. */
 	private record Bucket(long start, long end, String label, String title, int unitOffset) {
@@ -734,15 +735,18 @@ public class JobHistoryScreen extends LoothubScreen {
 
 			g.renderItem(new ItemStack(j.icon()), x + 6, y + 4);
 			g.drawString(font, j.name(), x + 26, y + 4, dimmed ? FAINT : j.color(), false);
-			String level = s.level >= 0 ? "Lv. " + s.level : "Lv. –";
-			g.drawString(font, level, x + tileW - 6 - font.width(level), y + 4, dimmed ? FAINT : TEXT, false);
+			boolean market = j.name().equals(MarketSales.JOB);
+			String level = market ? "Verkäufe" : s.level >= 0 ? "Lv. " + s.level : "Lv. –";
+			g.drawString(font, level, x + tileW - 6 - font.width(level), y + 4, dimmed || market ? FAINT : TEXT, false);
 
-			// Level-Fortschritt
+			// Level-Fortschritt (nicht beim Markt)
 			int barX = x + 26;
 			int barW = tileW - 26 - 6 - 34;
 			int barY = y + 15;
-			g.fill(barX, barY, barX + barW, barY + 3, de.loothub.client.Theme.bg(TRACK));
-			if (s.progress >= 0) {
+			if (!market) {
+				g.fill(barX, barY, barX + barW, barY + 3, de.loothub.client.Theme.bg(TRACK));
+			}
+			if (!market && s.progress >= 0) {
 				g.fill(barX, barY, barX + (int) Math.round(barW * Math.min(100, s.progress) / 100.0), barY + 3, j.color());
 				String pct = Fmt.compactPlain(s.progress) + " %";
 				g.drawString(font, pct, x + tileW - 6 - font.width(pct), barY - 2, FAINT, false);
