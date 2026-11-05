@@ -34,6 +34,8 @@ public class ItemdexScreen extends LoothubScreen {
 	private static boolean showHidden;
 
 	private Button categoryButton;
+	private boolean dropdownOpen;
+	private static final int DD_ROW = 14;
 	private Button hiddenButton;
 	private List<Entry> rows = List.of();
 	private final Map<Entry, Integer> numbers = new IdentityHashMap<>();
@@ -60,13 +62,9 @@ public class ItemdexScreen extends LoothubScreen {
 			refresh();
 		});
 		addRenderableWidget(box);
-		categoryButton = addRenderableWidget(Button.builder(categoryLabel(), b -> {
-			Category[] all = Category.values();
-			category = category == null ? all[0] : (category.ordinal() + 1 < all.length ? all[category.ordinal() + 1] : null);
-			b.setMessage(categoryLabel());
-			scroll = 0;
-			refresh();
-		}).bounds(cr - catW - hiddenW - 6, ct, catW, 16).build());
+		categoryButton = addRenderableWidget(Button.builder(categoryLabel(), b -> dropdownOpen = !dropdownOpen)
+				.bounds(cr - catW - hiddenW - 6, ct, catW, 16).build());
+		dropdownOpen = false;
 		hiddenButton = addRenderableWidget(Button.builder(hiddenLabel(), b -> {
 			showHidden = !showHidden;
 			b.setMessage(hiddenLabel());
@@ -79,7 +77,8 @@ public class ItemdexScreen extends LoothubScreen {
 
 	private static Component categoryLabel() {
 		return Component.translatable("loothub.itemdex.category",
-				category == null ? Component.translatable("loothub.itemdex.cat.all") : Component.translatable(category.key));
+				category == null ? Component.translatable("loothub.itemdex.cat.all") : Component.translatable(category.key))
+				.append(" ▾");
 	}
 
 	private static Component hiddenLabel() {
@@ -146,11 +145,12 @@ public class ItemdexScreen extends LoothubScreen {
 			boolean filtered = !search.isBlank() || category != null || showHidden;
 			Component msg = Component.translatable(filtered ? "loothub.screen.no_results" : "loothub.itemdex.empty");
 			g.drawString(font, msg, cl + (cw - font.width(msg)) / 2, listTop + 20, FAINT, false);
+			drawDropdown(g, mouseX, mouseY);
 			return;
 		}
 		int visible = Math.max(1, (cb - listTop) / ROW_H);
 		scroll = Math.max(0, Math.min(scroll, Math.max(0, rows.size() - visible)));
-		Entry hovered = rowAt(mouseX, mouseY);
+		Entry hovered = dropdownOpen ? null : rowAt(mouseX, mouseY);
 		g.enableScissor(cl, listTop, cr, cb);
 		for (int i = 0; i <= visible && i + scroll < rows.size(); i++) {
 			Entry e = rows.get(i + scroll);
@@ -192,10 +192,82 @@ public class ItemdexScreen extends LoothubScreen {
 					.withStyle(ChatFormatting.DARK_GRAY).getVisualOrderText());
 			g.setTooltipForNextFrame(font, tip, mouseX, mouseY);
 		}
+		drawDropdown(g, mouseX, mouseY);
+	}
+
+	// ------------------------------------------------------------------ Auswahlliste „Art“
+
+	/** Auswahl i: 0 = Alle, sonst Category.values()[i - 1]. */
+	private int dropdownIndexAt(double mx, double my) {
+		if (!dropdownOpen) {
+			return -1;
+		}
+		int x = categoryButton.getX();
+		int y = categoryButton.getY() + categoryButton.getHeight() + 1;
+		int w = categoryButton.getWidth();
+		int n = Category.values().length + 1;
+		if (mx < x || mx >= x + w || my < y || my >= y + n * DD_ROW) {
+			return -1;
+		}
+		return (int) ((my - y) / DD_ROW);
+	}
+
+	private void drawDropdown(GuiGraphics g, int mx, int my) {
+		if (!dropdownOpen) {
+			return;
+		}
+		g.nextStratum(); // über Liste und Item-Symbolen
+		int x = categoryButton.getX();
+		int y = categoryButton.getY() + categoryButton.getHeight() + 1;
+		int w = categoryButton.getWidth();
+		Category[] cats = Category.values();
+		int n = cats.length + 1;
+		// Anzahl je Art (eingeblendete Items)
+		int[] counts = new int[cats.length];
+		int all = 0;
+		for (Entry e : Itemdex.entries()) {
+			if (e.hidden) {
+				continue;
+			}
+			all++;
+			counts[e.category.ordinal()]++;
+		}
+		g.fill(x - 1, y - 1, x + w + 1, y + n * DD_ROW + 1, RED);
+		g.fill(x, y, x + w, y + n * DD_ROW, 0xF0140B0D);
+		int hover = dropdownIndexAt(mx, my);
+		for (int i = 0; i < n; i++) {
+			Category cat = i == 0 ? null : cats[i - 1];
+			int ry = y + i * DD_ROW;
+			boolean selected = cat == category;
+			if (i == hover) {
+				g.fill(x, ry, x + w, ry + DD_ROW, 0x40E23B3B);
+			}
+			String label = Component.translatable(cat == null ? "loothub.itemdex.cat.all" : cat.key).getString();
+			int count = cat == null ? all : counts[cat.ordinal()];
+			g.drawString(font, (selected ? "✔ " : "   ") + label, x + 4, ry + 3, selected ? TEXT : (count > 0 ? MUTED : FAINT), false);
+			String c = String.valueOf(count);
+			g.drawString(font, c, x + w - 4 - font.width(c), ry + 3, FAINT, false);
+		}
 	}
 
 	@Override
 	public boolean mouseClicked(MouseButtonEvent event, boolean doubleClick) {
+		if (dropdownOpen) {
+			int i = dropdownIndexAt(event.x(), event.y());
+			boolean onButton = categoryButton.isMouseOver(event.x(), event.y());
+			if (i >= 0) {
+				category = i == 0 ? null : Category.values()[i - 1];
+				categoryButton.setMessage(categoryLabel());
+				scroll = 0;
+				refresh();
+				dropdownOpen = false;
+				return true;
+			}
+			if (!onButton) {
+				dropdownOpen = false; // Klick daneben schließt die Liste
+				return true;
+			}
+		}
 		if (event.button() == 1) {
 			Entry e = rowAt(event.x(), event.y());
 			if (e != null) {
