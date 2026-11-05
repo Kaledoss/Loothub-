@@ -2,7 +2,7 @@
 
 Aufruf: python3 tools/fetch_ludo_wings.py tools/ludo_wings.txt src/main/resources/assets/loothub/textures/entity
 Jede Zeile: <stil> <url>   (z. B. "dragon https://…png")
-Erzeugt je Stil (264×512, Seitenverhältnis 0,52 wie Wings.ASPECT, Ansatz oben links):
+Erzeugt je Stil (528×1024, Seitenverhältnis 0,52 wie Wings.ASPECT, Ansatz oben links):
   wing_<stil>.png            Originalfarben
   wing_<stil>_gray.png       helle Graustufen (zum Einfärben)
   wing_<stil>_in.png / _out.png             Fläche bzw. Knochen+Rand in Originalfarben
@@ -12,7 +12,7 @@ Läuft im CI, weil die Ludo-Links nur dort erreichbar sind und nach 7 Tagen abla
 import io, os, sys, urllib.request
 from PIL import Image, ImageOps, ImageFilter
 
-H, W = 512, 264
+H, W = 1024, 528
 
 
 def wing(data: bytes) -> Image.Image:
@@ -42,8 +42,8 @@ def variants(w: Image.Image):
     px_a, px_l = a.load(), lum.load()
     vals = sorted(px_l[x, y] for y in range(H) for x in range(W) if px_a[x, y] > 0)
     thr = vals[int(len(vals) * 0.32)] if vals else 0
-    # Rand: 3 px breite Kante an der Außenkontur
-    edge = a.filter(ImageFilter.MinFilter(7))
+    # Rand: 5 px breite Kante an der Außenkontur
+    edge = a.filter(ImageFilter.MinFilter(11))
     pe = edge.load()
     m_out = Image.new("L", (W, H), 0)
     pm = m_out.load()

@@ -1,0 +1,3 @@
+dragon https://storage.googleapis.com/ludo-assets/api/cc02a1c97f78c0fdeeabe89ac1183f4f.png
+devil https://storage.googleapis.com/ludo-assets/api/912b77a0d61476ea1f3fcb6f1d02f4ce.png
+angel https://storage.googleapis.com/ludo-assets/api/e90f2eccc086bba54bf6a2bfab600e1e.png
