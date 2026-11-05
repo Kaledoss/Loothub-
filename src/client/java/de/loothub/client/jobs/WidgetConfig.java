@@ -40,6 +40,8 @@ public final class WidgetConfig {
 	public boolean hideOwnHeadItem = false;
 	/** Eigenes Cape ausblenden (nur eigene Darstellung). */
 	public boolean hideOwnCape = false;
+	/** Block-Info oben in der Mitte (angeschauter Block/Mob, passendes Werkzeug, Marktpreis). */
+	public boolean lookInfo = true;
 	/** Leuchtende Augen ("" = aus, sonst „#RRGGBB“). */
 	/** Flügelfarben („#RRGGBB“, leer = Originalfarben). */
 	public String wingColor = "";
@@ -206,6 +208,7 @@ public final class WidgetConfig {
 		cosmetics = false;
 		hideOwnHeadItem = false;
 		hideOwnCape = false;
+		lookInfo = false;
 		flyPose = false;
 		hideOffhandBackpack = false;
 		invHudEnabled = false;

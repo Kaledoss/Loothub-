@@ -206,6 +206,8 @@ public class SettingsScreen extends LoothubScreen {
 						() -> c.hideOwnHeadItem, v -> c.hideOwnHeadItem = v);
 				y = card(y, 40, "loothub.settings.hide_cape", "loothub.settings.hide_cape.tooltip",
 						() -> c.hideOwnCape, v -> c.hideOwnCape = v);
+				y = card(y, 40, "loothub.settings.look_info", "loothub.settings.look_info.tooltip",
+						() -> c.lookInfo, v -> c.lookInfo = v);
 				y = card(y, 40, "loothub.settings.fly_pose", "loothub.settings.fly_pose.tooltip",
 						() -> c.flyPose, v -> c.flyPose = v);
 				y = card(y, 40, "loothub.settings.hide_offhand", "loothub.settings.hide_offhand.tooltip",
