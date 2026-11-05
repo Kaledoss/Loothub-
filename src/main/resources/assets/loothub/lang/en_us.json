@@ -363,7 +363,7 @@
 	"loothub.settings.hide_cape": "Eigenes Cape ausblenden",
 	"loothub.settings.hide_cape.tooltip": "Blendet dein Cape an deinem eigenen Spieler aus. Nur du siehst den Unterschied. Capes von LabyMod-Cosmetics zeichnet LabyMod selbst – die bitte dort ausschalten.",
 	"loothub.settings.fly_pose": "Flug-Haltung",
-	"loothub.settings.fly_pose.tooltip": "Fliegst du schnell nach vorn (z. B. Sprint-Flug), legst du dich waagerecht in die Luft – Kopf voraus, ein Arm nach vorn. Normales Schweben bleibt aufrecht. Beim Abbauen und Zuschlagen bleiben die Arme normal.",
+	"loothub.settings.fly_pose.tooltip": "Fliegst du schnell nach vorn (z. B. Sprint-Flug), legst du dich waagerecht in die Luft – Kopf voraus, beide Arme am Körper. Normales Schweben bleibt aufrecht. Beim Abbauen und Zuschlagen bleiben die Arme normal.",
 	"loothub.cosmetics.tab.companions": "Mini-Mes",
 	"loothub.cosmetics.tab.body": "Körper",
 	"loothub.cosmetics.tab.effects": "Effekte",

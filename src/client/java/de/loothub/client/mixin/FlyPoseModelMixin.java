@@ -11,7 +11,7 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import de.loothub.client.cosmetics.Motion;
 
 /**
- * Flug-Haltung: Kopf schaut nach vorn, ein Arm voraus, der andere am Körper, Beine gestreckt. Beim Abbauen,
+ * Flug-Haltung: Kopf schaut nach vorn, beide Arme am Körper angelegt, Beine gestreckt. Beim Abbauen,
  * Zuschlagen oder Benutzen bleiben die Arme wie gewohnt (nur Darstellung).
  */
 @Mixin(PlayerModel.class)
@@ -28,10 +28,12 @@ public abstract class FlyPoseModelMixin {
 		m.head.xRot = lerp(f, m.head.xRot, (float) Math.toRadians(-70.0));
 		boolean busy = state.attackTime > 0.0F || state.isUsingItem;
 		if (!busy) {
-			// rechter Arm voraus (Faust nach vorn), linker angelegt; leichtes Flattern im Fahrtwind
-			m.rightArm.xRot = lerp(f, m.rightArm.xRot, (float) Math.toRadians(-170.0) + (float) Math.sin(t * 0.3F) * 0.03F);
-			m.rightArm.zRot = lerp(f, m.rightArm.zRot, 0.08F);
-			m.leftArm.xRot = lerp(f, m.leftArm.xRot, 0.15F + (float) Math.sin(t * 0.35F) * 0.04F);
+			// beide Arme gleich, am Körper angelegt (keiner nach vorn – sonst ragt er durch die Mini-Mes);
+			// leichtes Flattern im Fahrtwind
+			float wind = (float) Math.sin(t * 0.35F) * 0.04F;
+			m.rightArm.xRot = lerp(f, m.rightArm.xRot, 0.15F + wind);
+			m.leftArm.xRot = lerp(f, m.leftArm.xRot, 0.15F - wind);
+			m.rightArm.zRot = lerp(f, m.rightArm.zRot, 0.12F);
 			m.leftArm.zRot = lerp(f, m.leftArm.zRot, -0.12F);
 		}
 		m.rightLeg.xRot = lerp(f, m.rightLeg.xRot, 0.12F + (float) Math.sin(t * 0.25F) * 0.05F);
