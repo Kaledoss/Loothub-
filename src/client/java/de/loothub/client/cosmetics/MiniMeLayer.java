@@ -72,6 +72,7 @@ public final class MiniMeLayer extends RenderLayer<AvatarRenderState, PlayerMode
 			} else {
 				// krabbelnd: bäuchlings am Boden, Arme und Beine im Krabbel-Takt, schiebt sich leicht vor und zurück
 				mini.swimAmount = 1.0F;
+				mini.isCrouching = false;
 				mini.walkAnimationPos = t * 0.45F;
 				mini.walkAnimationSpeed = 0.7F;
 				float push = (float) Math.sin(t * 0.45F * 0.6662F) * 0.025F;
@@ -86,18 +87,26 @@ public final class MiniMeLayer extends RenderLayer<AvatarRenderState, PlayerMode
 		}
 	}
 
-	/** Eigener Zustand für ein Mini-Me: ruhige Grundhaltung, Skin-Ebenen sichtbar. */
+	/**
+	 * Eigener Zustand für ein Mini-Me: macht nach, was der Spieler tut – schaut in dieselbe Richtung, schlägt mit,
+	 * duckt sich mit –, läuft aber nicht mit (die Haltung kommt vom Platz: sitzen, fliegen, krabbeln).
+	 */
 	private static AvatarRenderState miniState(AvatarRenderState owner, PlayerSkin skin, float t) {
 		AvatarRenderState mini = new AvatarRenderState();
 		mini.skin = skin;
 		mini.ageInTicks = t;
+		mini.yRot = owner.yRot;
+		mini.xRot = owner.xRot;
+		mini.attackTime = owner.attackTime;
+		mini.attackArm = owner.attackArm;
+		mini.mainArm = owner.mainArm;
+		mini.isCrouching = owner.isCrouching;
 		mini.showHat = true;
 		mini.showJacket = true;
 		mini.showLeftSleeve = true;
 		mini.showRightSleeve = true;
 		mini.showLeftPants = true;
 		mini.showRightPants = true;
-		mini.isCrouching = false;
 		return mini;
 	}
 }
