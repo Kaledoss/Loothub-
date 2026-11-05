@@ -11,7 +11,8 @@
 		"ContainerLabelMixin",
 		"ContainerScreenMixin",
 		"HumanoidHeadMixin",
-		"ItemInHandRendererMixin"
+		"ItemInHandRendererMixin",
+		"AnvilAmountMixin"
 	],
 	"injectors": {
 		"defaultRequire": 0

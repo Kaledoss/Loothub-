@@ -28,6 +28,26 @@ public final class AmountShortcut {
 		ClientSendMessageEvents.MODIFY_COMMAND.register(AmountShortcut::rewrite);
 	}
 
+	/** Ein einzelner Betrag („1m“, „2,5k“) als ganze Zahl, sonst unverändert (z. B. für Eingabefelder im Menü). */
+	public static String convertAmount(String text) {
+		if (text == null || !de.loothub.client.jobs.WidgetConfig.get().amountShortcut) {
+			return text;
+		}
+		String t = text.strip().replace(" ", "");
+		Matcher m = AMOUNT.matcher(t);
+		if (!m.matches()) {
+			return text;
+		}
+		BigDecimal value = new BigDecimal(m.group(1).replace(',', '.'));
+		int zeros = switch (Character.toLowerCase(m.group(2).charAt(0))) {
+			case 'k' -> 3;
+			case 'm' -> 6;
+			default -> 9;
+		};
+		value = value.movePointRight(zeros).stripTrailingZeros();
+		return value.scale() > 0 ? text : value.toPlainString();
+	}
+
 	static String rewrite(String command) {
 		if (!de.loothub.client.jobs.WidgetConfig.get().amountShortcut) {
 			return command;
