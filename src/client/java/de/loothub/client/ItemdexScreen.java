@@ -159,7 +159,10 @@ public class ItemdexScreen extends LoothubScreen {
 			Integer number = numbers.get(e);
 			g.drawString(font, number == null ? "  –" : String.format(Locale.ROOT, "#%04d", number), cl + 4, y + 6, MUTED, false);
 			ItemStack stack = e.stack();
+			// Manche Server-Items sind riesige Menü-Bilder – Symbol auf 16×16 begrenzen
+			g.enableScissor(cl + 40, Math.max(y + 2, listTop), cl + 56, Math.min(y + 18, cb));
 			g.renderItem(stack, cl + 40, y + 2);
+			g.disableScissor();
 			Component name = stack.isEmpty() ? Component.literal(e.name) : stack.getHoverName();
 			int nameX = cl + 60;
 			String right = Fmt.date(e.firstSeen, false) + " · " + e.where;

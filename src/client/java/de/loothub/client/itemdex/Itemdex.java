@@ -226,6 +226,9 @@ public final class Itemdex {
 		if (name.isEmpty()) {
 			return false; // Platzhalter in Menüs
 		}
+		if (isMenuGraphic(s.getHoverName())) {
+			return false; // Menü-Hintergrund des Servers (Bild über eigene Schrift)
+		}
 		// Eigener Name ist Pflicht: Server-Items heißen anders als das Minecraft-Item, auf dem sie beruhen
 		String vanilla = new ItemStack(s.getItem()).getHoverName().getString().strip();
 		if (name.equalsIgnoreCase(vanilla)) {
@@ -307,6 +310,37 @@ public final class Itemdex {
 			}
 		}
 		return text.toString().toLowerCase(Locale.ROOT);
+	}
+
+	/**
+	 * Server-Menüs zeichnen ihre Hintergründe („OP Kiste“, „Mobdex“, „Hexenkessel“ …) als Item mit einem Namen aus einer
+	 * eigenen Schrift bzw. aus Sonderzeichen (Private-Use-Bereich). Solche Items sind keine echten Items.
+	 */
+	private static boolean isMenuGraphic(Component name) {
+		Object defaultFont = net.minecraft.network.chat.Style.EMPTY.getFont();
+		boolean[] custom = {false};
+		name.visit((style, part) -> {
+			if (!part.isBlank() && !Objects.equals(style.getFont(), defaultFont)) {
+				custom[0] = true;
+				return Optional.of(Boolean.TRUE);
+			}
+			return Optional.empty();
+		}, net.minecraft.network.chat.Style.EMPTY);
+		if (custom[0]) {
+			return true;
+		}
+		String t = name.getString();
+		int pua = 0, letters = 0;
+		for (int i = 0; i < t.length(); ) {
+			int cp = t.codePointAt(i);
+			if ((cp >= 0xE000 && cp <= 0xF8FF) || cp >= 0xF0000) {
+				pua++;
+			} else if (Character.isLetterOrDigit(cp)) {
+				letters++;
+			}
+			i += Character.charCount(cp);
+		}
+		return pua > 0 && pua >= letters;
 	}
 
 	/** Menü-Knopf? (Beschreibung mit „Klick“, z. B. „Klicke zum Öffnen“, „Linksklick: …“) – Auktionen nicht. */
