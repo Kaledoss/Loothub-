@@ -515,7 +515,16 @@ public class SettingsScreen extends LoothubScreen {
 		}
 		for (Card card : cards) {
 			Component title = Component.translatable(card.titleKey());
-			g.drawString(font, title, cl + 8 + (labelW - font.width(title)) / 2, card.y() + 6, TEXT, false);
+			// Lange Titel umbrechen (höchstens zwei Zeilen), damit nichts in die Beschreibung ragt
+			List<FormattedCharSequence> titleLines = font.split(title, labelW - 6);
+			if (titleLines.size() <= 1) {
+				g.drawString(font, title, cl + 8 + (labelW - font.width(title)) / 2, card.y() + 6, TEXT, false);
+			} else {
+				for (int li = 0; li < Math.min(2, titleLines.size()); li++) {
+					FormattedCharSequence line = titleLines.get(li);
+					g.drawString(font, line, cl + 8 + (labelW - font.width(line)) / 2, card.y() + 2 + li * 9, TEXT, false);
+				}
+			}
 			if (card.toggle() != null) {
 				drawToggle(g, card.toggle(), mouseX, mouseY);
 			}
