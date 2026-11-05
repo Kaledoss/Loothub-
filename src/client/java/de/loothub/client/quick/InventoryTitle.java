@@ -66,7 +66,7 @@ public final class InventoryTitle {
 				}
 			});
 			ScreenMouseEvents.allowMouseClick(screen).register((s, e) -> {
-				if (e.button() != 0) {
+				if (e.button() != 0 || !de.loothub.client.jobs.WidgetConfig.get().inventoryDesign) {
 					return true;
 				}
 				AbstractContainerScreenAccessor acc = (AbstractContainerScreenAccessor) s;

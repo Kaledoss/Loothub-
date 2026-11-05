@@ -39,6 +39,9 @@ public class RenameScreen extends Screen {
 	public static void register() {
 		ClientSendMessageEvents.ALLOW_COMMAND.register(cmd -> {
 			String c = cmd.strip().toLowerCase(Locale.ROOT);
+			if (!de.loothub.client.jobs.WidgetConfig.get().renameWindow) {
+				return true;
+			}
 			if (c.equals("rename") || c.equals("sign")) {
 				pending = c;
 				return false;

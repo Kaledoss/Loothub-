@@ -62,6 +62,14 @@ public final class WidgetConfig {
 	public double backgroundOpacity = 1.0;
 	/** Ob das schwarz-farbige Inventar-Paket beim Farbwechsel aktiviert werden soll. */
 	public boolean themePackWanted = true;
+	/** Inventar-Design: schwarz-rotes Paket, „Loothub+“-Überschrift und Knöpfe im Inventar, helle Menü-Titel. */
+	public boolean inventoryDesign = true;
+	/** Betrags-Abkürzungen (1m, 2,5k …) in Bank-, Pay- und Auktionshaus-Befehlen. */
+	public boolean amountShortcut = true;
+	/** Itemdex: Server-Items sammeln. */
+	public boolean itemdexEnabled = true;
+	/** Eigenes Fenster für /rename und /sign ohne Text. */
+	public boolean renameWindow = true;
 	/** Werkzeugschutz: warnen und Benutzen sperren, wenn die Haltbarkeit fast aufgebraucht ist. */
 	public boolean toolProtection = true;
 	/** Ab so viel Prozent Resthaltbarkeit wird gesperrt (1–100). */
@@ -116,8 +124,40 @@ public final class WidgetConfig {
 		return FabricLoader.getInstance().getConfigDir().resolve(Loothub.MOD_ID + ".json");
 	}
 
+	/**
+	 * Erste Nutzung (noch keine Einstellungsdatei): alle Loothub-Funktionen aus – jeder schaltet in den
+	 * Einstellungen nur ein, was er möchte. Neue Schalter stehen in der Klasse auf „an“, damit bestehende
+	 * Nutzer neue Funktionen behalten; für Neulinge werden sie hier abgeschaltet.
+	 */
+	private void freshInstallDefaults() {
+		jobWidgetEnabled = false;
+		tooltipPrices = false;
+		statsEnabled = false;
+		quickPanelEnabled = false;
+		pulseBorders = false;
+		sellHighlight = false;
+		themePackWanted = false;
+		toolProtection = false;
+		inventoryDesign = false;
+		amountShortcut = false;
+		itemdexEnabled = false;
+		renameWindow = false;
+		hideOwnHeadItem = false;
+		hideOffhandBackpack = false;
+		invHudEnabled = false;
+		musicEnabled = false;
+		pcgEnabled = false;
+	}
+
 	private static WidgetConfig load() {
 		Path p = path();
+		if (!Files.exists(p)) {
+			WidgetConfig fresh = new WidgetConfig();
+			fresh.freshInstallDefaults();
+			instance = fresh;
+			fresh.save();
+			return fresh;
+		}
 		if (Files.exists(p)) {
 			try (Reader r = Files.newBufferedReader(p, StandardCharsets.UTF_8)) {
 				WidgetConfig c = GSON.fromJson(r, WidgetConfig.class);

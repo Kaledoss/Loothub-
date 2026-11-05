@@ -151,7 +151,7 @@ public final class JobTracker {
 			lastTreasureSave = now;
 			c.save();
 		}
-		if (crossed) {
+		if (crossed && c.jobWidgetEnabled) {
 			net.minecraft.client.Minecraft mc = net.minecraft.client.Minecraft.getInstance();
 			mc.execute(() -> {
 				if (mc.player != null) {

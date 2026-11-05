@@ -266,7 +266,7 @@ public final class Itemdex {
 	}
 
 	private static synchronized void see(ItemStack s, Source source, String where) {
-		if (!isCustom(s)) {
+		if (!de.loothub.client.jobs.WidgetConfig.get().itemdexEnabled || !isCustom(s)) {
 			return;
 		}
 		load();

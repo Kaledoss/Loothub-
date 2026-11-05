@@ -29,6 +29,9 @@ public final class AmountShortcut {
 	}
 
 	static String rewrite(String command) {
+		if (!de.loothub.client.jobs.WidgetConfig.get().amountShortcut) {
+			return command;
+		}
 		String[] parts = command.split(" ", -1);
 		if (parts.length < 2) return command;
 		String root = parts[0].toLowerCase(Locale.ROOT);

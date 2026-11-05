@@ -96,6 +96,22 @@ public final class Theme {
 		t.start();
 	}
 
+	/** Inventar-Paket an- oder abschalten (Schalter „Inventar-Design“). */
+	public static void setPackActive(boolean on) {
+		WidgetConfig.get().themePackWanted = on;
+		if (on) {
+			applyPack();
+			return;
+		}
+		Minecraft mc = Minecraft.getInstance();
+		PackRepository repo = mc.getResourcePackRepository();
+		List<String> selected = new ArrayList<>(repo.getSelectedIds());
+		if (selected.removeIf(id -> (id.contains("loothub") && id.contains("dark_inventory")) || id.contains(PACK_DIR))) {
+			repo.setSelected(selected);
+			mc.options.updateResourcePacks(repo);
+		}
+	}
+
 	private static void select(boolean custom) {
 		Minecraft mc = Minecraft.getInstance();
 		PackRepository repo = mc.getResourcePackRepository();

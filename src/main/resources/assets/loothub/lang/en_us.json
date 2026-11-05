@@ -298,5 +298,13 @@
 	"loothub.itemdex.empty": "Noch leer – jedes Server-Item, das du siehst, landet automatisch hier.",
 	"loothub.itemdex.first_seen": "Zuerst gesehen %s · %s",
 	"loothub.itemdex.hide_hint": "Rechtsklick: ausblenden (z. B. Menü-Knöpfe)",
-	"loothub.itemdex.unhide_hint": "Rechtsklick: wieder einblenden"
+	"loothub.itemdex.unhide_hint": "Rechtsklick: wieder einblenden",
+	"loothub.settings.inventory_design": "Inventar-Design",
+	"loothub.settings.inventory_design.tooltip": "Schwarz-rotes Inventar, „Loothub+“-Überschrift mit Knöpfen im Inventar und gut lesbare Menü-Titel.",
+	"loothub.settings.amount_shortcut": "Betrags-Abkürzungen",
+	"loothub.settings.amount_shortcut.tooltip": "1m, 2,5k oder 3b in /bank, /clan bank, /pay und im Auktionshaus werden als volle Zahl gesendet.",
+	"loothub.settings.rename_window": "Fenster für /rename und /sign",
+	"loothub.settings.rename_window.tooltip": "/rename oder /sign ohne Text öffnen ein Fenster mit Farben, Formatierung und Vorschau.",
+	"loothub.settings.itemdex": "Itemdex sammeln",
+	"loothub.settings.itemdex.tooltip": "Server-Items, die dir begegnen, automatisch im Itemdex eintragen."
 }

@@ -139,7 +139,9 @@ public class LoothubClient implements ClientModInitializer {
 		// Eingebautes Ressourcenpaket: Inventar in Schwarz-Rot (unter Optionen → Ressourcenpakete abschaltbar)
 		FabricLoader.getInstance().getModContainer(Loothub.MOD_ID).ifPresent(mod -> {
 			ResourceLoader.registerBuiltinPack(Identifier.fromNamespaceAndPath(Loothub.MOD_ID, "dark_inventory"), mod,
-					Component.literal("Loothub+ Inventar (Schwarz-Rot)"), PackActivationType.DEFAULT_ENABLED);
+					Component.literal("Loothub+ Inventar (Schwarz-Rot)"),
+					de.loothub.client.jobs.WidgetConfig.get().inventoryDesign
+							? PackActivationType.DEFAULT_ENABLED : PackActivationType.NORMAL);
 		});
 
 		PriceTooltip.register();

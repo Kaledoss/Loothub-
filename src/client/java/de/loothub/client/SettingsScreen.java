@@ -283,6 +283,17 @@ public class SettingsScreen extends LoothubScreen {
 				() -> c.pulseBorders, v -> c.pulseBorders = v);
 		y = card(y, 40, "loothub.settings.sell_highlight", "loothub.settings.sell_highlight.tooltip",
 				() -> c.sellHighlight, v -> c.sellHighlight = v);
+		y = card(y, 40, "loothub.settings.inventory_design", "loothub.settings.inventory_design.tooltip",
+				() -> c.inventoryDesign, v -> {
+					c.inventoryDesign = v;
+					Theme.setPackActive(v);
+				});
+		y = card(y, 40, "loothub.settings.amount_shortcut", "loothub.settings.amount_shortcut.tooltip",
+				() -> c.amountShortcut, v -> c.amountShortcut = v);
+		y = card(y, 40, "loothub.settings.rename_window", "loothub.settings.rename_window.tooltip",
+				() -> c.renameWindow, v -> c.renameWindow = v);
+		y = card(y, 40, "loothub.settings.itemdex", "loothub.settings.itemdex.tooltip",
+				() -> c.itemdexEnabled, v -> c.itemdexEnabled = v);
 
 		// Job-Widget: Schalter + zwei Knöpfe unter der Beschreibung + Kästchen für jede Zeile
 		int jobY = y;

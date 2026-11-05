@@ -52,7 +52,7 @@ public final class TreasureWatcher {
 		c.treasureFoundAt = now;
 		c.save();
 		Minecraft mc = Minecraft.getInstance();
-		if (mc.player != null) {
+		if (mc.player != null && c.jobWidgetEnabled) {
 			mc.player.displayClientMessage(Component.translatable("loothub.treasure.found", c.treasuresFound)
 					.withStyle(net.minecraft.ChatFormatting.GOLD), false);
 		}

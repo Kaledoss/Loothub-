@@ -27,6 +27,9 @@ public abstract class ContainerLabelMixin {
 					target = "Lnet/minecraft/client/gui/GuiGraphics;drawString(Lnet/minecraft/client/gui/Font;Lnet/minecraft/network/chat/Component;IIIZ)V"),
 			index = 4)
 	private int loothub$lightLabel(int color) {
+		if (!de.loothub.client.jobs.WidgetConfig.get().inventoryDesign) {
+			return color;
+		}
 		Object self = this;
 		boolean dark = self instanceof ContainerScreen || self instanceof CraftingScreen || self instanceof AnvilScreen;
 		return dark && (color & 0xFFFFFF) == 0x404040 ? LIGHT : color;
@@ -42,6 +45,9 @@ public abstract class ContainerLabelMixin {
 					target = "Lnet/minecraft/client/gui/GuiGraphics;drawString(Lnet/minecraft/client/gui/Font;Lnet/minecraft/network/chat/Component;IIIZ)V"),
 			index = 1)
 	private Component loothub$plainTitle(Component text) {
+		if (!de.loothub.client.jobs.WidgetConfig.get().inventoryDesign) {
+			return text;
+		}
 		Object self = this;
 		if (!(self instanceof AnvilScreen) && !(self instanceof CraftingScreen)) {
 			return text;
