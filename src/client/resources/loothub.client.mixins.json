@@ -12,7 +12,8 @@
 		"ContainerScreenMixin",
 		"HumanoidHeadMixin",
 		"ItemInHandRendererMixin",
-		"AnvilAmountMixin"
+		"AnvilAmountMixin",
+		"CameraZoomMixin"
 	],
 	"injectors": {
 		"defaultRequire": 0

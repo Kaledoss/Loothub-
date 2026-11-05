@@ -70,6 +70,8 @@ public final class WidgetConfig {
 	public String dailyItemCurrency = "";
 	public long dailyItemUsed = -1;
 	public long dailyItemLimit = -1;
+	/** AFK-Ansicht: nach 5 Minuten ohne Eingabe herauszoomen und den Charakter schlafen legen. */
+	public boolean afkView = true;
 	/** Eingesammelte Marktverkäufe als „Markt“ im Job-Verlauf. */
 	public boolean marketSales = true;
 	/** Marktwert neben geöffneten Kisten, Fässern und Shulkerkisten. */
@@ -156,6 +158,7 @@ public final class WidgetConfig {
 		renameWindow = false;
 		containerValue = false;
 		marketSales = false;
+		afkView = false;
 		hideOwnHeadItem = false;
 		hideOffhandBackpack = false;
 		invHudEnabled = false;

@@ -26,6 +26,10 @@ public abstract class HumanoidHeadMixin {
 		if (entity != Minecraft.getInstance().player) {
 			return;
 		}
+		// AFK-Ansicht: eigener Charakter liegt schlafend da (nur eigene Darstellung)
+		if (de.loothub.client.quick.AfkView.sleeping()) {
+			state.pose = net.minecraft.world.entity.Pose.SLEEPING;
+		}
 		if (WidgetConfig.get().hideOwnHeadItem) {
 			state.headEquipment = ItemStack.EMPTY;
 			state.headItem.clear();
