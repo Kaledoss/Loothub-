@@ -79,14 +79,18 @@ public final class Followers {
 			f.x += f.vx * dt;
 			f.y += f.vy * dt;
 			f.z += f.vz * dt;
-			// nie weiter als 1,5 Blöcke von ihrem Platz weg
+			// weiter als 1 Block weg (z. B. bei abruptem Richtungswechsel): weich, aber zügig heranziehen –
+			// kein Springen oder Hinterher-Teleportieren
 			double ex = f.x - gx, ey = f.y - gy, ez = f.z - gz;
 			double dist = Math.sqrt(ex * ex + ey * ey + ez * ez);
-			if (dist > 1.5) {
-				double k = 1.5 / dist;
-				f.x = gx + ex * k;
-				f.y = gy + ey * k;
-				f.z = gz + ez * k;
+			if (dist > 1.0) {
+				double pull = (1.0 - Math.exp(-dt * 10.0)) * (dist - 1.0) / dist;
+				f.x -= ex * pull;
+				f.y -= ey * pull;
+				f.z -= ez * pull;
+				f.vx += (tvx - f.vx) * pull;
+				f.vy += (tvy - f.vy) * pull;
+				f.vz += (tvz - f.vz) * pull;
 			}
 			// Blickrichtung: beim Fliegen/Krabbeln in Bewegungsrichtung, sonst wie der Spieler
 			// Blickrichtung aus der eigenen Bewegung relativ zum Spieler – beim gemeinsamen Rennen wie der Spieler
