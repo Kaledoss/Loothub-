@@ -324,5 +324,11 @@
 	"loothub.stats.cat.plants": "Pflanzen",
 	"loothub.stats.col.harvested": "Geerntet",
 	"loothub.stats.col.planted": "Gepflanzt",
-	"loothub.stats.cat.food": "Nahrung"
+	"loothub.stats.cat.food": "Nahrung",
+	"loothub.market.col.item": "Item",
+	"loothub.market.col.orders": "Angebote K / V",
+	"loothub.market.favorites": "Favoriten",
+	"loothub.market.count": "%s Items",
+	"loothub.market.count.one": "%s Item",
+	"loothub.market.fav_hint": "Rechtsklick oder Stern: Favorit an/aus"
 }

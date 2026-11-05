@@ -122,6 +122,8 @@ public final class WidgetConfig {
 	public int quickCommandsVersion = 0; // fehlt in alten Dateien → 0, damit neue Knöpfe ergänzt werden
 	/** Ausgeblendete Zeilen des Job-Widgets (IDs aus {@link JobWidget#ROW_IDS}). */
 	public java.util.List<String> jobWidgetHiddenRows = new java.util.ArrayList<>();
+	/** Markt-Favoriten (Material-Namen der API). */
+	public java.util.List<String> marketFavorites = new java.util.ArrayList<>();
 	public double jobWidgetX = 0.0;
 	public double jobWidgetY = 0.35;
 	/** Größe des Job-Widgets (1 = normal), im Editor an den Rändern ziehbar. */
@@ -216,6 +218,9 @@ public final class WidgetConfig {
 					}
 					if (c.pcgUser == null) {
 						c.pcgUser = "";
+					}
+					if (c.marketFavorites == null) {
+						c.marketFavorites = new java.util.ArrayList<>();
 					}
 					if (c.jobWidgetHiddenRows == null) {
 						c.jobWidgetHiddenRows = new java.util.ArrayList<>();
