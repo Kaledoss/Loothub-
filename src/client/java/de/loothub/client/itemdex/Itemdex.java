@@ -175,7 +175,8 @@ public final class Itemdex {
 			}
 		}
 		if (ticks % 10 == 5 && mc.screen instanceof AbstractContainerScreen<?> screen
-				&& !(screen instanceof InventoryScreen) && !(screen instanceof CreativeModeInventoryScreen)) {
+				&& !(screen instanceof InventoryScreen) && !(screen instanceof CreativeModeInventoryScreen)
+				&& allowedContainer(screen.getTitle())) {
 			String where = screen.getTitle().getString().strip();
 			for (Slot slot : screen.getMenu().slots) {
 				if (slot.container != mc.player.getInventory()) {
@@ -394,7 +395,7 @@ public final class Itemdex {
 		entries.removeIf(e -> {
 			ItemStack st = e.stack();
 			boolean drop = e.stackJson == null || !isCustom(clean(st))
-					|| (e.source == Source.CONTAINER && (looksLikeButton(st) || ignoredMenu(e.where)));
+					|| (e.source == Source.CONTAINER && (looksLikeButton(st) || ignoredMenu(e.where) || !allowedWhere(e.where)));
 			if (drop) {
 				byKey.remove(e.key);
 			}
@@ -461,6 +462,35 @@ public final class Itemdex {
 		Object model = s.get(DataComponents.ITEM_MODEL);
 		return BuiltInRegistries.ITEM.getKey(s.getItem()) + "|" + (model == null ? "" : model) + "|"
 				+ s.getHoverName().getString().strip().toLowerCase(Locale.ROOT);
+	}
+
+	/**
+	 * Nur echte Behälter (Kiste, Fass, Endertruhe, Shulkerkiste … – Minecraft-Standardtitel) und das Auktionshaus.
+	 * Alle anderen Server-Menüs (Serverauswahl, Marktplatz, Freunde, Login-Streaks …) zeigen keine echten Items.
+	 */
+	private static boolean allowedContainer(Component title) {
+		if (title.getContents() instanceof net.minecraft.network.chat.contents.TranslatableContents t
+				&& t.getKey().startsWith("container.")) {
+			return true;
+		}
+		return title.getString().toLowerCase(Locale.ROOT).contains("auktion");
+	}
+
+	/** Beim Aufräumen: Fundort aus einem erlaubten Behälter oder dem Auktionshaus? */
+	private static final String[] ALLOWED_WHERE = {"auktion", "chest", "barrel", "shulker", "kiste", "fass", "truhe",
+			"dispenser", "dropper", "hopper", "werfer", "spender", "trichter"};
+
+	private static boolean allowedWhere(String where) {
+		String w = where == null ? "" : where.toLowerCase(Locale.ROOT);
+		if (w.contains("»")) {
+			return w.contains("auktion"); // Server-Menüs heißen „OPSUCHT » …“
+		}
+		for (String a : ALLOWED_WHERE) {
+			if (w.contains(a)) {
+				return true;
+			}
+		}
+		return false;
 	}
 
 	/** Menüs, deren Inhalte keine echten Server-Items sind (Markt-Aufträge, Spielerköpfe der Freundesliste …). */
