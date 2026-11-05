@@ -265,6 +265,8 @@ public class SettingsScreen extends LoothubScreen {
 				}
 				y = card(y, 40, "loothub.settings.sell_highlight", "loothub.settings.sell_highlight.tooltip",
 						() -> c.sellHighlight, v -> c.sellHighlight = v);
+				y = card(y, 40, "loothub.settings.container_value", "loothub.settings.container_value.tooltip",
+						() -> c.containerValue, v -> c.containerValue = v);
 				// Werkzeugschutz: Schalter, Regler für die Grenze, Kästchen je Werkzeugart
 				{
 					int tpY = y;

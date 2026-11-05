@@ -70,6 +70,8 @@ public final class WidgetConfig {
 	public String dailyItemCurrency = "";
 	public long dailyItemUsed = -1;
 	public long dailyItemLimit = -1;
+	/** Marktwert neben geöffneten Kisten, Fässern und Shulkerkisten. */
+	public boolean containerValue = true;
 	/** Inventar-Design: schwarz-rotes Paket, „Loothub+“-Überschrift und Knöpfe im Inventar, helle Menü-Titel. */
 	public boolean inventoryDesign = true;
 	/** Betrags-Abkürzungen (1m, 2,5k …) in Bank-, Pay- und Auktionshaus-Befehlen. */
@@ -150,6 +152,7 @@ public final class WidgetConfig {
 		amountShortcut = false;
 		itemdexEnabled = false;
 		renameWindow = false;
+		containerValue = false;
 		hideOwnHeadItem = false;
 		hideOffhandBackpack = false;
 		invHudEnabled = false;

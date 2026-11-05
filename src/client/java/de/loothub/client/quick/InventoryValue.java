@@ -32,12 +32,23 @@ public final class InventoryValue {
 		if (mc.player == null) {
 			return;
 		}
+		Inventory inv = mc.player.getInventory();
+		java.util.List<ItemStack> items = new java.util.ArrayList<>();
+		for (int i = 0; i < inv.getContainerSize(); i++) {
+			items.add(inv.getItem(i));
+		}
+		double[] v = valueOf(items);
+		double m = v[0], sh = v[1];
+		market = m;
+		shards = sh;
+	}
+
+	/** {Marktwert (Verkaufspreis), OPShards beim Wertstoffhändler} für beliebige Items, z. B. Kisteninhalt. */
+	public static double[] valueOf(Iterable<ItemStack> items) {
 		MarketPrices.refreshIfStale();
 		double m = 0, sh = 0;
-		Inventory inv = mc.player.getInventory();
-		for (int i = 0; i < inv.getContainerSize(); i++) {
-			ItemStack st = inv.getItem(i);
-			if (st.isEmpty()) {
+		for (ItemStack st : items) {
+			if (st == null || st.isEmpty()) {
 				continue;
 			}
 			int n = st.getCount();
@@ -54,8 +65,7 @@ public final class InventoryValue {
 				m += e.sell().price() * n;
 			}
 		}
-		market = m;
-		shards = sh;
+		return new double[]{m, sh};
 	}
 
 	/** Marktwert des Inventars (Verkaufspreis), höchstens alle 0,5 s neu berechnet. */
