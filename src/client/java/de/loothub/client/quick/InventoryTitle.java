@@ -43,6 +43,7 @@ public final class InventoryTitle {
 		ScreenEvents.AFTER_INIT.register((client, screen, w, h) -> {
 			// Kisten, Server-Menüs (z. B. OPSUCHT), Werkbank und Amboss: nur der pulsierende Rand
 			if (screen instanceof net.minecraft.client.gui.screens.inventory.ContainerScreen
+					|| screen instanceof net.minecraft.client.gui.screens.inventory.ShulkerBoxScreen
 					|| screen instanceof net.minecraft.client.gui.screens.inventory.CraftingScreen
 					|| screen instanceof net.minecraft.client.gui.screens.inventory.AnvilScreen) {
 				ScreenEvents.afterBackground(screen).register((s, g, mx, my, delta) -> {

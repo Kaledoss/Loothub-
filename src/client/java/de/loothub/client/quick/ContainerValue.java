@@ -41,6 +41,9 @@ public final class ContainerValue {
 
 	/** Echte Kiste/Fass/Shulker: Titel ist der Minecraft-Standardname („Kiste“, „Fass“ …), kein Server-Menü. */
 	private static boolean isRealContainer(Screen screen) {
+		if (screen instanceof ShulkerBoxScreen) {
+			return true; // Shulker-Kisten sind immer echt – auch umbenannte („Looterkings Bag“)
+		}
 		return screen.getTitle().getContents() instanceof TranslatableContents t && t.getKey().startsWith("container.");
 	}
 

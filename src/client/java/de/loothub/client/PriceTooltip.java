@@ -63,7 +63,8 @@ public final class PriceTooltip {
 
 		String itemId = BuiltInRegistries.ITEM.getKey(stack.getItem()).toString();
 		MarketPrices.Entry entry = MarketPrices.get(itemId);
-		AuctionPrices.Now ah = AuctionPrices.get(itemId);
+		// Normale Handelswaren (z. B. Leder) haben einen Marktplatz-Preis – dann kein Auktionshaus-Block
+		AuctionPrices.Now ah = entry != null ? null : AuctionPrices.get(itemId);
 		if (entry == null && ah == null) {
 			return; // weder am Marktplatz noch im Auktionshaus
 		}
