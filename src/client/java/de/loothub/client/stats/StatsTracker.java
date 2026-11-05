@@ -82,6 +82,11 @@ public final class StatsTracker {
 					|| stack.has(net.minecraft.core.component.DataComponents.FOOD)) {
 				return;
 			}
+			// Blöcke und Pflanzen zählen beim Platzieren („placed.“), nicht als benutztes Item
+			if (stack.getItem() instanceof net.minecraft.world.item.BlockItem bi
+					&& (isRealBlock(bi.getBlock()) || isPlant(bi.getBlock()))) {
+				return;
+			}
 			StatsStore.add("used." + BuiltInRegistries.ITEM.getKey(stack.getItem()), 1);
 			return;
 		}

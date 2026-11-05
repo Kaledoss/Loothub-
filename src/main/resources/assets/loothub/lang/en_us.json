@@ -166,7 +166,7 @@
 	"loothub.settings.pulse.tooltip": "Lässt die roten Ränder um Inventar, Rezeptbuch und Befehls-Leiste langsam pulsieren. Aus: fester dunkelroter Rand.",
 	"loothub.settings.sell_highlight": "Marktitems markieren",
 	"loothub.settings.sell_highlight.tooltip": "Hinterlegt in den Markt-Menüs des Servers (z. B. „Items verkaufen“) alle Items grün, die am Marktplatz gehandelt werden – auch im eigenen Inventar.",
-	"loothub.stats.cat.tools": "Tools",
+	"loothub.stats.cat.tools": "Tools & Rüstung",
 	"loothub.stats.col.tool_mined": "Abgebaut",
 	"loothub.stats.col.tool_hits": "Treffer",
 	"loothub.stats.col.tool_used": "Benutzt",
@@ -323,5 +323,6 @@
 	"loothub.settings.afk_view.tooltip": "Nach 5 Minuten ohne Eingabe zoomt die Kamera von hinten heraus und dein Charakter schläft. Andere Spieler, die 5 Minuten völlig stillstehen, siehst du ebenfalls schlafend. Nur für dich sichtbar.",
 	"loothub.stats.cat.plants": "Pflanzen",
 	"loothub.stats.col.harvested": "Geerntet",
-	"loothub.stats.col.planted": "Gepflanzt"
+	"loothub.stats.col.planted": "Gepflanzt",
+	"loothub.stats.cat.food": "Nahrung"
 }

@@ -46,6 +46,7 @@ public class StatsScreen extends LoothubScreen {
 		GENERAL("loothub.stats.cat.general"),
 		BLOCKS("loothub.stats.cat.blocks"),
 		PLANTS("loothub.stats.cat.plants"),
+		FOOD("loothub.stats.cat.food"),
 		ITEMS("loothub.stats.cat.items"),
 		TOOLS("loothub.stats.cat.tools"),
 		MOBS("loothub.stats.cat.mobs");
@@ -97,8 +98,15 @@ public class StatsScreen extends LoothubScreen {
 		// Links: Kategorien, rechts: Zeitraum
 		categoryButtons.clear();
 		int catW = Mth.clamp((cw * 3 / 5 - 16) / Category.values().length, 44, 76);
+		// Knöpfe so breit wie ihre Beschriftung, solange alle in die Zeile passen
+		int need = 0;
+		for (Category c : Category.values()) {
+			need += Math.max(44, font.width(Component.translatable(c.translationKey)) + 12) + 4;
+		}
+		boolean fitLabels = need <= cw * 3 / 5;
 		int x = cl;
 		for (Category c : Category.values()) {
+			int bw = fitLabels ? Math.max(44, font.width(Component.translatable(c.translationKey)) + 12) : catW;
 			categoryButtons.add(addRenderableWidget(Button.builder(Component.translatable(c.translationKey), b -> {
 				category = c;
 				sortColumn = 1;
@@ -106,8 +114,8 @@ public class StatsScreen extends LoothubScreen {
 				scroll = 0;
 				clearWidgets();
 				init();
-			}).bounds(x, y, catW, 16).build()));
-			x += catW + 4;
+			}).bounds(x, y, bw, 16).build()));
+			x += bw + 4;
 		}
 		rangeButtons.clear();
 		int rw = Mth.clamp((cw / 2 - 8) / 3, 46, 70);
@@ -197,8 +205,8 @@ public class StatsScreen extends LoothubScreen {
 			case GENERAL -> List.of();
 			case BLOCKS -> buildRows(new String[]{"mined.", "placed.", "picked."}, Kind.BLOCK);
 			case PLANTS -> buildRows(new String[]{"mined.", "placed.", "picked."}, Kind.PLANT);
-			// „Genutzt“ = benutzt (Enderperle …) + gegessen
-			case ITEMS -> buildRows(new String[]{"picked.", "used.", "eaten."}, new int[]{0, 1, 1}, 2, Kind.ITEM);
+			case FOOD -> buildRows(new String[]{"picked.", "eaten."}, Kind.ITEM);
+			case ITEMS -> buildRows(new String[]{"picked.", "used."}, Kind.ITEM);
 			case TOOLS -> buildRows(new String[]{"tool_mined.", "tool_hits.", "tool_used.", "picked."}, Kind.ITEM);
 			case MOBS -> buildRows(new String[]{"killed."}, Kind.MOB);
 		};
@@ -224,15 +232,8 @@ public class StatsScreen extends LoothubScreen {
 			for (int i = 0; i < prefixes.length; i++) {
 				if (e.getKey().startsWith(prefixes[i])) {
 					String id = e.getKey().substring(prefixes[i].length());
-					// Aufgesammelte Blöcke (Erde, Stein …) gehören zu „Blöcke“, echte Items zu „Items“
-					if (prefixes[i].equals("picked.")) {
-						boolean tool = isTool(id);
-						// Werkzeuge nur unter „Tools“, Blöcke nur unter „Blöcke“, der Rest unter „Items“
-						boolean plant = isPlantId(id);
-						if (kind == Kind.PLANT ? !plant
-								: category == Category.TOOLS ? !tool : tool || plant || (kind == Kind.BLOCK) != isBlockItem(id)) {
-							continue;
-						}
+					if (!accepts(prefixes[i], id, kind)) {
+						continue;
 					}
 					byId.computeIfAbsent(id, k -> new long[columnCount])[cols[i]] += e.getValue();
 				}
@@ -300,6 +301,28 @@ public class StatsScreen extends LoothubScreen {
 		return item != null && new ItemStack(item).isDamageableItem();
 	}
 
+	/**
+	 * Gehört dieser Eintrag in die aktuelle Kategorie? Jedes Item steht genau einmal: Werkzeuge unter „Tools“,
+	 * Essen unter „Nahrung“, Pflanzen/Samen unter „Pflanzen“, echte Blöcke unter „Blöcke“, der Rest unter „Items“.
+	 */
+	private boolean accepts(String prefix, String id, Kind kind) {
+		return switch (category) {
+			case BLOCKS -> !prefix.equals("picked.") || (isBlockItem(id) && !isFood(id));
+			case PLANTS -> isPlantId(id) && !isFood(id);
+			case FOOD -> isFood(id);
+			case TOOLS -> !prefix.equals("picked.") || isTool(id);
+			case ITEMS -> !isTool(id) && !isFood(id) && !isPlantId(id) && !isBlockItem(id);
+			default -> true;
+		};
+	}
+
+	/** Essbar (Apfel, Brot, gebratenes Fleisch, Chorusfrucht …)? */
+	private static boolean isFood(String id) {
+		Identifier identifier = Identifier.tryParse(id);
+		Item item = identifier == null ? null : BuiltInRegistries.ITEM.getOptional(identifier).orElse(null);
+		return item != null && item != Items.AIR && new ItemStack(item).has(net.minecraft.core.component.DataComponents.FOOD);
+	}
+
 	/** Pflanze als Block-ID (Abbauen/Platzieren) oder als Item, das eine Pflanze setzt (Blume, Setzling, Samen …)? */
 	private static boolean isPlantId(String id) {
 		Identifier identifier = Identifier.tryParse(id);
@@ -311,6 +334,9 @@ public class StatsScreen extends LoothubScreen {
 			return true;
 		}
 		Item item = BuiltInRegistries.ITEM.getOptional(identifier).orElse(null);
+		if (item == Items.WHEAT || item == Items.SUGAR_CANE || item == Items.BAMBOO || item == Items.CACTUS) {
+			return true; // Ernte, die selbst kein Block-Item einer Pflanze ist
+		}
 		return item instanceof net.minecraft.world.item.BlockItem bi && StatsTracker.isPlant(bi.getBlock());
 	}
 
@@ -475,6 +501,7 @@ public class StatsScreen extends LoothubScreen {
 		return switch (category) {
 			case BLOCKS -> List.of("loothub.stats.col.mined", "loothub.stats.col.placed", "loothub.stats.col.picked");
 			case PLANTS -> List.of("loothub.stats.col.harvested", "loothub.stats.col.planted", "loothub.stats.col.picked");
+			case FOOD -> List.of("loothub.stats.col.picked", "loothub.stats.col.eaten");
 			case ITEMS -> List.of("loothub.stats.col.picked", "loothub.stats.col.used");
 			case TOOLS -> List.of("loothub.stats.col.tool_mined", "loothub.stats.col.tool_hits", "loothub.stats.col.tool_used",
 					"loothub.stats.col.picked");
