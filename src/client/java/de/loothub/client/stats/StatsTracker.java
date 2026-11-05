@@ -55,7 +55,7 @@ public final class StatsTracker {
 		if (!tracking(mc)) {
 			return;
 		}
-		if (isRealBlock(state.getBlock())) {
+		if (isRealBlock(state.getBlock()) || isPlant(state.getBlock())) {
 			StatsStore.add("mined." + BuiltInRegistries.BLOCK.getKey(state.getBlock()), 1);
 		}
 		toolStat("tool_mined.", mc.player.getMainHandItem());
@@ -102,7 +102,7 @@ public final class StatsTracker {
 	}
 
 	public static void onBlockPlaced(Block block) {
-		if (tracking(Minecraft.getInstance()) && isRealBlock(block)) {
+		if (tracking(Minecraft.getInstance()) && (isRealBlock(block) || isPlant(block))) {
 			StatsStore.add("placed." + BuiltInRegistries.BLOCK.getKey(block), 1);
 		}
 	}
@@ -120,9 +120,29 @@ public final class StatsTracker {
 	 *   <li>alles ohne oder mit schmaler/flacher Kollision: Schilder, Pflanzen, Fackeln, Ketten, Laternen, Falltüren, Türen, Zäune.</li>
 	 * </ul>
 	 */
-	public static boolean isRealBlock(Block block) {
+	/**
+	 * Pflanzen: Blumen, Setzlinge, Feldfrüchte, Kaktus, Zuckerrohr, Bambus, Kakao, Pilze, Kelp … – eigene Kategorie
+	 * in der Statistik. Überbaubares (Gras, Farn, Seegras) zählt weiterhin gar nicht.
+	 */
+	public static boolean isPlant(Block block) {
 		BlockState state = block.defaultBlockState();
 		if (state.canBeReplaced()) {
+			return false;
+		}
+		return block instanceof net.minecraft.world.level.block.VegetationBlock
+				|| block instanceof net.minecraft.world.level.block.CactusBlock
+				|| block instanceof net.minecraft.world.level.block.SugarCaneBlock
+				|| block instanceof net.minecraft.world.level.block.BambooStalkBlock
+				|| block instanceof net.minecraft.world.level.block.CocoaBlock
+				|| block instanceof net.minecraft.world.level.block.GrowingPlantBlock
+				|| state.is(net.minecraft.tags.BlockTags.FLOWERS)
+				|| state.is(net.minecraft.tags.BlockTags.SAPLINGS)
+				|| state.is(net.minecraft.tags.BlockTags.CROPS);
+	}
+
+	public static boolean isRealBlock(Block block) {
+		BlockState state = block.defaultBlockState();
+		if (state.canBeReplaced() || isPlant(block)) {
 			return false;
 		}
 		// Nur „richtige“ Blöcke: Kollision, die fast die ganze Grundfläche füllt und mindestens halb so hoch ist.

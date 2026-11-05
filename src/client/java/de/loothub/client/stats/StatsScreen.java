@@ -45,6 +45,7 @@ public class StatsScreen extends LoothubScreen {
 	public enum Category {
 		GENERAL("loothub.stats.cat.general"),
 		BLOCKS("loothub.stats.cat.blocks"),
+		PLANTS("loothub.stats.cat.plants"),
 		ITEMS("loothub.stats.cat.items"),
 		TOOLS("loothub.stats.cat.tools"),
 		MOBS("loothub.stats.cat.mobs");
@@ -195,6 +196,7 @@ public class StatsScreen extends LoothubScreen {
 		rows = switch (category) {
 			case GENERAL -> List.of();
 			case BLOCKS -> buildRows(new String[]{"mined.", "placed.", "picked."}, Kind.BLOCK);
+			case PLANTS -> buildRows(new String[]{"mined.", "placed.", "picked."}, Kind.PLANT);
 			// „Genutzt“ = benutzt (Enderperle …) + gegessen
 			case ITEMS -> buildRows(new String[]{"picked.", "used.", "eaten."}, new int[]{0, 1, 1}, 2, Kind.ITEM);
 			case TOOLS -> buildRows(new String[]{"tool_mined.", "tool_hits.", "tool_used.", "picked."}, Kind.ITEM);
@@ -204,7 +206,7 @@ public class StatsScreen extends LoothubScreen {
 	}
 
 	private enum Kind {
-		BLOCK, ITEM, MOB
+		BLOCK, ITEM, MOB, PLANT
 	}
 
 	private List<Row> buildRows(String[] prefixes, Kind kind) {
@@ -226,7 +228,9 @@ public class StatsScreen extends LoothubScreen {
 					if (prefixes[i].equals("picked.")) {
 						boolean tool = isTool(id);
 						// Werkzeuge nur unter „Tools“, Blöcke nur unter „Blöcke“, der Rest unter „Items“
-						if (category == Category.TOOLS ? !tool : tool || (kind == Kind.BLOCK) != isBlockItem(id)) {
+						boolean plant = isPlantId(id);
+						if (kind == Kind.PLANT ? !plant
+								: category == Category.TOOLS ? !tool : tool || plant || (kind == Kind.BLOCK) != isBlockItem(id)) {
 							continue;
 						}
 					}
@@ -238,6 +242,9 @@ public class StatsScreen extends LoothubScreen {
 		List<Row> out = new ArrayList<>();
 		for (Map.Entry<String, long[]> e : byId.entrySet()) {
 			if (kind == Kind.BLOCK && !isRealBlock(e.getKey())) {
+				continue;
+			}
+			if (kind == Kind.PLANT && !isPlantId(e.getKey())) {
 				continue;
 			}
 			String name = name(e.getKey(), kind);
@@ -291,6 +298,20 @@ public class StatsScreen extends LoothubScreen {
 		Identifier identifier = Identifier.tryParse(id);
 		Item item = identifier == null ? null : BuiltInRegistries.ITEM.getOptional(identifier).orElse(null);
 		return item != null && new ItemStack(item).isDamageableItem();
+	}
+
+	/** Pflanze als Block-ID (Abbauen/Platzieren) oder als Item, das eine Pflanze setzt (Blume, Setzling, Samen …)? */
+	private static boolean isPlantId(String id) {
+		Identifier identifier = Identifier.tryParse(id);
+		if (identifier == null) {
+			return false;
+		}
+		Block block = BuiltInRegistries.BLOCK.getOptional(identifier).orElse(null);
+		if (block != null && StatsTracker.isPlant(block)) {
+			return true;
+		}
+		Item item = BuiltInRegistries.ITEM.getOptional(identifier).orElse(null);
+		return item instanceof net.minecraft.world.item.BlockItem bi && StatsTracker.isPlant(bi.getBlock());
 	}
 
 	private static boolean isRealBlock(String id) {
@@ -453,6 +474,7 @@ public class StatsScreen extends LoothubScreen {
 	private List<String> columnKeys() {
 		return switch (category) {
 			case BLOCKS -> List.of("loothub.stats.col.mined", "loothub.stats.col.placed", "loothub.stats.col.picked");
+			case PLANTS -> List.of("loothub.stats.col.harvested", "loothub.stats.col.planted", "loothub.stats.col.picked");
 			case ITEMS -> List.of("loothub.stats.col.picked", "loothub.stats.col.used");
 			case TOOLS -> List.of("loothub.stats.col.tool_mined", "loothub.stats.col.tool_hits", "loothub.stats.col.tool_used",
 					"loothub.stats.col.picked");
@@ -607,6 +629,16 @@ public class StatsScreen extends LoothubScreen {
 							return new ItemStack(item).getHoverName().getString();
 						}
 					}
+					case PLANT -> {
+						Block b = BuiltInRegistries.BLOCK.getOptional(identifier).orElse(null);
+						if (b != null && b != net.minecraft.world.level.block.Blocks.AIR) {
+							return b.getName().getString();
+						}
+						Item item = BuiltInRegistries.ITEM.getOptional(identifier).orElse(null);
+						if (item != null) {
+							return new ItemStack(item).getHoverName().getString();
+						}
+					}
 					case MOB -> {
 						EntityType<?> type = BuiltInRegistries.ENTITY_TYPE.getOptional(identifier).orElse(null);
 						if (type != null) {
@@ -628,6 +660,10 @@ public class StatsScreen extends LoothubScreen {
 			Item item = switch (kind) {
 				case BLOCK -> BuiltInRegistries.BLOCK.getOptional(identifier).map(Block::asItem).orElse(Items.AIR);
 				case ITEM -> BuiltInRegistries.ITEM.getOptional(identifier).orElse(Items.AIR);
+				case PLANT -> {
+					Item byBlock = BuiltInRegistries.BLOCK.getOptional(identifier).map(Block::asItem).orElse(Items.AIR);
+					yield byBlock != Items.AIR ? byBlock : BuiltInRegistries.ITEM.getOptional(identifier).orElse(Items.AIR);
+				}
 				case MOB -> BuiltInRegistries.ITEM.getOptional(
 						Identifier.fromNamespaceAndPath(identifier.getNamespace(), identifier.getPath() + "_spawn_egg")).orElse(Items.AIR);
 			};
