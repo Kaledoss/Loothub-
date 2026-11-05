@@ -26,6 +26,10 @@ import de.loothub.client.mixin.AbstractContainerScreenAccessor;
  */
 public final class ContainerValue {
 	private static final int PAD = 5;
+	/** Wert nur alle 250 ms neu berechnen statt in jedem Bild. */
+	private static double[] cache = {0, 0};
+	private static Object cacheScreen;
+	private static long cacheAt;
 
 	private ContainerValue() {
 	}
@@ -55,13 +59,19 @@ public final class ContainerValue {
 		if (mc.player == null) {
 			return;
 		}
-		List<ItemStack> items = new ArrayList<>();
-		for (Slot slot : screen.getMenu().slots) {
-			if (slot.container != mc.player.getInventory()) {
-				items.add(slot.getItem());
+		long now = System.currentTimeMillis();
+		if (cacheScreen != screen || now - cacheAt > 250) {
+			List<ItemStack> items = new ArrayList<>();
+			for (Slot slot : screen.getMenu().slots) {
+				if (slot.container != mc.player.getInventory()) {
+					items.add(slot.getItem());
+				}
 			}
+			cache = InventoryValue.valueOf(items);
+			cacheScreen = screen;
+			cacheAt = now;
 		}
-		double[] v = InventoryValue.valueOf(items);
+		double[] v = cache;
 		Font font = mc.font;
 		String title = "Marktwert";
 		String market = Fmt.exact(v[0]) + " $";

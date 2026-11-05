@@ -185,14 +185,17 @@ public final class Cosmetics {
 		return out;
 	}
 
-	/** Beim Vorbereiten des Renderns: Cosmetics des Spielers an seinen Render-Zustand hängen. */
-	public static void mark(Object state, LivingEntity entity) {
-		SKINS.remove(state);
-		AURAS.remove(state);
-		VALUES.remove(state);
-		if (!(entity instanceof Player p) || !WidgetConfig.get().cosmetics) {
-			STATES.remove(state);
-			return;
+	private record Resolved(Set<String> set, Map<String, String> values, List<String> skins, String aura, long time) {
+	}
+
+	/** Ergebnis je Spieler kurz zwischenspeichern – nicht in jedem Bild neu zusammensetzen. */
+	private static final Map<Integer, Resolved> RESOLVED = new HashMap<>();
+
+	private static Resolved resolve(Player p) {
+		long nowMs = System.currentTimeMillis();
+		Resolved cached = RESOLVED.get(p.getId());
+		if (cached != null && nowMs - cached.time() < 250L) {
+			return cached;
 		}
 		Map<String, Set<String>> o = owners;
 		String uuid = p.getUUID().toString();
@@ -266,6 +269,28 @@ public final class Cosmetics {
 			long cut = System.currentTimeMillis() - 60_000L;
 			BY_PLAYER.values().removeIf(s -> s.time() < cut);
 		}
+		Resolved r = new Resolved(set, values, skins, aura, nowMs);
+		RESOLVED.put(p.getId(), r);
+		if (RESOLVED.size() > 300) {
+			RESOLVED.values().removeIf(x -> nowMs - x.time() > 60_000L);
+		}
+		return r;
+	}
+
+	/** Beim Vorbereiten des Renderns: Cosmetics des Spielers an seinen Render-Zustand hängen. */
+	public static void mark(Object state, LivingEntity entity) {
+		SKINS.remove(state);
+		AURAS.remove(state);
+		VALUES.remove(state);
+		if (!(entity instanceof Player p) || !WidgetConfig.get().cosmetics) {
+			STATES.remove(state);
+			return;
+		}
+		Resolved r = resolve(p);
+		Set<String> set = r.set();
+		Map<String, String> values = r.values();
+		List<String> skins = r.skins();
+		String aura = r.aura();
 		if (set == null || set.isEmpty()) {
 			STATES.remove(state);
 		} else {

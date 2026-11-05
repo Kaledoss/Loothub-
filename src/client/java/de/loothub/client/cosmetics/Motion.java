@@ -137,7 +137,9 @@ public final class Motion {
 		tr.amp += (targetAmp - tr.amp) * (1.0F - (float) Math.exp(-dt * 3.0F));
 		tr.phase += dt * 20.0F * (rate + tr.jumpKick * 0.5F);
 		// ---- Umgebung ----
-		if (Math.abs(p.tickCount - tr.envTick) >= 10) {
+		// nur nötig, wenn Mini-Mes oder Haustiere darauf reagieren können
+		if (Math.abs(p.tickCount - tr.envTick) >= 10
+				&& (Cosmetics.has(state, Cosmetics.MINI_ME) || Cosmetics.has(state, Cosmetics.PETS))) {
 			tr.envTick = p.tickCount;
 			tr.env = environment(p);
 		}
@@ -166,11 +168,11 @@ public final class Motion {
 		if (p.isInWater()) {
 			env |= ENV_WATER;
 		}
-		// Lava im Umkreis von 3 Blöcken
+		// Lava im Umkreis von 2 Blöcken (75 Abfragen, alle 10 Ticks)
 		outer:
-		for (int x = -3; x <= 3; x++) {
-			for (int y = -2; y <= 2; y++) {
-				for (int z = -3; z <= 3; z++) {
+		for (int x = -2; x <= 2; x++) {
+			for (int y = -1; y <= 1; y++) {
+				for (int z = -2; z <= 2; z++) {
 					if (level.getFluidState(pos.offset(x, y, z)).is(net.minecraft.tags.FluidTags.LAVA)) {
 						env |= ENV_LAVA;
 						break outer;

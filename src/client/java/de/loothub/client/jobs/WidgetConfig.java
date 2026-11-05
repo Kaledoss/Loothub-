@@ -285,14 +285,8 @@ public final class WidgetConfig {
 	}
 
 	public void save() {
-		try {
-			Files.createDirectories(path().getParent());
-			try (Writer w = Files.newBufferedWriter(path(), StandardCharsets.UTF_8)) {
-				GSON.toJson(this, w);
-			}
-		} catch (IOException e) {
-			Loothub.LOGGER.warn("Einstellungen konnten nicht gespeichert werden", e);
-		}
+		// im Hintergrund schreiben – z. B. beim Ziehen eines Reglers hängt das Spiel nicht
+		de.loothub.client.AsyncSave.write(path(), GSON.toJson(this));
 	}
 
 	public boolean jobRowVisible(String id) {

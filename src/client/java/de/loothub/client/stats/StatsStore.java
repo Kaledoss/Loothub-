@@ -129,19 +129,9 @@ public final class StatsStore {
 		if (!dirty || days == null || (!force && now - lastSave < SAVE_INTERVAL_MS)) {
 			return;
 		}
-		Path p = path();
-		Path tmp = p.resolveSibling(p.getFileName() + ".tmp");
-		try {
-			Files.createDirectories(p.getParent());
-			try (Writer w = Files.newBufferedWriter(tmp, StandardCharsets.UTF_8)) {
-				GSON.toJson(new TreeMap<>(days), w);
-			}
-			Files.move(tmp, p, StandardCopyOption.REPLACE_EXISTING);
-			dirty = false;
-			lastSave = now;
-		} catch (IOException e) {
-			Loothub.LOGGER.warn("Statistik konnte nicht gespeichert werden", e);
-		}
+		de.loothub.client.AsyncSave.write(path(), GSON.toJson(new TreeMap<>(days)));
+		dirty = false;
+		lastSave = now;
 	}
 
 	private static Path path() {

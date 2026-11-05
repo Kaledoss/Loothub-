@@ -543,19 +543,31 @@ public final class Itemdex {
 		return false;
 	}
 
+	/** Schon geprüfte Item-Objekte (verschwinden von selbst, wenn das Item weg ist). */
+	private static final java.util.Map<ItemStack, Integer> CHECKED = new java.util.WeakHashMap<>();
+
 	private static synchronized void see(ItemStack s, Source source, String where) {
 		if (source == Source.CONTAINER && ignoredMenu(where)) {
 			return;
 		}
-		if (!de.loothub.client.jobs.WidgetConfig.get().itemdexEnabled || !isCustom(clean(s))
-				|| (source == Source.CONTAINER && looksLikeButton(s))) {
+		if (!de.loothub.client.jobs.WidgetConfig.get().itemdexEnabled || s.isEmpty()) {
 			return;
 		}
-		load();
+		// dasselbe Item (unverändert) wurde schon geprüft – nicht jede Sekunde erneut kopieren und auswerten
+		Integer seen = CHECKED.get(s);
+		int stamp = s.getComponents().hashCode() * 31 + source.ordinal();
+		if (seen != null && seen == stamp) {
+			return;
+		}
+		CHECKED.put(s, stamp);
+		if (source == Source.CONTAINER && looksLikeButton(s)) {
+			return;
+		}
 		s = clean(s);
 		if (!isCustom(s)) {
-			return; // nur Auktions-Zeilen als Beschreibung
+			return; // keine Custom-Items (auch nicht nach Entfernen der Auktions-Zeilen)
 		}
+		load();
 		String key = key(s);
 		Entry e = byKey.get(key);
 		if (e != null && e.source != null && e.source.priority >= source.priority) {
@@ -670,12 +682,8 @@ public final class Itemdex {
 			}
 			arr.add(o);
 		}
-		try (Writer w = Files.newBufferedWriter(file(), StandardCharsets.UTF_8)) {
-			GSON.toJson(arr, w);
-			dirty = false;
-			lastSave = System.currentTimeMillis();
-		} catch (IOException ex) {
-			Loothub.LOGGER.warn("Itemdex konnte nicht gespeichert werden", ex);
-		}
+		de.loothub.client.AsyncSave.write(file(), GSON.toJson(arr));
+		dirty = false;
+		lastSave = System.currentTimeMillis();
 	}
 }

@@ -132,16 +132,6 @@ public final class JobHistory {
 
 	/** Erst in eine Temp-Datei schreiben, dann ersetzen – so geht bei einem Absturz nichts kaputt. */
 	private static void save() {
-		Path p = path();
-		Path tmp = p.resolveSibling(p.getFileName() + ".tmp");
-		try {
-			Files.createDirectories(p.getParent());
-			try (Writer w = Files.newBufferedWriter(tmp, StandardCharsets.UTF_8)) {
-				GSON.toJson(sessions, w);
-			}
-			Files.move(tmp, p, StandardCopyOption.REPLACE_EXISTING);
-		} catch (IOException e) {
-			Loothub.LOGGER.warn("Job-Verlauf konnte nicht gespeichert werden", e);
-		}
+		de.loothub.client.AsyncSave.write(path(), GSON.toJson(sessions));
 	}
 }

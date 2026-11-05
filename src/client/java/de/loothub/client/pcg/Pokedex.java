@@ -69,11 +69,7 @@ public final class Pokedex {
 	}
 
 	private static synchronized void save() {
-		try (Writer w = Files.newBufferedWriter(file(), StandardCharsets.UTF_8)) {
-			GSON.toJson(new TreeMap<>(caught), w);
-		} catch (IOException e) {
-			Loothub.LOGGER.warn("Pokédex konnte nicht gespeichert werden", e);
-		}
+		de.loothub.client.AsyncSave.write(file(), GSON.toJson(new TreeMap<>(caught)));
 	}
 
 	private static String key(String name) {

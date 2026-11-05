@@ -158,12 +158,8 @@ public final class AuctionPrices {
 		if (!historyDirty) {
 			return;
 		}
-		try (Writer w = Files.newBufferedWriter(historyFile(), StandardCharsets.UTF_8)) {
-			GSON.toJson(history, w);
-			historyDirty = false;
-		} catch (IOException e) {
-			Loothub.LOGGER.warn("AH-Verlauf nicht speicherbar", e);
-		}
+		AsyncSave.write(historyFile(), GSON.toJson(history));
+		historyDirty = false;
 	}
 
 	/** Durchschnittlicher günstigster Preis pro Stück der letzten {@code days} Tage (ohne heute), oder NaN. */

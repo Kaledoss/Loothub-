@@ -118,6 +118,7 @@ public class LoothubClient implements ClientModInitializer {
 		// Beim Verlassen des Servers nur speichern – die Job-Sitzung läuft bis zum Schließen des Spiels weiter
 		ClientPlayConnectionEvents.DISCONNECT.register((handler, client) -> {
 			StatsStore.saveIfDirty(true);
+			AsyncSave.shutdown(); // ausstehende Speicherungen noch schreiben
 		});
 		// Beim Beenden des Spiels die laufende Sitzung noch im Verlauf speichern
 		ClientLifecycleEvents.CLIENT_STOPPING.register(client -> {
@@ -138,7 +139,7 @@ public class LoothubClient implements ClientModInitializer {
 		// Eingebautes Ressourcenpaket: Inventar in Schwarz-Rot (unter Optionen → Ressourcenpakete abschaltbar)
 		FabricLoader.getInstance().getModContainer(Loothub.MOD_ID).ifPresent(mod -> {
 			ResourceLoader.registerBuiltinPack(Identifier.fromNamespaceAndPath(Loothub.MOD_ID, "dark_inventory"), mod,
-					Component.literal("Loothub+ Inventar (Schwarz-Rot)"),
+					Component.literal("Loothub"),
 					de.loothub.client.jobs.WidgetConfig.get().inventoryDesign
 							? PackActivationType.DEFAULT_ENABLED : PackActivationType.NORMAL);
 		});

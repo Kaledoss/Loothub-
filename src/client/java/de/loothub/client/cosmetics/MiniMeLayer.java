@@ -181,7 +181,7 @@ public final class MiniMeLayer extends RenderLayer<AvatarRenderState, PlayerMode
 				}
 			}
 			float side = i % 2 == 0 ? 1.0F : -1.0F; // gerade = rechts, ungerade = links (Modellraum)
-			AvatarRenderState mini = miniState(skin, t);
+			AvatarRenderState mini = miniState(state.id, i, skin, t);
 			// Platz-Haltung: Position (x, y, z) und Neigung (vorn/hinten, seitlich)
 			float tx, ty, tz, rx, rz = 0.0F, ry = 0.0F;
 			// Nachziehen: beim Drehen schwenken sie hinterher, beim Laufen bleiben sie etwas zurück
@@ -347,8 +347,25 @@ public final class MiniMeLayer extends RenderLayer<AvatarRenderState, PlayerMode
 	}
 
 	/** Eigener Zustand für ein Mini-Me: ruhige Grundhaltung, Skin-Ebenen sichtbar; macht nicht mit (kein Abbauen). */
-	private static AvatarRenderState miniState(PlayerSkin skin, float t) {
-		AvatarRenderState mini = new AvatarRenderState();
+	/** Zustände je Mini-Me wiederverwenden statt jedes Bild neu anzulegen (weniger Speicher-Müll, flüssiger). */
+	private static final java.util.Map<Long, AvatarRenderState> MINI_STATES = new java.util.HashMap<>();
+
+	private static AvatarRenderState miniState(int playerId, int slot, PlayerSkin skin, float t) {
+		long key = ((long) playerId << 4) | slot;
+		AvatarRenderState mini = MINI_STATES.get(key);
+		if (mini == null) {
+			if (MINI_STATES.size() > 600) {
+				MINI_STATES.clear();
+			}
+			mini = new AvatarRenderState();
+			MINI_STATES.put(key, mini);
+		}
+		mini.isPassenger = false;
+		mini.swimAmount = 0.0F;
+		mini.walkAnimationPos = 0.0F;
+		mini.walkAnimationSpeed = 0.0F;
+		mini.yRot = 0.0F;
+		mini.xRot = 0.0F;
 		mini.skin = skin;
 		mini.ageInTicks = t;
 		mini.showHat = true;
