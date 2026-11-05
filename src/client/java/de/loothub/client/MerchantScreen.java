@@ -114,11 +114,6 @@ public class MerchantScreen extends LoothubScreen {
 		}
 		if (!today) {
 			rightText(g, Component.translatable("loothub.merchant.daily.old").getString(), cr - 8, y + 18, FAINT);
-		} else if (c.dailyItemLimit > 0) {
-			boolean full = c.dailyItemUsed >= c.dailyItemLimit;
-			String limit = Component.translatable("loothub.merchant.daily.limit", Fmt.whole(Math.max(0, c.dailyItemUsed)),
-					Fmt.whole(c.dailyItemLimit)).getString();
-			rightText(g, limit, cr - 8, y + 18, full ? RED : MUTED);
 		}
 		return h;
 	}

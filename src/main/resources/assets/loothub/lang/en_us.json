@@ -314,6 +314,5 @@
 	"loothub.settings.tab.extras": "Extras",
 	"loothub.merchant.daily": "★ Tauschitem des Tages",
 	"loothub.merchant.daily.unknown": "Einmal den Rohstoffhändler im Spiel öffnen – dann erscheint es hier.",
-	"loothub.merchant.daily.old": "Stand von einem früheren Tag – Händler öffnen",
-	"loothub.merchant.daily.limit": "Tageslimit %s / %s"
+	"loothub.merchant.daily.old": "Stand von einem früheren Tag – Händler öffnen"
 }
