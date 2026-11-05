@@ -131,6 +131,7 @@ public final class Itemdex {
 	private static List<Entry> entries;
 	private static Map<String, Entry> byKey;
 	private static boolean dirty;
+	private static boolean pruned;
 	private static long lastSave;
 	private static int ticks;
 	private static volatile int version;
@@ -225,12 +226,67 @@ public final class Itemdex {
 		if (name.isEmpty()) {
 			return false; // Platzhalter in Menüs
 		}
+		// Eigener Name ist Pflicht: Server-Items heißen anders als das Minecraft-Item, auf dem sie beruhen
+		String vanilla = new ItemStack(s.getItem()).getHoverName().getString().strip();
+		if (name.equalsIgnoreCase(vanilla)) {
+			return false;
+		}
+		// … und dazu ein eigenes Aussehen oder eine Beschreibung (bloß umbenannte Items zählen nicht)
 		boolean modelChanged = s.has(DataComponents.ITEM_MODEL)
 				&& !Objects.equals(s.get(DataComponents.ITEM_MODEL), s.getItem().components().get(DataComponents.ITEM_MODEL));
-		boolean data = s.has(DataComponents.CUSTOM_DATA);
+		boolean customModel = s.has(DataComponents.CUSTOM_MODEL_DATA);
 		ItemLore lore = s.get(DataComponents.LORE);
 		boolean hasLore = lore != null && !lore.lines().isEmpty();
-		return modelChanged || data || (s.has(DataComponents.CUSTOM_NAME) && hasLore);
+		if (!modelChanged && !customModel && !hasLore) {
+			return false;
+		}
+		// Menü-Knöpfe und Platzhalter aussortieren
+		String item = BuiltInRegistries.ITEM.getKey(s.getItem()).getPath();
+		return !item.endsWith("glass_pane") && !item.equals("barrier") && !item.equals("light");
+	}
+
+	/** Menü-Knopf? (Beschreibung mit „Klick“, z. B. „Klicke zum Öffnen“, „Linksklick: …“) */
+	private static boolean looksLikeButton(ItemStack s) {
+		ItemLore lore = s.get(DataComponents.LORE);
+		if (lore == null) {
+			return false;
+		}
+		for (Component line : lore.lines()) {
+			if (line.getString().toLowerCase(Locale.ROOT).contains("klick")) {
+				return true;
+			}
+		}
+		return false;
+	}
+
+	/**
+	 * Einträge entfernen, die nach den aktuellen Regeln nicht mehr als Server-Item gelten (räumt alte, zu volle
+	 * Listen auf). Braucht eine geladene Welt, um die gespeicherten Items zu lesen.
+	 */
+	public static synchronized void prune() {
+		load();
+		if (registries() == null || pruned) {
+			return;
+		}
+		pruned = true;
+		int before = entries.size();
+		entries.removeIf(e -> {
+			ItemStack st = e.stack();
+			boolean drop = e.stackJson == null || !isCustom(st) || (e.source == Source.CONTAINER && looksLikeButton(st));
+			if (drop) {
+				byKey.remove(e.key);
+			}
+			return drop;
+		});
+		if (entries.size() != before) {
+			int n = 1;
+			for (Entry e : entries) {
+				e.number = n++;
+			}
+			dirty = true;
+			version++;
+			save(true);
+		}
 	}
 
 	static Category categorize(ItemStack s) {
@@ -266,7 +322,8 @@ public final class Itemdex {
 	}
 
 	private static synchronized void see(ItemStack s, Source source, String where) {
-		if (!de.loothub.client.jobs.WidgetConfig.get().itemdexEnabled || !isCustom(s)) {
+		if (!de.loothub.client.jobs.WidgetConfig.get().itemdexEnabled || !isCustom(s)
+				|| (source == Source.CONTAINER && looksLikeButton(s))) {
 			return;
 		}
 		load();

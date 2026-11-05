@@ -47,6 +47,7 @@ public class ItemdexScreen extends LoothubScreen {
 
 	@Override
 	protected void initPage() {
+		Itemdex.prune();
 		int hiddenW = 110;
 		int catW = 120;
 		int boxW = Math.max(80, Math.min(260, cw - catW - hiddenW - 12));
