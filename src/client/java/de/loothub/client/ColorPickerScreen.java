@@ -27,6 +27,17 @@ public class ColorPickerScreen extends Screen {
 	private int dragging; // 0 nichts, 1 Feld, 2 Farbton
 	private EditBox hexBox;
 	private boolean updatingHex;
+	/** Optionale Live-Vorschau (z. B. Flügel in der gewählten Farbe), links neben dem Farbfeld. */
+	private Preview preview;
+
+	public interface Preview {
+		void draw(GuiGraphics g, int x, int y, int w, int h, int rgb);
+	}
+
+	public ColorPickerScreen withPreview(Preview preview) {
+		this.preview = preview;
+		return this;
+	}
 
 	public ColorPickerScreen(Screen parent, Component title, int rgb, IntConsumer onDone) {
 		super(title);
@@ -129,6 +140,14 @@ public class ColorPickerScreen extends Screen {
 		g.drawString(font, Component.translatable("loothub.color.preview"), rx, y0, 0xFFB9A9AB, false);
 		g.fill(rx, y0 + 12, rx + 40, y0 + 40, 0xFF000000 | original);
 		g.fill(rx + 40, y0 + 12, rx + 80, y0 + 40, 0xFF000000 | color());
+		if (preview != null) {
+			int pw = 120;
+			int px = x0 - pw - 12;
+			if (px >= 4) {
+				g.fill(px, y0, px + pw, y0 + SV, 0xC0140B0D);
+				preview.draw(g, px, y0, pw, SV, color());
+			}
+		}
 		// Vorschlags-Felder einfärben
 		for (int i = 0; i < Theme.PRESETS.length; i++) {
 			int bx = rx + (i % 4) * 22;

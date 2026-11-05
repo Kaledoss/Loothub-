@@ -7,15 +7,15 @@ import net.minecraft.client.renderer.entity.state.AvatarRenderState;
 import net.minecraft.util.Mth;
 
 /**
- * Eigenständige Bewegung für Begleiter (fliegende/krabbelnde Mini-Mes, Haustiere): jeder hat eine eigene Position in
- * der Welt, die weich gefedert seinem Platz neben dem Spieler folgt und dabei etwas herumschwebt. So kleben sie nicht
- * an jeder Bewegung, sondern hängen nach, überholen, drehen sich in ihre Flugrichtung.
+ * Eigenständige Bewegung für Begleiter (fliegende/krabbelnde Mini-Mes, Haustiere). Ihre Position wird relativ zum
+ * Spieler geführt (Abstand in Weltrichtungen): Läuft, sprintet oder fliegt der Spieler, bewegen sie sich exakt mit –
+ * kein Zurückfallen, kein Ruckeln. Gefedert wird nur der Platz um den Spieler: beim Drehen schwenken sie weich
+ * hinterher, dazu schweben sie in ihrem eigenen Takt herum und schauen in ihre Bewegungsrichtung.
  */
 public final class Followers {
 	private static final class F {
-		double x, y, z, vx, vy, vz;
-		/** Letzter Zielpunkt – daraus das Tempo des Spielers, damit sie auch beim Rennen/Fliegen mithalten. */
-		double gx, gy, gz;
+		/** Abstand zum Spieler (Welt-Achsen) und dessen Änderungstempo. */
+		double ox, oy, oz, vx, vy, vz;
 		float yaw;
 		long last;
 		boolean init;
@@ -46,69 +46,41 @@ public final class Followers {
 		float wz = tz + (float) Math.cos(t * 0.47F + seed * 0.7F) * wander;
 		double theta = Math.toRadians(180.0F - s.bodyRot);
 		double c = Math.cos(theta), sn = Math.sin(theta);
-		// Ebenen-Raum → Welt
+		// Ziel-Abstand in Weltrichtungen (Ebenen-Raum → Welt, ohne Spielerposition)
 		double X = -wx, Z = wz;
-		double gx = s.x + X * c + Z * sn;
-		double gz = s.z - X * sn + Z * c;
-		double gy = s.y + 1.501 - wy;
-		float dt = f.last == 0 ? 0.0F : Math.min(0.1F, (now - f.last) / 1.0e9F);
-		double far = (gx - f.x) * (gx - f.x) + (gy - f.y) * (gy - f.y) + (gz - f.z) * (gz - f.z);
-		if (!f.init || far > 64.0 || f.last == 0 || (now - f.last) > 2_000_000_000L) {
-			f.x = gx;
-			f.y = gy;
-			f.z = gz;
+		double gx = X * c + Z * sn;
+		double gz = -X * sn + Z * c;
+		double gy = 1.501 - wy;
+		float dt = f.last == 0 ? 0.0F : Math.min(0.05F, (now - f.last) / 1.0e9F);
+		if (!f.init || (now - f.last) > 2_000_000_000L) {
+			f.ox = gx;
+			f.oy = gy;
+			f.oz = gz;
 			f.vx = f.vy = f.vz = 0;
 			f.yaw = s.bodyRot;
 			f.init = true;
 			f.last = now;
-			f.gx = gx;
-			f.gy = gy;
-			f.gz = gz;
 		} else if (dt > 0.002F) {
 			f.last = now;
-			// Tempo des Zielpunkts (= Spieler): die Feder dämpft nur die Abweichung davon,
-			// so bleiben sie auch beim Sprinten und schnellen Fliegen dicht dabei
-			double tvx = (gx - f.gx) / dt, tvy = (gy - f.gy) / dt, tvz = (gz - f.gz) / dt;
-			f.gx = gx;
-			f.gy = gy;
-			f.gz = gz;
+			// gedämpfte Feder auf den Abstand: weich, ohne langes Nachschwingen
 			double damp = 2.0 * Math.sqrt(stiffness) * 0.85;
-			f.vx += (stiffness * (gx - f.x) - damp * (f.vx - tvx)) * dt;
-			f.vy += (stiffness * (gy - f.y) - damp * (f.vy - tvy)) * dt;
-			f.vz += (stiffness * (gz - f.z) - damp * (f.vz - tvz)) * dt;
-			f.x += f.vx * dt;
-			f.y += f.vy * dt;
-			f.z += f.vz * dt;
-			// weiter als 1 Block weg (z. B. bei abruptem Richtungswechsel): weich, aber zügig heranziehen –
-			// kein Springen oder Hinterher-Teleportieren
-			double ex = f.x - gx, ey = f.y - gy, ez = f.z - gz;
-			double dist = Math.sqrt(ex * ex + ey * ey + ez * ez);
-			if (dist > 1.0) {
-				double pull = (1.0 - Math.exp(-dt * 10.0)) * (dist - 1.0) / dist;
-				f.x -= ex * pull;
-				f.y -= ey * pull;
-				f.z -= ez * pull;
-				f.vx += (tvx - f.vx) * pull;
-				f.vy += (tvy - f.vy) * pull;
-				f.vz += (tvz - f.vz) * pull;
-			}
-			// Blickrichtung: beim Fliegen/Krabbeln in Bewegungsrichtung, sonst wie der Spieler
-			// Blickrichtung aus der eigenen Bewegung relativ zum Spieler – beim gemeinsamen Rennen wie der Spieler
-			double rvx = f.vx - tvx, rvz = f.vz - tvz;
+			f.vx += (stiffness * (gx - f.ox) - damp * f.vx) * dt;
+			f.vy += (stiffness * (gy - f.oy) - damp * f.vy) * dt;
+			f.vz += (stiffness * (gz - f.oz) - damp * f.vz) * dt;
+			f.ox += f.vx * dt;
+			f.oy += f.vy * dt;
+			f.oz += f.vz * dt;
+			// Blickrichtung: bewegt er sich selbst (Aufholen, Herumschweben), in diese Richtung – sonst wie der Spieler
 			double own = Math.sqrt(f.vx * f.vx + f.vz * f.vz);
-			float want = own > 1.2 ? (float) Math.toDegrees(Math.atan2(-f.vx, f.vz)) : s.bodyRot;
-			if (Math.sqrt(rvx * rvx + rvz * rvz) < 0.3 && own > 1.2) {
-				want = s.bodyRot;
-			}
+			float want = own > 1.0 ? (float) Math.toDegrees(Math.atan2(-f.vx, f.vz)) : s.bodyRot;
 			f.yaw += Mth.wrapDegrees(want - f.yaw) * (1.0F - (float) Math.exp(-dt * 4.0F));
 		}
-		// Welt → Ebenen-Raum
-		double dx = f.x - s.x, dz = f.z - s.z;
-		double lx = dx * c - dz * sn, lz = dx * sn + dz * c;
+		// Welt-Abstand → Ebenen-Raum
+		double lx = f.ox * c - f.oz * sn, lz = f.ox * sn + f.oz * c;
 		if (MAP.size() > 400) {
 			long cut = now - 30_000_000_000L;
 			MAP.values().removeIf(v -> v.last < cut);
 		}
-		return new float[]{(float) -lx, (float) (s.y + 1.501 - f.y), (float) lz, Mth.wrapDegrees(f.yaw - s.bodyRot)};
+		return new float[]{(float) -lx, (float) (1.501 - f.oy), (float) lz, Mth.wrapDegrees(f.yaw - s.bodyRot)};
 	}
 }

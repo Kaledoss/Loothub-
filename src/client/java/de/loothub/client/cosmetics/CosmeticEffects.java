@@ -68,7 +68,7 @@ public final class CosmeticEffects {
 			// Flug-Spur: leuchtender Streifen in Aura-Farbe (oder weiß) entlang des Weges
 			// Flug-Spur: nur mit eingeschalteter Aura – ein Schweif aus Aura-Flammen (heller Kern, weicher Rand)
 			String aura = s.values().get(Cosmetics.AURA);
-			if (s.set().contains(Cosmetics.FLY_TRAIL) && s.set().contains(Cosmetics.AURA) && aura != null
+			if (Cosmetics.AURA_ENABLED && s.set().contains(Cosmetics.FLY_TRAIL) && s.set().contains(Cosmetics.AURA) && aura != null
 					&& Motion.flyOf(p.getId()) > 0.5F && speed > 0.05) {
 				int rgb = AuraTextures.parse(aura);
 				int core = blend(rgb, 0xFFFFFF, 0.55F);

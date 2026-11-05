@@ -23,7 +23,7 @@ public final class CrownLayer extends RenderLayer<AvatarRenderState, PlayerModel
 	private static final Identifier TEXTURE = Identifier.fromNamespaceAndPath(Loothub.MOD_ID, "textures/entity/crown.png");
 	private static final int SEGMENTS = 8;
 	private static final float PX = 1.0F / 16.0F;
-	private static final float RADIUS = 3.4F, BAND = 2.0F, SPIKE = 2.4F;
+	private static final float RADIUS = 3.0F, BAND = 1.6F, SPIKE = 1.9F;
 
 	public CrownLayer(RenderLayerParent<AvatarRenderState, PlayerModel> parent) {
 		super(parent);
@@ -38,9 +38,10 @@ public final class CrownLayer extends RenderLayer<AvatarRenderState, PlayerModel
 		float t = state.ageInTicks;
 		poseStack.pushPose();
 		getParentModel().head.translateAndRotate(poseStack);
-		poseStack.translate(0.0F, (-11.0F - (float) Math.sin(t * 0.08F) * 0.6F) * PX, 0.0F);
+		// sitzt knapp über dem Kopf (über der Hut-Ebene), damit sie nicht ins Namensschild ragt
+		poseStack.translate(0.0F, (-8.8F - (float) Math.sin(t * 0.08F) * 0.3F) * PX, 0.0F);
 		poseStack.mulPose(Axis.YP.rotationDegrees(t * 1.5F));
-		poseStack.mulPose(Axis.XP.rotationDegrees(6.0F)); // leicht schräg – wirkt lässiger
+		poseStack.mulPose(Axis.XP.rotationDegrees(4.0F)); // leicht schräg – wirkt lässiger
 		collector.submitCustomGeometry(poseStack, RenderTypes.entityCutoutNoCull(TEXTURE), (pose, vc) -> {
 			for (int s = 0; s < SEGMENTS; s++) {
 				double a0 = 2 * Math.PI * s / SEGMENTS, a1 = 2 * Math.PI * (s + 1) / SEGMENTS;

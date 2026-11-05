@@ -34,6 +34,8 @@ import de.loothub.client.jobs.WidgetConfig;
 public final class Cosmetics {
 	public static final String MINI_ME = "minime";
 	public static final String AURA = "aura";
+	/** Aura (und die Flug-Spur aus Aura-Flammen) vorerst ausgeschaltet. */
+	public static final boolean AURA_ENABLED = false;
 	public static final String WINGS = "wings";
 	public static final String MINI_ME_WINGS = "minimewings";
 	/** Leuchtende Augen, Wert = Farbe. */

@@ -65,6 +65,13 @@ public class CosmeticsScreen extends LoothubScreen {
 	private final List<Swatch> swatches = new ArrayList<>();
 	private final int[][] skinStatus = new int[Cosmetics.MAX_MINI_MES][];
 	private final List<Dropdown> dropdowns = new ArrayList<>();
+	/** Kleine Flügel-Vorschau am Zeilenende (Stil + Farben, live). */
+	private record RowPreview(int x, int y, int h, Supplier<String> style, Supplier<String> inner, Supplier<String> outer) {
+	}
+
+	private final List<RowPreview> rowPreviews = new ArrayList<>();
+	private List<EditBox> nameBoxes = List.of();
+	private long namesChangedAt;
 	private Dropdown openDropdown;
 	private int jsonY = -1;
 	private int descX;
@@ -78,6 +85,8 @@ public class CosmeticsScreen extends LoothubScreen {
 		sections.clear();
 		swatches.clear();
 		dropdowns.clear();
+		rowPreviews.clear();
+		nameBoxes = List.of();
 		openDropdown = null;
 		jsonY = -1;
 		for (int i = 0; i < skinStatus.length; i++) {
@@ -122,33 +131,29 @@ public class CosmeticsScreen extends LoothubScreen {
 					box.setMaxLength(16);
 					box.setHint(Component.translatable("loothub.cosmetics.minime.slot" + (i + 1)).withStyle(ChatFormatting.DARK_GRAY));
 					box.setValue(i < c.miniMes.size() && c.miniMes.get(i) != null ? c.miniMes.get(i) : "");
+					box.setResponder(t -> namesChangedAt = System.currentTimeMillis()); // übernimmt kurz nach dem Tippen
 					boxes.add(addRenderableWidget(box));
 					skinStatus[i] = new int[]{x0 + nameW + 3, by + 4};
 					dropdown(x1, by, ddW, Component.translatable("loothub.cosmetics.wings.short").getString(),
 							WING_OPTIONS, "loothub.cosmetics.wings.style.", () -> slotValue(c.miniMeWings, slot),
 							v -> c.miniMeWings = setSlot(c.miniMeWings, slot, v, Cosmetics.MAX_MINI_MES));
 					// zwei Farben: innen (Flughaut/Federn) und außen (Knochen/Rand); ↺ = Originalfarben
-					int nx = colorPick(x2, by, colW, "loothub.cosmetics.color.inner", () -> slotValue(c.miniMeWingColor, slot),
-							v -> c.miniMeWingColor = setSlot(c.miniMeWingColor, slot, v, Cosmetics.MAX_MINI_MES));
-					nx = colorPick(nx, by, colW, "loothub.cosmetics.color.outer", () -> slotValue(c.miniMeWingColorOuter, slot),
-							v -> c.miniMeWingColorOuter = setSlot(c.miniMeWingColorOuter, slot, v, Cosmetics.MAX_MINI_MES));
+					Supplier<String> style = () -> Cosmetics.wingAt(slotValue(c.miniMeWings, slot), 0);
+					Supplier<String> inner = () -> slotValue(c.miniMeWingColor, slot);
+					Supplier<String> outer = () -> slotValue(c.miniMeWingColorOuter, slot);
+					int nx = colorPick(x2, by, colW, "loothub.cosmetics.color.inner", inner,
+							v -> c.miniMeWingColor = setSlot(c.miniMeWingColor, slot, v, Cosmetics.MAX_MINI_MES), style, false, outer);
+					nx = colorPick(nx, by, colW, "loothub.cosmetics.color.outer", outer,
+							v -> c.miniMeWingColorOuter = setSlot(c.miniMeWingColorOuter, slot, v, Cosmetics.MAX_MINI_MES), style, true,
+							inner);
+					rowPreviews.add(new RowPreview(nx + 30, by - 1, 18, style, inner, outer));
 					resetButton(nx, by, () -> {
 						c.miniMeWingColor = setSlot(c.miniMeWingColor, slot, "", Cosmetics.MAX_MINI_MES);
 						c.miniMeWingColorOuter = setSlot(c.miniMeWingColorOuter, slot, "", Cosmetics.MAX_MINI_MES);
 					});
 				}
-				addRenderableWidget(Button.builder(Component.translatable("loothub.settings.minime.apply"), b -> {
-					c.miniMes.clear();
-					for (EditBox box : boxes) {
-						String v = box.getValue().strip();
-						c.miniMes.add(v); // Platz bleibt erhalten, leer = frei
-						if (!v.isEmpty()) {
-							SkinLookup.forget(v);
-						}
-					}
-					c.save();
-				}).bounds(x0, y + 30 + Cosmetics.MAX_MINI_MES * 20, nameW, 16).build());
-				int h = 30 + Cosmetics.MAX_MINI_MES * 20 + 22;
+				nameBoxes = boxes;
+				int h = 30 + Cosmetics.MAX_MINI_MES * 20 + 2;
 				sections.add(new Section(y, h, "loothub.settings.minime", "loothub.cosmetics.minime.rows.desc", 28));
 				y += h + GAP;
 			}
@@ -170,40 +175,22 @@ public class CosmeticsScreen extends LoothubScreen {
 				sections.add(new Section(y, 42, "loothub.cosmetics.emotes", "loothub.cosmetics.emotes.desc"));
 			}
 			case BODY -> {
-				// Aura: an/aus + Farbe + Stärke
-				int auraY = y;
-				int sliderX = descX + 210;
-				addRenderableWidget(new net.minecraft.client.gui.components.AbstractSliderButton(sliderX, auraY + 30,
-						Math.max(80, Math.min(150, cr - 8 - sliderX)), 16, Component.empty(), c.auraStrength / 100.0) {
-					{
-						updateMessage();
-					}
-
-					@Override
-					protected void updateMessage() {
-						setMessage(Component.translatable("loothub.cosmetics.aura.strength", (int) Math.round(value * 100)));
-					}
-
-					@Override
-					protected void applyValue() {
-						c.auraStrength = (int) Math.round(value * 100);
-						c.save();
-					}
-				});
-				y = colorSection(y, lx, lw, "loothub.settings.aura", "loothub.settings.aura.tooltip",
-						() -> c.auraColor, v -> c.auraColor = v, () -> c.auraLast, v -> c.auraLast = v, "#FFCD3C");
 				// Flügel für mich
 				dropdown(descX, y + 30, ddWidth(), Component.translatable("loothub.cosmetics.wings.me").getString(),
 						WING_OPTIONS, "loothub.cosmetics.wings.style.", () -> Cosmetics.wingAt(c.wings, 0) == null ? "" : Cosmetics.wingAt(c.wings, 0),
 						v -> c.wings = v);
 				sections.add(new Section(y, 54, "loothub.cosmetics.wings", "loothub.cosmetics.wings.desc"));
 				y += 54 + GAP;
-				int nx = colorPick(descX, y + 30, 70, "loothub.cosmetics.color.inner", () -> c.wingColor, v -> c.wingColor = v);
-				nx = colorPick(nx + 6, y + 30, 70, "loothub.cosmetics.color.outer", () -> c.wingColorOuter, v -> c.wingColorOuter = v);
+				Supplier<String> myStyle = () -> Cosmetics.wingAt(c.wings, 0);
+				int nx = colorPick(descX, y + 30, 70, "loothub.cosmetics.color.inner", () -> c.wingColor, v -> c.wingColor = v,
+						myStyle, false, () -> c.wingColorOuter);
+				nx = colorPick(nx + 6, y + 30, 70, "loothub.cosmetics.color.outer", () -> c.wingColorOuter, v -> c.wingColorOuter = v,
+						myStyle, true, () -> c.wingColor);
 				resetButton(nx + 6, y + 30, () -> {
 					c.wingColor = "";
 					c.wingColorOuter = "";
 				});
+				rowPreviews.add(new RowPreview(nx + 30, y + 22, 30, myStyle, () -> c.wingColor, () -> c.wingColorOuter));
 				sections.add(new Section(y, 54, "loothub.cosmetics.wing_color", "loothub.cosmetics.wing_color.desc"));
 				y += 54 + GAP;
 				// Augen: an/aus + Farbe
@@ -219,11 +206,27 @@ public class CosmeticsScreen extends LoothubScreen {
 						v -> c.footsteps = v);
 				sections.add(new Section(y, 54, "loothub.cosmetics.footsteps", "loothub.cosmetics.footsteps.desc"));
 				y += 54 + GAP;
-				toggle(lx, y + 20, lw, () -> c.flyTrail, v -> c.flyTrail = v);
-				sections.add(new Section(y, 42, "loothub.cosmetics.flytrail", "loothub.cosmetics.flytrail.desc"));
-				y += 42 + GAP;
 			}
 		}
+	}
+
+	@Override
+	public void removed() {
+		// noch nicht übernommene Namen beim Schließen speichern
+		if (namesChangedAt != 0) {
+			namesChangedAt = 0;
+			WidgetConfig c = WidgetConfig.get();
+			c.miniMes.clear();
+			for (EditBox box : nameBoxes) {
+				String v = box.getValue().strip();
+				c.miniMes.add(v);
+				if (!v.isEmpty()) {
+					SkinLookup.forget(v);
+				}
+			}
+			c.save();
+		}
+		super.removed();
 	}
 
 	private int ddWidth() {
@@ -266,12 +269,20 @@ public class CosmeticsScreen extends LoothubScreen {
 	}
 
 	/** Knopf „Innen/Außen …“ öffnet den Farbwähler, daneben ein Farbfeld. Gibt die x-Position dahinter zurück. */
-	private int colorPick(int x, int y, int w, String key, Supplier<String> get, Consumer<String> set) {
+	private int colorPick(int x, int y, int w, String key, Supplier<String> get, Consumer<String> set, Supplier<String> style,
+			boolean outerPart, Supplier<String> other) {
 		addRenderableWidget(Button.builder(Component.translatable(key), b ->
 				minecraft.setScreen(new ColorPickerScreen(this, Component.translatable("loothub.cosmetics.wing_color"),
 						AuraTextures.parse(get.get() == null || get.get().isBlank() ? "#8A2BE2" : get.get()), rgb -> {
 							set.accept(String.format(Locale.ROOT, "#%06X", rgb & 0xFFFFFF));
 							WidgetConfig.get().save();
+						}).withPreview((g, px, py, pw, ph, rgb) -> {
+							// Flügel live in der gerade gewählten Farbe (ohne Stil: Drache als Beispiel)
+							String st = style.get() == null || style.get().isBlank() ? "dragon" : style.get();
+							String hex = String.format(Locale.ROOT, "#%06X", rgb & 0xFFFFFF);
+							int hh = Math.min(ph - 10, (int) (pw / 2 * 128 / 66.0F) - 4);
+							de.loothub.client.cosmetics.WingPreview.draw(g, px + pw / 2, py + (ph - hh) / 2, hh, st,
+									outerPart ? other.get() : hex, outerPart ? hex : other.get());
 						})))
 				.bounds(x, y, w, 16).build());
 		swatches.add(new Swatch(x + w + 3, y + 3, get, () -> "#8A2BE2", false));
@@ -542,6 +553,26 @@ public class CosmeticsScreen extends LoothubScreen {
 				g.drawString(font, line, descX, y, 0xFFFFD66B, false);
 				y += 10;
 			}
+		}
+		// Flügel-Vorschau je Zeile
+		for (RowPreview rp : rowPreviews) {
+			if (rp.x() + rp.h() < cr) {
+				de.loothub.client.cosmetics.WingPreview.draw(g, rp.x(), rp.y(), rp.h(), rp.style().get(), rp.inner().get(),
+						rp.outer().get());
+			}
+		}
+		// Mini-Me-Namen: kurz nach dem letzten Tastendruck übernehmen (kein „Übernehmen“ nötig)
+		if (namesChangedAt != 0 && System.currentTimeMillis() - namesChangedAt > 700) {
+			namesChangedAt = 0;
+			c.miniMes.clear();
+			for (EditBox box : nameBoxes) {
+				String v = box.getValue().strip();
+				c.miniMes.add(v); // Platz bleibt erhalten, leer = frei
+				if (!v.isEmpty()) {
+					SkinLookup.forget(v);
+				}
+			}
+			c.save();
 		}
 		drawDropdown(g, mouseX, mouseY);
 	}

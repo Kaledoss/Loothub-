@@ -20,7 +20,7 @@ public abstract class AvatarLayersMixin {
 	@Inject(method = "<init>", at = @At("RETURN"))
 	private void loothub$cosmetics(EntityRendererProvider.Context context, boolean slim, CallbackInfo ci) {
 		RenderLayerParent<AvatarRenderState, PlayerModel> parent = (RenderLayerParent<AvatarRenderState, PlayerModel>) (Object) this;
-		((LivingEntityRendererInvoker) this).loothub$addLayer(new de.loothub.client.cosmetics.AuraLayer(parent));
+		// Aura vorerst ausgebaut (AuraLayer bleibt im Code für später)
 		((LivingEntityRendererInvoker) this).loothub$addLayer(new de.loothub.client.cosmetics.WingsLayer(parent));
 		((LivingEntityRendererInvoker) this).loothub$addLayer(new de.loothub.client.cosmetics.EyesLayer(parent));
 		((LivingEntityRendererInvoker) this).loothub$addLayer(new de.loothub.client.cosmetics.CrownLayer(parent));
