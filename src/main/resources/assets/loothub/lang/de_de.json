@@ -307,5 +307,10 @@
 	"loothub.settings.rename_window.tooltip": "/rename oder /sign ohne Text öffnen ein Fenster mit Farben, Formatierung und Vorschau.",
 	"loothub.settings.itemdex": "Itemdex sammeln",
 	"loothub.settings.itemdex.tooltip": "Server-Items, die dir begegnen, automatisch im Itemdex eintragen.",
-	"loothub.settings.pcg.status.no_channel": "Kanal nicht gefunden – Kanalname prüfen"
+	"loothub.settings.pcg.status.no_channel": "Kanal nicht gefunden – Kanalname prüfen",
+	"loothub.settings.tab.general": "Allgemein",
+	"loothub.settings.tab.look": "Aussehen",
+	"loothub.settings.tab.inventory": "Inventar",
+	"loothub.settings.tab.jobs": "Jobs",
+	"loothub.settings.tab.extras": "Extras"
 }
