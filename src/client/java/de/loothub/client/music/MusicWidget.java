@@ -141,7 +141,7 @@ public final class MusicWidget {
 		g.fill(bx, y + H - 5, bx + bw, y + H - 4, 0x40FFFFFF);
 		g.fill(bx, y + H - 5, bx + filled, y + H - 4, 0xFFE23B3B);
 		String time = Fmt.clock((long) (pos * 1000)) + " / " + Fmt.clock((long) (dur * 1000));
-		g.drawString(font, time, x + W - 6 - font.width(time), y + 17, 0xFF7A6A6C, false);
+		g.drawString(font, time, x + W - 6 - font.width(time), y + 17, 0xFFE8D8DA, true);
 	}
 
 	// ------------------------------------------------------------------ Verschieben im Chat
