@@ -41,14 +41,14 @@ public final class EyesLayer extends RenderLayer<AvatarRenderState, PlayerModel>
 			return;
 		}
 		// im Dunkeln stärker als bei Tageslicht (Block- und Himmelslicht an der Stelle des Spielers)
-		pulse *= 0.55F + 0.95F * (1.0F - brightness(light));
+		final float glow = pulse * (0.55F + 0.95F * (1.0F - brightness(light)));
 		poseStack.pushPose();
 		getParentModel().head.translateAndRotate(poseStack);
 		collector.submitCustomGeometry(poseStack, RenderTypes.energySwirl(GLOW, 0.0F, 0.0F), (pose, vc) -> {
 			for (float cx : new float[]{-2.0F, 2.0F}) {
 				// Schein (größer, schwächer) und Kern (Augenfläche, hell)
-				quad(pose, vc, cx - 2.2F, -5.6F, cx + 2.2F, -2.4F, -4.06F, 0.0F, 1.0F, color(rgb, 0.7F * pulse));
-				quad(pose, vc, cx - 1.0F, -4.0F, cx + 1.0F, -3.0F, -4.08F, 0.4F, 0.6F, color(rgb, 1.4F * pulse));
+				quad(pose, vc, cx - 2.2F, -5.6F, cx + 2.2F, -2.4F, -4.06F, 0.0F, 1.0F, color(rgb, 0.7F * glow));
+				quad(pose, vc, cx - 1.0F, -4.0F, cx + 1.0F, -3.0F, -4.08F, 0.4F, 0.6F, color(rgb, 1.4F * glow));
 			}
 		});
 		poseStack.popPose();
