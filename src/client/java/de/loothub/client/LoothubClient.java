@@ -115,9 +115,8 @@ public class LoothubClient implements ClientModInitializer {
 		de.loothub.client.music.MusicWidget.register();
 		de.loothub.client.music.YtMusic.ensure(de.loothub.client.jobs.WidgetConfig.get().musicEnabled);
 
-		// Beim Verlassen des Servers beginnt eine neue Job-Sitzung
+		// Beim Verlassen des Servers nur speichern – die Job-Sitzung läuft bis zum Schließen des Spiels weiter
 		ClientPlayConnectionEvents.DISCONNECT.register((handler, client) -> {
-			JobTracker.reset();
 			StatsStore.saveIfDirty(true);
 		});
 		// Beim Beenden des Spiels die laufende Sitzung noch im Verlauf speichern

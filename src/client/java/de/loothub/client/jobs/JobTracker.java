@@ -9,13 +9,12 @@ import de.loothub.Loothub;
  * Sammelt die Job-Fortschritte einer Spielsitzung und berechnet XP/h, Geld/h und die Zeit bis zum Level-Up.
  *
  * <p>Nur aktive Zeit zählt: Liegen zwischen zwei Job-Aktionen mehr als {@link #PAUSE_AFTER_MS}, gilt die Lücke als
- * Pause und verfälscht den Stundenschnitt nicht. Nach {@link #SESSION_TIMEOUT_MS} ohne Aktion oder beim Verlassen
- * des Servers beginnt eine neue Sitzung.
+ * Pause und verfälscht den Stundenschnitt nicht. Eine Sitzung dauert, bis das Spiel geschlossen wird (oder sie in
+ * den Einstellungen zurückgesetzt wird) – auch lange Pausen oder ein Serverwechsel beenden sie nicht.
  */
 public final class JobTracker {
 	/** Längere Lücken zwischen zwei Job-Aktionen gelten als Pause. */
 	public static final long PAUSE_AFTER_MS = 20_000;
-	public static final long SESSION_TIMEOUT_MS = 10 * 60_000;
 	/** Unter dieser aktiven Zeit sind Stundenwerte zu ungenau und werden nicht angezeigt. */
 	private static final long MIN_ACTIVE_FOR_RATES_MS = 20_000;
 
@@ -63,10 +62,6 @@ public final class JobTracker {
 
 	public static synchronized void onGain(JobParser.JobGain gain) {
 		long now = System.currentTimeMillis();
-		if (lastGain > 0 && now - lastGain > SESSION_TIMEOUT_MS) {
-			reset();
-		}
-
 		long gap = lastGain == 0 ? 0 : now - lastGain;
 		// Längere Lücken zählen nur bis zur Pausen-Grenze – genau so, wie die Uhr im Widget stehen bleibt
 		long active = Math.min(gap, PAUSE_AFTER_MS);
@@ -174,10 +169,6 @@ public final class JobTracker {
 			return null;
 		}
 		long now = System.currentTimeMillis();
-		if (now - lastGain > SESSION_TIMEOUT_MS) {
-			reset();
-			return null;
-		}
 		JobStats s = JOBS.get(currentJob);
 
 		// Werte des aktuellen Jobs – jeder Job zählt für sich und macht beim Zurückwechseln weiter
@@ -203,7 +194,7 @@ public final class JobTracker {
 
 	/** Die laufende Sitzung für die Anzeige im Verlauf, oder null. Wird nicht gespeichert. */
 	public static synchronized JobHistory.Session liveSession() {
-		if (currentJob == null || System.currentTimeMillis() - lastGain > SESSION_TIMEOUT_MS) {
+		if (currentJob == null) {
 			return null;
 		}
 		JobHistory.Session session = buildSession();
