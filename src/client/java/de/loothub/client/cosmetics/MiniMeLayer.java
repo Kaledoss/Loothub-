@@ -228,6 +228,13 @@ public final class MiniMeLayer extends RenderLayer<AvatarRenderState, PlayerMode
 					OverlayTexture.NO_OVERLAY, 0, null);
 			String wings = Cosmetics.miniMeWing(state, i);
 			if (wings != null) {
+				// liegt der Körper waagerecht (krabbelnd oder in Flug-Haltung), Flügel tiefer an den Rücken und
+				// nach hinten legen – sonst ragen sie vorn durch den Kopf
+				float flat = crawling ? 1.0F : sleeping ? 0.0F : Mth.clamp((rx - 30.0F) / 45.0F, 0.0F, 1.0F);
+				if (flat > 0.0F) {
+					poseStack.translate(0.0F, 0.3F * flat, 0.05F * flat);
+					poseStack.mulPose(Axis.XP.rotationDegrees(-55.0F * flat));
+				}
 				Wings.submit(poseStack, collector, wings, t + i * 7.0F, light, sleeping,
 						Cosmetics.raw(state, Cosmetics.MINI_WING_COLOR));
 			}
