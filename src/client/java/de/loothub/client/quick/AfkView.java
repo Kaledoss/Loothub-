@@ -2,14 +2,14 @@ package de.loothub.client.quick;
 
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
 import net.minecraft.client.CameraType;
-import net.minecraft.client.KeyMapping;
 import net.minecraft.client.Minecraft;
 
 import de.loothub.client.jobs.WidgetConfig;
 
 /**
- * AFK-Ansicht: Nach 5 Minuten ohne Eingabe (so lange, bis der Server einen als AFK führt) wechselt die Kamera aus der
- * Ich-Ansicht nach hinten, zoomt langsam heraus und der eigene Charakter liegt schlafend da. Jede Eingabe weckt ihn
+ * AFK-Ansicht: Nach 5 Minuten ohne Bewegung (so lange, bis der Server einen als AFK führt) wechselt die Kamera aus der
+ * Ich-Ansicht nach hinten, zoomt langsam heraus und der eigene Charakter liegt schlafend da – auch bei offenem Chat.
+ * Erst eine Bewegung (Laufen oder Umschauen) weckt ihn
  * wieder auf. Nur die eigene Darstellung – andere Spieler sehen nichts davon, am Spiel ändert sich nichts.
  */
 public final class AfkView {
@@ -20,7 +20,8 @@ public final class AfkView {
 	private static final float ZOOM_FACTOR = 2.5f;
 
 	private static long lastInput = System.currentTimeMillis();
-	private static double lastMouseX = Double.NaN, lastMouseY = Double.NaN;
+	private static double lastX = Double.NaN, lastY, lastZ;
+	private static float lastYRot, lastXRot;
 	private static boolean sleeping;
 	private static long sleepStart;
 	private static CameraType previousCamera;
@@ -58,7 +59,7 @@ public final class AfkView {
 			wake(mc);
 			return;
 		}
-		if (!sleeping && mc.screen == null && now - lastInput >= AFK_AFTER_MS) {
+		if (!sleeping && now - lastInput >= AFK_AFTER_MS) {
 			sleeping = true;
 			sleepStart = now;
 			previousCamera = mc.options.getCameraType();
@@ -66,22 +67,21 @@ public final class AfkView {
 		}
 	}
 
-	/** Maus bewegt, Taste gedrückt oder ein Fenster (Chat, Inventar …) offen? */
+	/**
+	 * Nur echte Bewegung zählt: Position oder Blickrichtung hat sich geändert. Chat tippen, Menüs öffnen oder Tasten
+	 * ohne Bewegung halten den Charakter nicht wach.
+	 */
 	private static boolean hadInput(Minecraft mc) {
-		double mx = mc.mouseHandler.xpos();
-		double my = mc.mouseHandler.ypos();
-		boolean moved = !Double.isNaN(lastMouseX) && (Math.abs(mx - lastMouseX) > 0.5 || Math.abs(my - lastMouseY) > 0.5);
-		lastMouseX = mx;
-		lastMouseY = my;
-		if (moved || mc.screen != null) {
-			return true;
-		}
-		for (KeyMapping k : mc.options.keyMappings) {
-			if (k.isDown()) {
-				return true;
-			}
-		}
-		return false;
+		var p = mc.player;
+		boolean moved = !Double.isNaN(lastX)
+				&& (Math.abs(p.getX() - lastX) > 0.01 || Math.abs(p.getY() - lastY) > 0.01 || Math.abs(p.getZ() - lastZ) > 0.01
+						|| Math.abs(p.getYRot() - lastYRot) > 0.5 || Math.abs(p.getXRot() - lastXRot) > 0.5);
+		lastX = p.getX();
+		lastY = p.getY();
+		lastZ = p.getZ();
+		lastYRot = p.getYRot();
+		lastXRot = p.getXRot();
+		return moved;
 	}
 
 	private static void wake(Minecraft mc) {
