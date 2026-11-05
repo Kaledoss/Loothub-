@@ -24,6 +24,10 @@ public abstract class HumanoidHeadMixin {
 	private static void loothub$hideOwnHead(LivingEntity entity, HumanoidRenderState state, float partialTick,
 			ItemModelResolver resolver, CallbackInfo ci) {
 		if (entity != Minecraft.getInstance().player) {
+			// Andere Spieler, die seit 5 Minuten völlig stillstehen, schlafen (nur eigene Darstellung)
+			if (de.loothub.client.quick.OtherAfk.isAfk(entity)) {
+				state.pose = net.minecraft.world.entity.Pose.SLEEPING;
+			}
 			return;
 		}
 		// AFK-Ansicht: eigener Charakter liegt schlafend da (nur eigene Darstellung)
