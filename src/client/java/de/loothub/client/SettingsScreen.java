@@ -140,6 +140,8 @@ public class SettingsScreen extends LoothubScreen {
 						() -> c.amountShortcut, v -> c.amountShortcut = v);
 				y = card(y, 40, "loothub.settings.rename_window", "loothub.settings.rename_window.tooltip",
 						() -> c.renameWindow, v -> c.renameWindow = v);
+				y = card(y, 40, "loothub.settings.sign_window", "loothub.settings.sign_window.tooltip",
+						() -> c.signWindow, v -> c.signWindow = v);
 				y = card(y, 40, "loothub.settings.itemdex", "loothub.settings.itemdex.tooltip",
 						() -> c.itemdexEnabled, v -> c.itemdexEnabled = v);
 			}

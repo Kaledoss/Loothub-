@@ -42,6 +42,8 @@ public final class WidgetConfig {
 	public boolean hideOwnCape = false;
 	/** Block-Info oben in der Mitte (angeschauter Block/Mob, passendes Werkzeug, Marktpreis). */
 	public boolean lookInfo = true;
+	/** Schilder im Loothub-Fenster beschriften (Farben, Vorschau). */
+	public boolean signWindow = true;
 	/** Block-Info: Werkzeug bzw. Marktpreis zeigen, Größe, Position (x = Mitte als Anteil der Breite, y = Anteil der Höhe). */
 	public boolean lookInfoTool = true;
 	public boolean lookInfoPrice = true;
@@ -221,6 +223,7 @@ public final class WidgetConfig {
 		hideOwnHeadItem = false;
 		hideOwnCape = false;
 		lookInfo = false;
+		signWindow = false;
 		glowingOres = false;
 		flyPose = false;
 		hideOffhandBackpack = false;

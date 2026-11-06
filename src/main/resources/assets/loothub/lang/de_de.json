@@ -421,5 +421,9 @@
 	"loothub.settings.look_info.move": "Verschieben …",
 	"loothub.look_info.editor.title": "Block-Info verschieben",
 	"loothub.look_info.editor.reset": "Zurücksetzen",
-	"loothub.look_info.editor.hint": "Mit der Maus an die gewünschte Stelle ziehen"
+	"loothub.look_info.editor.hint": "Mit der Maus an die gewünschte Stelle ziehen",
+	"loothub.sign.title": "Schild beschriften",
+	"loothub.sign.line": "Zeile %s",
+	"loothub.settings.sign_window": "Schild-Fenster",
+	"loothub.settings.sign_window.tooltip": "Beim Beschriften eines Schildes öffnet sich ein Loothub-Fenster: vier Zeilen, Farb- und Format-Knöpfe (&-Codes), Live-Vorschau und Anzeige, wie viel Platz pro Zeile bleibt."
 }
