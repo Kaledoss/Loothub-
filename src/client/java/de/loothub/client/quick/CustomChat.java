@@ -111,6 +111,30 @@ public final class CustomChat {
 	private CustomChat() {
 	}
 
+	/** Zuletzt gesehen: der Chat wurde im offenen Zustand gezeichnet (auch im Chat von LabyMod). */
+	private static volatile long focusedAt;
+	private static final java.util.Set<String> LOGGED = java.util.concurrent.ConcurrentHashMap.newKeySet();
+
+	public static void noteRender(boolean focused) {
+		if (focused) {
+			focusedAt = System.currentTimeMillis();
+			Screen s = Minecraft.getInstance().screen;
+			if (s != null && LOGGED.add(s.getClass().getName())) {
+				de.loothub.Loothub.LOGGER.info("Loothub: Chat offen in Bildschirm {}", s.getClass().getName());
+			}
+		}
+	}
+
+	/** Ist dieser Bildschirm der offene Chat (Minecraft, LabyMod oder eine andere Mod)? */
+	public static boolean chatOpen(Screen screen) {
+		if (screen == null || screen instanceof de.loothub.client.LoothubScreen) {
+			return false;
+		}
+		return screen instanceof net.minecraft.client.gui.screens.ChatScreen
+				|| System.currentTimeMillis() - focusedAt < 300 && screen == Minecraft.getInstance().screen
+				|| screen.getClass().getSimpleName().toLowerCase(Locale.ROOT).contains("chat");
+	}
+
 	public static boolean active() {
 		return WidgetConfig.get().customChat;
 	}
@@ -362,11 +386,12 @@ public final class CustomChat {
 	// ------------------------------------------------------------------ Maus im Chat
 
 	public static void register() {
+		// Für jeden Bildschirm anmelden und erst beim Klick prüfen, ob es der offene Chat ist
 		ScreenEvents.AFTER_INIT.register((client, screen, sw, sh) -> {
-			if (!LookInfo.isChat(screen)) { // auch der Chat-Bildschirm von LabyMod
+			if (screen instanceof de.loothub.client.LoothubScreen) {
 				return;
 			}
-			ScreenMouseEvents.allowMouseClick(screen).register((s, e) -> !active() || !click(s, e));
+			ScreenMouseEvents.allowMouseClick(screen).register((s, e) -> !active() || !chatOpen(s) || !click(s, e));
 			ScreenMouseEvents.allowMouseDrag(screen).register((s, e, dx, dy) -> !active() || !drag(e));
 			ScreenMouseEvents.allowMouseRelease(screen).register((s, e) -> {
 				if (dragWin != null) {
@@ -376,7 +401,7 @@ public final class CustomChat {
 				}
 				return true;
 			});
-			ScreenMouseEvents.allowMouseScroll(screen).register((s, mx, my, h, v) -> !active() || !scroll(mx, my, v));
+			ScreenMouseEvents.allowMouseScroll(screen).register((s, mx, my, h, v) -> !active() || !chatOpen(s) || !scroll(mx, my, v));
 		});
 	}
 

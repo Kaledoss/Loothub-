@@ -34,12 +34,17 @@ public final class MusicWidget {
 	}
 
 	public static void register() {
+		// Für jeden Bildschirm anmelden; ob es der Chat ist, wird beim Zeichnen/Klicken geprüft (LabyMod-Chat)
 		ScreenEvents.AFTER_INIT.register((client, screen, w, h) -> {
-			if (!isChat(screen)) {
+			if (screen instanceof de.loothub.client.LoothubScreen) {
 				return;
 			}
-			ScreenEvents.afterRender(screen).register((s, g, mx, my, d) -> renderEditable(s, g, mx, my));
-			ScreenMouseEvents.allowMouseClick(screen).register((s, e) -> !click(s, e));
+			ScreenEvents.afterRender(screen).register((s, g, mx, my, d) -> {
+				if (isChat(s)) {
+					renderEditable(s, g, mx, my);
+				}
+			});
+			ScreenMouseEvents.allowMouseClick(screen).register((s, e) -> !isChat(s) || !click(s, e));
 			ScreenMouseEvents.allowMouseDrag(screen).register((s, e, dx, dy) -> !drag(s, e));
 			ScreenMouseEvents.allowMouseRelease(screen).register((s, e) -> {
 				if (dragging) {
@@ -76,9 +81,7 @@ public final class MusicWidget {
 
 	/** Chat-Fenster – auch, wenn LabyMod oder eine andere Mod einen eigenen Chat benutzt. */
 	private static boolean isChat(net.minecraft.client.gui.screens.Screen screen) {
-		return screen instanceof ChatScreen
-				|| screen != null && !(screen instanceof de.loothub.client.LoothubScreen)
-				&& screen.getClass().getSimpleName().toLowerCase(java.util.Locale.ROOT).contains("chat");
+		return de.loothub.client.quick.CustomChat.chatOpen(screen);
 	}
 
 	static int[] pos(int sw, int sh) {

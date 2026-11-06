@@ -47,12 +47,17 @@ public final class LookInfo {
 	}
 
 	public static void register() {
+		// Für jeden Bildschirm anmelden; ob es der Chat ist, wird beim Zeichnen/Klicken geprüft (LabyMod-Chat)
 		ScreenEvents.AFTER_INIT.register((client, screen, w, h) -> {
-			if (!isChat(screen)) {
+			if (screen instanceof de.loothub.client.LoothubScreen) {
 				return;
 			}
-			ScreenEvents.afterRender(screen).register((s, g, mx, my, d) -> renderInChat(s, g, mx, my));
-			ScreenMouseEvents.allowMouseClick(screen).register((s, e) -> !click(e));
+			ScreenEvents.afterRender(screen).register((s, g, mx, my, d) -> {
+				if (isChat(s)) {
+					renderInChat(s, g, mx, my);
+				}
+			});
+			ScreenMouseEvents.allowMouseClick(screen).register((s, e) -> !isChat(s) || !click(e));
 			ScreenMouseEvents.allowMouseDrag(screen).register((s, e, dx, dy) -> !drag(s, e));
 			ScreenMouseEvents.allowMouseRelease(screen).register((s, e) -> {
 				if (dragging) {
@@ -65,10 +70,8 @@ public final class LookInfo {
 		});
 	}
 
-	public static boolean isChat(Screen screen) {
-		return screen instanceof ChatScreen
-				|| screen != null && !(screen instanceof de.loothub.client.LoothubScreen)
-				&& screen.getClass().getSimpleName().toLowerCase(java.util.Locale.ROOT).contains("chat");
+	public static boolean isChat(net.minecraft.client.gui.screens.Screen screen) {
+		return de.loothub.client.quick.CustomChat.chatOpen(screen);
 	}
 
 	public static void renderHud(GuiGraphics g, DeltaTracker delta) {

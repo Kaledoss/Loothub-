@@ -27,6 +27,7 @@ public abstract class CustomChatMixin {
 	@Inject(method = "render(Lnet/minecraft/client/gui/components/ChatComponent$ChatGraphicsAccess;IIZ)V",
 			at = @At("HEAD"), cancellable = true)
 	private void loothub$render(ChatComponent.ChatGraphicsAccess access, int height, int ticks, boolean focused, CallbackInfo ci) {
+		CustomChat.noteRender(focused);
 		if (CustomChat.active()) {
 			CustomChat.render(access, focused);
 			ci.cancel();
