@@ -23,6 +23,10 @@ public class ChatWindowScreen extends Screen {
 	private final CustomChat.Window win;
 	private int px, py, pw, ph;
 	private int sourcesY;
+	private int listY;
+	private EditBox incBox, excBox;
+	private static int incScroll, excScroll;
+	private static final int ENTRY_H = 13;
 
 	public ChatWindowScreen(CustomChat.Window win) {
 		super(Component.translatable("loothub.chatwin.title"));
@@ -32,7 +36,7 @@ public class ChatWindowScreen extends Screen {
 	@Override
 	protected void init() {
 		pw = Math.min(480, width - 20);
-		ph = Math.min(330, height - 20);
+		ph = Math.min(380, height - 16);
 		px = (width - pw) / 2;
 		py = (height - ph) / 2;
 		int x = px + 10, y = py + 22, w = pw - 20;
@@ -111,8 +115,8 @@ public class ChatWindowScreen extends Screen {
 				sx = x;
 				y += 18;
 			}
-			if (y > py + ph - 70) {
-				break;
+			if (y > sourcesY + 12 + 18) {
+				break; // höchstens zwei Reihen
 			}
 			addRenderableWidget(Button.builder(sourceLabel(tab, src), b -> {
 				tab.toggleSource(src);
@@ -122,15 +126,119 @@ public class ChatWindowScreen extends Screen {
 			sx += bw + 3;
 		}
 
-		// Wortregeln (optional)
-		y = py + ph - 46;
-		int ruleW = (w - 4) / 2;
-		box(x, y, ruleW, tab.include, 200, "loothub.chatwin.tab.include", v -> tab.include = v);
-		box(x + ruleW + 4, y, ruleW, tab.exclude, 200, "loothub.chatwin.tab.exclude", v -> tab.exclude = v);
+		// Wortregeln: zwei Listen, jeder Eintrag sichtbar
+		y = Math.min(y, sourcesY + 30) + 22;
+		listY = y;
+		int colW = (w - 6) / 2;
+		incBox = box(x, y + 10, colW - 20, "", 100, "loothub.chatwin.tab.include", v -> {
+		});
+		addRenderableWidget(Button.builder(Component.literal("+").withStyle(ChatFormatting.GREEN), b -> addWord(true))
+				.bounds(x + colW - 18, y + 10, 18, 16).build());
+		excBox = box(x + colW + 6, y + 10, colW - 20, "", 100, "loothub.chatwin.tab.exclude", v -> {
+		});
+		addRenderableWidget(Button.builder(Component.literal("+").withStyle(ChatFormatting.GREEN), b -> addWord(false))
+				.bounds(x + w - 18, y + 10, 18, 16).build());
+		entryButtons(tab, true, x, colW);
+		entryButtons(tab, false, x + colW + 6, colW);
 
 		addRenderableWidget(Button.builder(Component.translatable("loothub.job.editor.done"), b -> onClose())
 				.bounds(px + pw - 90, py + ph - 22, 80, 16).build());
 		setInitialFocus(name);
+	}
+
+	private int entriesTop() {
+		return listY + 30;
+	}
+
+	private int entriesVisible() {
+		return Math.max(1, (py + ph - 26 - entriesTop()) / ENTRY_H);
+	}
+
+	static List<String> words(String s) {
+		List<String> out = new java.util.ArrayList<>();
+		if (s != null) {
+			for (String w : s.split(",")) {
+				if (!w.isBlank()) {
+					out.add(w.strip());
+				}
+			}
+		}
+		return out;
+	}
+
+	private void entryButtons(CustomChat.Tab tab, boolean include, int x, int colW) {
+		List<String> list = words(include ? tab.include : tab.exclude);
+		int scroll = Mth.clamp(include ? incScroll : excScroll, 0, Math.max(0, list.size() - entriesVisible()));
+		if (include) {
+			incScroll = scroll;
+		} else {
+			excScroll = scroll;
+		}
+		for (int i = 0; i < entriesVisible() && i + scroll < list.size(); i++) {
+			String word = list.get(i + scroll);
+			addRenderableWidget(Button.builder(Component.literal("✕").withStyle(ChatFormatting.RED), b -> {
+				List<String> l = words(include ? tab.include : tab.exclude);
+				l.remove(word);
+				if (include) {
+					tab.include = String.join(", ", l);
+				} else {
+					tab.exclude = String.join(", ", l);
+				}
+				changed();
+				rebuildWidgets();
+			}).bounds(x + colW - 14, entriesTop() + i * ENTRY_H, 14, 12).build());
+		}
+	}
+
+	private void addWord(boolean include) {
+		EditBox box = include ? incBox : excBox;
+		String v = box.getValue().replace(",", " ").strip();
+		if (v.isEmpty()) {
+			return;
+		}
+		CustomChat.Tab tab = win.tab();
+		List<String> l = words(include ? tab.include : tab.exclude);
+		if (l.stream().noneMatch(x -> x.equalsIgnoreCase(v))) {
+			l.add(v);
+		}
+		if (include) {
+			tab.include = String.join(", ", l);
+		} else {
+			tab.exclude = String.join(", ", l);
+		}
+		changed();
+		rebuildWidgets();
+		setFocused(include ? incBox : excBox);
+	}
+
+	@Override
+	public boolean keyPressed(net.minecraft.client.input.KeyEvent event) {
+		int k = event.key();
+		if (k == org.lwjgl.glfw.GLFW.GLFW_KEY_ENTER || k == org.lwjgl.glfw.GLFW.GLFW_KEY_KP_ENTER) {
+			if (incBox != null && incBox.isFocused()) {
+				addWord(true);
+				return true;
+			}
+			if (excBox != null && excBox.isFocused()) {
+				addWord(false);
+				return true;
+			}
+		}
+		return super.keyPressed(event);
+	}
+
+	@Override
+	public boolean mouseScrolled(double mx, double my, double h, double v) {
+		if (my >= entriesTop()) {
+			if (mx < px + pw / 2.0) {
+				incScroll = Math.max(0, incScroll - (int) Math.signum(v));
+			} else {
+				excScroll = Math.max(0, excScroll - (int) Math.signum(v));
+			}
+			rebuildWidgets();
+			return true;
+		}
+		return super.mouseScrolled(mx, my, h, v);
 	}
 
 	private EditBox box(int x, int y, int w, String value, int max, String hintKey, java.util.function.Consumer<String> set) {
@@ -201,7 +309,29 @@ public class ChatWindowScreen extends Screen {
 		Component src = Component.translatable(tab.sources == null || tab.sources.isBlank()
 				? "loothub.chatwin.sources.all" : "loothub.chatwin.sources");
 		g.drawString(font, src, x, sourcesY, LoothubScreen.FAINT, false);
-		g.drawString(font, Component.translatable("loothub.chatwin.rules"), x, py + ph - 58, LoothubScreen.FAINT, false);
+		int w = pw - 20, colW = (w - 6) / 2;
+		g.drawString(font, Component.translatable("loothub.chatwin.col.include").withStyle(ChatFormatting.GREEN), x, listY, LoothubScreen.TEXT, false);
+		g.drawString(font, Component.translatable("loothub.chatwin.col.exclude").withStyle(ChatFormatting.RED), x + colW + 6, listY, LoothubScreen.TEXT, false);
+		for (int col = 0; col < 2; col++) {
+			boolean include = col == 0;
+			int cx = x + col * (colW + 6);
+			List<String> list = words(include ? tab.include : tab.exclude);
+			int scroll = include ? incScroll : excScroll;
+			g.fill(cx, entriesTop() - 2, cx + colW, entriesTop() + entriesVisible() * ENTRY_H, 0x30000000);
+			if (list.isEmpty()) {
+				g.drawString(font, Component.translatable(include ? "loothub.chatwin.include.empty" : "loothub.chatwin.exclude.empty"),
+						cx + 4, entriesTop() + 2, LoothubScreen.FAINT, false);
+			}
+			for (int i = 0; i < entriesVisible() && i + scroll < list.size(); i++) {
+				int ry = entriesTop() + i * ENTRY_H;
+				g.fill(cx, ry, cx + colW, ry + ENTRY_H - 1, 0x18FFFFFF);
+				g.drawString(font, font.plainSubstrByWidth(list.get(i + scroll), colW - 22), cx + 4, ry + 2, LoothubScreen.TEXT, false);
+			}
+			if (list.size() > entriesVisible()) {
+				String more = (scroll + entriesVisible()) + "/" + list.size();
+				g.drawString(font, more, cx + colW - font.width(more), listY, LoothubScreen.FAINT, false);
+			}
+		}
 		super.render(g, mx, my, delta);
 	}
 

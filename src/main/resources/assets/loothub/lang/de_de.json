@@ -502,8 +502,8 @@
 	"loothub.chatwin.fade": "Ausblenden nach",
 	"loothub.chatwin.tabs": "Tabs",
 	"loothub.chatwin.tab.name": "Name",
-	"loothub.chatwin.tab.include": "Nur mit … (z. B. Markt, Auktion)",
-	"loothub.chatwin.tab.exclude": "Ohne … (z. B. /vote)",
+	"loothub.chatwin.tab.include": "Wort oder Satz + Enter",
+	"loothub.chatwin.tab.exclude": "Wort oder Satz + Enter",
 	"loothub.settings.search": "Suchen …",
 	"loothub.settings.search.none": "Keine Einstellung gefunden",
 	"loothub.chatwin.bright": "Dunkle Schrift aufhellen",
@@ -511,9 +511,12 @@
 	"loothub.chatwin.tab.delete": "Löschen",
 	"loothub.chatwin.sources": "Quellen (angeklickt = in diesem Tab):",
 	"loothub.chatwin.sources.all": "Quellen: alle – zum Eingrenzen anklicken",
-	"loothub.chatwin.rules": "Optional: nur mit Wörtern / ohne Wörter (Komma)",
 	"loothub.chatassign.title": "Nachricht zuordnen",
 	"loothub.chatassign.source": "Quelle: %s – alle Nachrichten dieser Quelle in …",
 	"loothub.chatassign.new": "+ Neuer Tab „%s“",
-	"loothub.chatassign.only": "Nur dort zeigen (aus anderen Tabs nehmen)"
+	"loothub.chatassign.only": "Nur dort zeigen (aus anderen Tabs nehmen)",
+	"loothub.chatwin.col.include": "Enthält (eins davon):",
+	"loothub.chatwin.col.exclude": "Enthält nicht:",
+	"loothub.chatwin.include.empty": "leer = alles",
+	"loothub.chatwin.exclude.empty": "nichts ausgeblendet"
 }
