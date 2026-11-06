@@ -420,5 +420,6 @@
 	"loothub.settings.look_info.size": "Größe: %s %%",
 	"loothub.settings.look_info.move": "Verschieben …",
 	"loothub.look_info.editor.title": "Block-Info verschieben",
-	"loothub.look_info.editor.reset": "Zurücksetzen"
+	"loothub.look_info.editor.reset": "Zurücksetzen",
+	"loothub.look_info.editor.hint": "Mit der Maus an die gewünschte Stelle ziehen"
 }

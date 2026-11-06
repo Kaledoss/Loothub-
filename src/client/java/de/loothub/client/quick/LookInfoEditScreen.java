@@ -35,7 +35,7 @@ public class LookInfoEditScreen extends Screen {
 	public void render(GuiGraphics g, int mouseX, int mouseY, float delta) {
 		super.render(g, mouseX, mouseY, delta);
 		g.drawString(font, getTitle(), (width - font.width(getTitle())) / 2, height / 2 - 20, 0xFFFFFFFF, true);
-		Component hint = Component.translatable("loothub.job.editor.hint");
+		Component hint = Component.translatable("loothub.look_info.editor.hint");
 		g.drawString(font, hint, (width - font.width(hint)) / 2, height / 2 - 8, 0xFFAAAAAA, true);
 		LookInfo.drawPreview(g, width, height);
 		int[] b = LookInfo.bounds();
