@@ -44,6 +44,13 @@ public final class WidgetConfig {
 	public boolean lookInfo = true;
 	/** Schilder im Loothub-Fenster beschriften (Farben, Vorschau). */
 	public boolean signWindow = true;
+	/** Seltenheits-Rahmen im Inventar. */
+	public boolean rarityFrames = true;
+	/** Chat: Uhrzeit, Klick kopiert, Erwähnung hervorheben (+ Ton). */
+	public boolean chatTimestamps = true;
+	public boolean chatCopy = true;
+	public boolean chatMention = true;
+	public boolean chatMentionSound = true;
 	/** Block-Info: Werkzeug bzw. Marktpreis zeigen, Größe, Position (x = Mitte als Anteil der Breite, y = Anteil der Höhe). */
 	public boolean lookInfoTool = true;
 	public boolean lookInfoPrice = true;
@@ -224,6 +231,11 @@ public final class WidgetConfig {
 		hideOwnCape = false;
 		lookInfo = false;
 		signWindow = false;
+		rarityFrames = false;
+		chatTimestamps = false;
+		chatCopy = false;
+		chatMention = false;
+		chatMentionSound = false;
 		glowingOres = false;
 		flyPose = false;
 		hideOffhandBackpack = false;

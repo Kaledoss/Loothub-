@@ -140,6 +140,14 @@ public class SettingsScreen extends LoothubScreen {
 						() -> c.amountShortcut, v -> c.amountShortcut = v);
 				y = card(y, 40, "loothub.settings.rename_window", "loothub.settings.rename_window.tooltip",
 						() -> c.renameWindow, v -> c.renameWindow = v);
+				y = card(y, 40, "loothub.settings.chat_time", "loothub.settings.chat_time.tooltip",
+						() -> c.chatTimestamps, v -> c.chatTimestamps = v);
+				y = card(y, 40, "loothub.settings.chat_copy", "loothub.settings.chat_copy.tooltip",
+						() -> c.chatCopy, v -> c.chatCopy = v);
+				y = card(y, 40, "loothub.settings.chat_mention", "loothub.settings.chat_mention.tooltip",
+						() -> c.chatMention, v -> c.chatMention = v);
+				y = card(y, 40, "loothub.settings.chat_mention_sound", "loothub.settings.chat_mention_sound.tooltip",
+						() -> c.chatMentionSound, v -> c.chatMentionSound = v);
 				y = card(y, 40, "loothub.settings.sign_window", "loothub.settings.sign_window.tooltip",
 						() -> c.signWindow, v -> c.signWindow = v);
 				y = card(y, 40, "loothub.settings.itemdex", "loothub.settings.itemdex.tooltip",
@@ -294,6 +302,8 @@ public class SettingsScreen extends LoothubScreen {
 						() -> c.glowingOres, v -> c.glowingOres = v);
 			}
 			case INVENTORY -> {
+				y = card(y, 40, "loothub.settings.rarity_frames", "loothub.settings.rarity_frames.tooltip",
+						() -> c.rarityFrames, v -> c.rarityFrames = v);
 				y = card(y, 40, "loothub.settings.quick_panel", "loothub.settings.quick_panel.tooltip",
 						() -> c.quickPanelEnabled, v -> c.quickPanelEnabled = v);
 				// Knöpfe der Befehls-Leiste einzeln an/aus

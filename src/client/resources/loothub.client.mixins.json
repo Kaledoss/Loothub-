@@ -16,6 +16,7 @@
 		"CameraZoomMixin",
 		"LieDownMixin",
 		"SignEditMixin",
+		"ChatMessageMixin",
 		"FlyPoseModelMixin",
 		"LivingEntityRendererInvoker",
 		"AvatarLayersMixin"

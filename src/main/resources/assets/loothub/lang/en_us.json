@@ -425,5 +425,16 @@
 	"loothub.sign.title": "Schild beschriften",
 	"loothub.sign.line": "Zeile %s",
 	"loothub.settings.sign_window": "Schild-Fenster",
-	"loothub.settings.sign_window.tooltip": "Beim Beschriften eines Schildes öffnet sich ein Loothub-Fenster: vier Zeilen, Farb- und Format-Knöpfe (&-Codes), Live-Vorschau und Anzeige, wie viel Platz pro Zeile bleibt."
+	"loothub.settings.sign_window.tooltip": "Beim Beschriften eines Schildes öffnet sich ein Loothub-Fenster: vier Zeilen, Farb- und Format-Knöpfe (&-Codes), Live-Vorschau und Anzeige, wie viel Platz pro Zeile bleibt.",
+	"loothub.chat.copy_hint": "Klicken zum Kopieren",
+	"loothub.settings.rarity_frames": "Seltenheits-Rahmen",
+	"loothub.settings.rarity_frames.tooltip": "Items mit „Seltenheit » …“ im Tooltip bekommen im Inventar einen Rahmen in der Farbe ihrer Seltenheit (z. B. Legendär).",
+	"loothub.settings.chat_time": "Chat: Uhrzeit",
+	"loothub.settings.chat_time.tooltip": "Vor jeder Chat-Nachricht steht die Uhrzeit, zu der sie ankam.",
+	"loothub.settings.chat_copy": "Chat: Klick kopiert",
+	"loothub.settings.chat_copy.tooltip": "Ein Klick auf eine Chat-Nachricht kopiert ihren Text. Links und Befehle in Nachrichten funktionieren weiter wie gewohnt.",
+	"loothub.settings.chat_mention": "Chat: Erwähnungen",
+	"loothub.settings.chat_mention.tooltip": "Wirst du im Chat erwähnt, bekommt die Zeile eine goldene Markierung und dein Name leuchtet golden.",
+	"loothub.settings.chat_mention_sound": "Chat: Ton bei Erwähnung",
+	"loothub.settings.chat_mention_sound.tooltip": "Ein leiser Ton, wenn du im Chat erwähnt wirst."
 }
