@@ -18,15 +18,15 @@ import net.minecraft.util.FormattedCharSequence;
 import de.loothub.client.jobs.WidgetConfig;
 import de.loothub.client.quick.ChatLog;
 
-/** Seite „Chat“: Privatnachrichten, Suche im Chat dieser Sitzung und der eigene Nachrichten-Filter. */
+/** Seite „Chat“: Suche im Chat dieser Sitzung und der eigene Nachrichten-Filter. */
 public class ChatPageScreen extends LoothubScreen {
 	private enum Tab {
-		PMS, SEARCH, FILTER
+		SEARCH, FILTER
 	}
 
 	private static final DateTimeFormatter HM = DateTimeFormatter.ofPattern("HH:mm");
 	private static final int LINE_H = 10;
-	private static Tab tab = Tab.PMS;
+	private static Tab tab = Tab.SEARCH;
 	private static String query = "";
 
 	private EditBox searchBox, wordBox;
@@ -46,9 +46,6 @@ public class ChatPageScreen extends LoothubScreen {
 		int x = cl;
 		for (Tab t : Tab.values()) {
 			Component label = Component.translatable("loothub.chatpage.tab." + t.name().toLowerCase(Locale.ROOT));
-			if (t == Tab.PMS && ChatLog.unreadPms() > 0 && tab != Tab.PMS) {
-				label = label.copy().append(Component.literal(" (" + ChatLog.unreadPms() + ")").withStyle(ChatFormatting.GOLD));
-			}
 			if (t == tab) {
 				label = Component.literal("▶ ").append(label);
 			}
@@ -61,7 +58,6 @@ public class ChatPageScreen extends LoothubScreen {
 		}
 		int y = ct + 24;
 		switch (tab) {
-			case PMS -> listTop = y;
 			case SEARCH -> {
 				searchBox = addRenderableWidget(new EditBox(font, cl, y, Math.min(240, cw), 16, Component.translatable("loothub.chatpage.search")));
 				searchBox.setMaxLength(64);
@@ -134,7 +130,7 @@ public class ChatPageScreen extends LoothubScreen {
 			lines = List.of();
 			return;
 		}
-		List<ChatLog.Entry> src = tab == Tab.PMS ? ChatLog.pms() : ChatLog.all();
+		List<ChatLog.Entry> src = ChatLog.all();
 		String q = query.strip().toLowerCase(Locale.ROOT);
 		List<FormattedCharSequence> out = new ArrayList<>();
 		int width = cw - 8;
@@ -154,13 +150,13 @@ public class ChatPageScreen extends LoothubScreen {
 			}
 		}
 		lines = out;
-		seen = tab == Tab.PMS ? src.size() : ChatLog.all().size();
+		seen = src.size();
 	}
 
 	@Override
 	public void tick() {
 		super.tick();
-		int now = tab == Tab.PMS ? ChatLog.pms().size() : ChatLog.all().size();
+		int now = ChatLog.all().size();
 		if (tab != Tab.FILTER && now != seen) {
 			rebuildLines();
 		}
@@ -188,8 +184,7 @@ public class ChatPageScreen extends LoothubScreen {
 			g.drawString(font, c, cr - font.width(c), ct + 28, FAINT, false);
 		}
 		if (lines.isEmpty()) {
-			Component m = Component.translatable(tab == Tab.PMS ? "loothub.chatpage.pms.empty"
-					: query.isBlank() ? "loothub.chatpage.search.hint" : "loothub.chatpage.search.none");
+			Component m = Component.translatable(query.isBlank() ? "loothub.chatpage.search.hint" : "loothub.chatpage.search.none");
 			g.drawString(font, m, cl + (cw - font.width(m)) / 2, listTop + 16, FAINT, false);
 			return;
 		}
