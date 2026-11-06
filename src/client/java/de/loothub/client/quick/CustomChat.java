@@ -9,7 +9,6 @@ import java.util.Map;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.components.ChatComponent;
-import net.minecraft.client.gui.screens.ChatScreen;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.input.MouseButtonEvent;
 import net.minecraft.network.chat.Component;
@@ -364,7 +363,7 @@ public final class CustomChat {
 
 	public static void register() {
 		ScreenEvents.AFTER_INIT.register((client, screen, sw, sh) -> {
-			if (!(screen instanceof ChatScreen)) {
+			if (!LookInfo.isChat(screen)) { // auch der Chat-Bildschirm von LabyMod
 				return;
 			}
 			ScreenMouseEvents.allowMouseClick(screen).register((s, e) -> !active() || !click(s, e));
