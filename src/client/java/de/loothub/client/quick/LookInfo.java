@@ -67,7 +67,8 @@ public final class LookInfo {
 
 	private static boolean isChat(Screen screen) {
 		return screen instanceof ChatScreen
-				|| screen != null && screen.getClass().getSimpleName().toLowerCase(java.util.Locale.ROOT).contains("chat");
+				|| screen != null && !(screen instanceof de.loothub.client.LoothubScreen)
+				&& screen.getClass().getSimpleName().toLowerCase(java.util.Locale.ROOT).contains("chat");
 	}
 
 	public static void renderHud(GuiGraphics g, DeltaTracker delta) {

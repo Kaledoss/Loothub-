@@ -145,6 +145,11 @@ public class SignEditorScreen extends Screen {
 		send(true); // auch bei anderem Schließen den Server nicht warten lassen (ohne erneut den Bildschirm zu wechseln)
 	}
 
+	private static final net.minecraft.resources.Identifier BOARD =
+			net.minecraft.resources.Identifier.fromNamespaceAndPath("loothub", "textures/gui/sign_board.png");
+	private static final net.minecraft.resources.Identifier QUILL =
+			net.minecraft.resources.Identifier.fromNamespaceAndPath("loothub", "textures/gui/sign_quill.png");
+
 	@Override
 	public void render(GuiGraphics g, int mx, int my, float delta) {
 		super.render(g, mx, my, delta);
@@ -152,7 +157,8 @@ public class SignEditorScreen extends Screen {
 		g.fill(px, py, px + pw, py + ph, de.loothub.client.Theme.bg(0xF0140B0D));
 		Pulse.outline(g, px, py, pw, ph);
 		g.fill(px + 4, py + 3, px + pw - 4, py + 4, LoothubScreen.RED);
-		g.drawString(font, getTitle(), px + 10, py + 10, LoothubScreen.RED, false);
+		g.blit(net.minecraft.client.renderer.RenderPipelines.GUI_TEXTURED, QUILL, px + 9, py + 7, 0f, 0f, 11, 14, 49, 64, 49, 64);
+		g.drawString(font, getTitle(), px + 24, py + 10, LoothubScreen.RED, false);
 		// Farbfelder auf die Knöpfe
 		int w = pw - 20, x = px + 10, by = py + 26 + 84;
 		int cw = (w - 7 * 3) / 8;
@@ -176,19 +182,15 @@ public class SignEditorScreen extends Screen {
 	/** Holzschild mit den vier Zeilen, wie es im Spiel aussieht. */
 	private void drawPreview(GuiGraphics g, int right) {
 		float scale = 1.6F;
-		int bw = Math.round(104 * scale), bh = Math.round(56 * scale);
+		int bw = Math.round(104 * scale), bh = Math.round(bw * 171 / 256F);
 		int bx = Math.max(6, right - bw), by = height / 2 - bh / 2 - 20;
 		g.drawString(font, Component.translatable("loothub.rename.preview"), bx, by - 12, LoothubScreen.FAINT, false);
-		// Brett
-		g.fill(bx - 2, by - 2, bx + bw + 2, by + bh + 2, 0xFF3B2A17);
-		g.fill(bx, by, bx + bw, by + bh, 0xFFA07A45);
-		for (int i = 1; i < 4; i++) {
-			g.fill(bx, by + i * bh / 4, bx + bw, by + i * bh / 4 + 1, 0x30000000); // Holzmaserung
-		}
-		// Pfosten
-		g.fill(bx + bw / 2 - 5, by + bh + 2, bx + bw / 2 + 5, by + bh + 2 + Math.round(30 * scale), 0xFF6B4A26);
+		// Pfosten, darüber das Holzschild (eigene Grafik)
+		g.fill(bx + bw / 2 - 5, by + bh - 4, bx + bw / 2 + 5, by + bh + Math.round(26 * scale), 0xFF5A3A1E);
+		g.fill(bx + bw / 2 - 5, by + bh - 4, bx + bw / 2 - 3, by + bh + Math.round(26 * scale), 0xFF7A5230);
+		g.blit(net.minecraft.client.renderer.RenderPipelines.GUI_TEXTURED, BOARD, bx, by, 0f, 0f, bw, bh, 256, 171, 256, 171);
 		g.pose().pushMatrix();
-		g.pose().translate(bx + bw / 2.0F, by + 6 * scale);
+		g.pose().translate(bx + bw / 2.0F, by + bh / 2.0F - 21 * scale);
 		g.pose().scale(scale, scale);
 		for (int i = 0; i < 4; i++) {
 			Component line = rendered(lines[i].getValue());

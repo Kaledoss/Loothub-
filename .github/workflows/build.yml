@@ -46,6 +46,17 @@ jobs:
           git add src/main/resources/assets/loothub/textures/entity/wing_*.png
           git commit -q -m "Flügel-Texturen (Ludo) gespeichert [skip ci]"
           git push origin HEAD:main
+      - name: Ludo-GUI-Bilder übernehmen (einmalig)
+        if: hashFiles('tools/ludo_gui.txt') != '' && github.ref == 'refs/heads/main'
+        run: |
+          pip install --quiet pillow
+          python3 tools/fetch_ludo_gui.py tools/ludo_gui.txt src/main/resources/assets/loothub/textures/gui
+          git config user.name "github-actions[bot]"
+          git config user.email "41898283+github-actions[bot]@users.noreply.github.com"
+          git rm -q tools/ludo_gui.txt
+          git add src/main/resources/assets/loothub/textures/gui/*.png
+          git commit -q -m "GUI-Bilder (Ludo) gespeichert [skip ci]"
+          git push origin HEAD:main
       - name: Gradle-Wrapper ausführbar machen
         run: chmod +x ./gradlew
       - name: Bauen

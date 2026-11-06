@@ -1,0 +1,2 @@
+sign_board 256 https://storage.googleapis.com/ludo-assets/api/810353124120d1dd2ce2b442544efce5.webp
+sign_quill 64 https://storage.googleapis.com/ludo-assets/api/f6440a65545254ee6c275cfff2867257.webp
