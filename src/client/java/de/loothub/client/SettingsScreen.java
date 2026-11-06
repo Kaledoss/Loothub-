@@ -205,7 +205,7 @@ public class SettingsScreen extends LoothubScreen {
 					int liY = y;
 					int lDescX = cl + labelW + 12;
 					int lW = Math.min(300, cr - 8 - lDescX);
-					int third = (lW - 8) / 3;
+					int third = (lW - 12) / 4;
 					buttons.add(addRenderableWidget(Button.builder(lookLabel("tool", c.lookInfoTool), b -> {
 						c.lookInfoTool = !c.lookInfoTool;
 						b.setMessage(lookLabel("tool", c.lookInfoTool));
@@ -230,6 +230,9 @@ public class SettingsScreen extends LoothubScreen {
 							c.lookInfoScale = (float) (0.5 + value * 1.5);
 						}
 					}));
+					buttons.add(addRenderableWidget(Button.builder(Component.translatable("loothub.settings.look_info.move"),
+							b -> minecraft.setScreen(new de.loothub.client.quick.LookInfoEditScreen(this)))
+							.bounds(lDescX + 3 * (third + 4), liY + 38, third, 16).build()));
 					y = card(liY, 60, "loothub.settings.look_info", "loothub.settings.look_info.tooltip",
 							() -> c.lookInfo, v -> c.lookInfo = v);
 				}

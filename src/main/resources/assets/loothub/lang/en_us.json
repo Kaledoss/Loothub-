@@ -409,7 +409,7 @@
 	"loothub.cosmetics.risetrail": "Steigflug",
 	"loothub.cosmetics.risetrail.desc": "Fliegst du hoch oder runter, bricht hinter dir ein Energiestoß aus – flackernde Lichtstrahlen und Druckwellen, unter den Füßen beim Steigen, über dem Kopf beim Sinken.",
 	"loothub.settings.look_info": "Block-Info",
-	"loothub.settings.look_info.tooltip": "Zeigt, was du anschaust: Block mit Symbol und Namen, passendes Werkzeug mit ✔/✖ und den Marktpreis (einzeln abschaltbar). Im Chat mit der Maus verschieben.",
+	"loothub.settings.look_info.tooltip": "Zeigt, was du anschaust: Block mit Symbol und Namen, passendes Werkzeug mit ✔/✖ und den Marktpreis (einzeln abschaltbar). Mit „Verschieben …“ oder im Chat an eine andere Stelle ziehen.",
 	"loothub.settings.tab.pack": "Ressourcenpaket",
 	"loothub.settings.ore_glow": "Leuchtende Erze",
 	"loothub.settings.ore_glow.tooltip": "Sichtbare Erze in deiner Nähe bekommen einen pulsierenden, leuchtenden Rand in ihrer Farbe – Diamant türkis, Gold gelb, Redstone rot … Nur Seiten, die du ohnehin siehst; nichts scheint durch Wände.",
@@ -417,5 +417,8 @@
 	"loothub.settings.ore_glow.range": "Reichweite: %s Blöcke",
 	"loothub.settings.look_info.tool": "Werkzeug: %s",
 	"loothub.settings.look_info.price": "Preis: %s",
-	"loothub.settings.look_info.size": "Größe: %s %%"
+	"loothub.settings.look_info.size": "Größe: %s %%",
+	"loothub.settings.look_info.move": "Verschieben …",
+	"loothub.look_info.editor.title": "Block-Info verschieben",
+	"loothub.look_info.editor.reset": "Zurücksetzen"
 }

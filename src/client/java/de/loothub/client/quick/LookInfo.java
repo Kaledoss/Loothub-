@@ -102,6 +102,30 @@ public final class LookInfo {
 		g.fill(lastX + lastW, lastY, lastX + lastW + 1, lastY + lastH, c);
 	}
 
+	/** Für den Verschiebe-Bildschirm: Beispiel-Anzeige zeichnen (angeschauter Block oder Diamanterz). */
+	public static void drawPreview(GuiGraphics g, int sw, int sh) {
+		Minecraft mc = Minecraft.getInstance();
+		Info info = mc.player != null && mc.level != null ? current(mc) : null;
+		if (info == null) {
+			info = mc.player != null
+					? blockInfo(mc, Blocks.DIAMOND_ORE.defaultBlockState(), new ItemStack(Items.DIAMOND_ORE))
+					: new Info(new ItemStack(Items.DIAMOND_ORE), Blocks.DIAMOND_ORE.getName(), new ItemStack(Items.IRON_PICKAXE), true, null);
+		}
+		draw(g, mc, info, sw, sh);
+	}
+
+	/** Zuletzt gezeichneter Rahmen: {x, y, Breite, Höhe}. */
+	public static int[] bounds() {
+		return new int[]{lastX, lastY, lastW, lastH};
+	}
+
+	/** Position setzen: Mitte bei {@code centerX}, Oberkante bei {@code top}. */
+	public static void moveTo(double centerX, double top, int sw, int sh) {
+		WidgetConfig c = WidgetConfig.get();
+		c.lookInfoX = Math.max(0, Math.min(1, centerX / Math.max(1, sw)));
+		c.lookInfoY = Math.max(0, Math.min(1, (top - 4) / Math.max(1, sh - lastH - 8)));
+	}
+
 	private static Info current(Minecraft mc) {
 		HitResult hit = mc.hitResult;
 		if (hit instanceof EntityHitResult ehr) {
