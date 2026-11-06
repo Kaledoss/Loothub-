@@ -39,6 +39,8 @@ public final class CustomChat {
 		public int accent = 0xE23B3B;
 		public int textScale = 100;
 		public int fadeSec = 10;
+		/** Dunkle Schrift (Uhrzeit, graue Ränge, »") mindestens so hell machen, in Prozent (0 = aus). */
+		public int minBright = 65;
 		public List<Tab> tabs = new ArrayList<>();
 		public int active = 0;
 
@@ -57,9 +59,44 @@ public final class CustomChat {
 		public String include = "";
 		public String exclude = "";
 		public boolean privateOnly = false;
+		/** Quellen (z. B. „Spieler-Chat“, „OPSUCHT“, „Privat“), mit Komma getrennt; leer = alle. */
+		public String sources = "";
+		/** Eigener Tab: was hier landet, erscheint in den anderen Tabs des Fensters nicht mehr. */
+		public boolean exclusive = false;
+
+		public boolean hasSource(String src) {
+			for (String x : sources == null ? new String[0] : sources.split(",")) {
+				if (x.strip().equalsIgnoreCase(src)) {
+					return true;
+				}
+			}
+			return false;
+		}
+
+		public void toggleSource(String src) {
+			List<String> list = new ArrayList<>();
+			boolean had = false;
+			for (String x : sources == null ? new String[0] : sources.split(",")) {
+				if (x.isBlank()) {
+					continue;
+				}
+				if (x.strip().equalsIgnoreCase(src)) {
+					had = true;
+				} else {
+					list.add(x.strip());
+				}
+			}
+			if (!had) {
+				list.add(src);
+			}
+			sources = String.join(",", list);
+		}
 
 		boolean matches(Msg m) {
 			if (privateOnly && !m.pm) {
+				return false;
+			}
+			if (sources != null && !sources.isBlank() && !hasSource(m.source)) {
 				return false;
 			}
 			if (any(exclude, m.low)) {
@@ -82,10 +119,66 @@ public final class CustomChat {
 		}
 	}
 
-	record Msg(long time, Component text, String low, boolean pm) {
+	public record Msg(long time, Component text, String low, boolean pm, String source) {
 	}
 
-	private record Line(FormattedCharSequence seq, long time) {
+	private record Line(FormattedCharSequence seq, long time, Msg msg) {
+	}
+
+	/** Zuletzt gezeichnete Zeilen im offenen Chat (für Rechtsklick). */
+	private record Row(Window win, int x0, int y0, int x1, int y1, Msg msg) {
+	}
+
+	private static final List<Row> ROWS = new ArrayList<>();
+
+	/** Herkunft einer Nachricht: Spieler-Chat („Rang | Name »“), Privat, oder das Wort vor „»“ (OPSUCHT, FREUNDE …). */
+	static String source(String plain, boolean pm) {
+		if (pm) {
+			return "Privat";
+		}
+		String t = plain.replaceFirst("^[^\\p{L}\\[]*", "").replaceFirst("^\\[\\d{1,2}:\\d{2}\\]\\s*", "").strip();
+		int arrow = t.indexOf('»');
+		if (arrow <= 0) {
+			return "Sonstiges";
+		}
+		String head = t.substring(0, arrow).strip();
+		if (head.contains("|") || head.contains("┃") || head.contains("❘")) {
+			return "Spieler-Chat";
+		}
+		head = head.replaceAll("[^\\p{L}\\p{N} _-]", "").strip();
+		if (head.isEmpty() || head.length() > 20 || head.contains(" ")) {
+			return "Spieler-Chat";
+		}
+		return head.toUpperCase(Locale.ROOT);
+	}
+
+	/** Bisher gesehene Quellen (gespeichert), „Spieler-Chat“ und „Privat“ immer dabei. */
+	public static List<String> knownSources() {
+		WidgetConfig c = WidgetConfig.get();
+		if (c.chatSources == null) {
+			c.chatSources = new ArrayList<>();
+		}
+		for (String d : new String[]{"Spieler-Chat", "Privat"}) {
+			if (!c.chatSources.contains(d)) {
+				c.chatSources.add(0, d);
+			}
+		}
+		return c.chatSources;
+	}
+
+	/** Sichtbar in diesem Tab? Ein „eigener Tab“ nimmt seine Nachrichten den anderen Tabs weg. */
+	static boolean shows(Window w, Tab tab, Msg m) {
+		if (!tab.matches(m)) {
+			return false;
+		}
+		if (!tab.exclusive) {
+			for (Tab o : w.tabs) {
+				if (o != tab && o.exclusive && o.matches(m)) {
+					return false;
+				}
+			}
+		}
+		return true;
 	}
 
 	private static final class Cache {
@@ -157,7 +250,13 @@ public final class CustomChat {
 	/** Fertige Chat-Nachricht (mit Uhrzeit usw.) übernehmen. */
 	public static synchronized void add(Component message) {
 		String plain = message.getString();
-		Msg m = new Msg(System.currentTimeMillis(), message, plain.toLowerCase(Locale.ROOT), ChatLog.isPrivate(plain));
+		boolean pm = ChatLog.isPrivate(plain);
+		Msg m = new Msg(System.currentTimeMillis(), message, plain.toLowerCase(Locale.ROOT), pm, source(plain, pm));
+		List<String> known = knownSources();
+		if (!known.contains(m.source()) && known.size() < 40) {
+			known.add(m.source());
+			WidgetConfig.get().save();
+		}
 		MESSAGES.add(m);
 		if (MESSAGES.size() > MAX) {
 			MESSAGES.remove(0);
@@ -169,26 +268,26 @@ public final class CustomChat {
 		for (Window w : windows()) {
 			Tab current = w.tab();
 			for (Tab t : w.tabs) {
-				if (t != current && t.matches(m)) {
+				if (t != current && shows(w, t, m)) {
 					UNREAD.merge(t, 1, Integer::sum);
 				}
 			}
 			Integer s = SCROLL.get(w);
-			if (s != null && s > 0 && current.matches(m)) {
+			if (s != null && s > 0 && shows(w, current, m)) {
 				SCROLL.put(w, s + 1); // beim Zurückscrollen bleibt die Ansicht stehen
 			}
 		}
 	}
 
-	private static synchronized List<Line> lines(Tab tab, int width) {
+	private static synchronized List<Line> lines(Window w, Tab tab, int width) {
 		Cache c = CACHE.computeIfAbsent(tab, k -> new Cache());
 		if (c.version != version || c.width != width) {
 			Font font = Minecraft.getInstance().font;
 			List<Line> out = new ArrayList<>();
 			for (Msg m : MESSAGES) {
-				if (tab.matches(m)) {
+				if (shows(w, tab, m)) {
 					for (FormattedCharSequence s : font.split(m.text(), Math.max(20, width))) {
-						out.add(new Line(s, m.time()));
+						out.add(new Line(s, m.time(), m));
 					}
 				}
 			}
@@ -237,13 +336,16 @@ public final class CustomChat {
 			return;
 		}
 		long now = System.currentTimeMillis();
+		if (focused) {
+			ROWS.clear();
+		}
 		for (Window w : windows()) {
 			int[] b = box(w);
 			float s = scale(w);
 			int lineH = Math.max(1, Math.round(9 * s));
 			int bgA = Mth.clamp(w.opacity, 0, 100) * 255 / 100;
 			Tab tab = w.tab();
-			List<Line> lines = lines(tab, (int) ((b[2] - 6) / s));
+			List<Line> lines = lines(w, tab, (int) ((b[2] - 6) / s));
 			int visible = Math.max(1, (b[3] - 2) / lineH);
 			int scroll = SCROLL.getOrDefault(w, 0);
 			scroll = Mth.clamp(scroll, 0, Math.max(0, lines.size() - visible));
@@ -278,9 +380,41 @@ public final class CustomChat {
 					a.fill(b[0], b[1] + b[3] - (i + 1) * lineH, b[0] + b[2], b[1] + b[3] - i * lineH, (la << 24) | (w.bg & 0xFFFFFF));
 				}
 				int y = b[1] + b[3] - (i + 1) * lineH;
-				text(a, b[0] + 3, y + Math.max(0, (lineH - Math.round(8 * s)) / 2), s, alpha, l.seq());
+				if (focused) {
+					ROWS.add(new Row(w, b[0], y, b[0] + b[2], y + lineH, l.msg()));
+				}
+				text(a, b[0] + 3, y + Math.max(0, (lineH - Math.round(8 * s)) / 2), s, alpha, brighten(l.seq(), w.minBright));
 			}
 		}
+	}
+
+	/** Zu dunkle Schriftfarben aufhellen (nur Anzeige; Klick- und Hover-Infos bleiben). */
+	private static FormattedCharSequence brighten(FormattedCharSequence seq, int minPct) {
+		if (minPct <= 0) {
+			return seq;
+		}
+		int min = Mth.clamp(minPct, 0, 100) * 255 / 100;
+		return sink -> seq.accept((index, style, cp) -> {
+			TextColor tc = style.getColor();
+			if (tc != null) {
+				int c = tc.getValue();
+				int r = (c >> 16) & 0xFF, g = (c >> 8) & 0xFF, b = c & 0xFF;
+				int v = Math.max(r, Math.max(g, b));
+				if (v < min) {
+					if (v == 0) {
+						r = g = b = min;
+					} else {
+						// Farbton behalten, Helligkeit anheben und etwas Richtung Weiß mischen
+						float f = min / (float) v;
+						r = Math.min(255, Math.round(r * f + (min - v) * 0.35F));
+						g = Math.min(255, Math.round(g * f + (min - v) * 0.35F));
+						b = Math.min(255, Math.round(b * f + (min - v) * 0.35F));
+					}
+					style = style.withColor(TextColor.fromRgb((r << 16) | (g << 8) | b));
+				}
+			}
+			return sink.accept(index, style, cp);
+		});
 	}
 
 	private static void text(ChatComponent.ChatGraphicsAccess a, float x, float y, float s, float alpha, FormattedCharSequence seq) {
@@ -408,6 +542,14 @@ public final class CustomChat {
 	private static boolean click(Screen screen, MouseButtonEvent e) {
 		Window w = windowAt(e.x(), e.y(), true);
 		if (w == null) {
+			if (e.button() == 1) {
+				for (Row r : new ArrayList<>(ROWS)) {
+					if (e.x() >= r.x0() && e.x() < r.x1() && e.y() >= r.y0() && e.y() < r.y1()) {
+						Minecraft.getInstance().setScreen(new ChatAssignScreen(r.win(), r.msg()));
+						return true;
+					}
+				}
+			}
 			return false;
 		}
 		int[] b = box(w);
@@ -452,9 +594,10 @@ public final class CustomChat {
 				n.accent = w.accent;
 				n.textScale = w.textScale;
 				n.fadeSec = w.fadeSec;
+				n.minBright = w.minBright;
 				Tab t = new Tab();
 				t.name = "Privat";
-				t.privateOnly = true;
+				t.sources = "Privat";
 				n.tabs.add(t);
 				ws.add(n);
 				WidgetConfig.get().save();

@@ -15,12 +15,14 @@ import de.loothub.client.ColorPickerScreen;
 import de.loothub.client.LoothubScreen;
 import de.loothub.client.jobs.WidgetConfig;
 
-/** Einstellungen eines Chat-Fensters: Farben, Deckkraft, Textgröße, Ausblendzeit und die Tabs mit ihren Regeln. */
+/**
+ * Einstellungen eines Chat-Fensters: oben Aussehen (Farben, Deckkraft, Textgröße, Ausblenden, Aufhellen), darunter die
+ * Tabs als Reiter und für den gewählten Tab: Name, Quellen zum Anklicken, „eigener Tab“ und optionale Wortregeln.
+ */
 public class ChatWindowScreen extends Screen {
-	private static final int ROW_H = 24;
 	private final CustomChat.Window win;
 	private int px, py, pw, ph;
-	private int scroll;
+	private int sourcesY;
 
 	public ChatWindowScreen(CustomChat.Window win) {
 		super(Component.translatable("loothub.chatwin.title"));
@@ -29,13 +31,14 @@ public class ChatWindowScreen extends Screen {
 
 	@Override
 	protected void init() {
-		pw = Math.min(460, width - 20);
-		ph = Math.min(320, height - 20);
+		pw = Math.min(480, width - 20);
+		ph = Math.min(330, height - 20);
 		px = (width - pw) / 2;
 		py = (height - ph) / 2;
-		int x = px + 10, y = py + 24, w = pw - 20;
+		int x = px + 10, y = py + 22, w = pw - 20;
 		int half = (w - 4) / 2;
 
+		// Aussehen
 		addRenderableWidget(Button.builder(colorLabel("loothub.chatwin.bg", win.bg), b -> minecraft.setScreen(
 				new ColorPickerScreen(this, Component.translatable("loothub.chatwin.bg"), win.bg, rgb -> {
 					win.bg = rgb;
@@ -47,55 +50,87 @@ public class ChatWindowScreen extends Screen {
 					WidgetConfig.get().save();
 				}))).bounds(x + half + 4, y, half, 16).build());
 		y += 20;
-		int third = (w - 8) / 3;
-		addRenderableWidget(slider(x, y, third, "loothub.chatwin.opacity", win.opacity, 0, 100, "%", v -> win.opacity = v));
-		addRenderableWidget(slider(x + third + 4, y, third, "loothub.chatwin.scale", win.textScale, 50, 200, "%", v -> win.textScale = v));
-		addRenderableWidget(slider(x + 2 * (third + 4), y, third, "loothub.chatwin.fade", win.fadeSec, 1, 120, " s", v -> win.fadeSec = v));
+		addRenderableWidget(slider(x, y, half, "loothub.chatwin.opacity", win.opacity, 0, 100, "%", v -> win.opacity = v));
+		addRenderableWidget(slider(x + half + 4, y, half, "loothub.chatwin.scale", win.textScale, 50, 200, "%", v -> win.textScale = v));
+		y += 20;
+		addRenderableWidget(slider(x, y, half, "loothub.chatwin.fade", win.fadeSec, 1, 120, " s", v -> win.fadeSec = v));
+		addRenderableWidget(slider(x + half + 4, y, half, "loothub.chatwin.bright", win.minBright, 0, 100, "%", v -> win.minBright = v));
 
-		// Tabs
-		y += 34;
-		int listTop = y;
-		int visible = Math.max(1, (py + ph - 30 - listTop) / ROW_H);
+		// Tab-Reiter
+		y += 28;
 		List<CustomChat.Tab> tabs = win.tabs;
-		scroll = Mth.clamp(scroll, 0, Math.max(0, tabs.size() - visible));
-		int nameW = 70, privW = 60, delW = 16;
-		int ruleW = (w - nameW - privW - delW - 12) / 2;
-		for (int i = 0; i < visible && i + scroll < tabs.size(); i++) {
-			CustomChat.Tab t = tabs.get(i + scroll);
-			int ry = listTop + i * ROW_H;
-			int cx = x;
-			EditBox name = box(cx, ry, nameW, t.name, 20, "loothub.chatwin.tab.name", v -> t.name = v.isBlank() ? "Tab" : v);
-			cx += nameW + 4;
-			box(cx, ry, ruleW, t.include, 200, "loothub.chatwin.tab.include", v -> t.include = v);
-			cx += ruleW + 4;
-			box(cx, ry, ruleW, t.exclude, 200, "loothub.chatwin.tab.exclude", v -> t.exclude = v);
-			cx += ruleW + 4;
-			addRenderableWidget(Button.builder(privLabel(t.privateOnly), b -> {
-				t.privateOnly = !t.privateOnly;
-				b.setMessage(privLabel(t.privateOnly));
-				changed();
-			}).bounds(cx, ry, privW, 16).build());
-			cx += privW;
-			Button del = addRenderableWidget(Button.builder(Component.literal("✕"), b -> {
-				tabs.remove(t);
-				changed();
-				rebuildWidgets();
-			}).bounds(cx, ry, delW, 16).build());
-			del.active = tabs.size() > 1;
-			if (i + scroll == win.active) {
-				setInitialFocus(name);
+		CustomChat.Tab tab = win.tab();
+		int tx = x;
+		for (int i = 0; i < tabs.size(); i++) {
+			final int idx = i;
+			CustomChat.Tab t = tabs.get(i);
+			int bw = Math.min(90, font.width(t.name) + 14);
+			if (tx + bw > x + w - 50) {
+				break;
 			}
+			Button b = addRenderableWidget(Button.builder(Component.literal(t.name), btn -> {
+				win.active = idx;
+				rebuildWidgets();
+			}).bounds(tx, y, bw, 16).build());
+			b.active = i != win.active;
+			tx += bw + 2;
 		}
-		addRenderableWidget(Button.builder(Component.translatable("loothub.chatwin.tab.add"), b -> {
+		addRenderableWidget(Button.builder(Component.literal("+").withStyle(ChatFormatting.GREEN), b -> {
 			CustomChat.Tab t = new CustomChat.Tab();
 			t.name = "Tab " + (tabs.size() + 1);
 			tabs.add(t);
+			win.active = tabs.size() - 1;
 			changed();
-			scroll = tabs.size();
 			rebuildWidgets();
-		}).bounds(x, py + ph - 24, 90, 16).build());
+		}).bounds(tx, y, 16, 16).build());
+
+		// Gewählter Tab
+		y += 22;
+		EditBox name = box(x + 40, y, 120, tab.name, 20, "loothub.chatwin.tab.name", v -> tab.name = v.isBlank() ? "Tab" : v);
+		addRenderableWidget(Button.builder(exclusiveLabel(tab.exclusive), b -> {
+			tab.exclusive = !tab.exclusive;
+			b.setMessage(exclusiveLabel(tab.exclusive));
+			changed();
+		}).bounds(x + 164, y, w - 164 - 70, 16).build());
+		Button del = addRenderableWidget(Button.builder(Component.translatable("loothub.chatwin.tab.delete").withStyle(ChatFormatting.RED), b -> {
+			tabs.remove(tab);
+			win.active = Math.max(0, win.active - 1);
+			changed();
+			rebuildWidgets();
+		}).bounds(x + w - 66, y, 66, 16).build());
+		del.active = tabs.size() > 1;
+
+		// Quellen als Schalter
+		y += 22;
+		sourcesY = y;
+		y += 12;
+		int sx = x;
+		for (String src : CustomChat.knownSources()) {
+			int bw = font.width(src) + 18;
+			if (sx + bw > x + w) {
+				sx = x;
+				y += 18;
+			}
+			if (y > py + ph - 70) {
+				break;
+			}
+			addRenderableWidget(Button.builder(sourceLabel(tab, src), b -> {
+				tab.toggleSource(src);
+				b.setMessage(sourceLabel(tab, src));
+				changed();
+			}).bounds(sx, y, bw, 16).build());
+			sx += bw + 3;
+		}
+
+		// Wortregeln (optional)
+		y = py + ph - 46;
+		int ruleW = (w - 4) / 2;
+		box(x, y, ruleW, tab.include, 200, "loothub.chatwin.tab.include", v -> tab.include = v);
+		box(x + ruleW + 4, y, ruleW, tab.exclude, 200, "loothub.chatwin.tab.exclude", v -> tab.exclude = v);
+
 		addRenderableWidget(Button.builder(Component.translatable("loothub.job.editor.done"), b -> onClose())
-				.bounds(px + pw - 100, py + ph - 24, 90, 16).build());
+				.bounds(px + pw - 90, py + ph - 22, 80, 16).build());
+		setInitialFocus(name);
 	}
 
 	private EditBox box(int x, int y, int w, String value, int max, String hintKey, java.util.function.Consumer<String> set) {
@@ -115,8 +150,14 @@ public class ChatWindowScreen extends Screen {
 		WidgetConfig.get().save();
 	}
 
-	private static Component privLabel(boolean on) {
-		return Component.translatable("loothub.chatwin.tab.private").withStyle(on ? ChatFormatting.GOLD : ChatFormatting.DARK_GRAY);
+	private static Component sourceLabel(CustomChat.Tab t, String src) {
+		boolean on = t.hasSource(src);
+		return Component.literal((on ? "✔ " : "") + src).withStyle(on ? ChatFormatting.GOLD : ChatFormatting.GRAY);
+	}
+
+	private static Component exclusiveLabel(boolean on) {
+		return Component.translatable("loothub.chatwin.tab.exclusive").append(": ")
+				.append(Component.translatable(on ? "options.on" : "options.off").withStyle(on ? ChatFormatting.GOLD : ChatFormatting.GRAY));
 	}
 
 	private static Component colorLabel(String key, int rgb) {
@@ -125,7 +166,7 @@ public class ChatWindowScreen extends Screen {
 
 	private AbstractSliderButton slider(int x, int y, int w, String key, int value, int min, int max, String unit,
 			java.util.function.IntConsumer set) {
-		return new AbstractSliderButton(x, y, w, 16, Component.empty(), (value - min) / (double) (max - min)) {
+		return new AbstractSliderButton(x, y, w, 16, Component.empty(), Mth.clamp((value - min) / (double) (max - min), 0, 1)) {
 			{
 				updateMessage();
 			}
@@ -153,16 +194,15 @@ public class ChatWindowScreen extends Screen {
 		Pulse.outline(g, px, py, pw, ph);
 		g.fill(px + 4, py + 3, px + pw - 4, py + 4, LoothubScreen.RED);
 		g.drawString(font, getTitle(), px + 10, py + 9, LoothubScreen.RED, false);
-		int x = px + 10, w = pw - 20;
-		int nameW = 70, privW = 60, delW = 16;
-		int ruleW = (w - nameW - privW - delW - 12) / 2;
-		int hy = py + 24 + 20 + 24;
-		g.drawString(font, Component.translatable("loothub.chatwin.tabs"), x, hy - 2, LoothubScreen.TEXT, false);
-		g.drawString(font, Component.translatable("loothub.chatwin.col.include"), x + nameW + 4, hy - 2, LoothubScreen.FAINT, false);
-		g.drawString(font, Component.translatable("loothub.chatwin.col.exclude"), x + nameW + ruleW + 8, hy - 2, LoothubScreen.FAINT, false);
+		int x = px + 10;
+		g.drawString(font, Component.translatable("loothub.chatwin.tabs"), x, py + 80, LoothubScreen.FAINT, false);
+		g.drawString(font, Component.translatable("loothub.chatwin.tab.name"), x, py + 116, LoothubScreen.TEXT, false);
+		CustomChat.Tab tab = win.tab();
+		Component src = Component.translatable(tab.sources == null || tab.sources.isBlank()
+				? "loothub.chatwin.sources.all" : "loothub.chatwin.sources");
+		g.drawString(font, src, x, sourcesY, LoothubScreen.FAINT, false);
+		g.drawString(font, Component.translatable("loothub.chatwin.rules"), x, py + ph - 58, LoothubScreen.FAINT, false);
 		super.render(g, mx, my, delta);
-		Component hint = Component.translatable("loothub.chatwin.hint");
-		g.drawString(font, hint, px + 104, py + ph - 20, LoothubScreen.FAINT, false);
 	}
 
 	@Override
@@ -170,16 +210,9 @@ public class ChatWindowScreen extends Screen {
 	}
 
 	@Override
-	public boolean mouseScrolled(double mx, double my, double h, double v) {
-		scroll = Math.max(0, scroll - (int) Math.signum(v));
-		rebuildWidgets();
-		return true;
-	}
-
-	@Override
 	public void onClose() {
 		changed();
-		minecraft.setScreen(new net.minecraft.client.gui.screens.ChatScreen("", false));
+		minecraft.setScreen(null);
 	}
 
 	@Override

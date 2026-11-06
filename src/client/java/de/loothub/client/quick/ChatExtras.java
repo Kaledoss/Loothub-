@@ -45,7 +45,7 @@ public final class ChatExtras {
 		boolean mention = c.chatMention && mentionsMe(plain);
 		MutableComponent prefix = Component.empty();
 		if (c.chatTimestamps) {
-			prefix.append(Component.literal("[" + LocalTime.now().format(TIME) + "] ").withStyle(ChatFormatting.DARK_GRAY));
+			prefix.append(Component.literal("[" + LocalTime.now().format(TIME) + "] ").withStyle(ChatFormatting.GRAY));
 		}
 		if (mention) {
 			prefix.append(Component.literal("▍").withStyle(ChatFormatting.GOLD, ChatFormatting.BOLD));

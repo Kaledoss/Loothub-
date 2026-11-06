@@ -54,6 +54,8 @@ public final class WidgetConfig {
 	/** Eigener Chat (Fenster, Tabs, Farben) statt des normalen Minecraft-Chats. Standardmäßig aus. */
 	public boolean customChat = false;
 	public java.util.List<de.loothub.client.quick.CustomChat.Window> chatWindows = new java.util.ArrayList<>();
+	/** Bisher gesehene Nachrichten-Quellen (für die Tab-Auswahl). */
+	public java.util.List<String> chatSources = new java.util.ArrayList<>();
 	/** Chat-Filter: Nachrichten mit diesen Wörtern ausblenden. */
 	public boolean chatFilter = true;
 	public java.util.List<String> chatFilterWords = new java.util.ArrayList<>();
