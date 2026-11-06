@@ -49,6 +49,7 @@ public final class OreGlow {
 			if (!ores.isEmpty()) {
 				ores = List.of();
 			}
+			FADES.clear();
 			scanCenter = null;
 			return;
 		}
@@ -61,7 +62,7 @@ public final class OreGlow {
 		}
 		BlockPos.MutableBlockPos p = new BlockPos.MutableBlockPos();
 		BlockPos.MutableBlockPos n = new BlockPos.MutableBlockPos();
-		int budget = 6000; // Block-Abfragen pro Tick
+		int budget = 15000; // Block-Abfragen pro Tick (ein Durchlauf bei 20 Blöcken ≈ 4 Ticks)
 		while (scanX <= scanR && budget > 0) {
 			int x = scanX++;
 			for (int y = -scanRY; y <= scanRY; y++) {
@@ -84,15 +85,56 @@ public final class OreGlow {
 					}
 					// nur echte, wirklich sichtbare Erze: Server mit Anti-X-Ray schicken versteckte Schein-Erze –
 					// deshalb muss eine Sichtlinie vom Auge bis zum Erz frei sein
-					if (faces != 0 && visible(mc, p, faces)) {
+					if (faces != 0) {
 						building.add(new Ore(p.getX(), p.getY(), p.getZ(), faces, rgb));
 					}
 				}
 			}
 		}
 		if (scanX > scanR) {
-			ores = building; // Durchlauf fertig → anzeigen, nächster beginnt
+			ores = building; // Durchlauf fertig → Kandidaten übernehmen, nächster beginnt
 			scanCenter = null;
+		}
+		checkVisibility(mc);
+	}
+
+	/** Ein-/Ausblenden je Erz: Sichtbarkeit (Ziel 0/1) und aktuelle Deckkraft. */
+	private static final class Fade {
+		float alpha;
+		boolean visible;
+		Ore ore;
+	}
+
+	private static final java.util.Map<Long, Fade> FADES = new java.util.HashMap<>();
+	private static int visCursor;
+	private static long lastFrame;
+
+	/** Jeden Tick einen Teil der Kandidaten auf freie Sicht prüfen (alle ~4 Ticks einmal rundum). */
+	private static void checkVisibility(Minecraft mc) {
+		List<Ore> list = ores;
+		java.util.Set<Long> current = new java.util.HashSet<>();
+		for (Ore o : list) {
+			current.add(BlockPos.asLong(o.x(), o.y(), o.z()));
+		}
+		// verschwundene Kandidaten ausblenden lassen
+		for (var e : FADES.entrySet()) {
+			if (!current.contains(e.getKey())) {
+				e.getValue().visible = false;
+			}
+		}
+		if (list.isEmpty()) {
+			return;
+		}
+		int per = Math.max(60, list.size() / 4 + 1);
+		BlockPos.MutableBlockPos p = new BlockPos.MutableBlockPos();
+		for (int i = 0; i < per && i < list.size(); i++) {
+			visCursor = (visCursor + 1) % list.size();
+			Ore o = list.get(visCursor);
+			p.set(o.x(), o.y(), o.z());
+			boolean vis = color(mc.level.getBlockState(p)) >= 0 && visible(mc, p, o.faces());
+			Fade f = FADES.computeIfAbsent(p.asLong(), k -> new Fade());
+			f.ore = o;
+			f.visible = vis;
 		}
 	}
 
@@ -157,11 +199,13 @@ public final class OreGlow {
 	}
 
 	private static void render(PoseStack poseStack, net.minecraft.client.renderer.MultiBufferSource buffers) {
-		List<Ore> list = ores;
-		if (list.isEmpty() || buffers == null) {
+		if (FADES.isEmpty() || buffers == null) {
 			return;
 		}
 		Minecraft mc = Minecraft.getInstance();
+		long now = System.nanoTime();
+		float dt = lastFrame == 0 ? 0.0F : Math.min(0.1F, (now - lastFrame) / 1.0e9F);
+		lastFrame = now;
 		Vec3 cam = mc.gameRenderer.getMainCamera().position();
 		float strength = Math.max(0, Math.min(100, WidgetConfig.get().oreGlowStrength)) / 100.0F;
 		// sanftes Pulsieren (1,6 s)
@@ -169,14 +213,27 @@ public final class OreGlow {
 		// normale Mischung (keine Aufhellung): Farben bleiben wie die Erze; beidseitig, damit auch Oberseiten erscheinen
 		VertexConsumer vc = buffers.getBuffer(RenderTypes.debugQuads());
 		PoseStack.Pose pose = poseStack.last();
-		for (Ore o : list) {
+		var it = FADES.values().iterator();
+		while (it.hasNext()) {
+			Fade f = it.next();
+			// weich ein- (≈0,25 s) und ausblenden (≈0,4 s)
+			f.alpha = f.visible ? Math.min(1.0F, f.alpha + dt * 4.0F) : Math.max(0.0F, f.alpha - dt * 2.5F);
+			if (f.alpha <= 0.0F && !f.visible) {
+				it.remove();
+				continue;
+			}
+			Ore o = f.ore;
+			if (o == null) {
+				continue;
+			}
+			float ease = f.alpha * f.alpha * (3.0F - 2.0F * f.alpha);
 			float x = (float) (o.x() - cam.x), y = (float) (o.y() - cam.y), z = (float) (o.z() - cam.z);
 			float r = ((o.rgb() >> 16) & 0xFF) / 255F, g = ((o.rgb() >> 8) & 0xFF) / 255F, b = (o.rgb() & 0xFF) / 255F;
 			for (Direction d : Direction.values()) {
 				if ((o.faces() & (1 << d.ordinal())) == 0) {
 					continue;
 				}
-				face(pose, vc, x, y, z, d, r, g, b, strength * pulse);
+				face(pose, vc, x, y, z, d, r, g, b, strength * pulse * ease);
 			}
 		}
 	}
