@@ -1,0 +1,186 @@
+package de.loothub.client.quick;
+
+import java.util.ArrayList;
+import java.util.List;
+
+import com.mojang.blaze3d.vertex.PoseStack;
+import com.mojang.blaze3d.vertex.VertexConsumer;
+
+import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
+import net.fabricmc.fabric.api.client.rendering.v1.world.WorldRenderEvents;
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.renderer.rendertype.RenderTypes;
+import net.minecraft.core.BlockPos;
+import net.minecraft.core.Direction;
+import net.minecraft.tags.BlockTags;
+import net.minecraft.world.level.block.Blocks;
+import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.phys.Vec3;
+
+import de.loothub.client.jobs.WidgetConfig;
+
+/**
+ * Ressourcenpaket-Einstellung „Leuchtende Erze“: sichtbare Erze in der Nähe bekommen einen pulsierenden, leuchtenden
+ * Rand in der Farbe des Erzes (Diamant türkis, Gold gelb, Redstone rot …). Nur Flächen, die zur Luft zeigen, also
+ * ohnehin sichtbar sind – mit Tiefentest, nichts scheint durch Wände (kein X-Ray). Nur Anzeige.
+ */
+public final class OreGlow {
+	private record Ore(int x, int y, int z, int faces, int rgb) {
+	}
+
+	private static volatile List<Ore> ores = List.of();
+	private static int lastScan = -100;
+
+	private OreGlow() {
+	}
+
+	public static void register() {
+		ClientTickEvents.END_CLIENT_TICK.register(OreGlow::tick);
+		WorldRenderEvents.BEFORE_TRANSLUCENT.register(ctx -> render(ctx.matrices(), ctx.consumers()));
+	}
+
+	private static void tick(Minecraft mc) {
+		WidgetConfig c = WidgetConfig.get();
+		if (!c.glowingOres || mc.level == null || mc.player == null) {
+			if (!ores.isEmpty()) {
+				ores = List.of();
+			}
+			return;
+		}
+		// alle 10 Ticks die Umgebung neu ansehen (Erze ändern sich selten)
+		if (Math.abs(mc.player.tickCount - lastScan) < 10) {
+			return;
+		}
+		lastScan = mc.player.tickCount;
+		int r = Math.max(4, Math.min(16, c.oreGlowRange));
+		BlockPos center = mc.player.blockPosition();
+		BlockPos.MutableBlockPos p = new BlockPos.MutableBlockPos();
+		BlockPos.MutableBlockPos n = new BlockPos.MutableBlockPos();
+		List<Ore> found = new ArrayList<>();
+		for (int x = -r; x <= r; x++) {
+			for (int y = -r; y <= r; y++) {
+				for (int z = -r; z <= r; z++) {
+					p.set(center.getX() + x, center.getY() + y, center.getZ() + z);
+					BlockState st = mc.level.getBlockState(p);
+					int rgb = color(st);
+					if (rgb < 0) {
+						continue;
+					}
+					// nur Flächen, an denen Luft/Durchsichtiges grenzt – also wirklich sichtbare Seiten
+					int faces = 0;
+					for (Direction d : Direction.values()) {
+						n.setWithOffset(p, d);
+						BlockState ns = mc.level.getBlockState(n);
+						if (ns.isAir() || !ns.canOcclude()) {
+							faces |= 1 << d.ordinal();
+						}
+					}
+					if (faces != 0) {
+						found.add(new Ore(p.getX(), p.getY(), p.getZ(), faces, rgb));
+					}
+				}
+			}
+		}
+		ores = found;
+	}
+
+	/** Farbe je Erz, oder −1 für kein Erz. */
+	private static int color(BlockState st) {
+		if (st.is(BlockTags.DIAMOND_ORES)) {
+			return 0x4AEDD9;
+		}
+		if (st.is(BlockTags.EMERALD_ORES)) {
+			return 0x17DD62;
+		}
+		if (st.is(BlockTags.GOLD_ORES)) {
+			return 0xFCEE4B;
+		}
+		if (st.is(BlockTags.REDSTONE_ORES)) {
+			return 0xFF2A2A;
+		}
+		if (st.is(BlockTags.LAPIS_ORES)) {
+			return 0x3A6BFF;
+		}
+		if (st.is(BlockTags.IRON_ORES)) {
+			return 0xE8BFA0;
+		}
+		if (st.is(BlockTags.COPPER_ORES)) {
+			return 0xE8803F;
+		}
+		if (st.is(BlockTags.COAL_ORES)) {
+			return 0x9A9A9A;
+		}
+		if (st.is(Blocks.NETHER_QUARTZ_ORE)) {
+			return 0xF2ECE4;
+		}
+		if (st.is(Blocks.ANCIENT_DEBRIS)) {
+			return 0xB0703F;
+		}
+		return -1;
+	}
+
+	private static void render(PoseStack poseStack, net.minecraft.client.renderer.MultiBufferSource buffers) {
+		List<Ore> list = ores;
+		if (list.isEmpty() || buffers == null) {
+			return;
+		}
+		Minecraft mc = Minecraft.getInstance();
+		Vec3 cam = mc.gameRenderer.getMainCamera().position();
+		float strength = Math.max(0, Math.min(100, WidgetConfig.get().oreGlowStrength)) / 100.0F;
+		// sanftes Pulsieren (1,6 s)
+		float pulse = 0.55F + 0.45F * (float) Math.sin(System.currentTimeMillis() / 1600.0 * Math.PI * 2);
+		VertexConsumer vc = buffers.getBuffer(RenderTypes.lightning());
+		PoseStack.Pose pose = poseStack.last();
+		for (Ore o : list) {
+			float x = (float) (o.x() - cam.x), y = (float) (o.y() - cam.y), z = (float) (o.z() - cam.z);
+			float r = ((o.rgb() >> 16) & 0xFF) / 255F, g = ((o.rgb() >> 8) & 0xFF) / 255F, b = (o.rgb() & 0xFF) / 255F;
+			for (Direction d : Direction.values()) {
+				if ((o.faces() & (1 << d.ordinal())) == 0) {
+					continue;
+				}
+				face(pose, vc, x, y, z, d, r, g, b, strength * pulse);
+			}
+		}
+	}
+
+	/** Leuchtender Rand (4 Streifen) und ein schwacher Schimmer auf einer Blockseite, knapp davor. */
+	private static void face(PoseStack.Pose pose, VertexConsumer vc, float x, float y, float z, Direction d, float r, float g,
+			float b, float a) {
+		float e = 0.004F; // knapp vor der Fläche, damit nichts flackert
+		float[][] c = corners(x, y, z, d, e);
+		float w = 0.09F; // Randbreite
+		// innere Ecken (zur Mitte hin versetzt)
+		float[][] in = new float[4][3];
+		for (int i = 0; i < 4; i++) {
+			for (int k = 0; k < 3; k++) {
+				float mid = (c[0][k] + c[2][k]) / 2;
+				in[i][k] = c[i][k] + (mid - c[i][k]) * (w * 2);
+			}
+		}
+		float edge = Math.min(1.0F, a * 0.95F), fill = a * 0.18F;
+		for (int i = 0; i < 4; i++) {
+			int j = (i + 1) % 4;
+			quad(pose, vc, c[i], c[j], in[j], in[i], r, g, b, edge);
+		}
+		quad(pose, vc, in[0], in[1], in[2], in[3], r, g, b, fill);
+	}
+
+	private static float[][] corners(float x, float y, float z, Direction d, float e) {
+		return switch (d) {
+			case UP -> new float[][]{{x, y + 1 + e, z}, {x + 1, y + 1 + e, z}, {x + 1, y + 1 + e, z + 1}, {x, y + 1 + e, z + 1}};
+			case DOWN -> new float[][]{{x, y - e, z}, {x, y - e, z + 1}, {x + 1, y - e, z + 1}, {x + 1, y - e, z}};
+			case NORTH -> new float[][]{{x, y, z - e}, {x, y + 1, z - e}, {x + 1, y + 1, z - e}, {x + 1, y, z - e}};
+			case SOUTH -> new float[][]{{x, y, z + 1 + e}, {x + 1, y, z + 1 + e}, {x + 1, y + 1, z + 1 + e}, {x, y + 1, z + 1 + e}};
+			case WEST -> new float[][]{{x - e, y, z}, {x - e, y, z + 1}, {x - e, y + 1, z + 1}, {x - e, y + 1, z}};
+			case EAST -> new float[][]{{x + 1 + e, y, z}, {x + 1 + e, y + 1, z}, {x + 1 + e, y + 1, z + 1}, {x + 1 + e, y, z + 1}};
+		};
+	}
+
+	private static void quad(PoseStack.Pose pose, VertexConsumer vc, float[] p0, float[] p1, float[] p2, float[] p3, float r, float g,
+			float b, float a) {
+		vc.addVertex(pose, p0[0], p0[1], p0[2]).setColor(r, g, b, a);
+		vc.addVertex(pose, p1[0], p1[1], p1[2]).setColor(r, g, b, a);
+		vc.addVertex(pose, p2[0], p2[1], p2[2]).setColor(r, g, b, a);
+		vc.addVertex(pose, p3[0], p3[1], p3[2]).setColor(r, g, b, a);
+	}
+}

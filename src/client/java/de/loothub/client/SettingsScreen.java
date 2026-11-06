@@ -74,6 +74,7 @@ public class SettingsScreen extends LoothubScreen {
 	private enum Tab {
 		GENERAL("loothub.settings.tab.general"),
 		LOOK("loothub.settings.tab.look"),
+		PACK("loothub.settings.tab.pack"),
 		INVENTORY("loothub.settings.tab.inventory"),
 		JOBS("loothub.settings.tab.jobs"),
 		EXTRAS("loothub.settings.tab.extras");
@@ -195,13 +196,6 @@ public class SettingsScreen extends LoothubScreen {
 					}));
 					y = cardNoToggle(thY, 60, "loothub.settings.theme", "loothub.settings.theme.tooltip");
 				}
-				y = card(y, 40, "loothub.settings.inventory_design", "loothub.settings.inventory_design.tooltip",
-						() -> c.inventoryDesign, v -> {
-							c.inventoryDesign = v;
-							Theme.setPackActive(v);
-						});
-				y = card(y, 40, "loothub.settings.pulse", "loothub.settings.pulse.tooltip",
-						() -> c.pulseBorders, v -> c.pulseBorders = v);
 				y = card(y, 40, "loothub.settings.hide_head", "loothub.settings.hide_head.tooltip",
 						() -> c.hideOwnHeadItem, v -> c.hideOwnHeadItem = v);
 				y = card(y, 40, "loothub.settings.hide_cape", "loothub.settings.hide_cape.tooltip",
@@ -214,6 +208,54 @@ public class SettingsScreen extends LoothubScreen {
 						() -> c.hideOffhandBackpack, v -> c.hideOffhandBackpack = v);
 				y = card(y, 40, "loothub.settings.afk_view", "loothub.settings.afk_view.tooltip",
 						() -> c.afkView, v -> c.afkView = v);
+			}
+			case PACK -> {
+				y = card(y, 40, "loothub.settings.inventory_design", "loothub.settings.inventory_design.tooltip",
+						() -> c.inventoryDesign, v -> {
+							c.inventoryDesign = v;
+							Theme.setPackActive(v);
+						});
+				y = card(y, 40, "loothub.settings.pulse", "loothub.settings.pulse.tooltip",
+						() -> c.pulseBorders, v -> c.pulseBorders = v);
+				// Leuchtende Erze: an/aus + Stärke + Reichweite
+				int oreY = y;
+				int oDescX = cl + labelW + 12;
+				int oW = Math.min(300, cr - 8 - oDescX);
+				int half = (oW - 4) / 2;
+				buttons.add(addRenderableWidget(new net.minecraft.client.gui.components.AbstractSliderButton(
+						oDescX, oreY + 38, half, 16, Component.empty(), c.oreGlowStrength / 100.0) {
+					{
+						updateMessage();
+					}
+
+					@Override
+					protected void updateMessage() {
+						setMessage(Component.translatable("loothub.settings.ore_glow.strength", (int) Math.round(value * 100)));
+					}
+
+					@Override
+					protected void applyValue() {
+						c.oreGlowStrength = (int) Math.round(value * 100);
+					}
+				}));
+				buttons.add(addRenderableWidget(new net.minecraft.client.gui.components.AbstractSliderButton(
+						oDescX + half + 4, oreY + 38, half, 16, Component.empty(), (c.oreGlowRange - 4) / 12.0) {
+					{
+						updateMessage();
+					}
+
+					@Override
+					protected void updateMessage() {
+						setMessage(Component.translatable("loothub.settings.ore_glow.range", 4 + (int) Math.round(value * 12)));
+					}
+
+					@Override
+					protected void applyValue() {
+						c.oreGlowRange = 4 + (int) Math.round(value * 12);
+					}
+				}));
+				y = card(oreY, 60, "loothub.settings.ore_glow", "loothub.settings.ore_glow.tooltip",
+						() -> c.glowingOres, v -> c.glowingOres = v);
 			}
 			case INVENTORY -> {
 				y = card(y, 40, "loothub.settings.quick_panel", "loothub.settings.quick_panel.tooltip",

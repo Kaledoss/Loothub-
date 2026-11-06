@@ -42,6 +42,10 @@ public final class WidgetConfig {
 	public boolean hideOwnCape = false;
 	/** Block-Info oben in der Mitte (angeschauter Block/Mob, passendes Werkzeug, Marktpreis). */
 	public boolean lookInfo = true;
+	/** Ressourcenpaket: leuchtende Erze (pulsierender Rand in Erzfarbe), Stärke in %, Reichweite in Blöcken. */
+	public boolean glowingOres = true;
+	public int oreGlowStrength = 70;
+	public int oreGlowRange = 10;
 	/** Leuchtende Augen ("" = aus, sonst „#RRGGBB“). */
 	/** Flügelfarben („#RRGGBB“, leer = Originalfarben). */
 	public String wingColor = "";
@@ -209,6 +213,7 @@ public final class WidgetConfig {
 		hideOwnHeadItem = false;
 		hideOwnCape = false;
 		lookInfo = false;
+		glowingOres = false;
 		flyPose = false;
 		hideOffhandBackpack = false;
 		invHudEnabled = false;

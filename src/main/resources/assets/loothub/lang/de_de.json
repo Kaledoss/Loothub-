@@ -409,5 +409,10 @@
 	"loothub.cosmetics.risetrail": "Steigflug",
 	"loothub.cosmetics.risetrail.desc": "Fliegst du hoch oder runter, zieht ein heller Energie-Kegel hinter dir her – unter den Füßen beim Steigen, über dem Kopf beim Sinken.",
 	"loothub.settings.look_info": "Block-Info",
-	"loothub.settings.look_info.tooltip": "Zeigt oben in der Mitte, was du anschaust: Block mit Symbol und Namen, das passende Werkzeug (mit Stufe) samt ✔/✖, ob dein Werkzeug taugt, und den Verkaufspreis am Marktplatz. Bei Lebewesen den Namen."
+	"loothub.settings.look_info.tooltip": "Zeigt oben in der Mitte, was du anschaust: Block mit Symbol und Namen, das passende Werkzeug (mit Stufe) samt ✔/✖, ob dein Werkzeug taugt, und den Verkaufspreis am Marktplatz. Bei Lebewesen den Namen.",
+	"loothub.settings.tab.pack": "Ressourcenpaket",
+	"loothub.settings.ore_glow": "Leuchtende Erze",
+	"loothub.settings.ore_glow.tooltip": "Sichtbare Erze in deiner Nähe bekommen einen pulsierenden, leuchtenden Rand in ihrer Farbe – Diamant türkis, Gold gelb, Redstone rot … Nur Seiten, die du ohnehin siehst; nichts scheint durch Wände.",
+	"loothub.settings.ore_glow.strength": "Stärke: %s %%",
+	"loothub.settings.ore_glow.range": "Reichweite: %s Blöcke"
 }
