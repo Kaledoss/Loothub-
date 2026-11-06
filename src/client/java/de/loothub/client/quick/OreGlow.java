@@ -21,7 +21,7 @@ import de.loothub.client.jobs.WidgetConfig;
 
 /**
  * Ressourcenpaket-Einstellung „Leuchtende Erze“: sichtbare Erze in der Nähe bekommen einen pulsierenden, leuchtenden
- * Rand in der Farbe des Erzes (Diamant türkis, Gold gelb, Redstone rot …). Nur Flächen, die zur Luft zeigen, also
+ * Rand in der Farbe des Erzes (Diamant türkis, Gold gelb, Redstone rot …). Nur Erze mit freier Sichtlinie und nur Flächen, die zur Luft zeigen, also
  * ohnehin sichtbar sind – mit Tiefentest, nichts scheint durch Wände (kein X-Ray). Nur Anzeige.
  */
 public final class OreGlow {
@@ -78,11 +78,13 @@ public final class OreGlow {
 					for (Direction d : Direction.values()) {
 						n.setWithOffset(p, d);
 						BlockState ns = mc.level.getBlockState(n);
-						if (ns.isAir() || !ns.canOcclude()) {
+						if (ns.isAir() || (!ns.canOcclude() && !ns.getFluidState().isEmpty())) {
 							faces |= 1 << d.ordinal();
 						}
 					}
-					if (faces != 0) {
+					// nur echte, wirklich sichtbare Erze: Server mit Anti-X-Ray schicken versteckte Schein-Erze –
+					// deshalb muss eine Sichtlinie vom Auge bis zum Erz frei sein
+					if (faces != 0 && visible(mc, p, faces)) {
 						building.add(new Ore(p.getX(), p.getY(), p.getZ(), faces, rgb));
 					}
 				}
@@ -92,6 +94,31 @@ public final class OreGlow {
 			ores = building; // Durchlauf fertig → anzeigen, nächster beginnt
 			scanCenter = null;
 		}
+	}
+
+	/** Freie Sichtlinie vom Auge zur Mitte oder zu einer offenen Seite des Erzes. */
+	private static boolean visible(Minecraft mc, BlockPos pos, int faces) {
+		Vec3 eye = mc.player.getEyePosition();
+		Vec3 center = Vec3.atCenterOf(pos);
+		if (hits(mc, eye, center, pos)) {
+			return true;
+		}
+		for (Direction d : Direction.values()) {
+			if ((faces & (1 << d.ordinal())) != 0) {
+				Vec3 face = center.add(d.getStepX() * 0.45, d.getStepY() * 0.45, d.getStepZ() * 0.45);
+				if (hits(mc, eye, face, pos)) {
+					return true;
+				}
+			}
+		}
+		return false;
+	}
+
+	private static boolean hits(Minecraft mc, Vec3 from, Vec3 to, BlockPos pos) {
+		var hit = mc.level.clip(new net.minecraft.world.level.ClipContext(from, to,
+				net.minecraft.world.level.ClipContext.Block.COLLIDER, net.minecraft.world.level.ClipContext.Fluid.NONE,
+				mc.player));
+		return hit.getType() == net.minecraft.world.phys.HitResult.Type.BLOCK && hit.getBlockPos().equals(pos);
 	}
 
 	/** Farbe je Erz, oder −1 für kein Erz. */
