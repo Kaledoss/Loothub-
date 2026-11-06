@@ -51,6 +51,19 @@ public final class WidgetConfig {
 	public boolean chatCopy = true;
 	public boolean chatMention = true;
 	public boolean chatMentionSound = true;
+	/** Chat-Filter: Nachrichten mit diesen Wörtern ausblenden. */
+	public boolean chatFilter = true;
+	public java.util.List<String> chatFilterWords = new java.util.ArrayList<>();
+	/** Haltbarkeit als Zahl im Slot. */
+	public boolean durabilityNumbers = true;
+	/** Wegwerf-Schutz: wertvolle Items erst beim zweiten Q (bzw. zweiten Wurf) fallen lassen. */
+	public boolean dropProtection = true;
+	/** Eigene Timer (Countdown, Wiederholung, täglich) und ihre HUD-Anzeige. */
+	public boolean timersEnabled = true;
+	public java.util.List<de.loothub.client.quick.Timers.Timer> timers = new java.util.ArrayList<>();
+	public double timerHudX = 0.99;
+	public double timerHudY = 0.35;
+	public boolean timerSound = true;
 	/** Block-Info: Werkzeug bzw. Marktpreis zeigen, Größe, Position (x = Mitte als Anteil der Breite, y = Anteil der Höhe). */
 	public boolean lookInfoTool = true;
 	public boolean lookInfoPrice = true;
@@ -236,6 +249,10 @@ public final class WidgetConfig {
 		chatCopy = false;
 		chatMention = false;
 		chatMentionSound = false;
+		chatFilter = false;
+		durabilityNumbers = false;
+		dropProtection = false;
+		timersEnabled = false;
 		glowingOres = false;
 		flyPose = false;
 		hideOffhandBackpack = false;

@@ -278,6 +278,19 @@ public class JobHistoryScreen extends LoothubScreen {
 	}
 
 	/** Gleicher Job unter verschiedenen Namen (z. B. Angler/Fischer) → ein Eintrag. */
+	/** Anzeigename, Farbe und Symbol eines Jobs (für andere Seiten). */
+	public static String jobName(String job) {
+		return info(job).name();
+	}
+
+	public static int jobColor(String job) {
+		return info(job).color();
+	}
+
+	public static Item jobIcon(String job) {
+		return info(job).icon();
+	}
+
 	private static JobInfo info(String name) {
 		for (JobInfo j : JOBS) {
 			if (j.name().equalsIgnoreCase(name)) {

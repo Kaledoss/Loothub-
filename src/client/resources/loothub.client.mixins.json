@@ -19,7 +19,10 @@
 		"ChatMessageMixin",
 		"FlyPoseModelMixin",
 		"LivingEntityRendererInvoker",
-		"AvatarLayersMixin"
+		"AvatarLayersMixin",
+		"DurabilityNumberMixin",
+		"DropProtectionMixin",
+		"DropProtectionScreenMixin"
 	],
 	"injectors": {
 		"defaultRequire": 0

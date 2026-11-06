@@ -61,7 +61,7 @@ public final class RarityFrames {
 	}
 
 	/** Farbe der Seltenheit aus der Beschreibung, oder 0. */
-	private static int rarityColor(ItemStack stack) {
+	public static int rarityColor(ItemStack stack) {
 		if (stack.isEmpty()) {
 			return NONE;
 		}

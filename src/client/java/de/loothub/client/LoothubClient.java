@@ -108,6 +108,10 @@ public class LoothubClient implements ClientModInitializer {
 		de.loothub.client.quick.OreGlow.register();
 		de.loothub.client.quick.LookInfo.register();
 		de.loothub.client.quick.RarityFrames.register();
+		de.loothub.client.quick.Timers.register();
+		// Eigene Timer (Restzeit)
+		HudElementRegistry.attachElementBefore(VanillaHudElements.CHAT,
+				Identifier.fromNamespaceAndPath(Loothub.MOD_ID, "timers"), de.loothub.client.quick.Timers::renderHud);
 		// Block-Info oben in der Mitte (was man anschaut)
 		HudElementRegistry.attachElementBefore(VanillaHudElements.CHAT,
 				Identifier.fromNamespaceAndPath(Loothub.MOD_ID, "look_info"), de.loothub.client.quick.LookInfo::renderHud);
