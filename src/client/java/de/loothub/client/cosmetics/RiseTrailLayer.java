@@ -85,10 +85,10 @@ public final class RiseTrailLayer extends RenderLayer<AvatarRenderState, PlayerM
 		for (int band = 0; band < 2; band++) {
 			float dx = band == 0 ? tx * w : ox * w, dz = band == 0 ? tz * w : oz * w;
 			// heller Kern (bläulich-weiß) zum Körper hin, zur Spitze hin durchsichtig
-			v(pose, vc, x0 - dx, y0, z0 - dz, 0.85F, 0.93F, 1.0F, a);
-			v(pose, vc, x0 + dx, y0, z0 + dz, 0.85F, 0.93F, 1.0F, a);
-			v(pose, vc, x1, y1, z1, 0.6F, 0.8F, 1.0F, 0.0F);
-			v(pose, vc, x1, y1, z1, 0.6F, 0.8F, 1.0F, 0.0F);
+			q(pose, vc, x0 - dx, y0, z0 - dz, 0.85F, 0.93F, 1.0F, a);
+			q(pose, vc, x0 + dx, y0, z0 + dz, 0.85F, 0.93F, 1.0F, a);
+			q(pose, vc, x1, y1, z1, 0.6F, 0.8F, 1.0F, 0.0F);
+			q(pose, vc, x1, y1, z1, 0.6F, 0.8F, 1.0F, 0.0F);
 		}
 	}
 
@@ -103,10 +103,10 @@ public final class RiseTrailLayer extends RenderLayer<AvatarRenderState, PlayerM
 			float c0 = (float) Math.cos(a0), s0 = (float) Math.sin(a0), c1 = (float) Math.cos(a1), s1 = (float) Math.sin(a1);
 			float ri = r - thick, ro = r + thick;
 			// innen hell, außen ausblendend
-			v(pose, vc, c0 * ri, y, s0 * ri, 0.9F, 0.95F, 1.0F, a);
-			v(pose, vc, c1 * ri, y, s1 * ri, 0.9F, 0.95F, 1.0F, a);
-			v(pose, vc, c1 * ro, y, s1 * ro, 0.7F, 0.85F, 1.0F, 0.0F);
-			v(pose, vc, c0 * ro, y, s0 * ro, 0.7F, 0.85F, 1.0F, 0.0F);
+			q(pose, vc, c0 * ri, y, s0 * ri, 0.9F, 0.95F, 1.0F, a);
+			q(pose, vc, c1 * ri, y, s1 * ri, 0.9F, 0.95F, 1.0F, a);
+			q(pose, vc, c1 * ro, y, s1 * ro, 0.7F, 0.85F, 1.0F, 0.0F);
+			q(pose, vc, c0 * ro, y, s0 * ro, 0.7F, 0.85F, 1.0F, 0.0F);
 		}
 	}
 
@@ -117,5 +117,23 @@ public final class RiseTrailLayer extends RenderLayer<AvatarRenderState, PlayerM
 
 	private static void v(PoseStack.Pose pose, VertexConsumer vc, float x, float y, float z, float r, float g, float b, float a) {
 		vc.addVertex(pose, x, y, z).setColor(r, g, b, Math.max(0.0F, Math.min(1.0F, a)));
+	}
+
+	/** Viereck von beiden Seiten sichtbar (die Licht-Darstellung blendet Rückseiten sonst aus). */
+	private static final float[][] QUAD = new float[4][7];
+	private static int quadN;
+
+	private static void q(PoseStack.Pose pose, VertexConsumer vc, float x, float y, float z, float r, float g, float b, float a) {
+		float[] d = QUAD[quadN++];
+		d[0] = x; d[1] = y; d[2] = z; d[3] = r; d[4] = g; d[5] = b; d[6] = a;
+		if (quadN == 4) {
+			quadN = 0;
+			for (int i = 0; i < 4; i++) {
+				v(pose, vc, QUAD[i][0], QUAD[i][1], QUAD[i][2], QUAD[i][3], QUAD[i][4], QUAD[i][5], QUAD[i][6]);
+			}
+			for (int i = 3; i >= 0; i--) {
+				v(pose, vc, QUAD[i][0], QUAD[i][1], QUAD[i][2], QUAD[i][3], QUAD[i][4], QUAD[i][5], QUAD[i][6]);
+			}
+		}
 	}
 }

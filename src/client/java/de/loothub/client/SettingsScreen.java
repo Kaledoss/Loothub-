@@ -200,8 +200,39 @@ public class SettingsScreen extends LoothubScreen {
 						() -> c.hideOwnHeadItem, v -> c.hideOwnHeadItem = v);
 				y = card(y, 40, "loothub.settings.hide_cape", "loothub.settings.hide_cape.tooltip",
 						() -> c.hideOwnCape, v -> c.hideOwnCape = v);
-				y = card(y, 40, "loothub.settings.look_info", "loothub.settings.look_info.tooltip",
-						() -> c.lookInfo, v -> c.lookInfo = v);
+				{
+					// Block-Info: an/aus, Werkzeug/Preis einzeln, Größe; verschieben im Chat
+					int liY = y;
+					int lDescX = cl + labelW + 12;
+					int lW = Math.min(300, cr - 8 - lDescX);
+					int third = (lW - 8) / 3;
+					buttons.add(addRenderableWidget(Button.builder(lookLabel("tool", c.lookInfoTool), b -> {
+						c.lookInfoTool = !c.lookInfoTool;
+						b.setMessage(lookLabel("tool", c.lookInfoTool));
+					}).bounds(lDescX, liY + 38, third, 16).build()));
+					buttons.add(addRenderableWidget(Button.builder(lookLabel("price", c.lookInfoPrice), b -> {
+						c.lookInfoPrice = !c.lookInfoPrice;
+						b.setMessage(lookLabel("price", c.lookInfoPrice));
+					}).bounds(lDescX + third + 4, liY + 38, third, 16).build()));
+					buttons.add(addRenderableWidget(new net.minecraft.client.gui.components.AbstractSliderButton(
+							lDescX + 2 * (third + 4), liY + 38, third, 16, Component.empty(), (c.lookInfoScale - 0.5) / 1.5) {
+						{
+							updateMessage();
+						}
+
+						@Override
+						protected void updateMessage() {
+							setMessage(Component.translatable("loothub.settings.look_info.size", (int) Math.round((0.5 + value * 1.5) * 100)));
+						}
+
+						@Override
+						protected void applyValue() {
+							c.lookInfoScale = (float) (0.5 + value * 1.5);
+						}
+					}));
+					y = card(liY, 60, "loothub.settings.look_info", "loothub.settings.look_info.tooltip",
+							() -> c.lookInfo, v -> c.lookInfo = v);
+				}
 				y = card(y, 40, "loothub.settings.fly_pose", "loothub.settings.fly_pose.tooltip",
 						() -> c.flyPose, v -> c.flyPose = v);
 				y = card(y, 40, "loothub.settings.hide_offhand", "loothub.settings.hide_offhand.tooltip",
@@ -761,5 +792,11 @@ public class SettingsScreen extends LoothubScreen {
 		WidgetConfig c = WidgetConfig.get();
 		de.loothub.client.pcg.TwitchChat.ensure(c.pcgEnabled, c.pcgChannel, c.pcgUser);
 		super.onClose();
+	}
+
+	private static Component lookLabel(String part, boolean on) {
+		return Component.translatable("loothub.settings.look_info." + part,
+				Component.translatable(on ? "loothub.settings.on" : "loothub.settings.off")
+						.withStyle(on ? net.minecraft.ChatFormatting.GREEN : net.minecraft.ChatFormatting.GRAY));
 	}
 }

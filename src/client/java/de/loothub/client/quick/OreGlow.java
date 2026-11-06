@@ -97,34 +97,34 @@ public final class OreGlow {
 	/** Farbe je Erz, oder −1 für kein Erz. */
 	private static int color(BlockState st) {
 		if (st.is(BlockTags.DIAMOND_ORES)) {
-			return 0x4AEDD9;
+			return 0x4CE6D8;
 		}
 		if (st.is(BlockTags.EMERALD_ORES)) {
-			return 0x17DD62;
+			return 0x2BD46C;
 		}
 		if (st.is(BlockTags.GOLD_ORES)) {
-			return 0xFCEE4B;
+			return 0xF8D640;
 		}
 		if (st.is(BlockTags.REDSTONE_ORES)) {
-			return 0xFF2A2A;
+			return 0xE81E1E;
 		}
 		if (st.is(BlockTags.LAPIS_ORES)) {
-			return 0x3A6BFF;
+			return 0x2F56C8;
 		}
 		if (st.is(BlockTags.IRON_ORES)) {
-			return 0xE8BFA0;
+			return 0xD9A27C;
 		}
 		if (st.is(BlockTags.COPPER_ORES)) {
-			return 0xE8803F;
+			return 0xE0723C;
 		}
 		if (st.is(BlockTags.COAL_ORES)) {
-			return 0x9A9A9A;
+			return 0x2B2B2B;
 		}
 		if (st.is(Blocks.NETHER_QUARTZ_ORE)) {
-			return 0xF2ECE4;
+			return 0xEDE6DC;
 		}
 		if (st.is(Blocks.ANCIENT_DEBRIS)) {
-			return 0xB0703F;
+			return 0x7A4E3A;
 		}
 		return -1;
 	}
@@ -139,7 +139,8 @@ public final class OreGlow {
 		float strength = Math.max(0, Math.min(100, WidgetConfig.get().oreGlowStrength)) / 100.0F;
 		// sanftes Pulsieren (1,6 s)
 		float pulse = 0.55F + 0.45F * (float) Math.sin(System.currentTimeMillis() / 1600.0 * Math.PI * 2);
-		VertexConsumer vc = buffers.getBuffer(RenderTypes.lightning());
+		// normale Mischung (keine Aufhellung): Farben bleiben wie die Erze; beidseitig, damit auch Oberseiten erscheinen
+		VertexConsumer vc = buffers.getBuffer(RenderTypes.debugQuads());
 		PoseStack.Pose pose = poseStack.last();
 		for (Ore o : list) {
 			float x = (float) (o.x() - cam.x), y = (float) (o.y() - cam.y), z = (float) (o.z() - cam.z);

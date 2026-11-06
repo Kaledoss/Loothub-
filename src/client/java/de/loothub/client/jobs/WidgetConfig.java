@@ -42,6 +42,12 @@ public final class WidgetConfig {
 	public boolean hideOwnCape = false;
 	/** Block-Info oben in der Mitte (angeschauter Block/Mob, passendes Werkzeug, Marktpreis). */
 	public boolean lookInfo = true;
+	/** Block-Info: Werkzeug bzw. Marktpreis zeigen, Größe, Position (x = Mitte als Anteil der Breite, y = Anteil der Höhe). */
+	public boolean lookInfoTool = true;
+	public boolean lookInfoPrice = true;
+	public float lookInfoScale = 1.0F;
+	public double lookInfoX = 0.5;
+	public double lookInfoY = 0.0;
 	/** Ressourcenpaket: leuchtende Erze (pulsierender Rand in Erzfarbe), Stärke in %, Reichweite in Blöcken. */
 	public boolean glowingOres = true;
 	public int oreGlowStrength = 70;
