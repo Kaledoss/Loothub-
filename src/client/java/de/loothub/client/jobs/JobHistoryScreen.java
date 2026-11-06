@@ -287,10 +287,6 @@ public class JobHistoryScreen extends LoothubScreen {
 		return info(job).color();
 	}
 
-	public static Item jobIcon(String job) {
-		return info(job).icon();
-	}
-
 	private static JobInfo info(String name) {
 		for (JobInfo j : JOBS) {
 			if (j.name().equalsIgnoreCase(name)) {
