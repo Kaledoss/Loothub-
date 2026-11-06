@@ -18,15 +18,15 @@ import net.minecraft.util.FormattedCharSequence;
 import de.loothub.client.jobs.WidgetConfig;
 import de.loothub.client.quick.ChatLog;
 
-/** Seite „Chat“: Suche im Chat dieser Sitzung und der eigene Nachrichten-Filter. */
+/** Seite „Chat“: globaler Nachrichten-Filter (die Suche sitzt im eigenen Chat, ⌕ in der Kopfzeile). */
 public class ChatPageScreen extends LoothubScreen {
 	private enum Tab {
-		SEARCH, FILTER
+		FILTER
 	}
 
 	private static final DateTimeFormatter HM = DateTimeFormatter.ofPattern("HH:mm");
 	private static final int LINE_H = 10;
-	private static Tab tab = Tab.SEARCH;
+	private static Tab tab = Tab.FILTER;
 	private static String query = "";
 
 	private EditBox searchBox, wordBox;
@@ -42,35 +42,8 @@ public class ChatPageScreen extends LoothubScreen {
 
 	@Override
 	protected void initPage() {
-		int tw = 100;
-		int x = cl;
-		for (Tab t : Tab.values()) {
-			Component label = Component.translatable("loothub.chatpage.tab." + t.name().toLowerCase(Locale.ROOT));
-			if (t == tab) {
-				label = Component.literal("▶ ").append(label);
-			}
-			addRenderableWidget(Button.builder(label, b -> {
-				tab = t;
-				scroll = 0;
-				rebuildWidgets();
-			}).bounds(x, ct, tw, 16).build());
-			x += tw + 4;
-		}
-		int y = ct + 24;
+		int y = ct + 2;
 		switch (tab) {
-			case SEARCH -> {
-				searchBox = addRenderableWidget(new EditBox(font, cl, y, Math.min(240, cw), 16, Component.translatable("loothub.chatpage.search")));
-				searchBox.setMaxLength(64);
-				searchBox.setHint(Component.translatable("loothub.chatpage.search").withStyle(ChatFormatting.DARK_GRAY));
-				searchBox.setValue(query);
-				searchBox.setResponder(v -> {
-					query = v;
-					scroll = 0;
-					rebuildLines();
-				});
-				setInitialFocus(searchBox);
-				listTop = y + 22;
-			}
 			case FILTER -> {
 				WidgetConfig c = WidgetConfig.get();
 				addRenderableWidget(Button.builder(onOff(c.chatFilter), b -> {
@@ -138,7 +111,7 @@ public class ChatPageScreen extends LoothubScreen {
 		// Neueste oben
 		for (int i = src.size() - 1; i >= 0; i--) {
 			ChatLog.Entry e = src.get(i);
-			if (tab == Tab.SEARCH && (q.isEmpty() || !e.plain().toLowerCase(Locale.ROOT).contains(q))) {
+			if (false && (q.isEmpty() || !e.plain().toLowerCase(Locale.ROOT).contains(q))) {
 				continue;
 			}
 			matches++;
@@ -179,7 +152,7 @@ public class ChatPageScreen extends LoothubScreen {
 			}
 			return;
 		}
-		if (tab == Tab.SEARCH && !query.isBlank()) {
+		if (false && !query.isBlank()) {
 			Component c = Component.translatable("loothub.chatpage.matches", matches);
 			g.drawString(font, c, cr - font.width(c), ct + 28, FAINT, false);
 		}

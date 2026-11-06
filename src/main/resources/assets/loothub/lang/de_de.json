@@ -438,7 +438,7 @@
 	"loothub.settings.chat_mention_sound": "Chat: Ton bei Erwähnung",
 	"loothub.settings.chat_mention_sound.tooltip": "Ein leiser Ton, wenn du im Chat erwähnt wirst.",
 	"loothub.tab.chat": "Chat",
-	"loothub.tab.chat.header": "Chat – Suche und Filter",
+	"loothub.tab.chat.header": "Chat – Filter (Suche: ⌕ im eigenen Chat)",
 	"loothub.tab.alltag": "Alltag",
 	"loothub.tab.alltag.header": "Alltag – Timer und Job-Vergleich",
 	"loothub.chatpage.tab.search": "Suche",
@@ -516,5 +516,6 @@
 	"loothub.chatwin.col.include": "Enthält (eins davon):",
 	"loothub.chatwin.col.exclude": "Enthält nicht:",
 	"loothub.chatwin.include.empty": "leer = alles",
-	"loothub.chatwin.exclude.empty": "nichts ausgeblendet"
+	"loothub.chatwin.exclude.empty": "nichts ausgeblendet",
+	"loothub.chat.search": "Suchen … (Enter = zurück zur Eingabe)"
 }

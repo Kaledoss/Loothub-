@@ -23,7 +23,8 @@
 		"DurabilityNumberMixin",
 		"DropProtectionMixin",
 		"DropProtectionScreenMixin",
-		"CustomChatMixin"
+		"CustomChatMixin",
+		"ChatSearchKeysMixin"
 	],
 	"injectors": {
 		"defaultRequire": 0

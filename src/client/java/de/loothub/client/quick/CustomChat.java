@@ -195,6 +195,11 @@ public final class CustomChat {
 	private static final Map<Tab, Integer> UNREAD = new IdentityHashMap<>();
 	private static final Map<Window, Integer> SCROLL = new IdentityHashMap<>();
 
+	// Suche im Chat (nur im offenen Chat, ein Fenster zur Zeit)
+	private static Window searchWin;
+	private static String searchQuery = "";
+	private static boolean searchFocused;
+
 	// Ziehen
 	private static Window dragWin;
 	private static boolean resizing;
@@ -338,6 +343,8 @@ public final class CustomChat {
 		long now = System.currentTimeMillis();
 		if (focused) {
 			ROWS.clear();
+		} else if (searchWin != null) {
+			closeSearch(); // Chat zu: Suche beenden
 		}
 		for (Window w : windows()) {
 			int[] b = box(w);
@@ -346,6 +353,9 @@ public final class CustomChat {
 			int bgA = Mth.clamp(w.opacity, 0, 100) * 255 / 100;
 			Tab tab = w.tab();
 			List<Line> lines = lines(w, tab, (int) ((b[2] - 6) / s));
+			if (focused && searchWin == w && !searchQuery.isBlank()) {
+				lines = filter(lines);
+			}
 			int visible = Math.max(1, (b[3] - 2) / lineH);
 			int scroll = SCROLL.getOrDefault(w, 0);
 			scroll = Mth.clamp(scroll, 0, Math.max(0, lines.size() - visible));
@@ -441,6 +451,27 @@ public final class CustomChat {
 		a.fill(b[0], b[1] - 1, b[0] + b[2], b[1], accent);
 		for (Hit h : hits(w, b)) {
 			switch (h.kind) {
+				case SEARCH -> text(a, h.x + 2, top + 2, 1F, 1F, label("⌕", searchWin == w ? (w.accent & 0xFFFFFF) : 0xD0D0D0));
+				case SEARCH_FIELD -> {
+					a.fill(h.x + 1, top + 1, h.x + h.w, b[1] - 2, searchFocused ? 0xFF000000 : 0xC0000000);
+					boolean blink = searchFocused && (System.currentTimeMillis() / 500) % 2 == 0;
+					String shown = searchQuery.isEmpty() && !searchFocused ? "" : searchQuery + (blink ? "_" : "");
+					Font f = Minecraft.getInstance().font;
+					String count = searchQuery.isBlank() ? "" : "  " + searchCount + " ✓";
+					int room = h.w - 8 - f.width(count);
+					if (f.width(shown) > room) {
+						shown = f.plainSubstrByWidth(shown, room, true);
+					}
+					if (searchQuery.isEmpty() && !searchFocused) {
+						text(a, h.x + 4, top + 2, 1F, 1F, label(Component.translatable("loothub.chat.search").getString(), 0x8A8A8A));
+					} else {
+						text(a, h.x + 4, top + 2, 1F, 1F, label(shown, 0xFFFFFF));
+					}
+					if (!count.isEmpty()) {
+						text(a, h.x + h.w - 4 - f.width(count), top + 2, 1F, 1F, label(count, searchCount > 0 ? 0x55E06A : 0xFF6666));
+					}
+				}
+				case SEARCH_CLOSE -> text(a, h.x + 2, top + 2, 1F, 1F, label("✕", 0xFFAA55));
 				case TAB -> {
 					Tab t = w.tabs.get(h.index);
 					boolean sel = h.index == w.active;
@@ -471,7 +502,7 @@ public final class CustomChat {
 	// ------------------------------------------------------------------ Klickflächen
 
 	private enum Kind {
-		TAB, ADD_TAB, SETTINGS, NEW_WINDOW, CLOSE, RESIZE, MOVE
+		TAB, ADD_TAB, SETTINGS, NEW_WINDOW, CLOSE, RESIZE, MOVE, SEARCH, SEARCH_FIELD, SEARCH_CLOSE
 	}
 
 	private record Hit(Kind kind, int index, int x, int w) {
@@ -490,8 +521,15 @@ public final class CustomChat {
 		out.add(new Hit(Kind.NEW_WINDOW, 0, right - BTN, BTN));
 		right -= BTN;
 		out.add(new Hit(Kind.SETTINGS, 0, right - BTN, BTN));
+		right -= BTN;
+		out.add(new Hit(Kind.SEARCH, 0, right - BTN, BTN));
 		right -= BTN + 2;
 		int x = b[0];
+		if (searchWin == w) {
+			out.add(new Hit(Kind.SEARCH_CLOSE, 0, right - BTN, BTN));
+			out.add(new Hit(Kind.SEARCH_FIELD, 0, x, right - BTN - x));
+			return out;
+		}
 		for (int i = 0; i < w.tabs.size(); i++) {
 			int tw = font.width(tabLabel(w.tabs.get(i))) + 8;
 			if (x + tw > right - BTN) {
@@ -541,6 +579,7 @@ public final class CustomChat {
 
 	private static boolean click(Screen screen, MouseButtonEvent e) {
 		Window w = windowAt(e.x(), e.y(), true);
+		searchFocused = false; // wird unten wieder gesetzt, wenn ins Suchfeld geklickt wurde
 		if (w == null) {
 			if (e.button() == 1) {
 				for (Row r : new ArrayList<>(ROWS)) {
@@ -583,6 +622,17 @@ public final class CustomChat {
 				mc.setScreen(new ChatWindowScreen(w));
 			}
 			case SETTINGS -> mc.setScreen(new ChatWindowScreen(w));
+			case SEARCH -> {
+				if (searchWin == w) {
+					closeSearch();
+				} else {
+					searchWin = w;
+					searchQuery = "";
+					searchFocused = true;
+				}
+			}
+			case SEARCH_FIELD -> searchFocused = true;
+			case SEARCH_CLOSE -> closeSearch();
 			case NEW_WINDOW -> {
 				Window n = new Window();
 				n.left = w.left + 20;
@@ -654,6 +704,67 @@ public final class CustomChat {
 			SCROLL.put(w, 0);
 		}
 		return true;
+	}
+
+	private static int searchCount;
+
+	/** Nur Zeilen von Nachrichten, die alle Suchwörter enthalten. */
+	private static List<Line> filter(List<Line> lines) {
+		String[] words = searchQuery.strip().toLowerCase(Locale.ROOT).split("\\s+");
+		List<Line> out = new ArrayList<>();
+		java.util.Set<Msg> hit = java.util.Collections.newSetFromMap(new IdentityHashMap<>());
+		for (Line l : lines) {
+			boolean all = true;
+			for (String word : words) {
+				all &= l.msg().low().contains(word);
+			}
+			if (all) {
+				out.add(l);
+				hit.add(l.msg());
+			}
+		}
+		searchCount = hit.size();
+		return out;
+	}
+
+	private static void closeSearch() {
+		searchWin = null;
+		searchQuery = "";
+		searchFocused = false;
+	}
+
+	/** Tastatur im offenen Chat, solange das Suchfeld aktiv ist: Zeichen landen in der Suche, nicht in der Eingabezeile. */
+	public static boolean typeChar(int codepoint) {
+		if (!searchFocused || searchWin == null || !chatOpen(Minecraft.getInstance().screen)) {
+			return false;
+		}
+		if (codepoint >= 32 && searchQuery.length() < 60) {
+			searchQuery += new String(Character.toChars(codepoint));
+			SCROLL.put(searchWin, 0);
+		}
+		return true;
+	}
+
+	public static boolean typeKey(int key, boolean ctrl) {
+		if (!searchFocused || searchWin == null || !chatOpen(Minecraft.getInstance().screen)) {
+			return false;
+		}
+		switch (key) {
+			case org.lwjgl.glfw.GLFW.GLFW_KEY_BACKSPACE -> {
+				if (ctrl) {
+					searchQuery = "";
+				} else if (!searchQuery.isEmpty()) {
+					searchQuery = searchQuery.substring(0, searchQuery.offsetByCodePoints(searchQuery.length(), -1));
+				}
+				SCROLL.put(searchWin, 0);
+			}
+			case org.lwjgl.glfw.GLFW.GLFW_KEY_ESCAPE -> closeSearch();
+			case org.lwjgl.glfw.GLFW.GLFW_KEY_ENTER, org.lwjgl.glfw.GLFW.GLFW_KEY_KP_ENTER, org.lwjgl.glfw.GLFW.GLFW_KEY_TAB ->
+					searchFocused = false; // zurück zur Eingabezeile, Treffer bleiben stehen
+			default -> {
+			}
+		}
+		return true; // alle anderen Tasten nicht an die Eingabezeile weitergeben
 	}
 
 	/** Beim Schließen des Chats wieder ganz nach unten. */
