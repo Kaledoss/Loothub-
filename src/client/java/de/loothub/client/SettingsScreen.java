@@ -86,6 +86,20 @@ public class SettingsScreen extends LoothubScreen {
 		}
 	}
 
+	/** Suche über alle Einstellungen: Treffer (Reiter, Karte, Abstand zum Anfang des Reiters). */
+	private record Result(Tab tab, String titleKey, String descKey, int offset) {
+	}
+
+	private static final int SEARCH_W = 110;
+	private static final int RESULT_H = 12;
+	private static String query = "";
+	private static String highlightKey;
+	private static long highlightUntil;
+	private List<Result> index;
+	private boolean indexing;
+	private List<Result> results = List.of();
+	private net.minecraft.client.gui.components.EditBox searchBox;
+
 	private static final int TAB_H = 22;
 	private static Tab tab = Tab.GENERAL;
 	/** Oberkante des scrollbaren Bereichs (unter den Reitern). */
@@ -105,9 +119,44 @@ public class SettingsScreen extends LoothubScreen {
 		colorSwatches[0] = colorSwatches[1] = colorSwatches[2] = null;
 		invHudSwatch = null;
 
-		// Reiter oben (fest, scrollt nicht mit)
+		// Einmal alle Reiter durchgehen und die Karten für die Suche merken
+		if (index == null && !indexing) {
+			indexing = true;
+			Tab saved = tab;
+			int savedScroll = scroll;
+			List<Result> idx = new ArrayList<>();
+			for (Tab t : Tab.values()) {
+				tab = t;
+				scroll = 0;
+				rebuildWidgets();
+				for (Card cd : cards) {
+					idx.add(new Result(t, cd.titleKey(), cd.descKey(), cd.y() - top));
+				}
+			}
+			tab = saved;
+			scroll = savedScroll;
+			needsRebuild = false;
+			index = idx;
+			indexing = false;
+			rebuildWidgets();
+			return;
+		}
+
+		// Reiter oben (fest, scrollt nicht mit), rechts daneben die Suche
 		int tabX = cl;
-		int tabW = (cw - (Tab.values().length - 1) * 3) / Tab.values().length;
+		int searchW = Math.min(SEARCH_W, cw / 4);
+		int tabW = (cw - searchW - 4 - (Tab.values().length - 1) * 3) / Tab.values().length;
+		searchBox = new net.minecraft.client.gui.components.EditBox(font, cr - searchW, ct, searchW, 16,
+				Component.translatable("loothub.settings.search"));
+		searchBox.setMaxLength(40);
+		searchBox.setHint(Component.translatable("loothub.settings.search").withStyle(ChatFormatting.DARK_GRAY));
+		searchBox.setValue(query);
+		searchBox.setResponder(v -> {
+			query = v;
+			updateResults();
+		});
+		addRenderableWidget(searchBox);
+		updateResults();
 		for (Tab t : Tab.values()) {
 			Button tb = Button.builder(Component.translatable(t.key), b -> {
 				tab = t;
@@ -569,6 +618,55 @@ public class SettingsScreen extends LoothubScreen {
 		return s.endsWith(":") ? s.substring(0, s.length() - 1) : s;
 	}
 
+	private void updateResults() {
+		String q = query.strip().toLowerCase(java.util.Locale.ROOT);
+		if (q.isEmpty() || index == null) {
+			results = List.of();
+			return;
+		}
+		List<Result> out = new ArrayList<>();
+		for (Result r : index) {
+			String hay = (Component.translatable(r.titleKey()).getString() + " " + Component.translatable(r.descKey()).getString()
+					+ " " + Component.translatable(r.tab().key).getString()).toLowerCase(java.util.Locale.ROOT);
+			boolean all = true;
+			for (String word : q.split("\\s+")) {
+				all &= hay.contains(word);
+			}
+			if (all) {
+				out.add(r);
+			}
+		}
+		// Treffer im Titel zuerst
+		out.sort((a, b) -> Boolean.compare(!Component.translatable(a.titleKey()).getString().toLowerCase(java.util.Locale.ROOT).contains(q),
+				!Component.translatable(b.titleKey()).getString().toLowerCase(java.util.Locale.ROOT).contains(q)));
+		results = out;
+	}
+
+	private int resultsVisible() {
+		return Math.min(results.size(), Math.max(1, (cb - ct - 18) / RESULT_H));
+	}
+
+	private int resultAt(double mx, double my) {
+		if (results.isEmpty() || searchBox == null) {
+			return -1;
+		}
+		int w = Math.min(260, cw), x = cr - w, y = ct + 18;
+		if (mx < x || mx >= cr || my < y || my >= y + resultsVisible() * RESULT_H) {
+			return -1;
+		}
+		return (int) ((my - y) / RESULT_H);
+	}
+
+	private void jump(Result r) {
+		tab = r.tab();
+		scroll = Math.max(0, r.offset() - 4);
+		highlightKey = r.titleKey();
+		highlightUntil = System.currentTimeMillis() + 2500;
+		query = "";
+		results = List.of();
+		rebuildWidgets();
+	}
+
 	/** Karte ohne eigenen Schalter (Schalter liegen als Kästchen in der Karte). */
 	private int cardNoToggle(int y, int h, String titleKey, String descKey) {
 		cards.add(new Card(y, h, titleKey, descKey, null));
@@ -698,6 +796,7 @@ public class SettingsScreen extends LoothubScreen {
 				+ de.loothub.client.pcg.TwitchChat.status().name().toLowerCase(java.util.Locale.ROOT));
 		g.drawString(font, pcgStatus, cl + 8 + (labelW - font.width(pcgStatus)) / 2, pcgLabelY + 14, FAINT, false);
 		}
+		renderSearch(g, mouseX, mouseY);
 		g.disableScissor();
 
 		// Scrollleiste
@@ -776,8 +875,70 @@ public class SettingsScreen extends LoothubScreen {
 
 	// ------------------------------------------------------------------ Eingabe
 
+	/** Gefundene Karte kurz hervorheben; Trefferliste unter dem Suchfeld. */
+	private void renderSearch(GuiGraphics g, int mouseX, int mouseY) {
+		if (highlightKey != null && System.currentTimeMillis() < highlightUntil) {
+			float t = (highlightUntil - System.currentTimeMillis()) / 2500F;
+			int a = (int) (255 * Math.min(1F, t * 2));
+			int col = (a << 24) | (GOLD & 0xFFFFFF);
+			g.enableScissor(cl - 2, top, cr + 2, cb);
+			for (Card card : cards) {
+				if (card.titleKey().equals(highlightKey)) {
+					int y0 = card.y(), y1 = card.y() + card.h();
+					g.fill(cl - 1, y0 - 1, cr + 1, y0, col);
+					g.fill(cl - 1, y1, cr + 1, y1 + 1, col);
+					g.fill(cl - 1, y0, cl, y1, col);
+					g.fill(cr, y0, cr + 1, y1, col);
+				}
+			}
+			g.disableScissor();
+		}
+		if (query.isBlank()) {
+			return;
+		}
+		g.nextStratum();
+		int w = Math.min(260, cw), x = cr - w, y = ct + 18;
+		if (results.isEmpty()) {
+			Component none = Component.translatable("loothub.settings.search.none");
+			g.fill(x - 1, y - 1, cr + 1, y + RESULT_H + 1, RED);
+			g.fill(x, y, cr, y + RESULT_H, 0xF0140B0D);
+			g.drawString(font, none, x + 4, y + 2, FAINT, false);
+			return;
+		}
+		int n = resultsVisible();
+		g.fill(x - 1, y - 1, cr + 1, y + n * RESULT_H + 1, RED);
+		g.fill(x, y, cr, y + n * RESULT_H, 0xF0140B0D);
+		int hover = resultAt(mouseX, mouseY);
+		for (int i = 0; i < n; i++) {
+			Result r = results.get(i);
+			int ry = y + i * RESULT_H;
+			if (i == hover) {
+				g.fill(x, ry, cr, ry + RESULT_H, 0x40E23B3B);
+			}
+			String tabName = Component.translatable(r.tab().key).getString() + " › ";
+			g.drawString(font, tabName, x + 4, ry + 2, FAINT, false);
+			String title = font.plainSubstrByWidth(Component.translatable(r.titleKey()).getString(), w - 10 - font.width(tabName));
+			g.drawString(font, title, x + 4 + font.width(tabName), ry + 2, i == hover ? TEXT : MUTED, false);
+		}
+	}
+
+	@Override
+	public boolean keyPressed(net.minecraft.client.input.KeyEvent event) {
+		if (searchBox != null && searchBox.isFocused() && !results.isEmpty()
+				&& (event.key() == org.lwjgl.glfw.GLFW.GLFW_KEY_ENTER || event.key() == org.lwjgl.glfw.GLFW.GLFW_KEY_KP_ENTER)) {
+			jump(results.get(0));
+			return true;
+		}
+		return super.keyPressed(event);
+	}
+
 	@Override
 	public boolean mouseClicked(MouseButtonEvent event, boolean doubleClick) {
+		int hit = resultAt(event.x(), event.y());
+		if (hit >= 0 && !query.isBlank()) {
+			jump(results.get(hit));
+			return true;
+		}
 		if (super.mouseClicked(event, doubleClick)) {
 			return true;
 		}

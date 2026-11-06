@@ -508,5 +508,7 @@
 	"loothub.chatwin.tab.exclude": "e.g. ads",
 	"loothub.chatwin.tab.private": "Private only",
 	"loothub.chatwin.tab.add": "+ Tab",
-	"loothub.chatwin.hint": "Separate words with commas"
+	"loothub.chatwin.hint": "Separate words with commas",
+	"loothub.settings.search": "Search …",
+	"loothub.settings.search.none": "No setting found"
 }
