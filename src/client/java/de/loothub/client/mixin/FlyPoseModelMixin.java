@@ -19,6 +19,7 @@ public abstract class FlyPoseModelMixin {
 	@Inject(method = "setupAnim(Lnet/minecraft/client/renderer/entity/state/AvatarRenderState;)V", at = @At("TAIL"))
 	private void loothub$flyPose(AvatarRenderState state, CallbackInfo ci) {
 		loothub$afkLimbs(state);
+		loothub$risePose(state);
 		float f = Motion.fly(state);
 		if (f <= 0.0F) {
 			return;
@@ -40,6 +41,34 @@ public abstract class FlyPoseModelMixin {
 		m.leftLeg.xRot = lerp(f, m.leftLeg.xRot, 0.02F - (float) Math.sin(t * 0.25F) * 0.05F);
 		m.rightLeg.zRot = lerp(f, m.rightLeg.zRot, 0.03F);
 		m.leftLeg.zRot = lerp(f, m.leftLeg.zRot, -0.03F);
+	}
+
+	/**
+	 * Hoch-/Runterfliegen (ohne Sprint): aufrecht, Beine geschlossen und gestreckt, Arme eng am Körper,
+	 * Blick in Flugrichtung (nach oben beim Steigen, nach unten beim Sinken).
+	 */
+	private void loothub$risePose(AvatarRenderState state) {
+		float rise = Motion.rise(state);
+		float k = Math.min(1.0F, Math.abs(rise) * 1.4F);
+		if (k <= 0.01F || Motion.fly(state) > 0.5F) {
+			return;
+		}
+		PlayerModel m = (PlayerModel) (Object) this;
+		float t = state.ageInTicks;
+		m.rightLeg.xRot = lerp(k, m.rightLeg.xRot, 0.04F);
+		m.leftLeg.xRot = lerp(k, m.leftLeg.xRot, 0.04F);
+		m.rightLeg.zRot = lerp(k, m.rightLeg.zRot, 0.02F);
+		m.leftLeg.zRot = lerp(k, m.leftLeg.zRot, -0.02F);
+		m.rightLeg.yRot = lerp(k, m.rightLeg.yRot, 0.0F);
+		m.leftLeg.yRot = lerp(k, m.leftLeg.yRot, 0.0F);
+		if (!(state.attackTime > 0.0F || state.isUsingItem)) {
+			float wind = (float) Math.sin(t * 0.4F) * 0.03F;
+			m.rightArm.xRot = lerp(k, m.rightArm.xRot, 0.06F + wind);
+			m.leftArm.xRot = lerp(k, m.leftArm.xRot, 0.06F - wind);
+			m.rightArm.zRot = lerp(k, m.rightArm.zRot, 0.1F);
+			m.leftArm.zRot = lerp(k, m.leftArm.zRot, -0.1F);
+		}
+		m.head.xRot = lerp(k * 0.6F, m.head.xRot, rise > 0 ? -0.45F : 0.5F);
 	}
 
 	/** AFK-Anime-Haltung: strecken/gähnen, Hände hinter dem Kopf beim Liegen, Knie anziehen beim Kip-up. */
