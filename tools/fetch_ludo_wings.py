@@ -2,7 +2,7 @@
 
 Aufruf: python3 tools/fetch_ludo_wings.py tools/ludo_wings.txt src/main/resources/assets/loothub/textures/entity
 Jede Zeile: <stil> <url>   (z. B. "dragon https://…png")
-Erzeugt je Stil (528×1024, Seitenverhältnis 0,52 wie Wings.ASPECT, Ansatz oben links):
+Erzeugt je Stil (528×560, Seitenverhältnis 0,943 wie Wings.ASPECT, Ansatz links):
   wing_<stil>.png            Originalfarben
   wing_<stil>_gray.png       helle Graustufen (zum Einfärben)
   wing_<stil>_in.png / _out.png             Fläche bzw. Knochen+Rand in Originalfarben
@@ -12,7 +12,7 @@ Läuft im CI, weil die Ludo-Links nur dort erreichbar sind und nach 7 Tagen abla
 import io, os, sys, urllib.request
 from PIL import Image, ImageOps, ImageFilter
 
-H, W = 1024, 528
+H, W = 560, 528
 
 
 def wing(data: bytes) -> Image.Image:

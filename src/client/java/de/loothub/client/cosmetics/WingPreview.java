@@ -8,7 +8,7 @@ import de.loothub.Loothub;
 
 /** Flügelpaar als flaches Bild für Menüs (Vorschau beim Einstellen von Stil und Farben). */
 public final class WingPreview {
-	private static final int TW = 66, TH = 128;
+	private static final int TW = 528, TH = 560;
 
 	private WingPreview() {
 	}

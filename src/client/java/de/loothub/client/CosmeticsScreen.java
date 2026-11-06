@@ -283,7 +283,7 @@ public class CosmeticsScreen extends LoothubScreen {
 							// Flügel live in der gerade gewählten Farbe (ohne Stil: Drache als Beispiel)
 							String st = style.get() == null || style.get().isBlank() ? "dragon" : style.get();
 							String hex = String.format(Locale.ROOT, "#%06X", rgb & 0xFFFFFF);
-							int hh = Math.min(ph - 10, (int) (pw / 2 * 128 / 66.0F) - 4);
+							int hh = Math.min(ph - 10, (int) (pw / 2 * 560 / 528.0F) - 4);
 							de.loothub.client.cosmetics.WingPreview.draw(g, px + pw / 2, py + (ph - hh) / 2, hh, st,
 									outerPart ? other.get() : hex, outerPart ? hex : other.get());
 						})))

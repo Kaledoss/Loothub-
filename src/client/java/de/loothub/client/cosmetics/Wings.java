@@ -19,8 +19,8 @@ import de.loothub.Loothub;
  */
 public final class Wings {
 	/** Seitenverhältnis Breite/Höhe eines Flügels (passend zu den erzeugten Texturen). */
-	private static final float ASPECT = 0.52F;
-	private static final float HEIGHT = 2.0F;
+	private static final float ASPECT = 0.943F;
+	private static final float HEIGHT = 1.4F;
 
 	private Wings() {
 	}
@@ -89,7 +89,9 @@ public final class Wings {
 			// Cutout: sauber in der Tiefe; zwei Flächen knapp hintereinander – außen hell, innen dunkler
 			collector.submitCustomGeometry(poseStack, RenderTypes.entityCutoutNoCull(texture), (pose, vc) -> {
 				float w = HEIGHT * ASPECT * s;
-				float top = -0.8F, bottom = top + HEIGHT; // Ansatz über der Schulter
+				// Der Ansatz (linker Bildrand, untere Hälfte) liegt so auf Höhe der Schulterblätter; oben ragen Arm und Kralle
+				// etwas über den Kopf hinaus
+				float top = 0.2F - 0.7F * HEIGHT, bottom = top + HEIGHT;
 				// u 0 = Wurzel, 1 = Spitze; links gespiegelt durch die negative Breite
 				quad(pose, vc, w, top, bottom, 0.0F, light, argb, 1.0F);
 				quad(pose, vc, w, top, bottom, -0.012F, light, dark, -1.0F);
