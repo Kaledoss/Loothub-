@@ -253,9 +253,19 @@ public final class OreGlow {
 			}
 		}
 		float edge = Math.min(1.0F, a * 0.95F), fill = a * 0.18F;
+		// dunkle Erze (Kohle): der Rand leuchtet heller, sonst geht er auf dunklem Gestein unter
+		float lum = 0.3F * r + 0.59F * g + 0.11F * b;
+		float er = r, eg = g, eb = b;
+		if (lum < 0.4F) {
+			float k = 0.62F;
+			er = r + (1.0F - r) * k;
+			eg = g + (1.0F - g) * k;
+			eb = b + (1.0F - b) * k;
+			edge = Math.min(1.0F, a * 1.1F);
+		}
 		for (int i = 0; i < 4; i++) {
 			int j = (i + 1) % 4;
-			quad(pose, vc, c[i], c[j], in[j], in[i], r, g, b, edge);
+			quad(pose, vc, c[i], c[j], in[j], in[i], er, eg, eb, edge);
 		}
 		quad(pose, vc, in[0], in[1], in[2], in[3], r, g, b, fill);
 	}
