@@ -29,7 +29,6 @@ public final class OreGlow {
 	}
 
 	private static volatile List<Ore> ores = List.of();
-	private static int lastScan = -100;
 
 	private OreGlow() {
 	}
@@ -39,28 +38,36 @@ public final class OreGlow {
 		WorldRenderEvents.BEFORE_TRANSLUCENT.register(ctx -> render(ctx.matrices(), ctx.consumers()));
 	}
 
+	// Suche läuft verteilt über mehrere Ticks (ein paar Scheiben pro Tick) – auch bei großer Reichweite ohne Ruckler
+	private static List<Ore> building = new ArrayList<>();
+	private static BlockPos scanCenter;
+	private static int scanX, scanR, scanRY;
+
 	private static void tick(Minecraft mc) {
 		WidgetConfig c = WidgetConfig.get();
 		if (!c.glowingOres || mc.level == null || mc.player == null) {
 			if (!ores.isEmpty()) {
 				ores = List.of();
 			}
+			scanCenter = null;
 			return;
 		}
-		// alle 10 Ticks die Umgebung neu ansehen (Erze ändern sich selten)
-		if (Math.abs(mc.player.tickCount - lastScan) < 10) {
-			return;
+		if (scanCenter == null) {
+			scanR = Math.max(4, Math.min(32, c.oreGlowRange));
+			scanRY = Math.min(scanR, 16); // in der Höhe etwas weniger weit
+			scanCenter = mc.player.blockPosition();
+			scanX = -scanR;
+			building = new ArrayList<>();
 		}
-		lastScan = mc.player.tickCount;
-		int r = Math.max(4, Math.min(16, c.oreGlowRange));
-		BlockPos center = mc.player.blockPosition();
 		BlockPos.MutableBlockPos p = new BlockPos.MutableBlockPos();
 		BlockPos.MutableBlockPos n = new BlockPos.MutableBlockPos();
-		List<Ore> found = new ArrayList<>();
-		for (int x = -r; x <= r; x++) {
-			for (int y = -r; y <= r; y++) {
-				for (int z = -r; z <= r; z++) {
-					p.set(center.getX() + x, center.getY() + y, center.getZ() + z);
+		int budget = 6000; // Block-Abfragen pro Tick
+		while (scanX <= scanR && budget > 0) {
+			int x = scanX++;
+			for (int y = -scanRY; y <= scanRY; y++) {
+				for (int z = -scanR; z <= scanR; z++) {
+					budget--;
+					p.set(scanCenter.getX() + x, scanCenter.getY() + y, scanCenter.getZ() + z);
 					BlockState st = mc.level.getBlockState(p);
 					int rgb = color(st);
 					if (rgb < 0) {
@@ -76,12 +83,15 @@ public final class OreGlow {
 						}
 					}
 					if (faces != 0) {
-						found.add(new Ore(p.getX(), p.getY(), p.getZ(), faces, rgb));
+						building.add(new Ore(p.getX(), p.getY(), p.getZ(), faces, rgb));
 					}
 				}
 			}
 		}
-		ores = found;
+		if (scanX > scanR) {
+			ores = building; // Durchlauf fertig → anzeigen, nächster beginnt
+			scanCenter = null;
+		}
 	}
 
 	/** Farbe je Erz, oder −1 für kein Erz. */

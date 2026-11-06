@@ -239,19 +239,19 @@ public class SettingsScreen extends LoothubScreen {
 					}
 				}));
 				buttons.add(addRenderableWidget(new net.minecraft.client.gui.components.AbstractSliderButton(
-						oDescX + half + 4, oreY + 38, half, 16, Component.empty(), (c.oreGlowRange - 4) / 12.0) {
+						oDescX + half + 4, oreY + 38, half, 16, Component.empty(), (c.oreGlowRange - 4) / 28.0) {
 					{
 						updateMessage();
 					}
 
 					@Override
 					protected void updateMessage() {
-						setMessage(Component.translatable("loothub.settings.ore_glow.range", 4 + (int) Math.round(value * 12)));
+						setMessage(Component.translatable("loothub.settings.ore_glow.range", 4 + (int) Math.round(value * 28)));
 					}
 
 					@Override
 					protected void applyValue() {
-						c.oreGlowRange = 4 + (int) Math.round(value * 12);
+						c.oreGlowRange = 4 + (int) Math.round(value * 28);
 					}
 				}));
 				y = card(oreY, 60, "loothub.settings.ore_glow", "loothub.settings.ore_glow.tooltip",

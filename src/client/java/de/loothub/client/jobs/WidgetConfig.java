@@ -45,7 +45,9 @@ public final class WidgetConfig {
 	/** Ressourcenpaket: leuchtende Erze (pulsierender Rand in Erzfarbe), Stärke in %, Reichweite in Blöcken. */
 	public boolean glowingOres = true;
 	public int oreGlowStrength = 70;
-	public int oreGlowRange = 10;
+	public int oreGlowRange = 20;
+	/** Einmalig: alte Standard-Reichweite (10) auf die neue (20) anheben. */
+	public boolean oreRangeV2 = false;
 	/** Leuchtende Augen ("" = aus, sonst „#RRGGBB“). */
 	/** Flügelfarben („#RRGGBB“, leer = Originalfarben). */
 	public String wingColor = "";
@@ -271,6 +273,12 @@ public final class WidgetConfig {
 					}
 					if (c.pcgUser == null) {
 						c.pcgUser = "";
+					}
+					if (!c.oreRangeV2) {
+						if (c.oreGlowRange == 10) {
+							c.oreGlowRange = 20;
+						}
+						c.oreRangeV2 = true;
 					}
 					if (c.miniMes == null) {
 						c.miniMes = new java.util.ArrayList<>();
