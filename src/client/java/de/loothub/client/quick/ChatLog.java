@@ -78,7 +78,7 @@ public final class ChatLog {
 	 * Privatnachricht erkennen: typische Formen wie „[Name -> mir]“, „Name → Du“, „[MSG] …“ oder „flüstert“. Wird
 	 * bei Bedarf an das genaue OPSUCHT-Format angepasst.
 	 */
-	static boolean isPrivate(String plain) {
+	public static boolean isPrivate(String plain) {
 		String low = plain.toLowerCase(Locale.ROOT);
 		if (low.contains("[msg]") || low.contains("flüstert") || low.contains("privatnachricht") || low.startsWith("✉")) {
 			return true;

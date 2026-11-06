@@ -148,6 +148,11 @@ public class SettingsScreen extends LoothubScreen {
 						() -> c.chatMention, v -> c.chatMention = v);
 				y = card(y, 40, "loothub.settings.chat_mention_sound", "loothub.settings.chat_mention_sound.tooltip",
 						() -> c.chatMentionSound, v -> c.chatMentionSound = v);
+				y = card(y, 40, "loothub.settings.custom_chat", "loothub.settings.custom_chat.tooltip",
+						() -> c.customChat, v -> {
+							c.customChat = v;
+							de.loothub.client.quick.CustomChat.invalidate();
+						});
 				y = card(y, 40, "loothub.settings.chat_filter", "loothub.settings.chat_filter.tooltip",
 						() -> c.chatFilter, v -> c.chatFilter = v);
 				y = card(y, 40, "loothub.settings.timers", "loothub.settings.timers.tooltip",

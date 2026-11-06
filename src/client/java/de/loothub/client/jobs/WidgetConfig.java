@@ -51,6 +51,9 @@ public final class WidgetConfig {
 	public boolean chatCopy = true;
 	public boolean chatMention = true;
 	public boolean chatMentionSound = true;
+	/** Eigener Chat (Fenster, Tabs, Farben) statt des normalen Minecraft-Chats. Standardmäßig aus. */
+	public boolean customChat = false;
+	public java.util.List<de.loothub.client.quick.CustomChat.Window> chatWindows = new java.util.ArrayList<>();
 	/** Chat-Filter: Nachrichten mit diesen Wörtern ausblenden. */
 	public boolean chatFilter = true;
 	public java.util.List<String> chatFilterWords = new java.util.ArrayList<>();
@@ -250,6 +253,7 @@ public final class WidgetConfig {
 		chatMention = false;
 		chatMentionSound = false;
 		chatFilter = false;
+		customChat = false;
 		durabilityNumbers = false;
 		dropProtection = false;
 		timersEnabled = false;

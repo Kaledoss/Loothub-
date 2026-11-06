@@ -491,5 +491,22 @@
 	"loothub.settings.durability_numbers": "Durability as number",
 	"loothub.settings.durability_numbers.tooltip": "Shows the remaining durability small in the top left of the slot.",
 	"loothub.settings.drop_protection": "Drop protection",
-	"loothub.settings.drop_protection.tooltip": "Valuable items (rarity, custom name, enchanted) only drop on the second throw in quick succession."
+	"loothub.settings.drop_protection.tooltip": "Valuable items (rarity, custom name, enchanted) only drop on the second throw in quick succession.",
+	"loothub.settings.custom_chat": "Custom chat",
+	"loothub.settings.custom_chat.tooltip": "Replaces the Minecraft chat with your own windows: move and resize in the open chat, tabs with your own rules, colors, text size. ⚙ in the header opens settings, right-click a tab to edit it.",
+	"loothub.chatwin.title": "Chat window",
+	"loothub.chatwin.bg": "Background",
+	"loothub.chatwin.accent": "Accent",
+	"loothub.chatwin.opacity": "Opacity",
+	"loothub.chatwin.scale": "Text size",
+	"loothub.chatwin.fade": "Fade after",
+	"loothub.chatwin.tabs": "Tabs",
+	"loothub.chatwin.col.include": "Only with … (comma, empty = all)",
+	"loothub.chatwin.col.exclude": "Without …",
+	"loothub.chatwin.tab.name": "Name",
+	"loothub.chatwin.tab.include": "e.g. market, auction",
+	"loothub.chatwin.tab.exclude": "e.g. ads",
+	"loothub.chatwin.tab.private": "Private only",
+	"loothub.chatwin.tab.add": "+ Tab",
+	"loothub.chatwin.hint": "Separate words with commas"
 }

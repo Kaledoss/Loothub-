@@ -491,5 +491,22 @@
 	"loothub.settings.durability_numbers": "Haltbarkeit als Zahl",
 	"loothub.settings.durability_numbers.tooltip": "Zeigt die restliche Haltbarkeit klein oben links im Slot.",
 	"loothub.settings.drop_protection": "Wegwerf-Schutz",
-	"loothub.settings.drop_protection.tooltip": "Wertvolle Items (Seltenheit, eigener Name, verzaubert) fallen erst beim zweiten Wurf kurz hintereinander."
+	"loothub.settings.drop_protection.tooltip": "Wertvolle Items (Seltenheit, eigener Name, verzaubert) fallen erst beim zweiten Wurf kurz hintereinander.",
+	"loothub.settings.custom_chat": "Eigener Chat",
+	"loothub.settings.custom_chat.tooltip": "Ersetzt den Minecraft-Chat durch eigene Fenster: verschieben und Größe ändern im offenen Chat, Tabs mit eigenen Regeln, Farben, Textgröße. ⚙ in der Kopfzeile öffnet die Einstellungen, Rechtsklick auf einen Tab bearbeitet ihn.",
+	"loothub.chatwin.title": "Chat-Fenster",
+	"loothub.chatwin.bg": "Hintergrund",
+	"loothub.chatwin.accent": "Akzent",
+	"loothub.chatwin.opacity": "Deckkraft",
+	"loothub.chatwin.scale": "Textgröße",
+	"loothub.chatwin.fade": "Ausblenden nach",
+	"loothub.chatwin.tabs": "Tabs",
+	"loothub.chatwin.col.include": "Zeigt nur mit … (Komma, leer = alles)",
+	"loothub.chatwin.col.exclude": "Ohne …",
+	"loothub.chatwin.tab.name": "Name",
+	"loothub.chatwin.tab.include": "z. B. Markt, Auktion",
+	"loothub.chatwin.tab.exclude": "z. B. Werbung",
+	"loothub.chatwin.tab.private": "Nur privat",
+	"loothub.chatwin.tab.add": "+ Tab",
+	"loothub.chatwin.hint": "Wörter mit Komma trennen"
 }

@@ -22,7 +22,8 @@
 		"AvatarLayersMixin",
 		"DurabilityNumberMixin",
 		"DropProtectionMixin",
-		"DropProtectionScreenMixin"
+		"DropProtectionScreenMixin",
+		"CustomChatMixin"
 	],
 	"injectors": {
 		"defaultRequire": 0
