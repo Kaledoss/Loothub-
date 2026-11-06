@@ -218,8 +218,16 @@ public class SettingsScreen extends LoothubScreen {
 							c.customChat = v;
 							de.loothub.client.quick.CustomChat.invalidate();
 						});
-				y = card(y, 40, "loothub.settings.chat_filter", "loothub.settings.chat_filter.tooltip",
-						() -> c.chatFilter, v -> c.chatFilter = v);
+				{
+					int fy = y;
+					int fDescX = cl + labelW + 12;
+					buttons.add(addRenderableWidget(Button.builder(Component.translatable("loothub.settings.chat_filter.edit",
+									c.chatFilterWords == null ? 0 : c.chatFilterWords.size()),
+							b -> minecraft.setScreen(new de.loothub.client.quick.ChatFilterScreen(this)))
+							.bounds(fDescX, fy + 34, Math.min(160, cr - 8 - fDescX), 16).build()));
+					y = card(y, 56, "loothub.settings.chat_filter", "loothub.settings.chat_filter.tooltip",
+							() -> c.chatFilter, v -> c.chatFilter = v);
+				}
 				y = card(y, 40, "loothub.settings.timers", "loothub.settings.timers.tooltip",
 						() -> c.timersEnabled, v -> c.timersEnabled = v);
 				y = card(y, 40, "loothub.settings.sign_window", "loothub.settings.sign_window.tooltip",
