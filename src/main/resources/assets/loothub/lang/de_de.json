@@ -508,5 +508,15 @@
 	"loothub.chatwin.include.empty": "leer = alles",
 	"loothub.chatwin.exclude.empty": "nichts ausgeblendet",
 	"loothub.chat.search": "Suchen … (Enter = zurück zur Eingabe)",
-	"loothub.settings.chat_filter.edit": "Wörter bearbeiten (%s) …"
+	"loothub.settings.chat_filter.edit": "Wörter bearbeiten (%s) …",
+	"loothub.ore.diamond": "Diamant",
+	"loothub.ore.emerald": "Smaragd",
+	"loothub.ore.gold": "Gold",
+	"loothub.ore.redstone": "Redstone",
+	"loothub.ore.lapis": "Lapis",
+	"loothub.ore.iron": "Eisen",
+	"loothub.ore.copper": "Kupfer",
+	"loothub.ore.coal": "Kohle",
+	"loothub.ore.quartz": "Quarz",
+	"loothub.ore.debris": "Antiker Schrott"
 }

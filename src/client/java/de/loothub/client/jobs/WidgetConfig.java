@@ -79,6 +79,8 @@ public final class WidgetConfig {
 	public boolean glowingOres = true;
 	public int oreGlowStrength = 70;
 	public int oreGlowRange = 20;
+	/** Erze, die nicht leuchten sollen (z. B. "coal", "copper"). */
+	public java.util.List<String> oreGlowOff = new java.util.ArrayList<>();
 	/** Einmalig: alte Standard-Reichweite (10) auf die neue (20) anheben. */
 	public boolean oreRangeV2 = false;
 	/** Leuchtende Augen ("" = aus, sonst „#RRGGBB“). */

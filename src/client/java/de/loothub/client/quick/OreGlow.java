@@ -163,39 +163,70 @@ public final class OreGlow {
 		return hit.getType() == net.minecraft.world.phys.HitResult.Type.BLOCK && hit.getBlockPos().equals(pos);
 	}
 
-	/** Farbe je Erz, oder −1 für kein Erz. */
-	private static int color(BlockState st) {
+	/** Erz-Arten in Anzeige-Reihenfolge: Kennung und Farbe. */
+	public static final String[] KINDS = {"diamond", "emerald", "gold", "redstone", "lapis", "iron", "copper", "coal", "quartz", "debris"};
+
+	private static String kind(BlockState st) {
 		if (st.is(BlockTags.DIAMOND_ORES)) {
-			return 0x4CE6D8;
+			return "diamond";
 		}
 		if (st.is(BlockTags.EMERALD_ORES)) {
-			return 0x2BD46C;
+			return "emerald";
 		}
 		if (st.is(BlockTags.GOLD_ORES)) {
-			return 0xF8D640;
+			return "gold";
 		}
 		if (st.is(BlockTags.REDSTONE_ORES)) {
-			return 0xE81E1E;
+			return "redstone";
 		}
 		if (st.is(BlockTags.LAPIS_ORES)) {
-			return 0x2F56C8;
+			return "lapis";
 		}
 		if (st.is(BlockTags.IRON_ORES)) {
-			return 0xD9A27C;
+			return "iron";
 		}
 		if (st.is(BlockTags.COPPER_ORES)) {
-			return 0xE0723C;
+			return "copper";
 		}
 		if (st.is(BlockTags.COAL_ORES)) {
-			return 0x2B2B2B;
+			return "coal";
 		}
 		if (st.is(Blocks.NETHER_QUARTZ_ORE)) {
-			return 0xEDE6DC;
+			return "quartz";
 		}
 		if (st.is(Blocks.ANCIENT_DEBRIS)) {
-			return 0x7A4E3A;
+			return "debris";
 		}
-		return -1;
+		return null;
+	}
+
+	public static int kindColor(String kind) {
+		return switch (kind) {
+			case "diamond" -> 0x4CE6D8;
+			case "emerald" -> 0x2BD46C;
+			case "gold" -> 0xF8D640;
+			case "redstone" -> 0xE81E1E;
+			case "lapis" -> 0x2F56C8;
+			case "iron" -> 0xD9A27C;
+			case "copper" -> 0xE0723C;
+			case "coal" -> 0x2B2B2B;
+			case "quartz" -> 0xEDE6DC;
+			case "debris" -> 0x7A4E3A;
+			default -> 0xFFFFFF;
+		};
+	}
+
+	/** Farbe je Erz, oder −1 für kein Erz bzw. abgewählte Erze. */
+	private static int color(BlockState st) {
+		String k = kind(st);
+		if (k == null) {
+			return -1;
+		}
+		java.util.List<String> off = WidgetConfig.get().oreGlowOff;
+		if (off != null && off.contains(k)) {
+			return -1;
+		}
+		return kindColor(k);
 	}
 
 	private static void render(PoseStack poseStack, net.minecraft.client.renderer.MultiBufferSource buffers) {

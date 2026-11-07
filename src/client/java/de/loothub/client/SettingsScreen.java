@@ -380,7 +380,26 @@ public class SettingsScreen extends LoothubScreen {
 						c.oreGlowRange = 4 + (int) Math.round(value * 28);
 					}
 				}));
-				y = card(oreY, 60, "loothub.settings.ore_glow", "loothub.settings.ore_glow.tooltip",
+				// Erz-Auswahl als Kästchen
+				String[] kinds = de.loothub.client.quick.OreGlow.KINDS;
+				int oCols = 5;
+				int oColW = (cr - 8 - oDescX) / oCols;
+				for (int i = 0; i < kinds.length; i++) {
+					String k = kinds[i];
+					checks.add(new Check(oDescX + (i % oCols) * oColW, oreY + 60 + (i / oCols) * 14, oColW - 4,
+							Component.translatable("loothub.ore." + k).getString(),
+							() -> c.oreGlowOff == null || !c.oreGlowOff.contains(k), v -> {
+								if (c.oreGlowOff == null) {
+									c.oreGlowOff = new java.util.ArrayList<>();
+								}
+								c.oreGlowOff.remove(k);
+								if (!v) {
+									c.oreGlowOff.add(k);
+								}
+							}));
+				}
+				int oRows = (kinds.length + oCols - 1) / oCols;
+				y = card(oreY, 64 + oRows * 14, "loothub.settings.ore_glow", "loothub.settings.ore_glow.tooltip",
 						() -> c.glowingOres, v -> c.glowingOres = v);
 			}
 			case INVENTORY -> {
