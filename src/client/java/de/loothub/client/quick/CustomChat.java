@@ -119,7 +119,7 @@ public final class CustomChat {
 		}
 	}
 
-	public record Msg(long time, Component text, String low, boolean pm, String source) {
+	public record Msg(long time, Component text, String low, boolean pm, String source, boolean own) {
 	}
 
 	private record Line(FormattedCharSequence seq, long time, Msg msg) {
@@ -167,7 +167,28 @@ public final class CustomChat {
 	}
 
 	/** Sichtbar in diesem Tab? Ein „eigener Tab“ nimmt seine Nachrichten den anderen Tabs weg. */
+	/** Eigene Nachricht: der eigene Name steht vor dem ersten „»“. */
+	public static boolean isOwn(String plain) {
+		Minecraft mc = Minecraft.getInstance();
+		if (mc.player == null) {
+			return false;
+		}
+		String me = mc.player.getGameProfile().name().toLowerCase(Locale.ROOT);
+		String low = plain.toLowerCase(Locale.ROOT);
+		int arrow = low.indexOf('»');
+		if (arrow <= 0) {
+			return false;
+		}
+		return java.util.regex.Pattern.compile("(^|[^a-z0-9_])" + java.util.regex.Pattern.quote(me) + "($|[^a-z0-9_])")
+				.matcher(low.substring(0, arrow)).find();
+	}
+
 	static boolean shows(Window w, Tab tab, Msg m) {
+		// Eigene Nachrichten bleiben immer sichtbar – in jedem Tab, der Spieler-Chat (bzw. ihre Quelle) zeigt,
+		// egal welche Wörter oder anderen Tabs sie sonst ausblenden würden
+		if (m.own && (tab.sources == null || tab.sources.isBlank() || tab.hasSource(m.source))) {
+			return true;
+		}
 		if (!tab.matches(m)) {
 			return false;
 		}
@@ -258,7 +279,7 @@ public final class CustomChat {
 	public static synchronized void add(Component message) {
 		String plain = net.minecraft.ChatFormatting.stripFormatting(message.getString());
 		boolean pm = ChatLog.isPrivate(plain);
-		Msg m = new Msg(System.currentTimeMillis(), message, plain.toLowerCase(Locale.ROOT), pm, source(plain, pm));
+		Msg m = new Msg(System.currentTimeMillis(), message, plain.toLowerCase(Locale.ROOT), pm, source(plain, pm), isOwn(plain));
 		List<String> known = knownSources();
 		if (!known.contains(m.source()) && known.size() < 40) {
 			known.add(m.source());

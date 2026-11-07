@@ -65,6 +65,9 @@ public final class ChatLog {
 		if (!c.chatFilter || c.chatFilterWords == null || c.chatFilterWords.isEmpty()) {
 			return false;
 		}
+		if (CustomChat.isOwn(net.minecraft.ChatFormatting.stripFormatting(message.getString()))) {
+			return false; // eigene Nachrichten nie ausblenden
+		}
 		String low = net.minecraft.ChatFormatting.stripFormatting(message.getString()).toLowerCase(Locale.ROOT);
 		for (String w : c.chatFilterWords) {
 			if (w != null && !w.isBlank() && low.contains(w.strip().toLowerCase(Locale.ROOT))) {
