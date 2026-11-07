@@ -202,7 +202,9 @@ public final class CustomChat {
 
 	// Ziehen
 	private static Window dragWin;
-	private static boolean resizing;
+	/** 0 = verschieben, sonst Ecke: 1 oben links, 2 oben rechts, 3 unten links, 4 unten rechts. */
+	private static int corner;
+	private static final int GRIP = 6;
 	private static double grabX, grabY;
 	private static int startW, startH, startLeft, startBottom;
 
@@ -364,6 +366,7 @@ public final class CustomChat {
 			if (focused) {
 				a.fill(b[0], b[1], b[0] + b[2], b[1] + b[3], (bgA << 24) | (w.bg & 0xFFFFFF));
 				header(a, w, b);
+				corners(a, w, b);
 				// Bildlaufleiste
 				if (lines.size() > visible) {
 					int barH = Math.max(6, b[3] * visible / lines.size());
@@ -484,14 +487,24 @@ public final class CustomChat {
 				case SETTINGS -> text(a, h.x + 2, top + 2, 1F, 1F, label("⚙", 0xD0D0D0));
 				case NEW_WINDOW -> text(a, h.x + 2, top + 2, 1F, 1F, label("❐", 0xD0D0D0));
 				case CLOSE -> text(a, h.x + 2, top + 2, 1F, 1F, label("✕", 0xFF6666));
-				case RESIZE -> {
-					a.fill(h.x + h.w - 6, top, h.x + h.w, top + 2, accent);
-					a.fill(h.x + h.w - 2, top, h.x + h.w, top + 6, accent);
-				}
 				default -> {
 				}
 			}
 		}
+	}
+
+	/** Kleine Winkel an allen vier Ecken: dort lässt sich die Größe ändern. */
+	private static void corners(ChatComponent.ChatGraphicsAccess a, Window w, int[] b) {
+		int c = 0xFF000000 | (w.accent & 0xFFFFFF);
+		int x0 = b[0], x1 = b[0] + b[2], y0 = b[1] - HEADER, y1 = b[1] + b[3], L = 5;
+		a.fill(x0, y0, x0 + L, y0 + 1, c);
+		a.fill(x0, y0, x0 + 1, y0 + L, c);
+		a.fill(x1 - L, y0, x1, y0 + 1, c);
+		a.fill(x1 - 1, y0, x1, y0 + L, c);
+		a.fill(x0, y1 - 1, x0 + L, y1, c);
+		a.fill(x0, y1 - L, x0 + 1, y1, c);
+		a.fill(x1 - L, y1 - 1, x1, y1, c);
+		a.fill(x1 - 1, y1 - L, x1, y1, c);
 	}
 
 	private static String tabLabel(Tab t) {
@@ -502,7 +515,7 @@ public final class CustomChat {
 	// ------------------------------------------------------------------ Klickflächen
 
 	private enum Kind {
-		TAB, ADD_TAB, SETTINGS, NEW_WINDOW, CLOSE, RESIZE, MOVE, SEARCH, SEARCH_FIELD, SEARCH_CLOSE
+		TAB, ADD_TAB, SETTINGS, NEW_WINDOW, CLOSE, MOVE, SEARCH, SEARCH_FIELD, SEARCH_CLOSE
 	}
 
 	private record Hit(Kind kind, int index, int x, int w) {
@@ -512,8 +525,7 @@ public final class CustomChat {
 		Font font = Minecraft.getInstance().font;
 		List<Hit> out = new ArrayList<>();
 		int right = b[0] + b[2];
-		out.add(new Hit(Kind.RESIZE, 0, right - 8, 8));
-		right -= 9;
+		right -= 3;
 		if (windows().size() > 1) {
 			out.add(new Hit(Kind.CLOSE, 0, right - BTN, BTN));
 			right -= BTN;
@@ -578,8 +590,13 @@ public final class CustomChat {
 	}
 
 	private static boolean click(Screen screen, MouseButtonEvent e) {
-		Window w = windowAt(e.x(), e.y(), true);
 		searchFocused = false; // wird unten wieder gesetzt, wenn ins Suchfeld geklickt wurde
+		int[] cg = e.button() == 0 ? cornerAt(e.x(), e.y()) : null;
+		if (cg != null) {
+			startDrag(windows().get(cg[0]), cg[1], e);
+			return true;
+		}
+		Window w = windowAt(e.x(), e.y(), true);
 		if (w == null) {
 			if (e.button() == 1) {
 				for (Row r : new ArrayList<>(ROWS)) {
@@ -656,23 +673,51 @@ public final class CustomChat {
 				ws.remove(w);
 				WidgetConfig.get().save();
 			}
-			case RESIZE, MOVE -> {
-				dragWin = w;
-				resizing = kind == Kind.RESIZE;
-				grabX = e.x();
-				grabY = e.y();
-				startW = w.w;
-				startH = w.h;
-				startLeft = b[0];
-				startBottom = sh() - (b[1] + b[3]);
-				// nach vorne holen
-				ws.remove(w);
-				ws.add(w);
-			}
+			case MOVE -> startDrag(w, 0, e);
 			default -> {
 			}
 		}
 		return true;
+	}
+
+	private static void startDrag(Window w, int c, MouseButtonEvent e) {
+		int[] b = box(w);
+		dragWin = w;
+		corner = c;
+		grabX = e.x();
+		grabY = e.y();
+		startW = w.w;
+		startH = w.h;
+		startLeft = b[0];
+		startBottom = sh() - (b[1] + b[3]);
+		// nach vorne holen
+		List<Window> ws = windows();
+		ws.remove(w);
+		ws.add(w);
+	}
+
+	/** Ecke unter der Maus (Fenster samt Kopfzeile): {Fenster-Index, Ecke 1–4} oder null. */
+	private static int[] cornerAt(double mx, double my) {
+		List<Window> ws = windows();
+		for (int i = ws.size() - 1; i >= 0; i--) {
+			int[] b = box(ws.get(i));
+			int x0 = b[0], x1 = b[0] + b[2], y0 = b[1] - HEADER, y1 = b[1] + b[3];
+			boolean l = Math.abs(mx - x0) <= GRIP, r = Math.abs(mx - x1) <= GRIP;
+			boolean t = Math.abs(my - y0) <= GRIP, bo = Math.abs(my - y1) <= GRIP;
+			if (t && l) {
+				return new int[]{i, 1};
+			}
+			if (t && r) {
+				return new int[]{i, 2};
+			}
+			if (bo && l) {
+				return new int[]{i, 3};
+			}
+			if (bo && r) {
+				return new int[]{i, 4};
+			}
+		}
+		return null;
 	}
 
 	private static boolean drag(MouseButtonEvent e) {
@@ -680,11 +725,15 @@ public final class CustomChat {
 			return false;
 		}
 		int dx = (int) Math.round(e.x() - grabX), dy = (int) Math.round(e.y() - grabY);
-		if (resizing) {
-			dragWin.w = startW + dx;
-			dragWin.h = startH - dy;
-			dragWin.left = startLeft;
-			dragWin.bottom = startBottom;
+		if (corner != 0) {
+			boolean left = corner == 1 || corner == 3, top = corner == 1 || corner == 2;
+			int nw = Math.max(80, left ? startW - dx : startW + dx);
+			int nh = Math.max(30, top ? startH - dy : startH + dy);
+			dragWin.w = nw;
+			dragWin.h = nh;
+			// gegenüberliegende Ecke bleibt stehen
+			dragWin.left = left ? startLeft + startW - nw : startLeft;
+			dragWin.bottom = top ? startBottom : startBottom - (nh - startH);
 		} else {
 			dragWin.left = startLeft + dx;
 			dragWin.bottom = startBottom - dy;
