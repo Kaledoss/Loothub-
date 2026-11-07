@@ -19,7 +19,7 @@ import de.loothub.client.jobs.WidgetConfig;
  * selbst erwähnt, bekommt die Zeile eine goldene Markierung und der eigene Name leuchtet – optional mit leisem Ton.
  */
 public final class ChatExtras {
-	private static final DateTimeFormatter TIME = DateTimeFormatter.ofPattern("HH:mm");
+	private static final DateTimeFormatter TIME = DateTimeFormatter.ofPattern("HH:mm:ss");
 
 	private ChatExtras() {
 	}

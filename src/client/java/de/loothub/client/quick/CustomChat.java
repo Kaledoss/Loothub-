@@ -136,7 +136,7 @@ public final class CustomChat {
 		if (pm) {
 			return "Privat";
 		}
-		String t = plain.replaceFirst("^[^\\p{L}\\[]*", "").replaceFirst("^\\[\\d{1,2}:\\d{2}\\]\\s*", "").strip();
+		String t = plain.replaceFirst("^[^\\p{L}\\[]*", "").replaceFirst("^\\[\\d{1,2}:\\d{2}(:\\d{2})?\\]\\s*", "").strip();
 		int arrow = t.indexOf('»');
 		if (arrow <= 0) {
 			return "Sonstiges";
