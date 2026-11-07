@@ -256,7 +256,7 @@ public final class CustomChat {
 
 	/** Fertige Chat-Nachricht (mit Uhrzeit usw.) übernehmen. */
 	public static synchronized void add(Component message) {
-		String plain = message.getString();
+		String plain = net.minecraft.ChatFormatting.stripFormatting(message.getString());
 		boolean pm = ChatLog.isPrivate(plain);
 		Msg m = new Msg(System.currentTimeMillis(), message, plain.toLowerCase(Locale.ROOT), pm, source(plain, pm));
 		List<String> known = knownSources();

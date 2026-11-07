@@ -27,6 +27,9 @@ public class ChatWindowScreen extends Screen {
 	private EditBox incBox, excBox;
 	private static int incScroll, excScroll;
 	private static final int ENTRY_H = 13;
+	/** Gerade bearbeiteter Eintrag (Doppelklick): Spalte 0 = enthält, 1 = enthält nicht; −1 = keiner. */
+	private int editCol = -1, editIndex = -1;
+	private EditBox editBox;
 
 	public ChatWindowScreen(CustomChat.Window win) {
 		super(Component.translatable("loothub.chatwin.title"));
@@ -35,6 +38,7 @@ public class ChatWindowScreen extends Screen {
 
 	@Override
 	protected void init() {
+		editBox = null;
 		pw = Math.min(480, width - 20);
 		ph = Math.min(380, height - 16);
 		px = (width - pw) / 2;
@@ -143,7 +147,9 @@ public class ChatWindowScreen extends Screen {
 
 		addRenderableWidget(Button.builder(Component.translatable("loothub.job.editor.done"), b -> onClose())
 				.bounds(px + pw - 90, py + ph - 22, 80, 16).build());
-		setInitialFocus(name);
+		if (editBox == null) {
+			setInitialFocus(name);
+		}
 	}
 
 	private int entriesTop() {
@@ -176,6 +182,14 @@ public class ChatWindowScreen extends Screen {
 		}
 		for (int i = 0; i < entriesVisible() && i + scroll < list.size(); i++) {
 			String word = list.get(i + scroll);
+			if (editCol == (include ? 0 : 1) && editIndex == i + scroll) {
+				editBox = addRenderableWidget(new EditBox(font, x + 4, entriesTop() + i * ENTRY_H + 2, colW - 22, 10, Component.empty()));
+				editBox.setMaxLength(100);
+				editBox.setBordered(false);
+				editBox.setValue(word);
+				setFocused(editBox);
+				editBox.setFocused(true);
+			}
 			addRenderableWidget(Button.builder(Component.literal("✕").withStyle(ChatFormatting.RED), b -> {
 				List<String> l = words(include ? tab.include : tab.exclude);
 				l.remove(word);
@@ -211,9 +225,72 @@ public class ChatWindowScreen extends Screen {
 		setFocused(include ? incBox : excBox);
 	}
 
+	/** Bearbeiteten Eintrag übernehmen (leer = löschen). */
+	private void commitEdit() {
+		if (editCol < 0 || editBox == null) {
+			editCol = -1;
+			return;
+		}
+		CustomChat.Tab tab = win.tab();
+		boolean include = editCol == 0;
+		List<String> l = words(include ? tab.include : tab.exclude);
+		if (editIndex >= 0 && editIndex < l.size()) {
+			String v = editBox.getValue().replace(",", " ").strip();
+			if (v.isEmpty()) {
+				l.remove(editIndex);
+			} else {
+				l.set(editIndex, v);
+			}
+			if (include) {
+				tab.include = String.join(", ", l);
+			} else {
+				tab.exclude = String.join(", ", l);
+			}
+			changed();
+		}
+		editCol = -1;
+		editBox = null;
+		rebuildWidgets();
+	}
+
+	@Override
+	public boolean mouseClicked(net.minecraft.client.input.MouseButtonEvent event, boolean doubleClick) {
+		if (editBox != null && !editBox.isMouseOver(event.x(), event.y())) {
+			commitEdit(); // woanders hingeklickt: Änderung übernehmen
+		}
+		if (doubleClick && event.y() >= entriesTop() && event.y() < entriesTop() + entriesVisible() * ENTRY_H) {
+			int x = px + 10, w = pw - 20, colW = (w - 6) / 2;
+			int col = event.x() >= x && event.x() < x + colW - 16 ? 0
+					: event.x() >= x + colW + 6 && event.x() < x + w - 16 ? 1 : -1;
+			if (col >= 0) {
+				CustomChat.Tab tab = win.tab();
+				int idx = (int) ((event.y() - entriesTop()) / ENTRY_H) + (col == 0 ? incScroll : excScroll);
+				if (idx < words(col == 0 ? tab.include : tab.exclude).size()) {
+					editCol = col;
+					editIndex = idx;
+					rebuildWidgets();
+					return true;
+				}
+			}
+		}
+		return super.mouseClicked(event, doubleClick);
+	}
+
 	@Override
 	public boolean keyPressed(net.minecraft.client.input.KeyEvent event) {
 		int k = event.key();
+		if (editBox != null && editCol >= 0) {
+			if (k == org.lwjgl.glfw.GLFW.GLFW_KEY_ENTER || k == org.lwjgl.glfw.GLFW.GLFW_KEY_KP_ENTER) {
+				commitEdit();
+				return true;
+			}
+			if (k == org.lwjgl.glfw.GLFW.GLFW_KEY_ESCAPE) {
+				editCol = -1;
+				editBox = null;
+				rebuildWidgets();
+				return true;
+			}
+		}
 		if (k == org.lwjgl.glfw.GLFW.GLFW_KEY_ENTER || k == org.lwjgl.glfw.GLFW.GLFW_KEY_KP_ENTER) {
 			if (incBox != null && incBox.isFocused()) {
 				addWord(true);
@@ -324,8 +401,13 @@ public class ChatWindowScreen extends Screen {
 			}
 			for (int i = 0; i < entriesVisible() && i + scroll < list.size(); i++) {
 				int ry = entriesTop() + i * ENTRY_H;
-				g.fill(cx, ry, cx + colW, ry + ENTRY_H - 1, 0x18FFFFFF);
-				g.drawString(font, font.plainSubstrByWidth(list.get(i + scroll), colW - 22), cx + 4, ry + 2, LoothubScreen.TEXT, false);
+				boolean editing = editCol == col && editIndex == i + scroll;
+				g.fill(cx, ry, cx + colW, ry + ENTRY_H - 1, editing ? 0xFF000000 : 0x18FFFFFF);
+				if (editing) {
+					g.fill(cx, ry + ENTRY_H - 2, cx + colW - 16, ry + ENTRY_H - 1, LoothubScreen.RED);
+				} else {
+					g.drawString(font, font.plainSubstrByWidth(list.get(i + scroll), colW - 22), cx + 4, ry + 2, LoothubScreen.TEXT, false);
+				}
 			}
 			if (list.size() > entriesVisible()) {
 				String more = (scroll + entriesVisible()) + "/" + list.size();

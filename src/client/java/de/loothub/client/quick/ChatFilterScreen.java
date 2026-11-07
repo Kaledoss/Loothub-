@@ -18,7 +18,8 @@ import de.loothub.client.jobs.WidgetConfig;
 public class ChatFilterScreen extends Screen {
 	private static final int ROW_H = 14;
 	private final Screen parent;
-	private EditBox box;
+	private EditBox box, editBox;
+	private int editIndex = -1;
 	private int px, py, pw, ph, listTop, scroll;
 
 	public ChatFilterScreen(Screen parent) {
@@ -41,6 +42,7 @@ public class ChatFilterScreen extends Screen {
 		px = (width - pw) / 2;
 		py = (height - ph) / 2;
 		int x = px + 10, w = pw - 20;
+		editBox = null;
 		String old = box != null ? box.getValue() : "";
 		box = addRenderableWidget(new EditBox(font, x, py + 34, w - 24, 16, Component.translatable("loothub.chatwin.tab.exclude")));
 		box.setMaxLength(100);
@@ -54,6 +56,12 @@ public class ChatFilterScreen extends Screen {
 		scroll = Mth.clamp(scroll, 0, Math.max(0, list.size() - visible));
 		for (int i = 0; i < visible && i + scroll < list.size(); i++) {
 			String word = list.get(i + scroll);
+			if (editIndex == i + scroll) {
+				editBox = addRenderableWidget(new EditBox(font, x + 4, listTop + i * ROW_H + 2, w - 24, 10, Component.empty()));
+				editBox.setMaxLength(100);
+				editBox.setBordered(false);
+				editBox.setValue(word);
+			}
 			addRenderableWidget(Button.builder(Component.literal("✕").withStyle(ChatFormatting.RED), b -> {
 				words().remove(word);
 				WidgetConfig.get().save();
@@ -62,7 +70,11 @@ public class ChatFilterScreen extends Screen {
 		}
 		addRenderableWidget(Button.builder(Component.translatable("loothub.job.editor.done"), b -> onClose())
 				.bounds(px + pw - 90, py + ph - 22, 80, 16).build());
-		setInitialFocus(box);
+		if (editBox != null) {
+			setInitialFocus(editBox);
+		} else {
+			setInitialFocus(box);
+		}
 	}
 
 	private void add() {
@@ -78,8 +90,51 @@ public class ChatFilterScreen extends Screen {
 		setFocused(box);
 	}
 
+	private void commitEdit() {
+		if (editBox != null && editIndex >= 0 && editIndex < words().size()) {
+			String v = editBox.getValue().strip();
+			if (v.isEmpty()) {
+				words().remove(editIndex);
+			} else {
+				words().set(editIndex, v);
+			}
+			WidgetConfig.get().save();
+		}
+		editIndex = -1;
+		rebuildWidgets();
+	}
+
+	@Override
+	public boolean mouseClicked(net.minecraft.client.input.MouseButtonEvent event, boolean doubleClick) {
+		if (editBox != null && !editBox.isMouseOver(event.x(), event.y())) {
+			commitEdit();
+		}
+		int x = px + 10, w = pw - 20;
+		if (doubleClick && event.x() >= x && event.x() < x + w - 16 && event.y() >= listTop) {
+			int idx = (int) ((event.y() - listTop) / ROW_H) + scroll;
+			if (idx < words().size()) {
+				editIndex = idx;
+				rebuildWidgets();
+				return true;
+			}
+		}
+		return super.mouseClicked(event, doubleClick);
+	}
+
 	@Override
 	public boolean keyPressed(net.minecraft.client.input.KeyEvent event) {
+		if (editBox != null) {
+			int k = event.key();
+			if (k == org.lwjgl.glfw.GLFW.GLFW_KEY_ENTER || k == org.lwjgl.glfw.GLFW.GLFW_KEY_KP_ENTER) {
+				commitEdit();
+				return true;
+			}
+			if (k == org.lwjgl.glfw.GLFW.GLFW_KEY_ESCAPE) {
+				editIndex = -1;
+				rebuildWidgets();
+				return true;
+			}
+		}
 		if (box != null && box.isFocused()
 				&& (event.key() == org.lwjgl.glfw.GLFW.GLFW_KEY_ENTER || event.key() == org.lwjgl.glfw.GLFW.GLFW_KEY_KP_ENTER)) {
 			add();
@@ -110,8 +165,13 @@ public class ChatFilterScreen extends Screen {
 		}
 		for (int i = 0; i < visible && i + scroll < list.size(); i++) {
 			int ry = listTop + i * ROW_H;
-			g.fill(x, ry, x + w, ry + ROW_H - 2, 0x18FFFFFF);
-			g.drawString(font, font.plainSubstrByWidth(list.get(i + scroll), w - 24), x + 4, ry + 2, LoothubScreen.TEXT, false);
+			boolean editing = editIndex == i + scroll;
+			g.fill(x, ry, x + w, ry + ROW_H - 2, editing ? 0xFF000000 : 0x18FFFFFF);
+			if (editing) {
+				g.fill(x, ry + ROW_H - 3, x + w - 16, ry + ROW_H - 2, LoothubScreen.RED);
+			} else {
+				g.drawString(font, font.plainSubstrByWidth(list.get(i + scroll), w - 24), x + 4, ry + 2, LoothubScreen.TEXT, false);
+			}
 		}
 		super.render(g, mx, my, delta);
 	}

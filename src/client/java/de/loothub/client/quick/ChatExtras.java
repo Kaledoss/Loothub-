@@ -30,7 +30,7 @@ public final class ChatExtras {
 		if (message == null || !(c.chatTimestamps || c.chatCopy || c.chatMention)) {
 			return message;
 		}
-		String plain = message.getString();
+		String plain = net.minecraft.ChatFormatting.stripFormatting(message.getString());
 		if (plain.isBlank()) {
 			return message;
 		}

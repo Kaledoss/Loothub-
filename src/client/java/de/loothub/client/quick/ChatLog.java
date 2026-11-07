@@ -65,7 +65,7 @@ public final class ChatLog {
 		if (!c.chatFilter || c.chatFilterWords == null || c.chatFilterWords.isEmpty()) {
 			return false;
 		}
-		String low = message.getString().toLowerCase(Locale.ROOT);
+		String low = net.minecraft.ChatFormatting.stripFormatting(message.getString()).toLowerCase(Locale.ROOT);
 		for (String w : c.chatFilterWords) {
 			if (w != null && !w.isBlank() && low.contains(w.strip().toLowerCase(Locale.ROOT))) {
 				return true;
