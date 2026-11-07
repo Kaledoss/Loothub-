@@ -6,6 +6,7 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 
+import net.minecraft.ChatFormatting;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.components.ChatComponent;
@@ -105,6 +106,19 @@ public final class CustomChat {
 			return include == null || include.isBlank() || any(include, m.low);
 		}
 
+		static String first(String words, String low) {
+			if (words == null || words.isBlank()) {
+				return null;
+			}
+			for (String w : words.split(",")) {
+				String t = w.strip().toLowerCase(Locale.ROOT);
+				if (!t.isEmpty() && low.contains(t)) {
+					return w.strip();
+				}
+			}
+			return null;
+		}
+
 		private static boolean any(String words, String low) {
 			if (words == null || words.isBlank()) {
 				return false;
@@ -119,7 +133,7 @@ public final class CustomChat {
 		}
 	}
 
-	public record Msg(long time, Component text, String low, boolean pm, String source, boolean own) {
+	public record Msg(long time, Component text, String low, boolean pm, String source, boolean own, String blockedBy) {
 	}
 
 	private record Line(FormattedCharSequence seq, long time, Msg msg) {
@@ -183,7 +197,39 @@ public final class CustomChat {
 				.matcher(low.substring(0, arrow)).find();
 	}
 
+	/** Warum ist die Nachricht in diesem Tab nicht zu sehen? null = sie ist zu sehen. */
+	static String reason(Window w, Tab tab, Msg m) {
+		if (m.blockedBy != null) {
+			return Component.translatable("loothub.chat.why.global", m.blockedBy).getString();
+		}
+		if (shows(w, tab, m)) {
+			return null;
+		}
+		if (tab.privateOnly && !m.pm) {
+			return Component.translatable("loothub.chat.why.private").getString();
+		}
+		if (tab.sources != null && !tab.sources.isBlank() && !tab.hasSource(m.source)) {
+			return Component.translatable("loothub.chat.why.source", m.source).getString();
+		}
+		String ex = Tab.first(tab.exclude, m.low);
+		if (ex != null) {
+			return Component.translatable("loothub.chat.why.exclude", ex).getString();
+		}
+		if (tab.include != null && !tab.include.isBlank() && Tab.first(tab.include, m.low) == null) {
+			return Component.translatable("loothub.chat.why.include").getString();
+		}
+		for (Tab o : w.tabs) {
+			if (o != tab && o.exclusive && o.matches(m)) {
+				return Component.translatable("loothub.chat.why.tab", o.name).getString();
+			}
+		}
+		return "?";
+	}
+
 	static boolean shows(Window w, Tab tab, Msg m) {
+		if (m.blockedBy != null) {
+			return false;
+		}
 		// Eigene Nachrichten bleiben immer sichtbar – in jedem Tab, der Spieler-Chat (bzw. ihre Quelle) zeigt,
 		// egal welche Wörter oder anderen Tabs sie sonst ausblenden würden
 		if (m.own && (tab.sources == null || tab.sources.isBlank() || tab.hasSource(m.source))) {
@@ -204,6 +250,7 @@ public final class CustomChat {
 
 	private static final class Cache {
 		int version = -1, width = -1;
+		boolean debug;
 		List<Line> lines = List.of();
 	}
 
@@ -275,11 +322,25 @@ public final class CustomChat {
 
 	// ------------------------------------------------------------------ Nachrichten
 
+	/** Vom globalen Filter ausgeblendete Nachricht – nur im Prüfmodus sichtbar. */
+	public static synchronized void addBlocked(Component message, String word) {
+		String plain = net.minecraft.ChatFormatting.stripFormatting(message.getString());
+		boolean pm = ChatLog.isPrivate(plain);
+		MESSAGES.add(new Msg(System.currentTimeMillis(), message, plain.toLowerCase(Locale.ROOT), pm, source(plain, pm), false, word));
+		if (MESSAGES.size() > MAX) {
+			MESSAGES.remove(0);
+		}
+		version++;
+	}
+
+	/** Prüfmodus je Fenster: auch ausgeblendete Nachrichten zeigen, mit Grund. */
+	private static final java.util.Set<Window> DEBUG = java.util.Collections.newSetFromMap(new IdentityHashMap<>());
+
 	/** Fertige Chat-Nachricht (mit Uhrzeit usw.) übernehmen. */
 	public static synchronized void add(Component message) {
 		String plain = net.minecraft.ChatFormatting.stripFormatting(message.getString());
 		boolean pm = ChatLog.isPrivate(plain);
-		Msg m = new Msg(System.currentTimeMillis(), message, plain.toLowerCase(Locale.ROOT), pm, source(plain, pm), isOwn(plain));
+		Msg m = new Msg(System.currentTimeMillis(), message, plain.toLowerCase(Locale.ROOT), pm, source(plain, pm), isOwn(plain), null);
 		List<String> known = knownSources();
 		if (!known.contains(m.source()) && known.size() < 40) {
 			known.add(m.source());
@@ -309,12 +370,21 @@ public final class CustomChat {
 
 	private static synchronized List<Line> lines(Window w, Tab tab, int width) {
 		Cache c = CACHE.computeIfAbsent(tab, k -> new Cache());
-		if (c.version != version || c.width != width) {
+		boolean dbg = DEBUG.contains(w);
+		if (c.version != version || c.width != width || c.debug != dbg) {
+			c.debug = dbg;
 			Font font = Minecraft.getInstance().font;
 			List<Line> out = new ArrayList<>();
 			for (Msg m : MESSAGES) {
-				if (shows(w, tab, m)) {
-					for (FormattedCharSequence s : font.split(m.text(), Math.max(20, width))) {
+				Component text = m.text();
+				boolean show = shows(w, tab, m);
+				if (!show && dbg) {
+					text = Component.literal("⛔ " + reason(w, tab, m) + " │ ").withStyle(ChatFormatting.RED).append(
+							m.text().copy().withStyle(st -> st.withStrikethrough(true)));
+					show = true;
+				}
+				if (show) {
+					for (FormattedCharSequence s : font.split(text, Math.max(20, width))) {
 						out.add(new Line(s, m.time(), m));
 					}
 				}
@@ -476,6 +546,7 @@ public final class CustomChat {
 		for (Hit h : hits(w, b)) {
 			switch (h.kind) {
 				case SEARCH -> text(a, h.x + 2, top + 2, 1F, 1F, label("⌕", searchWin == w ? (w.accent & 0xFFFFFF) : 0xD0D0D0));
+				case DEBUG -> text(a, h.x + 2, top + 2, 1F, 1F, label("?", DEBUG.contains(w) ? 0xFF5555 : 0x9A9A9A));
 				case SEARCH_FIELD -> {
 					a.fill(h.x + 1, top + 1, h.x + h.w, b[1] - 2, searchFocused ? 0xFF000000 : 0xC0000000);
 					boolean blink = searchFocused && (System.currentTimeMillis() / 500) % 2 == 0;
@@ -536,7 +607,7 @@ public final class CustomChat {
 	// ------------------------------------------------------------------ Klickflächen
 
 	private enum Kind {
-		TAB, ADD_TAB, SETTINGS, NEW_WINDOW, CLOSE, MOVE, SEARCH, SEARCH_FIELD, SEARCH_CLOSE
+		TAB, ADD_TAB, SETTINGS, NEW_WINDOW, CLOSE, MOVE, SEARCH, SEARCH_FIELD, SEARCH_CLOSE, DEBUG
 	}
 
 	private record Hit(Kind kind, int index, int x, int w) {
@@ -556,6 +627,8 @@ public final class CustomChat {
 		out.add(new Hit(Kind.SETTINGS, 0, right - BTN, BTN));
 		right -= BTN;
 		out.add(new Hit(Kind.SEARCH, 0, right - BTN, BTN));
+		right -= BTN;
+		out.add(new Hit(Kind.DEBUG, 0, right - BTN, BTN));
 		right -= BTN + 2;
 		int x = b[0];
 		if (searchWin == w) {
@@ -660,6 +733,12 @@ public final class CustomChat {
 				mc.setScreen(new ChatWindowScreen(w));
 			}
 			case SETTINGS -> mc.setScreen(new ChatWindowScreen(w));
+			case DEBUG -> {
+				if (!DEBUG.remove(w)) {
+					DEBUG.add(w);
+				}
+				SCROLL.put(w, 0);
+			}
 			case SEARCH -> {
 				if (searchWin == w) {
 					closeSearch();

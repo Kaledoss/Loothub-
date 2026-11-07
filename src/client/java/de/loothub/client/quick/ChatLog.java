@@ -61,20 +61,25 @@ public final class ChatLog {
 
 	/** Soll die Nachricht ausgeblendet werden (eigene Filterliste)? */
 	public static boolean filtered(Component message) {
+		return filterHit(message) != null;
+	}
+
+	/** Das Filter-Wort, das die Nachricht ausblendet, oder null. */
+	public static String filterHit(Component message) {
 		WidgetConfig c = WidgetConfig.get();
 		if (!c.chatFilter || c.chatFilterWords == null || c.chatFilterWords.isEmpty()) {
-			return false;
+			return null;
 		}
 		if (CustomChat.isOwn(net.minecraft.ChatFormatting.stripFormatting(message.getString()))) {
-			return false; // eigene Nachrichten nie ausblenden
+			return null; // eigene Nachrichten nie ausblenden
 		}
 		String low = net.minecraft.ChatFormatting.stripFormatting(message.getString()).toLowerCase(Locale.ROOT);
 		for (String w : c.chatFilterWords) {
 			if (w != null && !w.isBlank() && low.contains(w.strip().toLowerCase(Locale.ROOT))) {
-				return true;
+				return w.strip();
 			}
 		}
-		return false;
+		return null;
 	}
 
 	/**

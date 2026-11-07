@@ -518,5 +518,11 @@
 	"loothub.ore.copper": "Kupfer",
 	"loothub.ore.coal": "Kohle",
 	"loothub.ore.quartz": "Quarz",
-	"loothub.ore.debris": "Antiker Schrott"
+	"loothub.ore.debris": "Antiker Schrott",
+	"loothub.chat.why.global": "globaler Filter „%s“",
+	"loothub.chat.why.private": "nur Privat",
+	"loothub.chat.why.source": "Quelle %s nicht gewählt",
+	"loothub.chat.why.exclude": "enthält „%s“",
+	"loothub.chat.why.include": "keins der Enthält-Wörter",
+	"loothub.chat.why.tab": "liegt im Tab „%s“"
 }

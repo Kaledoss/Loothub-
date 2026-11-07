@@ -20,7 +20,9 @@ public abstract class ChatMessageMixin {
 	@Inject(method = "addMessage(Lnet/minecraft/network/chat/Component;Lnet/minecraft/network/chat/MessageSignature;Lnet/minecraft/client/GuiMessageTag;)V",
 			at = @At("HEAD"), cancellable = true)
 	private void loothub$filter(Component message, MessageSignature signature, GuiMessageTag tag, CallbackInfo ci) {
-		if (de.loothub.client.quick.ChatLog.filtered(message)) {
+		String hit = de.loothub.client.quick.ChatLog.filterHit(message);
+		if (hit != null) {
+			de.loothub.client.quick.CustomChat.addBlocked(message, hit); // nur für den Prüfmodus
 			ci.cancel();
 		}
 	}
