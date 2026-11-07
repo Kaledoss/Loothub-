@@ -165,7 +165,12 @@ public class SignEditorScreen extends Screen {
 		for (int i = 0; i < 16; i++) {
 			int bx = x + (i % 8) * (cw + 3);
 			int bby = by + (i / 8) * 16;
-			g.fill(bx + 3, bby + 3, bx + cw - 3, bby + 10, 0xFF000000 | COLORS[i]);
+			g.fill(bx + 2, bby + 2, bx + cw - 2, bby + 11, 0xFF000000 | COLORS[i]);
+			// Farbcode mittig ins Feld, hell auf dunklen und dunkel auf hellen Farben
+			int col = COLORS[i];
+			int lum = ((col >> 16) & 0xFF) * 3 + ((col >> 8) & 0xFF) * 6 + (col & 0xFF);
+			String code = "&" + CODES[i];
+			g.drawString(font, code, bx + (cw - font.width(code)) / 2, bby + 3, lum > 1200 ? 0xFF1A1A1A : 0xFFFFFFFF, false);
 		}
 		g.drawString(font, Component.translatable("loothub.rename.codes"), x + STYLES.length * 26 + 4, by + 39, LoothubScreen.FAINT, false);
 		// Rechts neben jeder Zeile: wie viel Platz noch ist
