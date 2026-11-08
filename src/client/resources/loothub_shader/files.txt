@@ -1,0 +1,13 @@
+shaders/blur.glsl
+shaders/common.glsl
+shaders/composite.fsh
+shaders/composite.vsh
+shaders/composite1.fsh
+shaders/composite1.vsh
+shaders/composite2.fsh
+shaders/composite2.vsh
+shaders/final.fsh
+shaders/final.vsh
+shaders/lang/de_de.lang
+shaders/lang/en_us.lang
+shaders/shaders.properties

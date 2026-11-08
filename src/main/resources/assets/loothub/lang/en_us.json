@@ -538,5 +538,8 @@
 	"loothub.cosmetics.trait.shy": "Shy",
 	"loothub.cosmetics.trait.brave": "Brave",
 	"loothub.cosmetics.trait.lazy": "Lazy",
-	"loothub.cosmetics.trait.curious": "Curious"
+	"loothub.cosmetics.trait.curious": "Curious",
+	"loothub.settings.shader": "Loothub Shader (Iris)",
+	"loothub.settings.shader.tooltip": "Own shader pack: color grading, bloom, vignette, haze. Turning it on selects it in Iris and reloads shaders; turning it off disables shaders. Sliders under Iris → Shader options.",
+	"loothub.settings.shader.no_iris": "Needs the Iris mod – not installed."
 }

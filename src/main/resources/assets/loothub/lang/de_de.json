@@ -538,5 +538,8 @@
 	"loothub.cosmetics.trait.shy": "Schüchtern",
 	"loothub.cosmetics.trait.brave": "Mutig",
 	"loothub.cosmetics.trait.lazy": "Faul",
-	"loothub.cosmetics.trait.curious": "Neugierig"
+	"loothub.cosmetics.trait.curious": "Neugierig",
+	"loothub.settings.shader": "Loothub Shader (Iris)",
+	"loothub.settings.shader.tooltip": "Eigenes Shaderpack: Farbstimmung, Glühen, Vignette, Dunst. Einschalten wählt es in Iris aus und lädt die Shader neu; ausschalten schaltet die Shader ab. Regler unter Iris → Shader-Optionen.",
+	"loothub.settings.shader.no_iris": "Braucht die Mod Iris – ist nicht installiert."
 }

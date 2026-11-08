@@ -405,6 +405,10 @@ public class SettingsScreen extends LoothubScreen {
 				int oRows = (kinds.length + oCols - 1) / oCols;
 				y = card(oreY, 64 + oRows * 14, "loothub.settings.ore_glow", "loothub.settings.ore_glow.tooltip",
 						() -> c.glowingOres, v -> c.glowingOres = v);
+				// eigenes Shaderpack (Iris)
+				boolean iris = de.loothub.client.quick.ShaderPack.irisLoaded();
+				y = card(y, 40, "loothub.settings.shader", iris ? "loothub.settings.shader.tooltip" : "loothub.settings.shader.no_iris",
+						de.loothub.client.quick.ShaderPack::active, v -> de.loothub.client.quick.ShaderPack.set(v));
 			}
 			case INVENTORY -> {
 				y = card(y, 40, "loothub.settings.rarity_frames", "loothub.settings.rarity_frames.tooltip",
