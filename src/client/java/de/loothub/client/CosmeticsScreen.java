@@ -199,10 +199,10 @@ public class CosmeticsScreen extends LoothubScreen {
 				// Charakter je Mini-Me
 				{
 					int cols = 3;
-					int dw = Math.max(80, (cr - 8 - descX - (cols - 1) * 6) / cols);
+					int tdw = Math.max(80, (cr - 8 - descX - (cols - 1) * 6) / cols);
 					for (int k = 0; k < Cosmetics.MAX_MINI_MES; k++) {
 						final int slot = k;
-						dropdown(descX + (k % cols) * (dw + 6), y + 30 + (k / cols) * 20, dw,
+						dropdown(descX + (k % cols) * (tdw + 6), y + 30 + (k / cols) * 20, tdw,
 								Component.translatable("loothub.cosmetics.trait.slot", slot + 1).getString(),
 								TRAIT_OPTIONS, "loothub.cosmetics.trait.", () -> slotValue(c.miniMeTraits, slot),
 								v -> c.miniMeTraits = setSlot(c.miniMeTraits, slot, v, Cosmetics.MAX_MINI_MES));
