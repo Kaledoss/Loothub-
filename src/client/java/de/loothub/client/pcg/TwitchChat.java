@@ -175,6 +175,17 @@ public final class TwitchChat {
 		}
 	}
 
+	/** Wert eines IRC-Tags („key=value;…“). */
+	private static String tag(String tags, String key) {
+		for (String part : tags.split(";")) {
+			int eq = part.indexOf('=');
+			if (eq > 0 && part.substring(0, eq).equals(key)) {
+				return part.substring(eq + 1);
+			}
+		}
+		return "";
+	}
+
 	private static String readToken() {
 		try {
 			Path p = tokenFile();
@@ -210,6 +221,8 @@ public final class TwitchChat {
 				} else {
 					w.write("NICK justinfan" + ThreadLocalRandom.current().nextInt(10000, 99999) + "\r\n");
 				}
+				// Befehle/Tags anfordern: Ankündigungen (/announce) kommen sonst gar nicht an
+				w.write("CAP REQ :twitch.tv/commands twitch.tv/tags\r\n");
 				w.write("JOIN #" + channel + "\r\n");
 				w.flush();
 				out = w;
@@ -237,12 +250,32 @@ public final class TwitchChat {
 						canWrite = false;
 						break;
 					}
+					// mit Tags beginnt die Zeile mit „@tag=…;… :sender!…“ – Tags abtrennen
+					String tags = "";
+					if (line.startsWith("@")) {
+						int sp = line.indexOf(' ');
+						if (sp < 0) {
+							continue;
+						}
+						tags = line.substring(1, sp);
+						line = line.substring(sp + 1);
+					}
 					int pm = line.indexOf(" PRIVMSG #");
-					if (pm > 0 && line.startsWith(":")) {
+					int un = line.indexOf(" USERNOTICE #");
+					int at = pm > 0 ? pm : un;
+					if (at > 0 && line.startsWith(":")) {
 						String sender = line.substring(1, line.indexOf('!') > 0 ? line.indexOf('!') : 1);
-						int textStart = line.indexOf(" :", pm);
-						if (textStart > 0) {
-							PcgState.onChat(sender, line.substring(textStart + 2));
+						String login = tag(tags, "login");
+						if (!login.isEmpty()) {
+							sender = login;
+						}
+						int textStart = line.indexOf(" :", at);
+						String text = textStart > 0 ? line.substring(textStart + 2) : "";
+						if (text.isEmpty() && un > 0) {
+							text = tag(tags, "system-msg").replace("\\s", " ");
+						}
+						if (!text.isEmpty()) {
+							PcgState.onChat(sender, text);
 						}
 					}
 				}

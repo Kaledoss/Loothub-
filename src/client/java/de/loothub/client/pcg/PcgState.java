@@ -19,7 +19,10 @@ public final class PcgState {
 	/** So lange bleibt das Ergebnis (gefangen/entkommen) stehen. */
 	private static final long RESULT_MS = 12_000;
 
-	private static final Pattern WILD = Pattern.compile("(?i)wild\\s+(.+?)\\s+(?:appears|appeared|has appeared|spawned)");
+	private static final Pattern WILD = Pattern.compile("(?i)wild\\s+(.+?)\\s+(?:appears|appeared|has appeared|spawned|is here|showed up)");
+	/** Deutsch: „Ein wildes Pikachu erscheint“, „Ein wildes Pikachu ist aufgetaucht“ … */
+	private static final Pattern WILD_DE = Pattern.compile(
+			"(?i)wilde[snr]?\\s+(.+?)\\s+(?:erscheint|erschien|ist erschienen|taucht auf|ist aufgetaucht|ist da|wurde gesichtet)");
 	private static final Pattern CAUGHT_BY = Pattern.compile("(?i)([\\p{L}][\\p{L}\\p{N} .'\\-♀♂]*?)\\s+(?:has been|was)\\s+caught\\s+by");
 	private static final Pattern SECONDS = Pattern.compile("(?i)(\\d{1,3})\\s*(?:s\\b|sec|seconds|sekunden)");
 
@@ -54,10 +57,24 @@ public final class PcgState {
 		return s;
 	}
 
+	/** Letzte Nachrichten des Bots (zur Fehlersuche in den Einstellungen). */
+	private static final java.util.Deque<String> LAST = new java.util.ArrayDeque<>();
+
+	public static synchronized java.util.List<String> lastBotMessages() {
+		return new java.util.ArrayList<>(LAST);
+	}
+
 	static void onChat(String sender, String text) {
 		if (!BOT.equalsIgnoreCase(sender)) {
 			return;
 		}
+		synchronized (PcgState.class) {
+			LAST.addFirst(text.length() > 140 ? text.substring(0, 140) + "…" : text);
+			while (LAST.size() > 5) {
+				LAST.removeLast();
+			}
+		}
+		de.loothub.Loothub.LOGGER.info("Loothub PCG-Bot [{}]: {}", TwitchChat.channel(), text);
 		String lowerAll = text.toLowerCase(Locale.ROOT);
 		String me = de.loothub.client.jobs.WidgetConfig.get().pcgUser.strip().toLowerCase(Locale.ROOT);
 		// Twitch-Namen bestehen aus Buchstaben, Ziffern und _ – nur als ganzes Wort zählen (sonst passt „wolf“ zu „Wolf_MP“)
@@ -90,6 +107,11 @@ public final class PcgState {
 		}
 
 		Matcher m = WILD.matcher(text);
+		if (!m.find()) {
+			m = WILD_DE.matcher(text);
+		} else {
+			m.reset();
+		}
 		if (m.find()) {
 			String name = clean(m.group(1));
 			long window = DEFAULT_WINDOW_MS;
