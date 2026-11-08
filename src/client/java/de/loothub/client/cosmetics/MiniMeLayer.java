@@ -41,6 +41,7 @@ public final class MiniMeLayer extends RenderLayer<AvatarRenderState, PlayerMode
 			super.setupAnim(s);
 			float[] e = Emotes.of(s);
 			if (e == null) {
+				applyLife(s, false);
 				return;
 			}
 			float p = e[1];
@@ -112,6 +113,36 @@ public final class MiniMeLayer extends RenderLayer<AvatarRenderState, PlayerMode
 				}
 				default -> {
 				}
+			}
+			applyLife(s, (int) e[0] == Emotes.DANGLE || (int) e[0] == Emotes.HOLD);
+		}
+
+		/** Lebendigkeit: Atmen, baumelnde Beine, nachziehende Arme/Beine, Arme schwingen beim Landen, zucken. */
+		private void applyLife(AvatarRenderState s, boolean legsBusy) {
+			Life.Pose lp = Life.pose(s);
+			if (lp == null) {
+				return;
+			}
+			float br = (lp.breath + 1F) * 0.5F;
+			rightArm.zRot += 0.04F * br + lp.armSpread + 0.45F * lp.armSwing;
+			leftArm.zRot -= 0.04F * br + lp.armSpread + 0.45F * lp.armSwing;
+			head.xRot += 0.025F * lp.breath;
+			if (!legsBusy) {
+				rightLeg.xRot += lp.legR;
+				leftLeg.xRot += lp.legL;
+			}
+			// Flug: Arme und Beine ziehen nach hinten
+			rightArm.xRot += 0.6F * lp.armDrag;
+			leftArm.xRot += 0.6F * lp.armDrag;
+			rightLeg.xRot += 0.45F * lp.armDrag;
+			leftLeg.xRot += 0.4F * lp.armDrag;
+			// Schreck: Arme vors Gesicht
+			if (lp.flinch > 0.01F) {
+				float f = lp.flinch;
+				rightArm.xRot = mix(rightArm.xRot, -1.9F, f);
+				leftArm.xRot = mix(leftArm.xRot, -1.9F, f);
+				rightArm.yRot = mix(rightArm.yRot, -0.5F, f);
+				leftArm.yRot = mix(leftArm.yRot, 0.5F, f);
 			}
 		}
 
@@ -266,6 +297,14 @@ public final class MiniMeLayer extends RenderLayer<AvatarRenderState, PlayerMode
 			if (!sleeping && !crawling && !swimming) {
 				look(mini, state, i, side, t, sitDown);
 			}
+			// Lebendigkeit: natürlicher Blick, Federn beim Landen, Wippen im Flug, Reaktionen
+			Life.Frame life = Life.step(state, mini, i, i < 2 ? 0 : i < 4 ? 1 : 2, t, sleeping, mini.yRot, mini.xRot);
+			if (!sleeping && !crawling && !swimming && life.look()) {
+				mini.yRot = life.lookYaw();
+				mini.xRot = life.lookPitch();
+			}
+			ty += life.dy();
+			rz += life.rz();
 			float[] emote = crawling || swimming ? null : Emotes.pick(state, i, sleeping, i < 2 || sitDown);
 			Emotes.attach(mini, emote);
 			if (emote != null && emote[0] == Emotes.CHEER) {
@@ -282,6 +321,13 @@ public final class MiniMeLayer extends RenderLayer<AvatarRenderState, PlayerMode
 				poseStack.mulPose(Axis.ZP.rotationDegrees(rz));
 			}
 			poseStack.scale(SCALE, SCALE, SCALE);
+			if (life.sx() != 1F || life.sy() != 1F) {
+				// um die Füße (bzw. beim Sitzen um die Hüfte) stauchen/strecken
+				float pivot = mini.isPassenger ? 0.75F : 1.5F;
+				poseStack.translate(0F, pivot, 0F);
+				poseStack.scale(life.sx(), life.sy(), life.sx());
+				poseStack.translate(0F, -pivot, 0F);
+			}
 			boolean slimSkin = skin.model() == PlayerModelType.SLIM;
 			PlayerModel model = crawling ? (slimSkin ? crawlSlim : crawlWide) : (slimSkin ? slim : wide);
 			collector.submitModel(model, mini, poseStack, RenderTypes.entityTranslucent(skin.body().texturePath()), light,

@@ -527,5 +527,7 @@
 	"loothub.history.clear.question": "Den gesamten Job-Verlauf wirklich löschen? Das lässt sich nicht rückgängig machen.",
 	"loothub.stats.clear.question": "Die gesamte Statistik wirklich löschen? Das lässt sich nicht rückgängig machen.",
 	"loothub.settings.look_info.contents": "Regal-Inhalt: %s",
-	"loothub.look_info.empty": "leer"
+	"loothub.look_info.empty": "leer",
+	"loothub.cosmetics.life": "Lebendigkeit",
+	"loothub.cosmetics.life.desc": "Wie lebendig die Mini-Mes wirken: atmen, Beine baumeln lassen, beim Landen federn, im Flug wippen, umherschauen (zu Tieren, Spielern und dem Block, den Sie abbauen), bei Schaden zucken, mit Ihnen ducken und hüpfen, nach einem Sieg jubeln. 0 % = ruhig."
 }

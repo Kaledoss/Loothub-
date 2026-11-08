@@ -527,5 +527,7 @@
 	"loothub.history.clear.question": "Really delete the whole job history? This cannot be undone.",
 	"loothub.stats.clear.question": "Really delete all statistics? This cannot be undone.",
 	"loothub.settings.look_info.contents": "Shelf contents: %s",
-	"loothub.look_info.empty": "empty"
+	"loothub.look_info.empty": "empty",
+	"loothub.cosmetics.life": "Liveliness",
+	"loothub.cosmetics.life.desc": "How alive the Mini-Mes look: breathing, dangling legs, bouncing on landing, bobbing in flight, looking around (at animals, players and the block you mine), flinching on damage, ducking and hopping with you, cheering after a win. 0 % = calm."
 }

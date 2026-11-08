@@ -110,6 +110,7 @@ public class LoothubClient implements ClientModInitializer {
 		de.loothub.client.quick.RarityFrames.register();
 		de.loothub.client.quick.Timers.register();
 		de.loothub.client.quick.CustomChat.register();
+		de.loothub.client.cosmetics.Life.register();
 		// Eigene Timer (Restzeit)
 		HudElementRegistry.attachElementBefore(VanillaHudElements.CHAT,
 				Identifier.fromNamespaceAndPath(Loothub.MOD_ID, "timers"), de.loothub.client.quick.Timers::renderHud);

@@ -173,6 +173,27 @@ public class CosmeticsScreen extends LoothubScreen {
 				// Gesten
 				toggle(lx, y + 20, lw, () -> c.miniMeEmotes, v -> c.miniMeEmotes = v);
 				sections.add(new Section(y, 42, "loothub.cosmetics.emotes", "loothub.cosmetics.emotes.desc"));
+				y += 42 + GAP;
+
+				// Lebendigkeit
+				addRenderableWidget(new net.minecraft.client.gui.components.AbstractSliderButton(lx, y + 20, lw, 16,
+						Component.empty(), Math.max(0, Math.min(100, c.miniMeLife)) / 100.0) {
+					{
+						updateMessage();
+					}
+
+					@Override
+					protected void updateMessage() {
+						setMessage(Component.literal((int) Math.round(value * 100) + " %"));
+					}
+
+					@Override
+					protected void applyValue() {
+						c.miniMeLife = (int) Math.round(value * 100);
+						WidgetConfig.get().save();
+					}
+				});
+				sections.add(new Section(y, 42, "loothub.cosmetics.life", "loothub.cosmetics.life.desc"));
 			}
 			case BODY -> {
 				// Flügel für mich
