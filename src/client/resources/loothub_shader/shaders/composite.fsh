@@ -22,7 +22,8 @@ void main() {
 		float dist = length(view.xyz / view.w);
 		float d = clamp(dist / max(far, 16.0), 0.0, 1.0);
 		float amount = (1.0 - exp(-d * d * 4.0)) * HAZE * (1.0 + rainStrength * 0.6);
-		vec3 haze = mix(fogColor, vec3(luma(fogColor)), 0.25) * 1.05;
+		// Dunst fast farblos (sonst färbt der Abendhimmel alles lila)
+		vec3 haze = mix(fogColor, vec3(max(luma(fogColor), 0.6)), 0.75);
 		color = mix(color, haze, clamp(amount, 0.0, 0.85));
 	}
 
@@ -30,7 +31,7 @@ void main() {
 	vec3 bright = vec3(0.0);
 #ifdef BLOOM
 	float l = luma(color);
-	float knee = 0.18;
+	float knee = 0.05;
 	float soft = clamp((l - BLOOM_THRESHOLD + knee) / (2.0 * knee), 0.0, 1.0);
 	float w = max(soft * soft * knee * 2.0, l - BLOOM_THRESHOLD) / max(l, 0.0001);
 	bright = color * clamp(w, 0.0, 1.0);
