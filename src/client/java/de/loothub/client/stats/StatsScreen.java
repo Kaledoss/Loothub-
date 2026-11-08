@@ -74,7 +74,6 @@ public class StatsScreen extends LoothubScreen {
 
 	private Button clearButton;
 	private int sinceY;
-	private long clearArmedUntil;
 	private final List<Button> categoryButtons = new ArrayList<>();
 	private final List<Button> rangeButtons = new ArrayList<>();
 
@@ -173,24 +172,16 @@ public class StatsScreen extends LoothubScreen {
 	@Override
 	public void tick() {
 		super.tick();
-		if (clearArmedUntil > 0 && System.currentTimeMillis() > clearArmedUntil) {
-			clearArmedUntil = 0;
-			clearButton.setMessage(Component.translatable("loothub.stats.clear"));
-		}
 		refresh();
 	}
 
 	private void onClear() {
-		long now = System.currentTimeMillis();
-		if (clearArmedUntil > now) {
-			StatsStore.clear();
-			clearArmedUntil = 0;
-			clearButton.setMessage(Component.translatable("loothub.stats.clear"));
-		} else {
-			clearArmedUntil = now + 3000;
-			clearButton.setMessage(Component.translatable("loothub.stats.clear.confirm").withStyle(ChatFormatting.RED));
-		}
+		minecraft.setScreen(new de.loothub.client.ConfirmScreen(this, Component.translatable("loothub.stats.clear"),
+				Component.translatable("loothub.stats.clear.question"), () -> {
+					StatsStore.clear();
+				}));
 	}
+
 
 	// ------------------------------------------------------------------ Daten
 

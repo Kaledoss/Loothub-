@@ -123,7 +123,6 @@ public class JobHistoryScreen extends LoothubScreen {
 	private Button moneyButton;
 	private Button xpButton;
 	private Button clearButton;
-	private long clearArmedUntil;
 
 	// Berechnete Daten
 	private long unitStart;
@@ -165,7 +164,7 @@ public class JobHistoryScreen extends LoothubScreen {
 				period = p;
 				offset = 0;
 				scroll = 0;
-				invalidate();
+					invalidate();
 			}).bounds(x, y, pw, 16).build()));
 			x += pw + 4;
 		}
@@ -241,25 +240,17 @@ public class JobHistoryScreen extends LoothubScreen {
 	@Override
 	public void tick() {
 		super.tick();
-		if (clearArmedUntil > 0 && System.currentTimeMillis() > clearArmedUntil) {
-			clearArmedUntil = 0;
-			clearButton.setMessage(Component.translatable("loothub.history.clear"));
-		}
 		refresh();
 	}
 
 	private void onClear() {
-		long now = System.currentTimeMillis();
-		if (clearArmedUntil > now) {
-			JobHistory.clear();
-			clearArmedUntil = 0;
-			clearButton.setMessage(Component.translatable("loothub.history.clear"));
-			invalidate();
-		} else {
-			clearArmedUntil = now + 3000;
-			clearButton.setMessage(Component.translatable("loothub.history.clear.confirm").withStyle(ChatFormatting.RED));
-		}
+		minecraft.setScreen(new de.loothub.client.ConfirmScreen(this, Component.translatable("loothub.history.clear"),
+				Component.translatable("loothub.history.clear.question"), () -> {
+					JobHistory.clear();
+					invalidate();
+				}));
 	}
+
 
 	// ------------------------------------------------------------------ Daten
 
@@ -935,7 +926,7 @@ public class JobHistoryScreen extends LoothubScreen {
 				String name = JOBS.get(i).name();
 				jobFilter = name.equals(jobFilter) ? null : name;
 				scroll = 0;
-				invalidate();
+					invalidate();
 				return true;
 			}
 		}
@@ -949,7 +940,7 @@ public class JobHistoryScreen extends LoothubScreen {
 			if (i >= 0 && i < buckets.size() && buckets.get(i).unitOffset() != Integer.MIN_VALUE) {
 				offset = Math.min(0, buckets.get(i).unitOffset());
 				scroll = 0;
-				invalidate();
+					invalidate();
 				return true;
 			}
 		}

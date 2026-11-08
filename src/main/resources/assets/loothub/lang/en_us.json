@@ -55,7 +55,6 @@
 	"loothub.tab.history": "Job Verlauf",
 	"loothub.history.today": "Heute",
 	"loothub.history.clear": "Verlauf löschen",
-	"loothub.history.clear.confirm": "Wirklich löschen?",
 	"loothub.history.col.date": "Beginn",
 	"loothub.history.col.job": "Job",
 	"loothub.history.col.time": "Aktiv",
@@ -81,7 +80,6 @@
 	"loothub.stats.since": "Gezählt seit %s (%s Tage)",
 	"loothub.stats.since.one": "Gezählt seit %s (heute)",
 	"loothub.stats.since.none": "Noch nichts gezählt",
-	"loothub.stats.clear.confirm": "Wirklich löschen?",
 	"loothub.stats.col.name": "Name",
 	"loothub.stats.col.mined": "Abgebaut",
 	"loothub.stats.col.placed": "Platziert",
@@ -524,5 +522,8 @@
 	"loothub.chat.why.source": "source %s not selected",
 	"loothub.chat.why.exclude": "contains “%s”",
 	"loothub.chat.why.include": "none of the contains words",
-	"loothub.chat.why.tab": "is in tab “%s”"
+	"loothub.chat.why.tab": "is in tab “%s”",
+	"loothub.confirm.yes": "Yes, delete",
+	"loothub.history.clear.question": "Really delete the whole job history? This cannot be undone.",
+	"loothub.stats.clear.question": "Really delete all statistics? This cannot be undone."
 }
