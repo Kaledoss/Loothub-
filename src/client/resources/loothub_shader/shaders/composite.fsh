@@ -22,7 +22,7 @@ void main() {
 		float dist = length(view.xyz / view.w);
 		float d = clamp(dist / max(far, 16.0), 0.0, 1.0);
 		float amount = (1.0 - exp(-d * d * 4.0)) * HAZE * (1.0 + rainStrength * 0.6);
-		// Dunst fast farblos (sonst färbt der Abendhimmel alles lila)
+		// Dunst fast farblos (sonst faerbt der Abendhimmel alles lila)
 		vec3 haze = mix(fogColor, vec3(max(luma(fogColor), 0.6)), 0.75);
 		color = mix(color, haze, clamp(amount, 0.0, 0.85));
 	}

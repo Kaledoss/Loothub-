@@ -18,7 +18,7 @@ void main() {
 	vec3 color = texture2D(colortex0, texcoord).rgb;
 #ifdef BLOOM
 	vec3 glow = texture2D(colortex1, texcoord).rgb;
-	// Gluehen nur dazugeben, wo es heller ist als das Bild darunter (keine milchige Schicht über weissen Flaechen)
+	// Gluehen nur dazugeben, wo es heller ist als das Bild darunter (keine milchige Schicht ueber weissen Flaechen)
 	color += max(glow - color * 0.5, 0.0) * BLOOM_STRENGTH;
 #endif
 	color *= EXPOSURE;
