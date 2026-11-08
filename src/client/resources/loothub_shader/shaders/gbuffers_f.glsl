@@ -1,3 +1,4 @@
+#include "/common.glsl"
 // Gemeinsamer Fragment-Teil: Textur * Farbe * Licht, Nebel wie Vanilla
 // Schalter je Programm: TEXTURED (Textur), LIT (Lichtkarte), ENTITY (rot bei Schaden), NOFOG
 uniform sampler2D gtexture;
@@ -26,6 +27,10 @@ void main() {
 #endif
 #ifdef LIT
 	color *= texture2D(lightmap, lmcoord);
+#endif
+#if DEBUG_VIEW == 2
+	// Lichtwerte sichtbar machen: rot = Fackellicht, gruen = Himmelslicht
+	color.rgb = vec3(lmcoord, 0.0);
 #endif
 #ifndef NOFOG
 	if (fogEnd > fogStart) {

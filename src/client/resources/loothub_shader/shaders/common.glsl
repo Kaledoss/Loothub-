@@ -11,6 +11,10 @@
 #define HAZE 0.08             // [0.00 0.04 0.08 0.15 0.25 0.35 0.50 0.70]
 #define AIRY 0.06             // [0.00 0.05 0.10 0.15 0.20 0.30]
 
+#define LIGHT_MODE 0          // [0 1 2 3]
+#define DEBUG_VIEW 0          // [0 1 2 3 4]
+#define PACK_VERSION 7        // [7]
+
 float luma(vec3 c) {
 	return dot(c, vec3(0.2126, 0.7152, 0.0722));
 }

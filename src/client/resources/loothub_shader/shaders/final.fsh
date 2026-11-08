@@ -43,5 +43,12 @@ void main() {
 	float v = 1.0 - smoothstep(0.25, 0.85, length(c));
 	color *= mix(1.0, v, VIGNETTE);
 
+#if DEBUG_VIEW == 1
+	color = texture2D(colortex0, texcoord).rgb; // ohne jede Nachbearbeitung
+#elif DEBUG_VIEW == 3
+	color = texture2D(colortex1, texcoord).rgb * 3.0; // nur das Gluehen
+#elif DEBUG_VIEW == 4
+	color = texture2D(colortex0, texcoord).rgb; // Dunst und Grundbild ohne Farbstimmung
+#endif
 	gl_FragColor = vec4(clamp(color, 0.0, 1.0), 1.0);
 }
