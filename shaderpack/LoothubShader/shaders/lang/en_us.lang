@@ -1,0 +1,19 @@
+profile.SANFT=Soft
+profile.STANDARD=Standard
+profile.KRAEFTIG=Vivid
+profile.LEISTUNG=Performance (no bloom)
+option.EXPOSURE=Brightness
+option.CONTRAST=Contrast
+option.SATURATION=Saturation
+option.WARMTH=Color temperature
+option.WARMTH.comment=Positive = warmer, negative = cooler.
+option.BLOOM=Bloom
+option.BLOOM.comment=Bright things (torches, lava, lanterns, sky) glow softly. Costs some performance.
+option.BLOOM_STRENGTH=Bloom: strength
+option.BLOOM_THRESHOLD=Bloom: threshold
+option.BLOOM_THRESHOLD.comment=Lower = more things glow.
+option.BLOOM_RADIUS=Bloom: size
+option.VIGNETTE=Vignette
+option.VIGNETTE.comment=Softly darkens the screen edges.
+option.HAZE=Haze
+option.HAZE.comment=Light haze in the distance, a bit stronger in rain.

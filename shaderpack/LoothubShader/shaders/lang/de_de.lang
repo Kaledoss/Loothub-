@@ -1,0 +1,20 @@
+profile.SANFT=Sanft
+profile.STANDARD=Standard
+profile.KRAEFTIG=Kr\u00e4ftig
+profile.LEISTUNG=Leistung (ohne Gl\u00fchen)
+option.EXPOSURE=Helligkeit
+option.EXPOSURE.comment=Gesamthelligkeit des Bildes.
+option.CONTRAST=Kontrast
+option.SATURATION=Farbs\u00e4ttigung
+option.WARMTH=Farbtemperatur
+option.WARMTH.comment=Positiv = w\u00e4rmer (gelblich), negativ = k\u00fchler (bl\u00e4ulich).
+option.BLOOM=Gl\u00fchen
+option.BLOOM.comment=Helle Dinge (Fackeln, Lava, Laternen, Himmel) strahlen weich nach au\u00dfen. Kostet etwas Leistung.
+option.BLOOM_STRENGTH=Gl\u00fchen: St\u00e4rke
+option.BLOOM_THRESHOLD=Gl\u00fchen: ab Helligkeit
+option.BLOOM_THRESHOLD.comment=Niedriger = mehr Dinge gl\u00fchen.
+option.BLOOM_RADIUS=Gl\u00fchen: Gr\u00f6\u00dfe
+option.VIGNETTE=Vignette
+option.VIGNETTE.comment=Dunkelt die Bildr\u00e4nder sanft ab.
+option.HAZE=Dunst
+option.HAZE.comment=Leichter Dunst in der Ferne, bei Regen etwas st\u00e4rker.
