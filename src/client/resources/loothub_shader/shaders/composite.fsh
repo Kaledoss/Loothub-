@@ -4,6 +4,7 @@
 
 uniform sampler2D colortex0;
 uniform sampler2D depthtex0;
+uniform sampler2D colortex2;
 uniform mat4 gbufferProjectionInverse;
 uniform vec3 fogColor;
 uniform float far;
@@ -34,12 +35,16 @@ void main() {
 	float knee = 0.05;
 	float soft = clamp((l - BLOOM_THRESHOLD + knee) / (2.0 * knee), 0.0, 1.0);
 	float w = max(soft * soft * knee * 2.0, l - BLOOM_THRESHOLD) / max(l, 0.0001);
-	bright = color * clamp(w, 0.0, 1.0);
+	// nur Lichtquellen (Glowstone, Laternen, Lava, Sonne ...) - nicht jede weisse Wand
+	float mask = texture2D(colortex2, texcoord).r;
+	bright = color * clamp(w, 0.0, 1.0) * mask;
 #endif
 
 	/*
 	const int colortex1Format = RGBA16F;
 	const bool colortex1Clear = true;
+	const int colortex2Format = R8;
+	const bool colortex2Clear = true;
 	*/
 	/* RENDERTARGETS: 0,1 */
 	gl_FragData[0] = vec4(color, 1.0);

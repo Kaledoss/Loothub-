@@ -1,3 +1,4 @@
+shaders/block.properties
 shaders/blur.glsl
 shaders/common.glsl
 shaders/composite.fsh
