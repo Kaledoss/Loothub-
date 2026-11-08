@@ -1,5 +1,7 @@
+profile.HELL=Bright & clear
+option.AIRY=Airiness
+option.AIRY.comment=Slightly lifts dark areas with a cool, bright sheen.
 profile.SANFT=Soft
-profile.STANDARD=Standard
 profile.KRAEFTIG=Vivid
 profile.LEISTUNG=Performance (no bloom)
 option.EXPOSURE=Brightness

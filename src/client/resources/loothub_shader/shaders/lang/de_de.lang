@@ -1,6 +1,8 @@
+profile.HELL=Hell & klar
+option.AIRY=Luftigkeit
+option.AIRY.comment=Hebt dunkle Stellen leicht an und gibt einen kuehlen, hellen Schimmer.
 profile.SANFT=Sanft
-profile.STANDARD=Standard
-profile.KRAEFTIG=Kr\u00e4ftig
+profile.KRAEFTIG=Kr\u00e4ftig (warm)
 profile.LEISTUNG=Leistung (ohne Gl\u00fchen)
 option.EXPOSURE=Helligkeit
 option.EXPOSURE.comment=Gesamthelligkeit des Bildes.

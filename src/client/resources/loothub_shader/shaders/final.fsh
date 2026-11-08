@@ -32,6 +32,10 @@ void main() {
 
 	color = tonemap(max(color, 0.0));
 
+	// luftig: Schatten etwas anheben und leicht kuehl-weiss toenen (heller, klarer Look)
+	vec3 airTint = vec3(0.93, 0.96, 1.0);
+	color = color + (airTint - color) * AIRY * (1.0 - luma(color)) * 0.6;
+
 	// Vignette
 	vec2 c = texcoord - 0.5;
 	c.x *= viewWidth / viewHeight;
