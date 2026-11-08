@@ -72,6 +72,8 @@ public final class WidgetConfig {
 	/** Block-Info: Werkzeug bzw. Marktpreis zeigen, Größe, Position (x = Mitte als Anteil der Breite, y = Anteil der Höhe). */
 	public boolean lookInfoTool = true;
 	public boolean lookInfoPrice = true;
+	/** Block-Info: Inhalt von Regalen anzeigen. */
+	public boolean lookInfoContents = true;
 	public float lookInfoScale = 1.0F;
 	public double lookInfoX = 0.5;
 	public double lookInfoY = 0.0;

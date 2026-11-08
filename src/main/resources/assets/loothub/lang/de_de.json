@@ -525,5 +525,7 @@
 	"loothub.chat.why.tab": "liegt im Tab „%s“",
 	"loothub.confirm.yes": "Ja, löschen",
 	"loothub.history.clear.question": "Den gesamten Job-Verlauf wirklich löschen? Das lässt sich nicht rückgängig machen.",
-	"loothub.stats.clear.question": "Die gesamte Statistik wirklich löschen? Das lässt sich nicht rückgängig machen."
+	"loothub.stats.clear.question": "Die gesamte Statistik wirklich löschen? Das lässt sich nicht rückgängig machen.",
+	"loothub.settings.look_info.contents": "Regal-Inhalt: %s",
+	"loothub.look_info.empty": "leer"
 }

@@ -325,7 +325,11 @@ public class SettingsScreen extends LoothubScreen {
 					buttons.add(addRenderableWidget(Button.builder(Component.translatable("loothub.settings.look_info.move"),
 							b -> minecraft.setScreen(new de.loothub.client.quick.LookInfoEditScreen(this)))
 							.bounds(lDescX + 3 * (third + 4), liY + 38, third, 16).build()));
-					y = card(liY, 60, "loothub.settings.look_info", "loothub.settings.look_info.tooltip",
+					buttons.add(addRenderableWidget(Button.builder(lookLabel("contents", c.lookInfoContents), b -> {
+						c.lookInfoContents = !c.lookInfoContents;
+						b.setMessage(lookLabel("contents", c.lookInfoContents));
+					}).bounds(lDescX, liY + 58, 2 * third + 4, 16).build()));
+					y = card(liY, 80, "loothub.settings.look_info", "loothub.settings.look_info.tooltip",
 							() -> c.lookInfo, v -> c.lookInfo = v);
 				}
 				y = card(y, 40, "loothub.settings.fly_pose", "loothub.settings.fly_pose.tooltip",

@@ -35,7 +35,10 @@ public final class LookInfo {
 	private static final int PAD = 5;
 
 	/** Was angezeigt wird (Block oder Lebewesen). */
-	private record Info(ItemStack icon, Component name, ItemStack tool, boolean ok, String price) {
+	private record Info(ItemStack icon, Component name, ItemStack tool, boolean ok, String price, java.util.List<ItemStack> contents) {
+		Info(ItemStack icon, Component name, ItemStack tool, boolean ok, String price) {
+			this(icon, name, tool, ok, price, java.util.List.of());
+		}
 	}
 
 	private static boolean dragging;
@@ -143,7 +146,17 @@ public final class LookInfo {
 				if (icon.isEmpty()) {
 					icon = new ItemStack(st.getBlock().asItem());
 				}
-				return blockInfo(mc, st, icon);
+				Info info = blockInfo(mc, st, icon);
+				// Regal: die (bis zu drei) Items darauf zeigen – der Inhalt wird ohnehin an den Client geschickt
+				if (WidgetConfig.get().lookInfoContents
+						&& mc.level.getBlockEntity(bhr.getBlockPos()) instanceof net.minecraft.world.level.block.entity.ShelfBlockEntity shelf) {
+					java.util.List<ItemStack> items = new java.util.ArrayList<>();
+					for (ItemStack it : shelf.getItems()) {
+						items.add(it.copy());
+					}
+					info = new Info(info.icon(), info.name(), info.tool(), info.ok(), info.price(), items);
+				}
+				return info;
 			}
 		}
 		return null;
@@ -171,8 +184,22 @@ public final class LookInfo {
 		boolean hasIcon = !info.icon().isEmpty();
 		boolean line2 = !info.tool().isEmpty() || info.price() != null;
 		int line2W = (info.tool().isEmpty() ? 0 : 14 + font.width("✔") + 8) + (info.price() == null ? 0 : font.width(info.price()));
-		int w = PAD + (hasIcon ? 20 : 0) + Math.max(font.width(info.name()), line2W) + PAD;
-		int h = line2 ? 32 : (hasIcon ? 26 : 18);
+		boolean line3 = !info.contents().isEmpty();
+		String only = null; // genau ein Item auf dem Regal: Name dazuschreiben
+		int filled = 0;
+		for (ItemStack it : info.contents()) {
+			if (!it.isEmpty()) {
+				filled++;
+				only = it.getHoverName().getString();
+			}
+		}
+		if (filled != 1) {
+			only = null;
+		}
+		String emptyText = Component.translatable("loothub.look_info.empty").getString();
+		int line3W = line3 ? (filled == 0 ? font.width(emptyText) : info.contents().size() * 18 + (only == null ? 0 : 4 + font.width(only))) : 0;
+		int w = PAD + (hasIcon ? 20 : 0) + Math.max(Math.max(font.width(info.name()), line2W), line3W) + PAD;
+		int h = (line2 ? 32 : (hasIcon ? 26 : 18)) + (line3 ? 18 : 0);
 		float scale = Math.max(0.5F, Math.min(2.0F, c.lookInfoScale));
 		int sw2 = Math.round(w * scale), sh2 = Math.round(h * scale);
 		int x = (int) Math.round(c.lookInfoX * sw - sw2 / 2.0);
@@ -189,10 +216,11 @@ public final class LookInfo {
 		g.fill(0, 0, w, 1, Theme.bg(0xFFE23B3B));
 		int tx = PAD;
 		if (hasIcon) {
-			g.renderItem(info.icon(), PAD, (h - 16) / 2);
+			g.renderItem(info.icon(), PAD, ((line3 ? h - 18 : h) - 16) / 2);
 			tx += 20;
 		}
-		g.drawString(font, info.name(), tx, line2 ? 6 : (h - 8) / 2, 0xFFFFFFFF, true);
+		int top = tx;
+		g.drawString(font, info.name(), tx, line2 ? 6 : ((line3 ? h - 18 : h) - 8) / 2, 0xFFFFFFFF, true);
 		if (line2) {
 			int ly = 19;
 			if (!info.tool().isEmpty()) {
@@ -206,6 +234,26 @@ public final class LookInfo {
 			}
 			if (info.price() != null) {
 				g.drawString(font, info.price(), tx, ly, 0xFF55E06A, true);
+			}
+		}
+		if (line3) {
+			int ry = h - 19;
+			g.fill(top, ry - 1, w - PAD, ry, 0x40FFFFFF);
+			if (filled == 0) {
+				g.drawString(font, emptyText, top, ry + 5, 0xFF8A8A8A, true);
+			} else {
+				int ix = top;
+				for (ItemStack it : info.contents()) {
+					g.fill(ix, ry + 1, ix + 16, ry + 17, 0x30000000);
+					if (!it.isEmpty()) {
+						g.renderItem(it, ix, ry + 1);
+						g.renderItemDecorations(font, it, ix, ry + 1);
+					}
+					ix += 18;
+				}
+				if (only != null) {
+					g.drawString(font, only, ix + 2, ry + 5, 0xFFE0E0E0, true);
+				}
 			}
 		}
 		g.pose().popMatrix();

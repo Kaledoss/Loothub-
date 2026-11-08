@@ -525,5 +525,7 @@
 	"loothub.chat.why.tab": "is in tab “%s”",
 	"loothub.confirm.yes": "Yes, delete",
 	"loothub.history.clear.question": "Really delete the whole job history? This cannot be undone.",
-	"loothub.stats.clear.question": "Really delete all statistics? This cannot be undone."
+	"loothub.stats.clear.question": "Really delete all statistics? This cannot be undone.",
+	"loothub.settings.look_info.contents": "Shelf contents: %s",
+	"loothub.look_info.empty": "empty"
 }
