@@ -57,7 +57,7 @@ public class ChatAssignScreen extends Screen {
 				if (l.stream().noneMatch(x -> x.equalsIgnoreCase(key))) {
 					l.add(key);
 				}
-				t.exclude = String.join(", ", l);
+				t.exclude = CustomChat.joinWords(l);
 				CustomChat.invalidate();
 				WidgetConfig.get().save();
 			}
@@ -77,7 +77,7 @@ public class ChatAssignScreen extends Screen {
 		int a = t.lastIndexOf('»', Math.min(t.length() - 1, 40));
 		int br = t.indexOf(']', Math.max(0, a));
 		int cut = Math.max(a, br >= 0 && br < 60 ? br : -1);
-		String body = (cut >= 0 ? t.substring(cut + 1) : t).replace(",", " ").strip();
+		String body = (cut >= 0 ? t.substring(cut + 1) : t).strip();
 		if (body.length() > 40) {
 			int sp = body.lastIndexOf(' ', 40);
 			body = body.substring(0, sp > 15 ? sp : 40);

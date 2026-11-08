@@ -110,7 +110,7 @@ public final class CustomChat {
 			if (words == null || words.isBlank()) {
 				return null;
 			}
-			for (String w : words.split(",")) {
+			for (String w : splitWords(words)) {
 				String t = ChatLog.norm(w);
 				if (!t.isEmpty() && low.contains(t)) {
 					return w.strip();
@@ -123,7 +123,7 @@ public final class CustomChat {
 			if (words == null || words.isBlank()) {
 				return false;
 			}
-			for (String w : words.split(",")) {
+			for (String w : splitWords(words)) {
 				String t = ChatLog.norm(w);
 				if (!t.isEmpty() && low.contains(t)) {
 					return true;
@@ -133,7 +133,24 @@ public final class CustomChat {
 		}
 	}
 
-	public record Msg(long time, Component text, String low, boolean pm, String source, boolean own, String blockedBy) {
+	/**
+	 * Filter-Einträge: neue Listen sind zeilenweise getrennt (damit ein Eintrag auch Kommas enthalten darf),
+	 * ältere Einstellungen mit Komma werden weiter gelesen.
+	 */
+	public static String[] splitWords(String words) {
+		if (words == null || words.isBlank()) {
+			return new String[0];
+		}
+		return words.contains("\n") ? words.split("\n") : words.split(",");
+	}
+
+	public static String joinWords(java.util.List<String> list) {
+		String joined = String.join("\n", list);
+		// ein einzelner Eintrag ohne Zeilenumbruch: Zeilenumbruch anhängen, damit Kommas darin kein Trenner sind
+		return list.size() == 1 ? joined + "\n" : joined;
+	}
+
+		public record Msg(long time, Component text, String low, boolean pm, String source, boolean own, String blockedBy) {
 	}
 
 	private record Line(FormattedCharSequence seq, long time, Msg msg) {

@@ -134,11 +134,11 @@ public class ChatWindowScreen extends Screen {
 		y = Math.min(y, sourcesY + 30) + 22;
 		listY = y;
 		int colW = (w - 6) / 2;
-		incBox = box(x, y + 10, colW - 20, "", 100, "loothub.chatwin.tab.include", v -> {
+		incBox = box(x, y + 10, colW - 20, "", 256, "loothub.chatwin.tab.include", v -> {
 		});
 		addRenderableWidget(Button.builder(Component.literal("+").withStyle(ChatFormatting.GREEN), b -> addWord(true))
 				.bounds(x + colW - 18, y + 10, 18, 16).build());
-		excBox = box(x + colW + 6, y + 10, colW - 20, "", 100, "loothub.chatwin.tab.exclude", v -> {
+		excBox = box(x + colW + 6, y + 10, colW - 20, "", 256, "loothub.chatwin.tab.exclude", v -> {
 		});
 		addRenderableWidget(Button.builder(Component.literal("+").withStyle(ChatFormatting.GREEN), b -> addWord(false))
 				.bounds(x + w - 18, y + 10, 18, 16).build());
@@ -163,7 +163,7 @@ public class ChatWindowScreen extends Screen {
 	static List<String> words(String s) {
 		List<String> out = new java.util.ArrayList<>();
 		if (s != null) {
-			for (String w : s.split(",")) {
+			for (String w : CustomChat.splitWords(s)) {
 				if (!w.isBlank()) {
 					out.add(w.strip());
 				}
@@ -184,7 +184,7 @@ public class ChatWindowScreen extends Screen {
 			String word = list.get(i + scroll);
 			if (editCol == (include ? 0 : 1) && editIndex == i + scroll) {
 				editBox = addRenderableWidget(new EditBox(font, x + 4, entriesTop() + i * ENTRY_H + 2, colW - 22, 10, Component.empty()));
-				editBox.setMaxLength(100);
+				editBox.setMaxLength(256);
 				editBox.setBordered(false);
 				editBox.setValue(word);
 				setFocused(editBox);
@@ -194,9 +194,9 @@ public class ChatWindowScreen extends Screen {
 				List<String> l = words(include ? tab.include : tab.exclude);
 				l.remove(word);
 				if (include) {
-					tab.include = String.join(", ", l);
+					tab.include = CustomChat.joinWords(l);
 				} else {
-					tab.exclude = String.join(", ", l);
+					tab.exclude = CustomChat.joinWords(l);
 				}
 				changed();
 				rebuildWidgets();
@@ -206,7 +206,7 @@ public class ChatWindowScreen extends Screen {
 
 	private void addWord(boolean include) {
 		EditBox box = include ? incBox : excBox;
-		String v = box.getValue().replace(",", " ").strip();
+		String v = box.getValue().strip();
 		if (v.isEmpty()) {
 			return;
 		}
@@ -216,9 +216,9 @@ public class ChatWindowScreen extends Screen {
 			l.add(v);
 		}
 		if (include) {
-			tab.include = String.join(", ", l);
+			tab.include = CustomChat.joinWords(l);
 		} else {
-			tab.exclude = String.join(", ", l);
+			tab.exclude = CustomChat.joinWords(l);
 		}
 		changed();
 		rebuildWidgets();
@@ -235,16 +235,16 @@ public class ChatWindowScreen extends Screen {
 		boolean include = editCol == 0;
 		List<String> l = words(include ? tab.include : tab.exclude);
 		if (editIndex >= 0 && editIndex < l.size()) {
-			String v = editBox.getValue().replace(",", " ").strip();
+			String v = editBox.getValue().strip();
 			if (v.isEmpty()) {
 				l.remove(editIndex);
 			} else {
 				l.set(editIndex, v);
 			}
 			if (include) {
-				tab.include = String.join(", ", l);
+				tab.include = CustomChat.joinWords(l);
 			} else {
-				tab.exclude = String.join(", ", l);
+				tab.exclude = CustomChat.joinWords(l);
 			}
 			changed();
 		}
