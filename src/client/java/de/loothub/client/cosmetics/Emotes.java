@@ -9,10 +9,10 @@ import java.util.WeakHashMap;
  */
 public final class Emotes {
 	public static final int NONE = 0, WAVE = 1, CHEER = 2, YAWN = 3, SCRATCH = 4, HOLD = 5, RAIN = 6, SHIVER = 7, FAN = 8,
-			DANGLE = 9;
+			DANGLE = 9, NOD = 10, HIGHFIVE = 11, TIRED = 12, POKE = 13;
 	/** Dauerhafte Gesten (kein Ein-/Ausblenden über den Verlauf). */
 	public static boolean steady(int type) {
-		return type == HOLD || type == RAIN || type == SHIVER || type == DANGLE;
+		return type == HOLD || type == RAIN || type == SHIVER || type == DANGLE || type == TIRED;
 	}
 	private static final long CHEER_MS = 3200L;
 	private static volatile long cheerAt;
@@ -27,16 +27,79 @@ public final class Emotes {
 		cheerAt = System.currentTimeMillis();
 	}
 
+	private static volatile long mentionAt, pmAt;
+
+	/** Jemand erwähnt den eigenen Namen im Chat: die Mini-Mes schauen auf und winken. */
+	public static void mention() {
+		mentionAt = System.currentTimeMillis();
+	}
+
+	/** Privatnachricht bekommen: kurz ein Briefumschlag über einem Mini-Me. */
+	public static void privateMessage() {
+		pmAt = System.currentTimeMillis();
+	}
+
+	/** Briefumschlag sichtbar: Fortschritt 0..1, sonst −1. */
+	public static float envelope() {
+		long d = System.currentTimeMillis() - pmAt;
+		return d >= 0 && d < 4_000L ? d / 4_000F : -1F;
+	}
+
+	/** Gerade erwähnt worden (für den Blick nach oben)? */
+	public static boolean mentioned() {
+		return System.currentTimeMillis() - mentionAt < 2_500L;
+	}
+
+	/** Tageszeit der Welt 0..24000 (−1 ohne Welt oder ohne Tag/Nacht, z. B. im Nether). */
+	static long dayTime() {
+		net.minecraft.client.Minecraft mc = net.minecraft.client.Minecraft.getInstance();
+		if (mc.level == null || !mc.level.dimensionType().hasSkyLight() || mc.level.dimensionType().hasFixedTime()) {
+			return -1;
+		}
+		return Math.floorMod(mc.level.getDayTime(), 24_000L);
+	}
+
+	/** Heiß: Nether oder heißes Biom (Wüste, Savanne, Tafelberge). */
+	static boolean hot(Object playerState) {
+		net.minecraft.client.Minecraft mc = net.minecraft.client.Minecraft.getInstance();
+		if (mc.level == null || !(playerState instanceof net.minecraft.client.renderer.entity.state.AvatarRenderState st)) {
+			return false;
+		}
+		if (mc.level.dimension() == net.minecraft.world.level.Level.NETHER) {
+			return true;
+		}
+		net.minecraft.core.BlockPos pos = net.minecraft.core.BlockPos.containing(st.x, st.y, st.z);
+		return mc.level.getBiome(pos).value().getBaseTemperature() >= 1.5F;
+	}
+
 	/**
 	 * Welche Geste Mini-Me {@code slot} des Spielers gerade macht: {Art, Fortschritt}. Reaktionen auf die Umgebung
 	 * (festhalten beim Sprinten, Regen, Lava, Schnee) kommen immer; Gesten im Stand nur mit eingeschalteten Gesten.
 	 */
 	public static float[] pick(Object playerState, int slot, boolean sleeping, boolean sitting) {
+		return pick(playerState, slot, sleeping, sitting, false, "");
+	}
+
+	/**
+	 * Wie oben, dazu: {@code partner} = das andere Mini-Me desselben Paars ist da (Gespräch/Spielen/Abklatschen);
+	 * {@code trait} = Charakter („playful“, „shy“, „brave“, „lazy“, „curious“ oder leer).
+	 */
+	public static float[] pick(Object playerState, int slot, boolean sleeping, boolean sitting, boolean partner, String trait) {
 		long now = System.currentTimeMillis();
 		float tick = (now % 100_000L) / 1000.0F;
 		boolean gestures = Cosmetics.has(playerState, Cosmetics.EMOTES);
-		if (gestures && Motion.local(playerState) && now - cheerAt < CHEER_MS) {
+		boolean local = Motion.local(playerState);
+		boolean lazy = "lazy".equals(trait), playful = "playful".equals(trait);
+		if (gestures && local && now - cheerAt < CHEER_MS) {
 			return new float[]{CHEER, (now - cheerAt) / (float) CHEER_MS};
+		}
+		// nach dem Jubeln klatschen sich die beiden auf den Schultern ab
+		if (gestures && local && slot < 2 && partner && now - cheerAt >= CHEER_MS && now - cheerAt < CHEER_MS + 1_400L) {
+			return new float[]{HIGHFIVE, (now - cheerAt - CHEER_MS) / 1_400F};
+		}
+		// im Chat erwähnt: winken
+		if (gestures && local && !sleeping && now - mentionAt < 2_500L) {
+			return new float[]{WAVE, (now - mentionAt) / 2_500F};
 		}
 		if (sleeping) {
 			float p = window(now, 17_000L, slot * 2_700L, 2_200L);
@@ -59,8 +122,54 @@ public final class Emotes {
 		if ((env & Motion.ENV_SNOW) != 0) {
 			return new float[]{SHIVER, tick};
 		}
-		if (gestures && Motion.idle(playerState) > 4.0F) {
-			float p = window(now, 16_000L, slot * 2_100L, 2_400L);
+		if (!gestures) {
+			return null;
+		}
+		// Hitze (Nether, Wüste): ab und zu Luft zufächeln
+		if (hot(playerState)) {
+			float p = window(now, 14_000L, slot * 1_900L, 2_400L);
+			if (p >= 0) {
+				return new float[]{FAN, p};
+			}
+		}
+		// fremde Mini-Mes in der Nähe: zuwinken
+		if (Life.foreignNear(playerState)) {
+			float p = window(now, 9_000L, slot * 700L, 2_000L);
+			if (p >= 0) {
+				return new float[]{WAVE, p};
+			}
+		}
+		// Gespräch (Paare): beide gleichzeitig, abwechselnd nicken – Krabbler spielen stattdessen
+		if (partner) {
+			long cycle = playful ? 18_000L : lazy ? 45_000L : 28_000L;
+			float p = window(now, cycle, (slot / 2) * 5_300L + 9_000L, 4_500L);
+			if (p >= 0 && (slot < 4 || sitting)) {
+				return new float[]{slot >= 4 ? POKE : NOD, p};
+			}
+		}
+		// nachts müde (Kopf hängt), morgens strecken und gähnen
+		long day = dayTime();
+		if (day >= 0) {
+			boolean night = day >= 13_000L && day < 23_000L;
+			boolean morning = day >= 23_000L || day < 1_000L;
+			if (morning) {
+				float p = window(now, 20_000L, slot * 3_100L, 2_200L);
+				if (p >= 0) {
+					return new float[]{YAWN, p};
+				}
+			}
+			if ((night || lazy) && Motion.idle(playerState) > (lazy ? 3.0F : 6.0F)) {
+				float p = window(now, lazy ? 12_000L : 18_000L, slot * 2_300L, 2_200L);
+				if (p >= 0) {
+					return new float[]{YAWN, p};
+				}
+				if (night) {
+					return new float[]{TIRED, tick};
+				}
+			}
+		}
+		if (Motion.idle(playerState) > (playful ? 2.0F : lazy ? 8.0F : 4.0F)) {
+			float p = window(now, playful ? 9_000L : 16_000L, slot * 2_100L, 2_400L);
 			if (p >= 0) {
 				return new float[]{WAVE, p};
 			}

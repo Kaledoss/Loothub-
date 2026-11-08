@@ -111,6 +111,8 @@ public final class WidgetConfig {
 	public boolean miniMeEmotes = false;
 	/** Lebendigkeit der Mini-Mes in Prozent (Atmen, Blick, Nachschwingen, Reaktionen; 0 = steif wie früher). */
 	public int miniMeLife = 100;
+	/** Charakter je Mini-Me, mit Komma je Platz (playful, shy, brave, lazy, curious; leer = normal). */
+	public String miniMeTraits = "";
 	/** Flug-Haltung beim Fliegen in Bewegung (Kopf voraus, waagerecht). */
 	public boolean flyPose = true;
 	/** Jobschatz-Zähler: XP seit der letzten 100.000er-Marke und Anzahl erreichter Marken. */

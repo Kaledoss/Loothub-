@@ -529,5 +529,14 @@
 	"loothub.settings.look_info.contents": "Shelf contents: %s",
 	"loothub.look_info.empty": "empty",
 	"loothub.cosmetics.life": "Liveliness",
-	"loothub.cosmetics.life.desc": "How alive the Mini-Mes look: breathing, dangling legs, bouncing on landing, bobbing in flight, looking around (at animals, players and the block you mine), flinching on damage, ducking and hopping with you, cheering after a win. 0 % = calm."
+	"loothub.cosmetics.life.desc": "How alive the Mini-Mes look: breathing, dangling legs, bouncing, bobbing in flight, looking around, flinching at damage and lightning, ducking and hopping with you, chatting and playing together, getting tired at night, waving at other Mini-Mes, reacting to mentions and private messages. 0 % = calm.",
+	"loothub.cosmetics.trait": "Personality",
+	"loothub.cosmetics.trait.desc": "Give each Mini-Me its own nature: playful (waves and plays more), shy (stays with you, startles easily), brave (looks at strangers, barely flinches), lazy (yawns, tires quickly), curious (always looking around).",
+	"loothub.cosmetics.trait.slot": "Mini-Me %s",
+	"loothub.cosmetics.trait.off": "Normal",
+	"loothub.cosmetics.trait.playful": "Playful",
+	"loothub.cosmetics.trait.shy": "Shy",
+	"loothub.cosmetics.trait.brave": "Brave",
+	"loothub.cosmetics.trait.lazy": "Lazy",
+	"loothub.cosmetics.trait.curious": "Curious"
 }

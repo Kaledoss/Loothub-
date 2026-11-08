@@ -1,5 +1,7 @@
 package de.loothub.client.cosmetics;
 
+import net.minecraft.client.model.geom.ModelPart;
+
 import java.util.List;
 
 import com.mojang.blaze3d.vertex.PoseStack;
@@ -104,6 +106,44 @@ public final class MiniMeLayer extends RenderLayer<AvatarRenderState, PlayerMode
 					rightArm.xRot = mix(rightArm.xRot, -1.7F + (float) Math.sin(p * 60.0F) * 0.35F, k);
 					rightArm.zRot = mix(rightArm.zRot, -0.35F, k);
 					head.xRot = mix(head.xRot, -0.15F, k);
+				}
+				case Emotes.NOD -> {
+					// Gespräch: abwechselnd erzählen (nicken, mit der Hand gestikulieren) und zuhören (Kopf schief)
+					Life.Pose lp = Life.pose(s);
+					float sd = lp == null ? 1F : lp.side;
+					boolean talking = (p < 0.5F) == (sd > 0);
+					if (talking) {
+						head.xRot += (float) Math.sin(p * 40.0F) * 0.14F * k;
+						ModelPart arm = sd > 0 ? rightArm : leftArm;
+						arm.xRot = mix(arm.xRot, -0.9F + (float) Math.sin(p * 25.0F) * 0.25F, k);
+					} else {
+						head.zRot = mix(head.zRot, sd * 0.18F, k);
+					}
+				}
+				case Emotes.HIGHFIVE -> {
+					// innerer Arm hoch und zur Mitte – in der Mitte des Verlaufs „klatscht“ es
+					Life.Pose lp = Life.pose(s);
+					float sd = lp == null ? 1F : lp.side;
+					ModelPart arm = sd > 0 ? rightArm : leftArm;
+					float in = 0.3F + 0.5F * (float) Math.sin(p * Math.PI);
+					arm.xRot = mix(arm.xRot, (float) Math.toRadians(-170.0), k);
+					arm.zRot = mix(arm.zRot, sd > 0 ? -in : in, k);
+				}
+				case Emotes.TIRED -> {
+					head.xRot = mix(head.xRot, 0.55F, k);
+					head.zRot = mix(head.zRot, (float) Math.sin(p * 0.6F) * 0.08F, k);
+					rightArm.zRot = mix(rightArm.zRot, 0.02F, k);
+					leftArm.zRot = mix(leftArm.zRot, -0.02F, k);
+				}
+				case Emotes.POKE -> {
+					// Krabbler spielen: abwechselnd anstupsen
+					Life.Pose lp = Life.pose(s);
+					float sd = lp == null ? 1F : lp.side;
+					boolean mine = ((int) (p * 6)) % 2 == (sd > 0 ? 0 : 1);
+					ModelPart arm = sd > 0 ? rightArm : leftArm;
+					arm.xRot = mix(arm.xRot, mine ? -1.5F + (float) Math.sin(p * 60.0F) * 0.3F : -0.3F, k);
+					arm.yRot = mix(arm.yRot, sd > 0 ? 0.6F : -0.6F, k);
+					head.zRot = mix(head.zRot, (float) Math.sin(p * 30.0F) * 0.12F, k);
 				}
 				case Emotes.DANGLE -> {
 					// Beine baumeln abwechselnd
@@ -298,14 +338,25 @@ public final class MiniMeLayer extends RenderLayer<AvatarRenderState, PlayerMode
 				look(mini, state, i, side, t, sitDown);
 			}
 			// Lebendigkeit: natürlicher Blick, Federn beim Landen, Wippen im Flug, Reaktionen
-			Life.Frame life = Life.step(state, mini, i, i < 2 ? 0 : i < 4 ? 1 : 2, t, sleeping, mini.yRot, mini.xRot);
+			String trait = Cosmetics.miniMeTrait(state, i);
+			int mate = i ^ 1;
+			boolean partner = mate < skins.size() && skins.get(mate) != null;
+			Life.Frame life = Life.step(state, mini, i, i < 2 ? 0 : i < 4 ? 1 : 2, t, sleeping, mini.yRot, mini.xRot, side, trait,
+					tx, ty, tz);
 			if (!sleeping && !crawling && !swimming && life.look()) {
 				mini.yRot = life.lookYaw();
 				mini.xRot = life.lookPitch();
 			}
 			ty += life.dy();
 			rz += life.rz();
-			float[] emote = crawling || swimming ? null : Emotes.pick(state, i, sleeping, i < 2 || sitDown);
+			float[] emote = crawling || swimming ? null : Emotes.pick(state, i, sleeping, i < 2 || sitDown, partner, trait);
+			if (emote != null && (emote[0] == Emotes.NOD || emote[0] == Emotes.POKE || emote[0] == Emotes.HIGHFIVE)) {
+				// zum Partner drehen (der sitzt/fliegt/krabbelt auf der anderen Seite)
+				float k = Emotes.envelope(emote[1]);
+				k = Math.min(1F, k * 2F);
+				mini.yRot += (side * 70F - mini.yRot) * k;
+				mini.xRot += ((emote[0] == Emotes.HIGHFIVE ? -20F : 5F) - mini.xRot) * k;
+			}
 			Emotes.attach(mini, emote);
 			if (emote != null && emote[0] == Emotes.CHEER) {
 				ty -= Math.abs((float) Math.sin(emote[1] * Math.PI * 4.0)) * 0.12F; // Freudensprünge
@@ -349,6 +400,29 @@ public final class MiniMeLayer extends RenderLayer<AvatarRenderState, PlayerMode
 				Wings.submit(poseStack, collector, wings, wp, light, Cosmetics.miniMeWingColor(state, i),
 						Cosmetics.miniMeWingColorOuter(state, i));
 			}
+			// Privatnachricht: kurz ein Briefumschlag über dem ersten Mini-Me
+			float mail = Emotes.envelope();
+			if (mail >= 0 && Motion.local(state) && i == firstSlot(skins) && Life.amount() > 0) {
+				float rise = mail * 0.5F;
+				float fade = mail < 0.15F ? mail / 0.15F : mail > 0.8F ? (1F - mail) / 0.2F : 1F;
+				poseStack.pushPose();
+				poseStack.translate(0F, -1.1F - rise, 0F);
+				poseStack.mulPose(Axis.YP.rotationDegrees(t * 6F));
+				int a = Math.max(0, Math.min(255, (int) (fade * 255)));
+				int argb = (a << 24) | 0xFFFFFF;
+				collector.submitCustomGeometry(poseStack, RenderTypes.entityTranslucent(ENVELOPE), (pose, vc) -> {
+					float[][] v = {{-0.35F, -0.35F, 0F, 0F}, {0.35F, -0.35F, 1F, 0F}, {0.35F, 0.35F, 1F, 1F}, {-0.35F, 0.35F, 0F, 1F}};
+					for (int q = 0; q < 4; q++) { // Vorderseite
+						vc.addVertex(pose, v[q][0], v[q][1], 0F).setColor(argb).setUv(v[q][2], v[q][3])
+								.setOverlay(OverlayTexture.NO_OVERLAY).setLight(0xF000F0).setNormal(pose, 0F, 0F, 1F);
+					}
+					for (int q = 3; q >= 0; q--) { // Rückseite
+						vc.addVertex(pose, v[q][0], v[q][1], 0F).setColor(argb).setUv(v[q][2], v[q][3])
+								.setOverlay(OverlayTexture.NO_OVERLAY).setLight(0xF000F0).setNormal(pose, 0F, 0F, -1F);
+					}
+				});
+				poseStack.popPose();
+			}
 			poseStack.popPose();
 		}
 	}
@@ -374,6 +448,18 @@ public final class MiniMeLayer extends RenderLayer<AvatarRenderState, PlayerMode
 		blend = blend * blend * (3.0F - 2.0F * blend);
 		mini.yRot = targets[a][0] + (targets[b][0] - targets[a][0]) * blend;
 		mini.xRot = targets[a][1] + (targets[b][1] - targets[a][1]) * blend;
+	}
+
+	private static final net.minecraft.resources.Identifier ENVELOPE =
+			net.minecraft.resources.Identifier.withDefaultNamespace("textures/item/paper.png");
+
+	private static int firstSlot(List<String> skins) {
+		for (int k = 0; k < skins.size(); k++) {
+			if (skins.get(k) != null) {
+				return k;
+			}
+		}
+		return -1;
 	}
 
 	/** Krabbel-Takt: langsam im Stand, schneller wenn der Spieler läuft; beide Mini-Mes leicht versetzt. */

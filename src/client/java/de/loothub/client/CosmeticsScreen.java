@@ -194,6 +194,23 @@ public class CosmeticsScreen extends LoothubScreen {
 					}
 				});
 				sections.add(new Section(y, 42, "loothub.cosmetics.life", "loothub.cosmetics.life.desc"));
+				y += 42 + GAP;
+
+				// Charakter je Mini-Me
+				{
+					int cols = 3;
+					int dw = Math.max(80, (cr - 8 - descX - (cols - 1) * 6) / cols);
+					for (int k = 0; k < Cosmetics.MAX_MINI_MES; k++) {
+						final int slot = k;
+						dropdown(descX + (k % cols) * (dw + 6), y + 30 + (k / cols) * 20, dw,
+								Component.translatable("loothub.cosmetics.trait.slot", slot + 1).getString(),
+								TRAIT_OPTIONS, "loothub.cosmetics.trait.", () -> slotValue(c.miniMeTraits, slot),
+								v -> c.miniMeTraits = setSlot(c.miniMeTraits, slot, v, Cosmetics.MAX_MINI_MES));
+					}
+					int th = 30 + ((Cosmetics.MAX_MINI_MES + cols - 1) / cols) * 20 + 4;
+					sections.add(new Section(y, th, "loothub.cosmetics.trait", "loothub.cosmetics.trait.desc"));
+					y += th + GAP;
+				}
 			}
 			case BODY -> {
 				// Flügel für mich
@@ -348,6 +365,7 @@ public class CosmeticsScreen extends LoothubScreen {
 
 	private static final String[] WING_OPTIONS = {"", "dragon", "devil", "angel"};
 	private static final String[] PET_OPTIONS = {"", "slime", "allay", "bee", "vex"};
+	private static final String[] TRAIT_OPTIONS = {"", "playful", "shy", "brave", "lazy", "curious"};
 	private static final String[] STEP_OPTIONS = {"", "sparks", "flames"};
 
 	/** Knopf „Präfix: Wahl ▾“, Klick klappt die Optionen darunter auf. */

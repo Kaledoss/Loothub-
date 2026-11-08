@@ -62,6 +62,9 @@ public final class Cosmetics {
 	public static final String MINI_WING_COLOR_OUTER = "minimewingcolorouter";
 	/** Stärke der Aura in Prozent (0–100). */
 	public static final String AURA_STRENGTH = "aurastrength";
+	/** Charakter je Mini-Me („playful,shy,,…“). */
+	public static final String MINI_TRAITS = "minimetraits";
+	public static final List<String> TRAITS = List.of("playful", "shy", "brave", "lazy", "curious");
 	public static final List<String> FOOTSTEP_STYLES = List.of("sparks", "flames");
 	public static final List<String> PET_TYPES = List.of("slime", "allay", "bee", "vex");
 	public static final int MAX_PETS = 2;
@@ -245,6 +248,7 @@ public final class Cosmetics {
 			putOwn(mine, values, MINI_WING_COLOR_OUTER, cfg.miniMeWingColorOuter);
 			putOwn(mine, values, FOOTSTEPS, cfg.footsteps);
 			putOwn(mine, values, PETS, cfg.pets == null || cfg.pets.replace(",", "").isBlank() ? "" : cfg.pets);
+			putOwn(mine, values, MINI_TRAITS, cfg.miniMeTraits == null || cfg.miniMeTraits.replace(",", "").isBlank() ? "" : cfg.miniMeTraits);
 			if (cfg.crown) {
 				mine.add(CROWN);
 			}
@@ -356,6 +360,12 @@ public final class Cosmetics {
 			s = slot < parts.length ? parts[slot].strip() : "";
 		}
 		return s.isEmpty() ? null : s;
+	}
+
+	/** Charakter des Mini-Mes auf Platz {@code slot} (siehe {@link #TRAITS}), oder "" für normal. */
+	public static String miniMeTrait(Object state, int slot) {
+		String v = slotColor(raw(state, MINI_TRAITS), slot);
+		return v != null && TRAITS.contains(v) ? v : "";
 	}
 
 	/** Haustier auf Platz {@code slot} ("slime", "allay" …), oder null. */

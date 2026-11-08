@@ -45,6 +45,8 @@ public final class Life {
 	/** Werte für das Modell (in {@code setupAnim}) je Mini-Render-Zustand. */
 	public static final class Pose {
 		public float breath, legL, legR, armDrag, armSpread, flinch, duck, armSwing;
+		/** +1 = Mini-Me sitzt/fliegt links vom Spieler (Modell-x positiv), −1 = rechts. */
+		public float side = 1F;
 	}
 
 	private static final Map<Long, S> STATES = new HashMap<>();
@@ -88,12 +90,15 @@ public final class Life {
 	 * {@code baseYaw}/{@code basePitch}: bisheriger Blick (zum Spieler usw.), wird hier natürlicher gemacht.
 	 */
 	public static Frame step(AvatarRenderState player, AvatarRenderState mini, int slot, int kind, float t, boolean sleeping,
-			float baseYaw, float basePitch) {
+			float baseYaw, float basePitch, float side, String trait, float tx, float ty0, float tz) {
 		float L = amount();
 		S s = state(player.id, slot);
+		boolean shy = "shy".equals(trait), brave = "brave".equals(trait), curious = "curious".equals(trait),
+				playful = "playful".equals(trait), lazy = "lazy".equals(trait);
 		float dt = s.lastT < 0 ? 0 : Mth.clamp((t - s.lastT) / 20F, 0, 0.1F);
 		s.lastT = t;
 		Pose p = POSES.computeIfAbsent(mini, k -> new Pose());
+		p.side = side;
 		if (L <= 0 || sleeping) {
 			p.breath = p.legL = p.legR = p.armDrag = p.armSpread = p.flinch = p.duck = p.armSwing = 0;
 			return new Frame(0, 1, 1, 0, baseYaw, basePitch, false);
@@ -161,11 +166,12 @@ public final class Life {
 		}
 
 		// Reaktionen
-		if (player.hasRedOverlay) {
+		if (player.hasRedOverlay || System.currentTimeMillis() - lightningAt < 400L) {
 			s.flinch = 1F;
 		}
-		s.flinch = Math.max(0, s.flinch - dt * 2.5F);
-		p.flinch = s.flinch * L;
+		s.flinch = Math.max(0, s.flinch - dt * (brave ? 4.5F : shy ? 1.6F : 2.5F));
+		float fk = brave ? 0.45F : shy ? 1.3F : 1F;
+		p.flinch = Math.min(1F, s.flinch * fk) * L;
 		p.duck = player.isCrouching ? L : 0;
 		if (s.hop > 0) {
 			dy -= (float) Math.sin(s.hop * Math.PI) * 0.35F * L;
@@ -175,8 +181,13 @@ public final class Life {
 		// Blick: schnelle Blickwechsel statt festem Takt; Ziele: Spieler, Blickrichtung, Lebewesen in der Nähe, Block
 		if (t >= s.nextGaze) {
 			float r = rnd(s);
-			s.gazeMode = r < 0.3F ? 0 : r < 0.55F ? 1 : r < 0.85F ? 2 : 3;
-			s.nextGaze = t + 16 + rnd(s) * (s.gazeMode == 2 ? 70 : 50);
+			// Charakter: schüchtern schaut meist zum Spieler, neugierig/mutig öfter zu anderen, verspielt wechselt oft
+			float toMe = shy ? 0.55F : curious ? 0.15F : 0.3F;
+			float toDir = toMe + (lazy ? 0.35F : 0.25F);
+			float toOther = toDir + (curious || brave ? 0.4F : shy ? 0.12F : 0.3F);
+			s.gazeMode = r < toMe ? 0 : r < toDir ? 1 : r < toOther ? 2 : 3;
+			float pace = playful || curious ? 0.6F : lazy ? 1.7F : 1F;
+			s.nextGaze = t + (16 + rnd(s) * (s.gazeMode == 2 ? 70 : 50)) * pace;
 			if (s.gazeMode == 3) {
 				s.gazeToYaw = (rnd(s) - 0.5F) * 120F;
 				s.gazeToPitch = (rnd(s) - 0.5F) * 40F;
@@ -188,6 +199,9 @@ public final class Life {
 			s.specialAt = t;
 		}
 		float[] special = s.special;
+		if (Motion.local(player) && Emotes.mentioned()) {
+			special = new float[]{baseYaw * 0.3F, -35F}; // erwähnt: aufschauen
+		}
 		if (special != null) {
 			ty = special[0];
 			tp = special[1];
@@ -206,6 +220,16 @@ public final class Life {
 		float lookYaw = baseYaw + (s.gazeYaw + s.lagYaw + jitter - baseYaw) * L;
 		float lookPitch = basePitch + (s.gazePitch - basePitch) * L + (player.isCrouching ? 15F * L : 0) + s.flinch * 20F * L;
 
+		// unter Wasser: kleine Luftblasen
+		if ((Motion.env(player) & Motion.ENV_WATER) != 0 && dt > 0 && rnd(s) < dt * 1.5F * L) {
+			Minecraft mc = Minecraft.getInstance();
+			if (mc.level != null) {
+				double th = Math.toRadians(180.0 - player.bodyRot);
+				double X = -tx, Z = tz, c = Math.cos(th), sn = Math.sin(th);
+				double wx = player.x + X * c + Z * sn, wz = player.z - X * sn + Z * c, wy = player.y + 1.5 - ty0 + 0.1;
+				mc.level.addParticle(net.minecraft.core.particles.ParticleTypes.BUBBLE, wx, wy, wz, 0, 0.05, 0);
+			}
+		}
 		float sq = s.squash * L;
 		float sy = 1F + sq * 0.45F + breath * 0.012F * L - (player.isCrouching ? 0.06F * L : 0);
 		float sx = 1F - sq * 0.25F;
@@ -263,7 +287,11 @@ public final class Life {
 			return net.minecraft.world.InteractionResult.PASS;
 		});
 		net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents.END_CLIENT_TICK.register(mc -> {
-			if (hitId < 0 || mc.level == null) {
+			if (mc.level == null || mc.player == null) {
+				return;
+			}
+			scanNear(mc);
+			if (hitId < 0) {
 				return;
 			}
 			if (System.currentTimeMillis() - hitAt > 2500) {
@@ -278,6 +306,50 @@ public final class Life {
 				}
 			}
 		});
+	}
+
+	// Blitz in der Nähe (alle zucken), Spieler mit Mini-Mes in der Nähe anderer Spieler mit Mini-Mes (winken)
+	private static volatile long lightningAt;
+	private static final java.util.Set<Integer> SEEN_BOLTS = new java.util.HashSet<>();
+	private static volatile java.util.Set<Integer> FOREIGN = java.util.Set.of();
+	private static int scanTick;
+
+	private static void scanNear(Minecraft mc) {
+		if (++scanTick % 5 != 0) {
+			return;
+		}
+		java.util.Set<Integer> bolts = new java.util.HashSet<>();
+		java.util.List<net.minecraft.world.entity.player.Player> withMinis = new java.util.ArrayList<>();
+		for (Entity e : mc.level.entitiesForRendering()) {
+			if (e instanceof net.minecraft.world.entity.LightningBolt && e.distanceToSqr(mc.player) < 96 * 96) {
+				bolts.add(e.getId());
+				if (!SEEN_BOLTS.contains(e.getId())) {
+					lightningAt = System.currentTimeMillis();
+				}
+			} else if (e instanceof net.minecraft.world.entity.player.Player pl && e.distanceToSqr(mc.player) < 48 * 48) {
+				Cosmetics.Snapshot snap = Cosmetics.of(pl.getId());
+				if (snap != null && snap.set().contains(Cosmetics.MINI_ME)) {
+					withMinis.add(pl);
+				}
+			}
+		}
+		SEEN_BOLTS.retainAll(bolts);
+		SEEN_BOLTS.addAll(bolts);
+		java.util.Set<Integer> near = new java.util.HashSet<>();
+		for (int i = 0; i < withMinis.size(); i++) {
+			for (int j = i + 1; j < withMinis.size(); j++) {
+				if (withMinis.get(i).distanceToSqr(withMinis.get(j)) < 10 * 10) {
+					near.add(withMinis.get(i).getId());
+					near.add(withMinis.get(j).getId());
+				}
+			}
+		}
+		FOREIGN = near;
+	}
+
+	/** Ist ein anderer Spieler mit Mini-Mes in der Nähe dieses Spielers? */
+	public static boolean foreignNear(Object playerState) {
+		return playerState instanceof AvatarRenderState st && FOREIGN.contains(st.id) && amount() > 0;
 	}
 
 	public static Pose pose(AvatarRenderState mini) {

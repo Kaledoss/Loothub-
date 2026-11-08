@@ -33,6 +33,7 @@ public final class ChatLog {
 		}
 		boolean pm = isPrivate(plain);
 		Entry e = new Entry(System.currentTimeMillis(), message, plain, pm);
+		reactMiniMes(net.minecraft.ChatFormatting.stripFormatting(plain), pm);
 		ALL.add(e);
 		if (ALL.size() > MAX) {
 			ALL.remove(0);
@@ -86,6 +87,31 @@ public final class ChatLog {
 	 * Privatnachricht erkennen: typische Formen wie „[Name -> mir]“, „Name → Du“, „[MSG] …“ oder „flüstert“. Wird
 	 * bei Bedarf an das genaue OPSUCHT-Format angepasst.
 	 */
+	/** Mini-Mes reagieren: Privatnachricht bekommen → Briefumschlag; von jemand anderem erwähnt → winken. */
+	private static void reactMiniMes(String plain, boolean pm) {
+		Minecraft mc = Minecraft.getInstance();
+		if (mc.player == null) {
+			return;
+		}
+		String me = mc.player.getGameProfile().name().toLowerCase(Locale.ROOT);
+		String low = plain.toLowerCase(Locale.ROOT);
+		if (pm) {
+			java.util.regex.Matcher m = PM.matcher(low);
+			while (m.find()) {
+				String b = clean(m.group(2));
+				if (SELF.contains(b) || b.equals(me)) {
+					de.loothub.client.cosmetics.Emotes.privateMessage();
+					return;
+				}
+			}
+			return;
+		}
+		if (!me.isEmpty() && !CustomChat.isOwn(plain)
+				&& java.util.regex.Pattern.compile("(^|[^a-z0-9_])" + java.util.regex.Pattern.quote(me) + "($|[^a-z0-9_])").matcher(low).find()) {
+			de.loothub.client.cosmetics.Emotes.mention();
+		}
+	}
+
 	/** „[A -> B]“ (auch mit → oder ➡) irgendwo in der Nachricht. */
 	private static final java.util.regex.Pattern PM = java.util.regex.Pattern.compile(
 			"\\[\\s*([^\\]\\[]+?)\\s*(?:->|→|➡|»)\\s*([^\\]\\[]+?)\\s*\\]");
