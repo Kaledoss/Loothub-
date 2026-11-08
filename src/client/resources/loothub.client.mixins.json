@@ -24,7 +24,8 @@
 		"DropProtectionMixin",
 		"DropProtectionScreenMixin",
 		"CustomChatMixin",
-		"ChatSearchKeysMixin"
+		"ChatSearchKeysMixin",
+		"OffhandFilterMixin"
 	],
 	"injectors": {
 		"defaultRequire": 0

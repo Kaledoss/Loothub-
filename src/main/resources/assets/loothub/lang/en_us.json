@@ -541,5 +541,15 @@
 	"loothub.cosmetics.trait.curious": "Curious",
 	"loothub.settings.shader": "Loothub Shader (Iris)",
 	"loothub.settings.shader.tooltip": "Own shader pack: color grading, bloom, vignette, haze. Turning it on selects it in Iris and reloads shaders; turning it off disables shaders. Sliders under Iris → Shader options.",
-	"loothub.settings.shader.no_iris": "Needs the Iris mod – not installed."
+	"loothub.settings.shader.no_iris": "Needs the Iris mod – not installed.",
+	"loothub.settings.offhand": "Offhand filter",
+	"loothub.settings.offhand.tooltip": "Chosen items in the off hand aren't used on right-click – e.g. the fishing rod won't be cast. Shields, totems etc. work as usual.",
+	"loothub.settings.offhand.edit": "Edit items (%s) …",
+	"loothub.offhand.blocked": "Off hand blocked: %s",
+	"loothub.offhand.add_current": "+ Add current off-hand item",
+	"loothub.offhand.mode.only": "Mode: block only these items",
+	"loothub.offhand.mode.all_except": "Mode: block everything except these",
+	"loothub.offhand.list.blocked": "Blocked:",
+	"loothub.offhand.list.allowed": "Allowed:",
+	"loothub.offhand.empty": "No items – add above."
 }

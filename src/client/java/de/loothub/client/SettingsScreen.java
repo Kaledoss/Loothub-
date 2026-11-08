@@ -413,6 +413,16 @@ public class SettingsScreen extends LoothubScreen {
 			case INVENTORY -> {
 				y = card(y, 40, "loothub.settings.rarity_frames", "loothub.settings.rarity_frames.tooltip",
 						() -> c.rarityFrames, v -> c.rarityFrames = v);
+				{
+					int oy = y;
+					int oDx = cl + labelW + 12;
+					buttons.add(addRenderableWidget(Button.builder(Component.translatable("loothub.settings.offhand.edit",
+									c.offhandItems == null ? 0 : c.offhandItems.size()),
+							b -> minecraft.setScreen(new de.loothub.client.quick.OffhandFilterScreen(this)))
+							.bounds(oDx, oy + 34, Math.min(160, cr - 8 - oDx), 16).build()));
+					y = card(y, 56, "loothub.settings.offhand", "loothub.settings.offhand.tooltip",
+							() -> c.offhandFilter, v -> c.offhandFilter = v);
+				}
 				y = card(y, 40, "loothub.settings.durability_numbers", "loothub.settings.durability_numbers.tooltip",
 						() -> c.durabilityNumbers, v -> c.durabilityNumbers = v);
 				y = card(y, 40, "loothub.settings.drop_protection", "loothub.settings.drop_protection.tooltip",

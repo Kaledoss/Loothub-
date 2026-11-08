@@ -63,6 +63,11 @@ public final class WidgetConfig {
 	public boolean durabilityNumbers = true;
 	/** Wegwerf-Schutz: wertvolle Items erst beim zweiten Q (bzw. zweiten Wurf) fallen lassen. */
 	public boolean dropProtection = true;
+	/** Offhand-Filter: gewählte Items in der zweiten Hand nicht per Rechtsklick benutzen. */
+	public boolean offhandFilter = true;
+	/** true = alles sperren außer den gelisteten Items. */
+	public boolean offhandAllExcept = false;
+	public java.util.List<String> offhandItems = new java.util.ArrayList<>(java.util.List.of("minecraft:fishing_rod"));
 	/** Eigene Timer (Countdown, Wiederholung, täglich) und ihre HUD-Anzeige. */
 	public boolean timersEnabled = true;
 	public java.util.List<de.loothub.client.quick.Timers.Timer> timers = new java.util.ArrayList<>();
@@ -266,6 +271,7 @@ public final class WidgetConfig {
 		customChat = false;
 		durabilityNumbers = false;
 		dropProtection = false;
+		offhandFilter = false;
 		timersEnabled = false;
 		glowingOres = false;
 		flyPose = false;

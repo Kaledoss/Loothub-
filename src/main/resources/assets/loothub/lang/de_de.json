@@ -541,5 +541,15 @@
 	"loothub.cosmetics.trait.curious": "Neugierig",
 	"loothub.settings.shader": "Loothub Shader (Iris)",
 	"loothub.settings.shader.tooltip": "Eigenes Shaderpack: Farbstimmung, Glühen, Vignette, Dunst. Einschalten wählt es in Iris aus und lädt die Shader neu; ausschalten schaltet die Shader ab. Regler unter Iris → Shader-Optionen.",
-	"loothub.settings.shader.no_iris": "Braucht die Mod Iris – ist nicht installiert."
+	"loothub.settings.shader.no_iris": "Braucht die Mod Iris – ist nicht installiert.",
+	"loothub.settings.offhand": "Offhand-Filter",
+	"loothub.settings.offhand.tooltip": "Gewählte Items in der zweiten Hand werden per Rechtsklick nicht benutzt – z. B. wird die Angel nicht ausgeworfen. Schild, Totem usw. bleiben normal.",
+	"loothub.settings.offhand.edit": "Items bearbeiten (%s) …",
+	"loothub.offhand.blocked": "Offhand gesperrt: %s",
+	"loothub.offhand.add_current": "+ Aktuelles Offhand-Item hinzufügen",
+	"loothub.offhand.mode.only": "Modus: nur diese Items sperren",
+	"loothub.offhand.mode.all_except": "Modus: alles sperren außer diesen Items",
+	"loothub.offhand.list.blocked": "Gesperrt:",
+	"loothub.offhand.list.allowed": "Erlaubt:",
+	"loothub.offhand.empty": "Keine Items – oben hinzufügen."
 }
