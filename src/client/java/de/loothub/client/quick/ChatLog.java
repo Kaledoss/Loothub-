@@ -86,18 +86,35 @@ public final class ChatLog {
 	 * Privatnachricht erkennen: typische Formen wie „[Name -> mir]“, „Name → Du“, „[MSG] …“ oder „flüstert“. Wird
 	 * bei Bedarf an das genaue OPSUCHT-Format angepasst.
 	 */
+	/** „[A -> B]“ (auch mit → oder ➡) irgendwo in der Nachricht. */
+	private static final java.util.regex.Pattern PM = java.util.regex.Pattern.compile(
+			"\\[\\s*([^\\]\\[]+?)\\s*(?:->|→|➡|»)\\s*([^\\]\\[]+?)\\s*\\]");
+	private static final java.util.Set<String> SELF = java.util.Set.of("du", "mir", "dir", "ich", "me", "you", "mich");
+
 	public static boolean isPrivate(String plain) {
-		String low = plain.toLowerCase(Locale.ROOT);
+		String low = net.minecraft.ChatFormatting.stripFormatting(plain).toLowerCase(Locale.ROOT);
 		if (low.contains("[msg]") || low.contains("flüstert") || low.contains("privatnachricht") || low.startsWith("✉")) {
 			return true;
 		}
-		boolean arrow = low.contains("->") || low.contains("→") || low.contains("➡");
-		if (!arrow) {
-			return false;
-		}
 		Minecraft mc = Minecraft.getInstance();
 		String me = mc.player != null ? mc.player.getGameProfile().name().toLowerCase(Locale.ROOT) : "";
-		return low.contains(" mir") || low.contains("mir]") || low.contains(" dir") || low.contains(" du")
-				|| low.contains(" me]") || (!me.isEmpty() && low.contains(me));
+		// OPSUCHT: „FREUNDE » [Du -> Name] text“ (gesendet) und „FREUNDE » [Name -> Mir] text“ (empfangen)
+		java.util.regex.Matcher m = PM.matcher(low);
+		while (m.find()) {
+			String a = clean(m.group(1)), b = clean(m.group(2));
+			if (SELF.contains(a) || SELF.contains(b) || (!me.isEmpty() && (a.equals(me) || b.equals(me)))) {
+				return true;
+			}
+		}
+		return false;
+	}
+
+	/** Rang/Zeichen vor dem Namen weg: „~Name“ → „name“, „Ultra | Name“ → „name“. */
+	private static String clean(String s) {
+		int bar = Math.max(s.lastIndexOf('|'), s.lastIndexOf('┃'));
+		if (bar >= 0) {
+			s = s.substring(bar + 1);
+		}
+		return s.replaceAll("[^\\p{L}\\p{N}_]", "").strip();
 	}
 }
