@@ -54,7 +54,7 @@ public class ChatAssignScreen extends Screen {
 			String key = hideKey(msg.text().getString());
 			if (!key.isEmpty()) {
 				java.util.List<String> l = ChatWindowScreen.words(t.exclude);
-				if (l.stream().noneMatch(x -> x.equalsIgnoreCase(key))) {
+				if (l.stream().noneMatch(e -> e.equalsIgnoreCase(key))) {
 					l.add(key);
 				}
 				t.exclude = CustomChat.joinWords(l);
