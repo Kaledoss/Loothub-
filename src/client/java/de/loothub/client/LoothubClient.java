@@ -131,7 +131,7 @@ public class LoothubClient implements ClientModInitializer {
 		// Beim Verlassen des Servers nur speichern – die Job-Sitzung läuft bis zum Schließen des Spiels weiter
 		ClientPlayConnectionEvents.DISCONNECT.register((handler, client) -> {
 			StatsStore.saveIfDirty(true);
-			AsyncSave.shutdown(); // ausstehende Speicherungen noch schreiben
+			AsyncSave.flushAll(); // ausstehende Speicherungen noch schreiben (nicht beenden: man kann wieder beitreten)
 		});
 		// Beim Beenden des Spiels die laufende Sitzung noch im Verlauf speichern
 		ClientLifecycleEvents.CLIENT_STOPPING.register(client -> {

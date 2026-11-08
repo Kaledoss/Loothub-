@@ -37,7 +37,21 @@ public final class AsyncSave {
 			PENDING.put(path, content);
 		}
 		if (schedule) {
-			IO.execute(() -> flush(path));
+			try {
+				IO.execute(() -> flush(path));
+			} catch (java.util.concurrent.RejectedExecutionException e) {
+				flush(path); // Hintergrund-Thread schon beendet (Spiel schließt): direkt schreiben statt abstürzen
+			}
+		}
+	}
+
+	/** Ausstehende Speicherungen abwarten (z. B. beim Verlassen des Servers) – der Hintergrund-Thread läuft weiter. */
+	public static void flushAll() {
+		try {
+			IO.submit(() -> {
+			}).get(3, TimeUnit.SECONDS);
+		} catch (Exception ignored) {
+			// zur Not schreibt der nächste Aufruf bzw. das Beenden
 		}
 	}
 
