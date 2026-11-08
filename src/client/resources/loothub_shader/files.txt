@@ -10,8 +10,6 @@ shaders/final.fsh
 shaders/final.vsh
 shaders/gbuffers_armor_glint.fsh
 shaders/gbuffers_armor_glint.vsh
-shaders/gbuffers_basic.fsh
-shaders/gbuffers_basic.vsh
 shaders/gbuffers_beaconbeam.fsh
 shaders/gbuffers_beaconbeam.vsh
 shaders/gbuffers_block.fsh
@@ -27,8 +25,6 @@ shaders/gbuffers_hand.fsh
 shaders/gbuffers_hand.vsh
 shaders/gbuffers_hand_water.fsh
 shaders/gbuffers_hand_water.vsh
-shaders/gbuffers_line.fsh
-shaders/gbuffers_line.vsh
 shaders/gbuffers_skybasic.fsh
 shaders/gbuffers_skybasic.vsh
 shaders/gbuffers_skytextured.fsh
