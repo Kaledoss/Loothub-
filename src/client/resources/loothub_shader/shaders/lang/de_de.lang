@@ -34,3 +34,6 @@ value.DEBUG_VIEW.1=Ohne Nachbearbeitung
 value.DEBUG_VIEW.2=Lichtwerte (rot/gruen)
 value.DEBUG_VIEW.3=Nur Gluehen
 value.DEBUG_VIEW.4=Ohne Farbstimmung
+option.LIGHT_NEUTRAL=Lichtfarbe neutral
+option.LIGHT_NEUTRAL.comment=Wie stark warmes Fackel-/Glowstone-Licht zu weissem Licht wird. 0 = wie Minecraft (orange), 100 % = rein weiss.
+value.PACK_VERSION.8=8

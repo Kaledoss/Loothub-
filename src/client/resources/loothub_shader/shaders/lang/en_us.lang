@@ -32,3 +32,6 @@ value.DEBUG_VIEW.1=No post-processing
 value.DEBUG_VIEW.2=Light values (red/green)
 value.DEBUG_VIEW.3=Bloom only
 value.DEBUG_VIEW.4=No color grading
+option.LIGHT_NEUTRAL=Neutral light color
+option.LIGHT_NEUTRAL.comment=How much warm torch/glowstone light becomes white. 0 = like Minecraft (orange), 100 % = pure white.
+value.PACK_VERSION.8=8

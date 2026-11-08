@@ -26,7 +26,10 @@ void main() {
 	color.rgb = mix(color.rgb, entityColor.rgb, entityColor.a);
 #endif
 #ifdef LIT
-	color *= texture2D(lightmap, lmcoord);
+	// Lichtfarbe: Fackel-/Glowstone-Licht ist in Minecraft warm-orange - hier groesstenteils neutral (weiss)
+	vec3 light = texture2D(lightmap, lmcoord).rgb;
+	light = mix(light, vec3(max(light.r, max(light.g, light.b))), LIGHT_NEUTRAL);
+	color.rgb *= light;
 #endif
 #if DEBUG_VIEW == 2
 	// Lichtwerte sichtbar machen: rot = Fackellicht, gruen = Himmelslicht
@@ -34,7 +37,9 @@ void main() {
 #endif
 #ifndef NOFOG
 	if (fogEnd > fogStart) {
-		float f = clamp((fogDist - fogStart) / (fogEnd - fogStart), 0.0, 1.0);
+		// Nebel erst ganz am Rand der Sichtweite (sonst faerbt der Abendhimmel nahe Waende lila)
+		float start = max(fogStart, fogEnd * 0.85);
+		float f = clamp((fogDist - start) / (fogEnd - start), 0.0, 1.0);
 		color.rgb = mix(color.rgb, fogColor, f);
 	}
 #endif

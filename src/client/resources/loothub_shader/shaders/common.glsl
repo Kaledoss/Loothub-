@@ -9,11 +9,12 @@
 #define BLOOM_RADIUS 2.0      // [0.8 1.0 1.3 1.6 2.0 2.5 3.0]
 #define VIGNETTE 0.12         // [0.00 0.06 0.12 0.20 0.28 0.35 0.45 0.60 0.80]
 #define HAZE 0.08             // [0.00 0.04 0.08 0.15 0.25 0.35 0.50 0.70]
-#define AIRY 0.06             // [0.00 0.05 0.10 0.15 0.20 0.30]
+#define AIRY 0.04             // [0.00 0.05 0.10 0.15 0.20 0.30]
 
+#define LIGHT_NEUTRAL 0.75    // [0.00 0.25 0.50 0.75 0.90 1.00]
 #define LIGHT_MODE 0          // [0 1 2 3]
 #define DEBUG_VIEW 0          // [0 1 2 3 4]
-#define PACK_VERSION 7        // [7]
+#define PACK_VERSION 8        // [8]
 
 float luma(vec3 c) {
 	return dot(c, vec3(0.2126, 0.7152, 0.0722));
