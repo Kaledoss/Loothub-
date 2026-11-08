@@ -28,6 +28,11 @@ public abstract class CustomChatMixin {
 			at = @At("HEAD"), cancellable = true)
 	private void loothub$render(ChatComponent.ChatGraphicsAccess access, int height, int ticks, boolean focused, CallbackInfo ci) {
 		CustomChat.noteRender(focused);
+		// HUD ausgeblendet (F1): Chat auch beim Tippen (T) nicht zeigen
+		if (net.minecraft.client.Minecraft.getInstance().options.hideGui) {
+			ci.cancel();
+			return;
+		}
 		if (CustomChat.active()) {
 			CustomChat.render(access, focused);
 			ci.cancel();
