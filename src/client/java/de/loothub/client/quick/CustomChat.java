@@ -111,7 +111,7 @@ public final class CustomChat {
 				return null;
 			}
 			for (String w : words.split(",")) {
-				String t = w.strip().toLowerCase(Locale.ROOT);
+				String t = ChatLog.norm(w);
 				if (!t.isEmpty() && low.contains(t)) {
 					return w.strip();
 				}
@@ -124,7 +124,7 @@ public final class CustomChat {
 				return false;
 			}
 			for (String w : words.split(",")) {
-				String t = w.strip().toLowerCase(Locale.ROOT);
+				String t = ChatLog.norm(w);
 				if (!t.isEmpty() && low.contains(t)) {
 					return true;
 				}
@@ -326,7 +326,7 @@ public final class CustomChat {
 	public static synchronized void addBlocked(Component message, String word) {
 		String plain = net.minecraft.ChatFormatting.stripFormatting(message.getString());
 		boolean pm = ChatLog.isPrivate(plain);
-		MESSAGES.add(new Msg(System.currentTimeMillis(), message, plain.toLowerCase(Locale.ROOT), pm, source(plain, pm), false, word));
+		MESSAGES.add(new Msg(System.currentTimeMillis(), message, ChatLog.norm(plain), pm, source(plain, pm), false, word));
 		if (MESSAGES.size() > MAX) {
 			MESSAGES.remove(0);
 		}
@@ -340,7 +340,7 @@ public final class CustomChat {
 	public static synchronized void add(Component message) {
 		String plain = net.minecraft.ChatFormatting.stripFormatting(message.getString());
 		boolean pm = ChatLog.isPrivate(plain);
-		Msg m = new Msg(System.currentTimeMillis(), message, plain.toLowerCase(Locale.ROOT), pm, source(plain, pm), isOwn(plain), null);
+		Msg m = new Msg(System.currentTimeMillis(), message, ChatLog.norm(plain), pm, source(plain, pm), isOwn(plain), null);
 		List<String> known = knownSources();
 		if (!known.contains(m.source()) && known.size() < 40) {
 			known.add(m.source());

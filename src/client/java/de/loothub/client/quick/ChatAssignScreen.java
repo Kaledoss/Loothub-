@@ -29,7 +29,7 @@ public class ChatAssignScreen extends Screen {
 	protected void init() {
 		pw = Math.min(340, width - 20);
 		List<CustomChat.Tab> tabs = win.tabs;
-		ph = 92 + ((tabs.size() + 1 + 1) / 2) * 20;
+		ph = 112 + ((tabs.size() + 1 + 1) / 2) * 20;
 		px = (width - pw) / 2;
 		py = (height - ph) / 2;
 		int x = px + 10, w = pw - 20, half = (w - 4) / 2;
@@ -48,12 +48,41 @@ public class ChatAssignScreen extends Screen {
 			tabs.add(t);
 			assign(t);
 		}).bounds(x + (i % 2) * (half + 4), y + (i / 2) * 20, half, 16).build());
+		// „Solche ausblenden“: Text der Nachricht (ohne Absender-Vorspann) im aktuellen Tab unter „Enthält nicht“ eintragen
+		addRenderableWidget(Button.builder(Component.translatable("loothub.chatassign.hide", win.tab().name).withStyle(ChatFormatting.RED), b -> {
+			CustomChat.Tab t = win.tab();
+			String key = hideKey(msg.text().getString());
+			if (!key.isEmpty()) {
+				java.util.List<String> l = ChatWindowScreen.words(t.exclude);
+				if (l.stream().noneMatch(x -> x.equalsIgnoreCase(key))) {
+					l.add(key);
+				}
+				t.exclude = String.join(", ", l);
+				CustomChat.invalidate();
+				WidgetConfig.get().save();
+			}
+			onClose();
+		}).bounds(x, py + ph - 44, w, 16).build());
 		addRenderableWidget(Button.builder(onlyLabel(), b -> {
 			only = !only;
 			b.setMessage(onlyLabel());
 		}).bounds(x, py + ph - 24, w - 94, 16).build());
 		addRenderableWidget(Button.builder(Component.translatable("gui.cancel"), b -> onClose())
 				.bounds(px + pw - 90, py + ph - 24, 80, 16).build());
+	}
+
+	/** Kennzeichnender Teil einer Nachricht: ab dem Inhalt (nach „»“ bzw. „]“), höchstens ~40 Zeichen, ohne Komma. */
+	static String hideKey(String text) {
+		String t = net.minecraft.ChatFormatting.stripFormatting(text);
+		int a = t.lastIndexOf('»', Math.min(t.length() - 1, 40));
+		int br = t.indexOf(']', Math.max(0, a));
+		int cut = Math.max(a, br >= 0 && br < 60 ? br : -1);
+		String body = (cut >= 0 ? t.substring(cut + 1) : t).replace(",", " ").strip();
+		if (body.length() > 40) {
+			int sp = body.lastIndexOf(' ', 40);
+			body = body.substring(0, sp > 15 ? sp : 40);
+		}
+		return body.strip();
 	}
 
 	private static Component onlyLabel() {

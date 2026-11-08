@@ -551,5 +551,6 @@
 	"loothub.offhand.mode.all_except": "Modus: alles sperren außer diesen Items",
 	"loothub.offhand.list.blocked": "Gesperrt:",
 	"loothub.offhand.list.allowed": "Erlaubt:",
-	"loothub.offhand.empty": "Keine Items – oben hinzufügen."
+	"loothub.offhand.empty": "Keine Items – oben hinzufügen.",
+	"loothub.chatassign.hide": "Solche Nachrichten im Tab „%s“ ausblenden"
 }

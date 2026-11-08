@@ -74,9 +74,9 @@ public final class ChatLog {
 		if (CustomChat.isOwn(net.minecraft.ChatFormatting.stripFormatting(message.getString()))) {
 			return null; // eigene Nachrichten nie ausblenden
 		}
-		String low = net.minecraft.ChatFormatting.stripFormatting(message.getString()).toLowerCase(Locale.ROOT);
+		String low = norm(message.getString());
 		for (String w : c.chatFilterWords) {
-			if (w != null && !w.isBlank() && low.contains(w.strip().toLowerCase(Locale.ROOT))) {
+			if (w != null && !w.isBlank() && !norm(w).isEmpty() && low.contains(norm(w))) {
 				return w.strip();
 			}
 		}
@@ -110,6 +110,22 @@ public final class ChatLog {
 				&& java.util.regex.Pattern.compile("(^|[^a-z0-9_])" + java.util.regex.Pattern.quote(me) + "($|[^a-z0-9_])").matcher(low).find()) {
 			de.loothub.client.cosmetics.Emotes.mention();
 		}
+	}
+
+	/**
+	 * Für Filter vergleichbar machen: Farbcodes weg, klein, Sonderzeichen wie „…“, „→“, „’“ und geschützte Leerzeichen
+	 * auf normale Zeichen, mehrere Leerzeichen zu einem – damit abgetippte Filter auch auf Server-Text passen.
+	 */
+	public static String norm(String s) {
+		if (s == null) {
+			return "";
+		}
+		String t = net.minecraft.ChatFormatting.stripFormatting(s).toLowerCase(Locale.ROOT)
+				.replace('\u00A0', ' ').replace('\u2007', ' ').replace('\u202F', ' ')
+				.replace("\u2026", "...").replace("\u2192", "->").replace("\u27A1", "->").replace("\u279C", "->")
+				.replace('\u2019', '\'').replace('\u2018', '\'').replace('\u201E', '"').replace('\u201C', '"').replace('\u201D', '"')
+				.replace('\u2013', '-').replace('\u2014', '-');
+		return t.replaceAll("\\s+", " ").strip();
 	}
 
 	/** „[A -> B]“ (auch mit → oder ➡) irgendwo in der Nachricht. */

@@ -551,5 +551,6 @@
 	"loothub.offhand.mode.all_except": "Mode: block everything except these",
 	"loothub.offhand.list.blocked": "Blocked:",
 	"loothub.offhand.list.allowed": "Allowed:",
-	"loothub.offhand.empty": "No items – add above."
+	"loothub.offhand.empty": "No items – add above.",
+	"loothub.chatassign.hide": "Hide messages like this in tab “%s”"
 }
