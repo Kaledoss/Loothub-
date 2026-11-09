@@ -59,7 +59,8 @@ public final class RedemptionHud {
 	}
 
 	private static boolean isChat(Screen screen) {
-		return de.loothub.client.quick.CustomChat.chatOpen(screen);
+		// F1 (HUD aus): auch im Chat nichts zeigen oder verschieben
+		return !net.minecraft.client.Minecraft.getInstance().options.hideGui && de.loothub.client.quick.CustomChat.chatOpen(screen);
 	}
 
 	/** Streamer-Modus an, HUD-Liste an und mit Twitch verbunden. */

@@ -81,7 +81,8 @@ public final class MusicWidget {
 
 	/** Chat-Fenster – auch, wenn LabyMod oder eine andere Mod einen eigenen Chat benutzt. */
 	private static boolean isChat(net.minecraft.client.gui.screens.Screen screen) {
-		return de.loothub.client.quick.CustomChat.chatOpen(screen);
+		// F1 (HUD aus): auch im Chat nichts zeigen oder verschieben
+		return !net.minecraft.client.Minecraft.getInstance().options.hideGui && de.loothub.client.quick.CustomChat.chatOpen(screen);
 	}
 
 	static int[] pos(int sw, int sh) {

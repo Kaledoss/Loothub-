@@ -74,7 +74,8 @@ public final class LookInfo {
 	}
 
 	public static boolean isChat(net.minecraft.client.gui.screens.Screen screen) {
-		return de.loothub.client.quick.CustomChat.chatOpen(screen);
+		// F1 (HUD aus): auch im Chat nichts zeigen oder verschieben
+		return !net.minecraft.client.Minecraft.getInstance().options.hideGui && de.loothub.client.quick.CustomChat.chatOpen(screen);
 	}
 
 	public static void renderHud(GuiGraphics g, DeltaTracker delta) {
