@@ -247,9 +247,10 @@ public final class CustomChat {
 		if (m.blockedBy != null) {
 			return false;
 		}
-		// Eigene Nachrichten bleiben immer sichtbar – in jedem Tab, der Spieler-Chat (bzw. ihre Quelle) zeigt,
-		// egal welche Wörter oder anderen Tabs sie sonst ausblenden würden
-		if (m.own && (tab.sources == null || tab.sources.isBlank() || tab.hasSource(m.source))) {
+		// Eigene Nachrichten bleiben sichtbar – in jedem Tab, der ihre Quelle zeigt, auch wenn „Enthält“ oder andere
+		// Tabs sie sonst ausblenden würden. Nur „Enthält nicht“ dieses Tabs gilt auch für sie.
+		if (m.own && (tab.sources == null || tab.sources.isBlank() || tab.hasSource(m.source))
+				&& Tab.first(tab.exclude, m.low) == null) {
 			return true;
 		}
 		if (!tab.matches(m)) {
