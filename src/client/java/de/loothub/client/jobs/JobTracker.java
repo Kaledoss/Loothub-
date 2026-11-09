@@ -60,8 +60,22 @@ public final class JobTracker {
 		}
 	}
 
+	/** Nach so langer Pause beginnt eine neue Sitzung im Verlauf. */
+	private static final long SPLIT_AFTER_MS = 30 * 60_000L;
+
+	private static boolean sameDay(long a, long b) {
+		java.time.ZoneId z = java.time.ZoneId.systemDefault();
+		return java.time.Instant.ofEpochMilli(a).atZone(z).toLocalDate()
+				.equals(java.time.Instant.ofEpochMilli(b).atZone(z).toLocalDate());
+	}
+
 	public static synchronized void onGain(JobParser.JobGain gain) {
 		long now = System.currentTimeMillis();
+		// Neuer Tag oder lange Pause: bisherigen Teil im Verlauf abschließen (das Widget zählt einfach weiter)
+		long histStart = historyStart != 0 ? historyStart : sessionStart;
+		if (histStart != 0 && (!sameDay(histStart, now) || (lastGain != 0 && now - lastGain > SPLIT_AFTER_MS))) {
+			checkpoint(now);
+		}
 		long gap = lastGain == 0 ? 0 : now - lastGain;
 		// Längere Lücken zählen nur bis zur Pausen-Grenze – genau so, wie die Uhr im Widget stehen bleibt
 		long active = Math.min(gap, PAUSE_AFTER_MS);
@@ -110,6 +124,30 @@ public final class JobTracker {
 		lastGain = now;
 	}
 
+	/** Beginn des Teils, der noch nicht im Verlauf steht (0 = wie sessionStart). */
+	private static long historyStart;
+	/** Stand je Job beim letzten Abschluss im Verlauf: {xp, money, activeMs}. */
+	private static final Map<String, double[]> BASE = new java.util.HashMap<>();
+	private static long baseActive;
+
+	/** Bisherigen Teil als eigene Sitzung in den Verlauf schreiben, Widget-Werte bleiben. */
+	private static void checkpoint(long now) {
+		try {
+			JobHistory.Session session = buildSession();
+			if (session != null && (session.money() > 0 || session.xp() > 0)) {
+				JobHistory.add(session);
+			}
+		} catch (RuntimeException e) {
+			Loothub.LOGGER.warn("Job-Sitzung konnte nicht gespeichert werden", e);
+		}
+		for (Map.Entry<String, JobStats> e : JOBS.entrySet()) {
+			JobStats st = e.getValue();
+			BASE.put(e.getKey(), new double[]{st.xp, st.money, st.activeMs});
+		}
+		baseActive = totalActiveMs;
+		historyStart = now;
+	}
+
 	/** Beendet die Sitzung: speichert sie im Verlauf (falls etwas verdient wurde) und beginnt von vorn. */
 	public static synchronized void reset() {
 		try {
@@ -121,6 +159,9 @@ public final class JobTracker {
 			Loothub.LOGGER.warn("Job-Sitzung konnte nicht gespeichert werden", e);
 		}
 		JOBS.clear();
+		BASE.clear();
+		baseActive = 0;
+		historyStart = 0;
 		currentJob = null;
 		sessionStart = 0;
 		lastGain = 0;
@@ -212,16 +253,20 @@ public final class JobTracker {
 			return null;
 		}
 		JobHistory.Session session = new JobHistory.Session();
-		session.start = sessionStart;
+		session.start = historyStart != 0 ? historyStart : sessionStart;
 		session.end = lastGain;
-		session.activeMs = totalActiveMs;
+		session.activeMs = totalActiveMs - baseActive;
 		for (Map.Entry<String, JobStats> e : JOBS.entrySet()) {
 			JobStats st = e.getValue();
+			double[] base = BASE.getOrDefault(e.getKey(), new double[3]);
+			if (st.xp - base[0] <= 0 && st.money - base[1] <= 0) {
+				continue; // in diesem Abschnitt nichts in diesem Job
+			}
 			JobHistory.JobEntry entry = new JobHistory.JobEntry();
 			entry.job = e.getKey();
-			entry.xp = st.xp;
-			entry.money = st.money;
-			entry.activeMs = st.activeMs;
+			entry.xp = st.xp - base[0];
+			entry.money = st.money - base[1];
+			entry.activeMs = (long) (st.activeMs - base[2]);
 			entry.levelStart = st.firstLevel;
 			entry.levelEnd = st.level;
 			entry.progressStart = Double.isNaN(st.firstProgress) ? -1 : st.firstProgress;
