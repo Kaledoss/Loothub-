@@ -34,7 +34,8 @@ public final class TwitchAuth {
 	 * sie steht bei jeder Twitch-App offen im Programm.
 	 */
 	public static final String CLIENT_ID = "vsao660hna191cf43edoqw84ld3yys";
-	static final String SCOPES = "channel:read:redemptions";
+	static final String SCOPES = "channel:read:redemptions moderator:read:followers channel:read:hype_train "
+			+ "channel:read:ads channel:read:polls channel:read:predictions";
 
 	public enum Status { NOT_CONNECTED, NO_CLIENT_ID, STARTING, WAITING, CONNECTED, ERROR }
 
@@ -45,6 +46,8 @@ public final class TwitchAuth {
 		String login = "";
 		String userId = "";
 		String displayName = "";
+		/** Erteilte Rechte (durch Leerzeichen getrennt). */
+		String scopes = "";
 		long expiresAt;
 	}
 
@@ -77,6 +80,21 @@ public final class TwitchAuth {
 
 	public static boolean connected() {
 		return status() == Status.CONNECTED;
+	}
+
+	/** Verbunden, aber mit einer älteren Version, die noch nicht alle Rechte (z. B. Follows) angefragt hat. */
+	public static boolean needsRelogin() {
+		Account a = account;
+		if (a == null || status != Status.CONNECTED) {
+			return false;
+		}
+		String have = " " + (a.scopes == null ? "" : a.scopes) + " ";
+		for (String s : SCOPES.split(" ")) {
+			if (!have.contains(" " + s + " ")) {
+				return true;
+			}
+		}
+		return false;
 	}
 
 	/** Twitch-Name (Kleinbuchstaben) des verbundenen Kontos, sonst "". */
@@ -221,7 +239,7 @@ public final class TwitchAuth {
 						loginThread = null;
 					}
 					Loothub.LOGGER.info("Twitch verbunden als {}", a.login);
-					Streamer.applyLater();
+					Streamer.restartLater();
 					return;
 				}
 				String msg = o != null && o.has("message") ? o.get("message").getAsString() : "";
@@ -264,6 +282,13 @@ public final class TwitchAuth {
 			return false;
 		}
 		a.login = o.get("login").getAsString();
+		if (o.has("scopes") && o.get("scopes").isJsonArray()) {
+			StringBuilder sb = new StringBuilder();
+			for (com.google.gson.JsonElement e : o.getAsJsonArray("scopes")) {
+				sb.append(e.getAsString()).append(' ');
+			}
+			a.scopes = sb.toString().strip();
+		}
 		a.userId = o.get("user_id").getAsString();
 		if (a.displayName.isBlank()) {
 			a.displayName = a.login;
@@ -338,6 +363,7 @@ public final class TwitchAuth {
 				n.login = a.login;
 				n.userId = a.userId;
 				n.displayName = a.displayName;
+				n.scopes = a.scopes;
 				account = n;
 				save(n);
 				return;

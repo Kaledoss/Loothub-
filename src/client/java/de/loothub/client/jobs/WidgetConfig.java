@@ -218,6 +218,9 @@ public final class WidgetConfig {
 	public double streamerHudY = 0.5;
 	/** Höchstens so viele Einträge im HUD. */
 	public int streamerHudRows = 5;
+	/** Ereignis-Einblendungen (Follow, Abo, Raid …) oben in der Mitte; ausgeschaltete Arten stehen in der Liste. */
+	public boolean streamerAlerts = true;
+	public java.util.List<String> streamerAlertsOff = new java.util.ArrayList<>();
 	/** Ton bei einer neuen Einlösung. */
 	public boolean streamerSound = true;
 	/** Befehls-Leiste gesperrt: Knöpfe und Feld lassen sich nicht verschieben. */
@@ -359,6 +362,9 @@ public final class WidgetConfig {
 					if (c.miniMes.isEmpty() && c.miniMeSkin != null && !c.miniMeSkin.isBlank()) {
 						c.miniMes.add(c.miniMeSkin.strip());
 						c.miniMeSkin = "";
+					}
+					if (c.streamerAlertsOff == null) {
+						c.streamerAlertsOff = new java.util.ArrayList<>();
 					}
 					if (c.marketFavorites == null) {
 						c.marketFavorites = new java.util.ArrayList<>();

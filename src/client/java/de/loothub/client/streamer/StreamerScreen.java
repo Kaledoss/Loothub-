@@ -30,6 +30,8 @@ public class StreamerScreen extends LoothubScreen {
 	private static final DateTimeFormatter WHEN = DateTimeFormatter.ofPattern("dd.MM. HH:mm:ss");
 
 	private static boolean showAll;
+	private static boolean alertsTab;
+	private static final int ALERT_ROW = 20;
 
 	private int boxY;
 	private int listTop;
@@ -64,36 +66,73 @@ public class StreamerScreen extends LoothubScreen {
 				addRenderableWidget(Button.builder(Component.translatable("gui.cancel"),
 						b -> TwitchAuth.cancelLogin()).bounds(cr - 6 - sw, boxY + 14, sw, 16).build());
 			}
-			case CONNECTED -> addRenderableWidget(Button.builder(Component.translatable("loothub.streamer.disconnect"),
-					b -> minecraft.setScreen(new ConfirmScreen(this, Component.translatable("loothub.streamer.disconnect"),
-							Component.translatable("loothub.streamer.disconnect.confirm", TwitchAuth.displayName()),
-							TwitchAuth::logout)))
-					.bounds(bx, boxY + 14, bw, 16).build());
+			case CONNECTED -> {
+				addRenderableWidget(Button.builder(Component.translatable("loothub.streamer.disconnect"),
+						b -> minecraft.setScreen(new ConfirmScreen(this, Component.translatable("loothub.streamer.disconnect"),
+								Component.translatable("loothub.streamer.disconnect.confirm", TwitchAuth.displayName()),
+								TwitchAuth::logout)))
+						.bounds(bx, boxY + 14, bw, 16).build());
+				if (TwitchAuth.needsRelogin()) {
+					addRenderableWidget(Button.builder(Component.translatable("loothub.streamer.relogin")
+									.withStyle(ChatFormatting.GOLD), b -> TwitchAuth.startLogin())
+							.bounds(bx - bw - 4, boxY + 14, bw, 16).build());
+				}
+			}
 			default -> {
 				// NO_CLIENT_ID: nur Hinweis
 			}
 		}
 
-		// Schalter
+		// Reiter und allgemeine Schalter
 		int y = boxY + 52;
-		int n = 4;
-		int w = (cw - (n - 1) * 4) / n;
+		int tw = 100;
+		addRenderableWidget(Button.builder(tab("loothub.streamer.tab.rewards", !alertsTab), b -> {
+			alertsTab = false;
+			scroll = 0;
+			rebuildWidgets();
+		}).bounds(cl, y, tw, 16).build()).active = alertsTab;
+		addRenderableWidget(Button.builder(tab("loothub.streamer.tab.alerts", alertsTab), b -> {
+			alertsTab = true;
+			scroll = 0;
+			rebuildWidgets();
+		}).bounds(cl + tw + 4, y, tw, 16).build()).active = !alertsTab;
+		int gw = Math.min(130, (cw - 2 * tw - 16) / 2);
 		addRenderableWidget(Button.builder(onOff("loothub.streamer.chat", c.streamerChat), b -> {
 			c.streamerChat = !c.streamerChat;
 			c.save();
 			Streamer.apply();
 			b.setMessage(onOff("loothub.streamer.chat", c.streamerChat));
-		}).bounds(cl, y, w, 16).build());
-		addRenderableWidget(Button.builder(onOff("loothub.streamer.hud", c.streamerHud), b -> {
-			c.streamerHud = !c.streamerHud;
-			c.save();
-			b.setMessage(onOff("loothub.streamer.hud", c.streamerHud));
-		}).bounds(cl + (w + 4), y, w, 16).build());
+		}).bounds(cr - 2 * gw - 4, y, gw, 16).build());
 		addRenderableWidget(Button.builder(onOff("loothub.streamer.sound", c.streamerSound), b -> {
 			c.streamerSound = !c.streamerSound;
 			c.save();
 			b.setMessage(onOff("loothub.streamer.sound", c.streamerSound));
-		}).bounds(cl + 2 * (w + 4), y, w, 16).build());
+		}).bounds(cr - gw, y, gw, 16).build());
+
+		int fy = y + 22;
+		if (alertsTab) {
+			initAlerts(c, fy);
+			return;
+		}
+
+		// Belohnungen: Filter, HUD, Aufräumen
+		int n = 5;
+		int w = (cw - (n - 1) * 4) / n;
+		addRenderableWidget(Button.builder(tab("loothub.streamer.filter.open", !showAll), b -> {
+			showAll = false;
+			scroll = 0;
+			rebuildWidgets();
+		}).bounds(cl, fy, w, 16).build()).active = showAll;
+		addRenderableWidget(Button.builder(tab("loothub.streamer.filter.all", showAll), b -> {
+			showAll = true;
+			scroll = 0;
+			rebuildWidgets();
+		}).bounds(cl + (w + 4), fy, w, 16).build()).active = !showAll;
+		addRenderableWidget(Button.builder(onOff("loothub.streamer.hud", c.streamerHud), b -> {
+			c.streamerHud = !c.streamerHud;
+			c.save();
+			b.setMessage(onOff("loothub.streamer.hud", c.streamerHud));
+		}).bounds(cl + 2 * (w + 4), fy, w, 16).build());
 		addRenderableWidget(Button.builder(rowsLabel(c), b -> {
 			int next = ROW_CHOICES[0];
 			for (int i = 0; i < ROW_CHOICES.length; i++) {
@@ -104,20 +143,7 @@ public class StreamerScreen extends LoothubScreen {
 			c.streamerHudRows = next;
 			c.save();
 			b.setMessage(rowsLabel(c));
-		}).bounds(cl + 3 * (w + 4), y, w, 16).build());
-
-		// Liste: Filter und Aufräumen
-		int fy = y + 24;
-		addRenderableWidget(Button.builder(tab("loothub.streamer.filter.open", !showAll), b -> {
-			showAll = false;
-			scroll = 0;
-			rebuildWidgets();
-		}).bounds(cl, fy, 80, 16).build()).active = showAll;
-		addRenderableWidget(Button.builder(tab("loothub.streamer.filter.all", showAll), b -> {
-			showAll = true;
-			scroll = 0;
-			rebuildWidgets();
-		}).bounds(cl + 84, fy, 80, 16).build()).active = !showAll;
+		}).bounds(cl + 3 * (w + 4), fy, w, 16).build());
 		Button clear = addRenderableWidget(Button.builder(Component.translatable("loothub.streamer.clear_done"),
 				b -> minecraft.setScreen(new ConfirmScreen(this, Component.translatable("loothub.streamer.clear_done"),
 						Component.translatable("loothub.streamer.clear_done.confirm"), () -> {
@@ -125,9 +151,35 @@ public class StreamerScreen extends LoothubScreen {
 							scroll = 0;
 							rebuildWidgets();
 						})))
-				.bounds(cr - 130, fy, 130, 16).build());
+				.bounds(cl + 4 * (w + 4), fy, w, 16).build());
 		clear.active = Redemptions.list().stream().anyMatch(e -> e.done);
 		listTop = fy + 22;
+	}
+
+	/** Reiter „Einblendungen“: an/aus gesamt, je Art an/aus und „Test“. */
+	private void initAlerts(WidgetConfig c, int fy) {
+		addRenderableWidget(Button.builder(onOff("loothub.streamer.alerts", c.streamerAlerts), b -> {
+			c.streamerAlerts = !c.streamerAlerts;
+			c.save();
+			Streamer.apply();
+			rebuildWidgets();
+		}).bounds(cl, fy, 160, 16).build());
+		listTop = fy + 22;
+		Alerts.Type[] types = Alerts.Type.values();
+		int visible = Math.max(1, (cb - listTop) / ALERT_ROW);
+		scroll = Math.max(0, Math.min(scroll, types.length - visible));
+		for (int i = 0; i < visible && scroll + i < types.length; i++) {
+			Alerts.Type t = types[scroll + i];
+			int ry = listTop + i * ALERT_ROW;
+			boolean on = !c.streamerAlertsOff.contains(t.id);
+			Button toggle = addRenderableWidget(Button.builder(Component.translatable(on ? "options.on" : "options.off"), b -> {
+				Alerts.setEnabled(t, c.streamerAlertsOff.contains(t.id));
+				rebuildWidgets();
+			}).bounds(cr - 130, ry + 1, 60, 16).build());
+			toggle.active = c.streamerAlerts;
+			addRenderableWidget(Button.builder(Component.translatable("loothub.streamer.alert.test"), b -> Alerts.test(t))
+					.bounds(cr - 66, ry + 1, 60, 16).build());
+		}
 	}
 
 	private static Component onOff(String key, boolean on) {
@@ -162,7 +214,11 @@ public class StreamerScreen extends LoothubScreen {
 	public void render(GuiGraphics g, int mouseX, int mouseY, float delta) {
 		super.render(g, mouseX, mouseY, delta);
 		renderAccount(g);
-		renderList(g, mouseX, mouseY);
+		if (alertsTab) {
+			renderAlerts(g);
+		} else {
+			renderList(g, mouseX, mouseY);
+		}
 	}
 
 	private void renderAccount(GuiGraphics g) {
@@ -191,13 +247,34 @@ public class StreamerScreen extends LoothubScreen {
 			}
 			case CONNECTED -> {
 				g.drawString(font, Component.translatable("loothub.streamer.connected", TwitchAuth.displayName()), tx, boxY + 8, GREEN, false);
-				Component sub = switch (Redemptions.status()) {
-					case CONNECTED -> Component.translatable("loothub.streamer.live");
+				Component sub = TwitchAuth.needsRelogin()
+						? Component.translatable("loothub.streamer.relogin.hint").withStyle(s -> s.withColor(GOLD & 0xFFFFFF))
+						: switch (Redemptions.status()) {
+					case CONNECTED -> Redemptions.error().isBlank() ? Component.translatable("loothub.streamer.live")
+							: Component.literal(Redemptions.error()).withStyle(s -> s.withColor(GOLD & 0xFFFFFF));
 					case CONNECTING -> Component.translatable("loothub.streamer.connecting");
 					case NOT_ALLOWED, ERROR -> Component.literal(Redemptions.error()).withStyle(s -> s.withColor(BAD & 0xFFFFFF));
 					default -> Component.empty();
 				};
 				g.drawString(font, sub, tx, boxY + 22, FAINT, false);
+			}
+		}
+	}
+
+	private void renderAlerts(GuiGraphics g) {
+		Alerts.Type[] types = Alerts.Type.values();
+		int visible = Math.max(1, (cb - listTop) / ALERT_ROW);
+		for (int i = 0; i < visible && scroll + i < types.length; i++) {
+			Alerts.Type t = types[scroll + i];
+			int ry = listTop + i * ALERT_ROW;
+			g.fill(cl, ry, cr, ry + ALERT_ROW - 2, 0x18FFFFFF);
+			g.fill(cl, ry, cl + 2, ry + ALERT_ROW - 2, 0xFF000000 | t.color());
+			g.drawString(font, Component.literal(t.icon() + "  ").append(Component.translatable(t.key())), cl + 8, ry + 5,
+					0xFF000000 | t.color(), false);
+			Component hint = Component.translatable(t.key() + ".hint");
+			int hx = cl + 8 + 110;
+			if (hx + font.width(hint) < cr - 136) {
+				g.drawString(font, hint, hx, ry + 5, FAINT, false);
 			}
 		}
 	}
@@ -256,7 +333,7 @@ public class StreamerScreen extends LoothubScreen {
 		if (super.mouseClicked(e, doubleClick)) {
 			return true;
 		}
-		if (e.button() == 0 && e.x() >= cl && e.x() < cr && e.y() >= listTop && e.y() < cb) {
+		if (!alertsTab && e.button() == 0 && e.x() >= cl && e.x() < cr && e.y() >= listTop && e.y() < cb) {
 			int i = (int) ((e.y() - listTop) / ROW_H);
 			List<Redemptions.Entry> list = shown();
 			if (scroll + i < list.size() && (e.y() - listTop) % ROW_H < ROW_H - 2) {
@@ -275,6 +352,9 @@ public class StreamerScreen extends LoothubScreen {
 	public boolean mouseScrolled(double mx, double my, double horizontal, double vertical) {
 		if (my >= listTop && my < cb) {
 			scroll = Math.max(0, scroll - (int) Math.signum(vertical));
+			if (alertsTab) {
+				rebuildWidgets();
+			}
 			return true;
 		}
 		return super.mouseScrolled(mx, my, horizontal, vertical);

@@ -118,11 +118,11 @@ public final class Redemptions {
 		save();
 	}
 
-	private static void add(Entry e) {
+	private static boolean add(Entry e) {
 		List<Entry> l = list();
 		for (Entry x : l) {
 			if (x.id.equals(e.id)) {
-				return; // doppelt (Twitch kann nach einem Neuverbinden wiederholen)
+				return false; // doppelt (Twitch kann nach einem Neuverbinden wiederholen)
 			}
 		}
 		l.add(0, e);
@@ -131,9 +131,10 @@ public final class Redemptions {
 		}
 		save();
 		Minecraft mc = Minecraft.getInstance();
-		if (WidgetConfig.get().streamerSound && mc.player != null) {
+		if (WidgetConfig.get().streamerSound && mc.player != null && !Alerts.enabled(Alerts.Type.REDEEM)) {
 			mc.getSoundManager().play(SimpleSoundInstance.forUI(SoundEvents.NOTE_BLOCK_CHIME.value(), 1.5F, 0.8F));
 		}
+		return true;
 	}
 
 	// ------------------------------------------------------------------ Verbindung
@@ -227,7 +228,6 @@ public final class Redemptions {
 					continue;
 				}
 				status = Status.CONNECTED;
-				error = "";
 				backoff = 2000;
 				url = WS_URL;
 				subscribe = true;
@@ -269,21 +269,71 @@ public final class Redemptions {
 		}
 	}
 
-	/** Abo „Kanalbelohnung eingelöst“ für die Sitzung anlegen. */
+	/** Ein EventSub-Abo: Typ, Version und ob als Bedingung auch die Moderator-ID nötig ist. */
+	private record Sub(String type, String version, boolean moderator) {
+	}
+
+	private static final Sub REDEEM = new Sub("channel.channel_points_custom_reward_redemption.add", "1", false);
+	private static final List<Sub> SUBS = List.of(REDEEM,
+			new Sub("channel.follow", "2", true),
+			new Sub("channel.hype_train.begin", "2", false),
+			new Sub("channel.hype_train.end", "2", false),
+			new Sub("channel.ad_break.begin", "1", false),
+			new Sub("channel.poll.begin", "1", false),
+			new Sub("channel.poll.end", "1", false),
+			new Sub("channel.prediction.begin", "1", false),
+			new Sub("channel.prediction.end", "1", false));
+
+	/**
+	 * Alle Abos für die Sitzung anlegen. Einzelne Ablehnungen (z. B. ohne Affiliate keine Kanalpunkte und Werbung)
+	 * sind kein Fehler – Hauptsache, irgendetwas kommt an.
+	 */
 	private static boolean subscribe(String sessionId) throws InterruptedException {
+		int ok = 0;
+		error = "";
+		for (Sub sub : SUBS) {
+			int code = subscribeOne(sessionId, sub);
+			if (code < 0) {
+				return false; // nicht angemeldet / nicht erreichbar
+			}
+			if (code == 202 || code == 409) {
+				ok++;
+			} else if (sub == REDEEM) {
+				error = code == 403 ? "Kanalpunkte nicht verfügbar (nur Affiliate/Partner)" : "Kanalbelohnungen abgelehnt (" + code + ")";
+			}
+		}
+		if (ok == 0) {
+			status = Status.NOT_ALLOWED;
+			if (error.isEmpty()) {
+				error = "Twitch lehnt alle Ereignisse ab – bitte neu verbinden";
+			}
+			return false;
+		}
+		return true;
+	}
+
+	/** HTTP-Code der Anmeldung, -1 bei fehlender Anmeldung oder Netzfehler. */
+	private static int subscribeOne(String sessionId, Sub sub) throws InterruptedException {
 		for (int attempt = 0; attempt < 2; attempt++) {
 			String token = TwitchAuth.token();
 			String uid = TwitchAuth.userId();
 			if (token.isEmpty() || uid.isEmpty()) {
 				status = Status.ERROR;
 				error = "Nicht mit Twitch verbunden";
-				return false;
+				return -1;
 			}
 			JsonObject body = new JsonObject();
-			body.addProperty("type", "channel.channel_points_custom_reward_redemption.add");
-			body.addProperty("version", "1");
+			body.addProperty("type", sub.type());
+			body.addProperty("version", sub.version());
 			JsonObject cond = new JsonObject();
-			cond.addProperty("broadcaster_user_id", uid);
+			if (sub.type().equals("channel.raid")) {
+				cond.addProperty("to_broadcaster_user_id", uid);
+			} else {
+				cond.addProperty("broadcaster_user_id", uid);
+			}
+			if (sub.moderator()) {
+				cond.addProperty("moderator_user_id", uid);
+			}
 			body.add("condition", cond);
 			JsonObject tr = new JsonObject();
 			tr.addProperty("method", "websocket");
@@ -299,26 +349,23 @@ public final class Redemptions {
 						.POST(HttpRequest.BodyPublishers.ofString(body.toString(), StandardCharsets.UTF_8)).build(),
 						HttpResponse.BodyHandlers.ofString(StandardCharsets.UTF_8));
 				int code = r.statusCode();
-				if (code == 202 || code == 409) {
-					return true;
-				}
 				if (code == 401 && attempt == 0) {
 					TwitchAuth.refresh();
 					continue;
 				}
-				JsonObject o = TwitchAuth.parse(r.body());
-				String msg = o != null && o.has("message") ? o.get("message").getAsString() : "Fehler " + code;
-				Loothub.LOGGER.warn("Twitch-Belohnungen: Abo abgelehnt ({}): {}", code, msg);
-				status = code == 403 ? Status.NOT_ALLOWED : Status.ERROR;
-				error = code == 403 ? "Kanalpunkte nicht verfügbar (nur Affiliate/Partner)" : msg;
-				return false;
+				if (code != 202 && code != 409) {
+					JsonObject o = TwitchAuth.parse(r.body());
+					Loothub.LOGGER.info("Twitch: Abo {} abgelehnt ({}): {}", sub.type(), code,
+							o != null && o.has("message") ? o.get("message").getAsString() : "");
+				}
+				return code;
 			} catch (IOException e) {
 				status = Status.ERROR;
 				error = "Twitch nicht erreichbar";
-				return false;
+				return -1;
 			}
 		}
-		return false;
+		return 401;
 	}
 
 	private static void handle(Session s, String msg) {
@@ -342,24 +389,12 @@ public final class Redemptions {
 					return;
 				}
 				JsonObject ev = payload.getAsJsonObject("event");
-				Entry e = new Entry();
-				e.id = str(ev, "id");
-				e.user = str(ev, "user_name");
-				if (e.user.isBlank()) {
-					e.user = str(ev, "user_login");
+				String sub = str(o.getAsJsonObject("metadata"), "subscription_type");
+				if (sub.equals(REDEEM.type())) {
+					redemption(ev);
+				} else {
+					Alerts.fromEventSub(sub, ev);
 				}
-				e.input = str(ev, "user_input");
-				if (ev.has("reward") && ev.get("reward").isJsonObject()) {
-					JsonObject rw = ev.getAsJsonObject("reward");
-					e.reward = str(rw, "title");
-					e.cost = rw.has("cost") ? rw.get("cost").getAsInt() : 0;
-				}
-				try {
-					e.time = Instant.parse(str(ev, "redeemed_at")).toEpochMilli();
-				} catch (RuntimeException ex) {
-					e.time = System.currentTimeMillis();
-				}
-				Minecraft.getInstance().execute(() -> add(e));
 			}
 			case "revocation" -> {
 				status = Status.ERROR;
@@ -372,7 +407,32 @@ public final class Redemptions {
 		}
 	}
 
-	private static String str(JsonObject o, String key) {
+	private static void redemption(JsonObject ev) {
+		Entry e = new Entry();
+		e.id = str(ev, "id");
+		e.user = str(ev, "user_name");
+		if (e.user.isBlank()) {
+			e.user = str(ev, "user_login");
+		}
+		e.input = str(ev, "user_input");
+		if (ev.has("reward") && ev.get("reward").isJsonObject()) {
+			JsonObject rw = ev.getAsJsonObject("reward");
+			e.reward = str(rw, "title");
+			e.cost = rw.has("cost") ? rw.get("cost").getAsInt() : 0;
+		}
+		try {
+			e.time = Instant.parse(str(ev, "redeemed_at")).toEpochMilli();
+		} catch (RuntimeException ex) {
+			e.time = System.currentTimeMillis();
+		}
+		Minecraft.getInstance().execute(() -> {
+			if (add(e)) {
+				Alerts.post(Alerts.Type.REDEEM, e.user, e.reward + (e.input.isBlank() ? "" : " – „" + e.input + "“"));
+			}
+		});
+	}
+
+	static String str(JsonObject o, String key) {
 		return o != null && o.has(key) && !o.get(key).isJsonNull() ? o.get(key).getAsString() : "";
 	}
 }

@@ -132,6 +132,8 @@ public class LoothubClient implements ClientModInitializer {
 		HudElementRegistry.attachElementBefore(VanillaHudElements.CHAT,
 				Identifier.fromNamespaceAndPath(Loothub.MOD_ID, "redemptions"), de.loothub.client.streamer.RedemptionHud::renderHud);
 		de.loothub.client.streamer.RedemptionHud.register();
+		HudElementRegistry.attachElementBefore(VanillaHudElements.CHAT,
+				Identifier.fromNamespaceAndPath(Loothub.MOD_ID, "stream_alerts"), de.loothub.client.streamer.Alerts::renderHud);
 		de.loothub.client.streamer.Streamer.apply();
 		de.loothub.client.music.YtMusic.ensure(de.loothub.client.jobs.WidgetConfig.get().musicEnabled);
 

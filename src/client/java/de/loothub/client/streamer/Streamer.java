@@ -18,12 +18,20 @@ public final class Streamer {
 		WidgetConfig c = WidgetConfig.get();
 		boolean on = c.streamerMode && TwitchAuth.connected();
 		Redemptions.ensure(on);
-		StreamerChat.ensure(on && c.streamerChat, TwitchAuth.login());
+		StreamerChat.ensure(on && (c.streamerChat || c.streamerAlerts), c.streamerChat, TwitchAuth.login());
 	}
 
 	/** Wie {@link #apply()}, aber von einem beliebigen Thread aus. */
 	public static void applyLater() {
 		Minecraft.getInstance().execute(Streamer::apply);
+	}
+
+	/** Nach einer neuen Anmeldung: Verbindungen mit dem neuen Schlüssel neu aufbauen. */
+	public static void restartLater() {
+		Minecraft.getInstance().execute(() -> {
+			stopAll();
+			apply();
+		});
 	}
 
 	public static void stopAll() {

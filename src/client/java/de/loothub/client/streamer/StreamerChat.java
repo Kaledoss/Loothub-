@@ -33,6 +33,8 @@ public final class StreamerChat {
 	private static volatile String channel = "";
 	private static volatile Thread thread;
 	private static volatile Socket socket;
+	/** Nachrichten im MC-Chat zeigen (sonst nur für Einblendungen mitlesen). */
+	private static volatile boolean showInChat;
 
 	private StreamerChat() {
 	}
@@ -41,7 +43,8 @@ public final class StreamerChat {
 		return status;
 	}
 
-	public static synchronized void ensure(boolean on, String login) {
+	public static synchronized void ensure(boolean on, boolean inChat, String login) {
+		showInChat = inChat;
 		String ch = login == null ? "" : login.strip().toLowerCase(java.util.Locale.ROOT).replaceAll("[^a-z0-9_]", "");
 		if (!on || ch.isEmpty()) {
 			stop();
@@ -122,24 +125,26 @@ public final class StreamerChat {
 		}
 	}
 
-	private static String tag(String tags, String key) {
-		for (String part : tags.split(";")) {
+	/** IRC-Tags („a=b;c=d“) als Map, Twitch-Maskierungen aufgelöst. */
+	private static java.util.Map<String, String> tags(String raw) {
+		java.util.Map<String, String> m = new java.util.HashMap<>();
+		for (String part : raw.split(";")) {
 			int eq = part.indexOf('=');
-			if (eq > 0 && part.substring(0, eq).equals(key)) {
-				return part.substring(eq + 1);
+			if (eq > 0) {
+				m.put(part.substring(0, eq), part.substring(eq + 1).replace("\\s", " ").replace("\\:", ";").replace("\\\\", "\\"));
 			}
 		}
-		return "";
+		return m;
 	}
 
 	private static void handle(String line) {
-		String tags = "";
+		String rawTags = "";
 		if (line.startsWith("@")) {
 			int sp = line.indexOf(' ');
 			if (sp < 0) {
 				return;
 			}
-			tags = line.substring(1, sp);
+			rawTags = line.substring(1, sp);
 			line = line.substring(sp + 1);
 		}
 		int pm = line.indexOf(" PRIVMSG #");
@@ -148,10 +153,12 @@ public final class StreamerChat {
 		if (at <= 0 || !line.startsWith(":")) {
 			return;
 		}
+		java.util.Map<String, String> tags = tags(rawTags);
 		int bang = line.indexOf('!');
-		String name = tag(tags, "display-name").replace("\\s", " ");
+		String login = tags.getOrDefault("login", bang > 1 ? line.substring(1, bang) : "");
+		String name = tags.getOrDefault("display-name", "");
 		if (name.isBlank()) {
-			name = bang > 1 ? line.substring(1, bang) : "?";
+			name = login.isBlank() ? "?" : login;
 		}
 		int textStart = line.indexOf(" :", at);
 		String text = textStart > 0 ? line.substring(textStart + 2) : "";
@@ -160,8 +167,19 @@ public final class StreamerChat {
 			text = text.substring(8, text.length() - 1); // /me
 			action = true;
 		}
+
+		// Einblendungen: Abos, Geschenke, Raids, Bits
+		if (un > 0) {
+			Alerts.fromIrc(tags.getOrDefault("msg-id", ""), clean(name), login, tags, clean(text));
+		} else if (!tags.getOrDefault("bits", "").isBlank()) {
+			Alerts.fromIrc("cheer", clean(name), login, tags, clean(stripCheers(text)));
+		}
+		if (!showInChat) {
+			return;
+		}
+
 		int color = 0xE0E0E0;
-		String col = tag(tags, "color");
+		String col = tags.getOrDefault("color", "");
 		if (col.startsWith("#") && col.length() == 7) {
 			try {
 				color = brighten(Integer.parseInt(col.substring(1), 16));
@@ -172,9 +190,10 @@ public final class StreamerChat {
 		final int nameColor = color;
 		final boolean me = action;
 		MutableComponent msg;
+		boolean mention = false;
 		if (un > 0) {
 			// Abo, Raid, Geschenk … – Twitch liefert den fertigen Satz
-			String sys = clean(tag(tags, "system-msg").replace("\\s", " "));
+			String sys = clean(tags.getOrDefault("system-msg", ""));
 			if (sys.isBlank()) {
 				return;
 			}
@@ -186,17 +205,57 @@ public final class StreamerChat {
 			if (text.isBlank()) {
 				return;
 			}
-			msg = prefix().append(Component.literal(clean(name)).withStyle(st -> st.withColor(nameColor)))
+			String own = channel;
+			String lower = text.toLowerCase(java.util.Locale.ROOT);
+			mention = !own.isEmpty() && !login.equals(own) && (lower.contains("@" + own) || lower.matches(".*\\b" + java.util.regex.Pattern.quote(own) + "\\b.*"));
+			msg = prefix();
+			badges(msg, tags);
+			final int textColor = mention ? 0xFFD66B : me ? nameColor : 0xFFFFFF;
+			msg.append(Component.literal(clean(name)).withStyle(st -> st.withColor(nameColor)))
 					.append(Component.literal(me ? " " : ": ").withStyle(st -> st.withColor(0xAAAAAA)))
-					.append(Component.literal(clean(text)).withStyle(st -> st.withColor(me ? nameColor : 0xFFFFFF)));
+					.append(Component.literal(clean(text)).withStyle(st -> st.withColor(textColor).withBold(false)));
 		}
 		MutableComponent shown = msg;
+		boolean ping = mention;
 		Minecraft mc = Minecraft.getInstance();
 		mc.execute(() -> {
 			if (mc.player != null && thread != null) {
 				mc.player.displayClientMessage(shown, false);
+				if (ping && de.loothub.client.jobs.WidgetConfig.get().streamerSound) {
+					mc.getSoundManager().play(net.minecraft.client.resources.sounds.SimpleSoundInstance.forUI(
+							net.minecraft.sounds.SoundEvents.NOTE_BLOCK_PLING.value(), 1.4F, 0.7F));
+				}
 			}
 		});
+	}
+
+	/** Abzeichen vor dem Namen: Streamer, Moderator, VIP, Abonnent, erste Nachricht. */
+	private static void badges(MutableComponent msg, java.util.Map<String, String> tags) {
+		String b = "," + tags.getOrDefault("badges", "") + ",";
+		if (b.contains(",broadcaster/")) {
+			badge(msg, "LIVE", 0xFF4B4B);
+		}
+		if (b.contains(",moderator/")) {
+			badge(msg, "MOD", 0x34C759);
+		}
+		if (b.contains(",vip/")) {
+			badge(msg, "VIP", 0xFF6AD5);
+		}
+		if (b.contains(",subscriber/") || b.contains(",founder/")) {
+			badge(msg, "SUB", 0xB18CFF);
+		}
+		if ("1".equals(tags.get("first-msg"))) {
+			badge(msg, "NEU", 0xF2C14E);
+		}
+	}
+
+	private static void badge(MutableComponent msg, String text, int color) {
+		msg.append(Component.literal("[" + text + "] ").withStyle(st -> st.withColor(color).withBold(true)));
+	}
+
+	/** „Cheer100 Text“ → „Text“. */
+	private static String stripCheers(String text) {
+		return text.replaceAll("(?i)\\b[a-z]+\\d+\\b", "").replaceAll("\\s+", " ").strip();
 	}
 
 	private static MutableComponent prefix() {
