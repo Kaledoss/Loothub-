@@ -78,9 +78,12 @@ export default {
 			// Mojang: Hat sich dieser Spieler gerade mit diesem Code angemeldet?
 			const check = await fetch(
 				`https://sessionserver.mojang.com/session/minecraft/hasJoined?username=${encodeURIComponent(name)}&serverId=${encodeURIComponent(serverId)}`,
+				{ headers: { "User-Agent": "Loothub-Cosmetics/1.0" } },
 			);
 			if (check.status !== 200) {
-				return json({ error: "not verified" }, 403);
+				// Für die Fehlersuche: was Mojang geantwortet hat (204 = nicht angemeldet, 403/429 = gesperrt/zu viele)
+				const text = (await check.text()).slice(0, 200);
+				return json({ error: "not verified", mojang: check.status, body: text }, 403);
 			}
 			const who = await check.json();
 			const uuid = dashed(who.id);
