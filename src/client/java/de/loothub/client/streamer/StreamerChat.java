@@ -216,15 +216,10 @@ public final class StreamerChat {
 					.append(Component.literal(clean(text)).withStyle(st -> st.withColor(textColor).withBold(false)));
 		}
 		MutableComponent shown = msg;
-		boolean ping = mention;
 		Minecraft mc = Minecraft.getInstance();
 		mc.execute(() -> {
 			if (mc.player != null && thread != null) {
 				mc.player.displayClientMessage(shown, false);
-				if (ping && de.loothub.client.jobs.WidgetConfig.get().streamerSound) {
-					mc.getSoundManager().play(net.minecraft.client.resources.sounds.SimpleSoundInstance.forUI(
-							net.minecraft.sounds.SoundEvents.NOTE_BLOCK_PLING.value(), 1.4F, 0.7F));
-				}
 			}
 		});
 	}
