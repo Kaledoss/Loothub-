@@ -18,7 +18,7 @@ public final class Streamer {
 		WidgetConfig c = WidgetConfig.get();
 		boolean on = c.streamerMode && TwitchAuth.connected();
 		Redemptions.ensure(on);
-		StreamerChat.ensure(on && (c.streamerChat || c.streamerAlerts), c.streamerChat, TwitchAuth.login());
+		StreamerChat.ensure(on, c.streamerChat, TwitchAuth.login()); // liest immer mit: Stream-Serien, Einblendungen
 	}
 
 	/** Wie {@link #apply()}, aber von einem beliebigen Thread aus. */

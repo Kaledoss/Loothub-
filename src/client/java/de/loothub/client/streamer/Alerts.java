@@ -32,6 +32,7 @@ public final class Alerts {
 		RAID("raid", 0xFF6B6B, "⚔"),
 		CHEER("cheer", 0x6BD5FF, "◆"),
 		REDEEM("redeem", 0xF2C14E, "✦"),
+		STREAK("streak", 0xFFD166, "⚡"),
 		HYPE("hype", 0xFF9B3B, "▲"),
 		AD("ad", 0xB9A9AB, "⏸"),
 		POLL("poll", 0x7FB3FF, "?"),
@@ -112,6 +113,7 @@ public final class Alerts {
 			case RAID -> "raidet mit 42 Zuschauern";
 			case CHEER -> "100 Bits – Gute Arbeit!";
 			case REDEEM -> "Hydrieren!";
+			case STREAK -> "12 Streams in Folge";
 			case HYPE -> "Level 2";
 			case AD -> "Werbung läuft 90 Sekunden";
 			case POLL -> "Welche Farm als Nächstes?";
@@ -257,6 +259,14 @@ public final class Alerts {
 					}
 					post(Type.GIFT, name, "schenkt " + to + " ein Abo");
 				});
+			}
+			case "viewermilestone" -> {
+				if (!"watch-streak".equals(tags.getOrDefault("msg-param-category", ""))) {
+					return;
+				}
+				String streams = tags.getOrDefault("msg-param-value", "?");
+				String id = tags.getOrDefault("id", "");
+				mc.execute(() -> Redemptions.addStreak(id, name, streams, text));
 			}
 			case "raid" -> {
 				String who = tags.getOrDefault("msg-param-displayName", name);

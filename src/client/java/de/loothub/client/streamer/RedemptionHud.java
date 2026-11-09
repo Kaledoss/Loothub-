@@ -20,7 +20,7 @@ import de.loothub.client.LoothubScreen;
 import de.loothub.client.jobs.WidgetConfig;
 
 /**
- * Offene Kanalbelohnungen als Liste im HUD. Bei offenem Chat (T): Einträge per Klick abhaken, die Liste an der
+ * Offene Streamereignisse (Kanalbelohnungen, Stream-Serien) als Liste im HUD. Bei offenem Chat (T): Einträge per Klick abhaken, die Liste an der
  * Kopfzeile verschieben (außer „Sperren“ ist an). Abhaken ist rein lokal.
  */
 public final class RedemptionHud {
@@ -106,12 +106,12 @@ public final class RedemptionHud {
 		int x = p[0], y = p[1];
 		g.fill(x, y, x + W, y + h, de.loothub.client.Theme.bg(0xC0120A0C));
 		g.fill(x, y, x + 1, y + h, 0xFF000000 | StreamerChat.PURPLE);
-		String title = "Kanalbelohnungen";
+		String title = "Streamereignisse";
 		g.drawString(font, title, x + 6, y + 3, 0xFFC9B3FF, true);
 		String count = open.size() + " offen";
 		g.drawString(font, count, x + W - 5 - font.width(count), y + 3, 0xFFB9A9AB, true);
 		if (open.isEmpty()) {
-			g.drawString(font, "Keine offenen Belohnungen", x + 6, y + HEAD + 1, 0xFF9A9A9A, false);
+			g.drawString(font, "Keine offenen Ereignisse", x + 6, y + HEAD + 1, 0xFF9A9A9A, false);
 			return p;
 		}
 		for (int i = 0; i < rows; i++) {

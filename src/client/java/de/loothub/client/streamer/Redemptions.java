@@ -31,7 +31,8 @@ import de.loothub.Loothub;
 import de.loothub.client.jobs.WidgetConfig;
 
 /**
- * Eingelöste Kanalbelohnungen des eigenen Kanals, live über Twitch EventSub (WebSocket). Nur lesend: Die Liste
+ * Streamereignisse des eigenen Kanals: eingelöste Kanalbelohnungen (live über Twitch EventSub) und geteilte
+ * Stream-Serien der Zuschauer (aus dem Twitch-Chat). Nur lesend: Die Liste
  * wird lokal geführt, „abhaken“ ändert nichts auf Twitch. Gespeichert in {@code config/loothub-redemptions.json}.
  */
 public final class Redemptions {
@@ -44,6 +45,8 @@ public final class Redemptions {
 		public int cost;
 		public long time;
 		public boolean done;
+		/** "redeem" = Kanalbelohnung, "streak" = Stream-Serie eines Zuschauers. */
+		public String kind = "redeem";
 	}
 
 	public enum Status { OFF, CONNECTING, CONNECTED, NOT_ALLOWED, ERROR }
@@ -118,6 +121,20 @@ public final class Redemptions {
 		save();
 	}
 
+	/** Zuschauer teilt seine Stream-Serie (Watch Streak) im Chat – Spiel-Thread. */
+	static void addStreak(String id, String user, String streams, String message) {
+		Entry e = new Entry();
+		e.id = id.isBlank() ? "streak-" + user + "-" + streams + "-" + System.currentTimeMillis() / 60_000L : "streak-" + id;
+		e.kind = "streak";
+		e.user = user;
+		e.reward = "Stream-Serie: " + streams + " Streams in Folge";
+		e.input = message == null ? "" : message;
+		e.time = System.currentTimeMillis();
+		if (add(e)) {
+			Alerts.post(Alerts.Type.STREAK, user, streams + " Streams in Folge" + (e.input.isBlank() ? "" : " – „" + e.input + "“"));
+		}
+	}
+
 	private static boolean add(Entry e) {
 		List<Entry> l = list();
 		for (Entry x : l) {
@@ -131,7 +148,8 @@ public final class Redemptions {
 		}
 		save();
 		Minecraft mc = Minecraft.getInstance();
-		if (WidgetConfig.get().streamerSound && mc.player != null && !Alerts.enabled(Alerts.Type.REDEEM)) {
+		if (WidgetConfig.get().streamerSound && mc.player != null
+				&& !Alerts.enabled("streak".equals(e.kind) ? Alerts.Type.STREAK : Alerts.Type.REDEEM)) {
 			mc.getSoundManager().play(SimpleSoundInstance.forUI(SoundEvents.NOTE_BLOCK_CHIME.value(), 1.5F, 0.8F));
 		}
 		return true;
