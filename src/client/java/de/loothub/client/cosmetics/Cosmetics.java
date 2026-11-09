@@ -338,7 +338,7 @@ public final class Cosmetics {
 
 	/**
 	 * Eigene Cosmetics aus den Einstellungen als Profil für den Cosmetics-Server ({set, values, skins}), sortiert,
-	 * damit gleiche Auswahl immer gleich aussieht. null = keine Cosmetics.
+	 * damit gleiche Auswahl immer gleich aussieht. Ohne Cosmetics ein leeres Profil.
 	 */
 	static JsonObject ownProfile() {
 		WidgetConfig cfg = WidgetConfig.get();
@@ -354,10 +354,13 @@ public final class Cosmetics {
 		}
 		ownInto(set, values);
 		set.remove(AURA_STRENGTH);
-		if (set.isEmpty()) {
-			return null;
-		}
 		JsonObject o = new JsonObject();
+		if (set.isEmpty()) {
+			// keine Cosmetics: trotzdem melden, damit andere sehen, dass man Loothub nutzt (Krönchen)
+			o.add("set", new com.google.gson.JsonArray());
+			o.add("values", new JsonObject());
+			return o;
+		}
 		com.google.gson.JsonArray sa = new com.google.gson.JsonArray();
 		set.forEach(sa::add);
 		o.add("set", sa);

@@ -288,6 +288,8 @@ public class SettingsScreen extends LoothubScreen {
 					}));
 					y = cardNoToggle(thY, 60, "loothub.settings.theme", "loothub.settings.theme.tooltip");
 				}
+				y = card(y, 40, "loothub.settings.crown", "loothub.settings.crown.tooltip",
+						() -> c.loothubCrown, v -> c.loothubCrown = v);
 				y = card(y, 40, "loothub.settings.connected_textures", "loothub.settings.connected_textures.tooltip",
 						() -> c.connectedTextures, v -> {
 							c.connectedTextures = v;

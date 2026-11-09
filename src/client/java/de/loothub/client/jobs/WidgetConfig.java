@@ -207,6 +207,8 @@ public final class WidgetConfig {
 	public double pcgOverlayY = 0.0;
 	public int pcgPanelOffsetX = 0;
 	public int pcgPanelOffsetY = 0;
+	/** Krönchen vor Loothub-Nutzern in der Tab-Liste. */
+	public boolean loothubCrown = true;
 	/** Verbundene Texturen (Glas ohne Ränder zwischen gleichen Blöcken). */
 	public boolean connectedTextures = true;
 	/** Streamer-Modus: eigene Menüseite mit Twitch-Konto, Twitch-Chat im Minecraft-Chat und Kanalbelohnungen. */
@@ -300,6 +302,7 @@ public final class WidgetConfig {
 		streamerMode = false;
 		streamerChat = false;
 		connectedTextures = false;
+		loothubCrown = false;
 	}
 
 	private static WidgetConfig load() {

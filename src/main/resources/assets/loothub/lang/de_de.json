@@ -609,5 +609,7 @@
 	"loothub.streamer.alert.prediction": "Vorhersage",
 	"loothub.streamer.alert.prediction.hint": "Start und Ergebnis",
 	"loothub.settings.connected_textures": "Verbundene Texturen",
-	"loothub.settings.connected_textures.tooltip": "Glas (auch gefärbt und getönt) ohne Ränder zwischen gleichen Blöcken – eine Glaswand wirkt wie eine große Scheibe. Funktioniert mit jedem Ressourcenpaket."
+	"loothub.settings.connected_textures.tooltip": "Glas (auch gefärbt und getönt) ohne Ränder zwischen gleichen Blöcken – eine Glaswand wirkt wie eine große Scheibe. Funktioniert mit jedem Ressourcenpaket.",
+	"loothub.settings.crown": "Loothub-Krönchen",
+	"loothub.settings.crown.tooltip": "Zeigt in der Tab-Liste ein kleines Krönchen vor allen Spielern, die auch Loothub nutzen. Nur andere Loothub-Spieler sehen dich so – der Server bekommt nichts davon mit."
 }

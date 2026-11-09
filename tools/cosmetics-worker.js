@@ -23,13 +23,13 @@ function dashed(id) {
 	return `${h.slice(0, 8)}-${h.slice(8, 12)}-${h.slice(12, 16)}-${h.slice(16, 20)}-${h.slice(20)}`;
 }
 
-// Nur erlaubte, kurze Werte übernehmen – in derselben Reihenfolge, wie die Mod sie schickt
+// Nur erlaubte, kurze Werte übernehmen – in derselben Reihenfolge, wie die Mod sie schickt.
+// Ein leeres Profil bleibt stehen: Es zeigt, dass der Spieler Loothub nutzt (Krönchen in der Tab-Liste).
 function clean(profile) {
 	if (!profile || typeof profile !== "object") return null;
 	const out = {};
 	const set = Array.isArray(profile.set) ? profile.set : [];
 	out.set = set.filter((s) => typeof s === "string" && /^[a-z]{1,24}$/.test(s)).slice(0, MAX_SET);
-	if (out.set.length === 0) return null;
 	out.values = {};
 	const values = profile.values && typeof profile.values === "object" ? profile.values : {};
 	for (const k of Object.keys(values).slice(0, MAX_VALUES)) {

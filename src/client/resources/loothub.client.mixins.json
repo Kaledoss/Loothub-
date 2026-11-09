@@ -25,7 +25,8 @@
 		"DropProtectionScreenMixin",
 		"CustomChatMixin",
 		"ChatSearchKeysMixin",
-		"OffhandFilterMixin"
+		"OffhandFilterMixin",
+		"TabListCrownMixin"
 	],
 	"injectors": {
 		"defaultRequire": 0

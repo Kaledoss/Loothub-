@@ -53,8 +53,14 @@ public final class CosmeticsServer {
 	private static volatile long uploadBlockedUntil;
 	/** Zuletzt erfolgreich hochgeladen – nicht dasselbe nochmal schicken (falls der Server etwas gekürzt hat). */
 	private static volatile String lastUploaded;
+	private static volatile long lastUploadedAt;
 
 	private CosmeticsServer() {
+	}
+
+	/** Nutzt dieser Spieler Loothub (steht er auf dem Cosmetics-Server)? */
+	public static boolean isUser(java.util.UUID id) {
+		return id != null && enabled() && all.has(id.toString().toLowerCase(Locale.ROOT));
 	}
 
 	public static boolean enabled() {
@@ -113,13 +119,20 @@ public final class CosmeticsServer {
 		JsonObject mine = Cosmetics.ownProfile();
 		String want = mine == null ? "" : mine.toString();
 		String have = "";
+		long seen = 0;
 		if (all.has(ownUuid(mc)) && all.get(ownUuid(mc)).isJsonObject()) {
 			JsonObject s = all.getAsJsonObject(ownUuid(mc)).deepCopy();
+			if (s.has("t") && s.get("t").isJsonPrimitive()) {
+				seen = s.get("t").getAsLong();
+			}
 			s.remove("name");
 			s.remove("t");
 			have = s.toString();
 		}
-		if (want.equals(have) || want.equals(lastUploaded)) {
+		// Alle 3 Tage neu melden, damit man als Loothub-Nutzer sichtbar bleibt (Krönchen in der Tab-Liste)
+		boolean stale = now - seen > 3 * 24 * 3600_000L;
+		boolean recentlySent = want.equals(lastUploaded) && now - lastUploadedAt < 30 * 60_000L;
+		if ((want.equals(have) && !stale) || recentlySent) {
 			pending = null;
 			return;
 		}
@@ -171,6 +184,7 @@ public final class CosmeticsServer {
 				if (r.statusCode() == 200) {
 					Loothub.LOGGER.info("Cosmetics-Server: eigene Auswahl hochgeladen");
 					lastUploaded = sent;
+					lastUploadedAt = System.currentTimeMillis();
 					lastFetch = 0; // gleich neu laden
 				} else {
 					Loothub.LOGGER.warn("Cosmetics-Server lehnt ab ({}): {}", r.statusCode(), r.body());
