@@ -33,7 +33,7 @@ public final class TwitchAuth {
 	 * Client-ID der Loothub-Anwendung im Twitch-Entwicklerportal (Typ „Öffentlich“). Die ID ist kein Geheimnis –
 	 * sie steht bei jeder Twitch-App offen im Programm.
 	 */
-	public static final String CLIENT_ID = "";
+	public static final String CLIENT_ID = "vsao660hna191cf43edoqw84ld3yys";
 	static final String SCOPES = "channel:read:redemptions";
 
 	public enum Status { NOT_CONNECTED, NO_CLIENT_ID, STARTING, WAITING, CONNECTED, ERROR }
