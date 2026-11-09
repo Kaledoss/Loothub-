@@ -607,5 +607,7 @@
 	"loothub.streamer.alert.poll": "Umfrage",
 	"loothub.streamer.alert.poll.hint": "Start und Ergebnis",
 	"loothub.streamer.alert.prediction": "Vorhersage",
-	"loothub.streamer.alert.prediction.hint": "Start und Ergebnis"
+	"loothub.streamer.alert.prediction.hint": "Start und Ergebnis",
+	"loothub.settings.connected_textures": "Verbundene Texturen",
+	"loothub.settings.connected_textures.tooltip": "Glas (auch gefärbt und getönt) ohne Ränder zwischen gleichen Blöcken – eine Glaswand wirkt wie eine große Scheibe. Funktioniert mit jedem Ressourcenpaket."
 }

@@ -607,5 +607,7 @@
 	"loothub.streamer.alert.poll": "Poll",
 	"loothub.streamer.alert.poll.hint": "Start and result",
 	"loothub.streamer.alert.prediction": "Prediction",
-	"loothub.streamer.alert.prediction.hint": "Start and result"
+	"loothub.streamer.alert.prediction.hint": "Start and result",
+	"loothub.settings.connected_textures": "Connected textures",
+	"loothub.settings.connected_textures.tooltip": "Glass (stained and tinted too) without borders between equal blocks – a glass wall looks like one big pane. Works with any resource pack."
 }

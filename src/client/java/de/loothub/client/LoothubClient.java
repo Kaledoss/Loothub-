@@ -106,6 +106,7 @@ public class LoothubClient implements ClientModInitializer {
 		}
 
 		de.loothub.client.quick.OreGlow.register();
+		de.loothub.client.quick.ConnectedTextures.register();
 		de.loothub.client.quick.LookInfo.register();
 		de.loothub.client.quick.RarityFrames.register();
 		de.loothub.client.quick.Timers.register();

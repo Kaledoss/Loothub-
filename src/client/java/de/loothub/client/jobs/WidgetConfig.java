@@ -207,6 +207,8 @@ public final class WidgetConfig {
 	public double pcgOverlayY = 0.0;
 	public int pcgPanelOffsetX = 0;
 	public int pcgPanelOffsetY = 0;
+	/** Verbundene Texturen (Glas ohne Ränder zwischen gleichen Blöcken). */
+	public boolean connectedTextures = true;
 	/** Streamer-Modus: eigene Menüseite mit Twitch-Konto, Twitch-Chat im Minecraft-Chat und Kanalbelohnungen. */
 	public boolean streamerMode = false;
 	/** Twitch-Chat des eigenen Kanals im Minecraft-Chat anzeigen. */
@@ -297,6 +299,7 @@ public final class WidgetConfig {
 		pcgEnabled = false;
 		streamerMode = false;
 		streamerChat = false;
+		connectedTextures = false;
 	}
 
 	private static WidgetConfig load() {

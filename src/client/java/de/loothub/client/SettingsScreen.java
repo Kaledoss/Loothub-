@@ -288,6 +288,11 @@ public class SettingsScreen extends LoothubScreen {
 					}));
 					y = cardNoToggle(thY, 60, "loothub.settings.theme", "loothub.settings.theme.tooltip");
 				}
+				y = card(y, 40, "loothub.settings.connected_textures", "loothub.settings.connected_textures.tooltip",
+						() -> c.connectedTextures, v -> {
+							c.connectedTextures = v;
+							de.loothub.client.quick.ConnectedTextures.refresh();
+						});
 				y = card(y, 40, "loothub.settings.hide_head", "loothub.settings.hide_head.tooltip",
 						() -> c.hideOwnHeadItem, v -> c.hideOwnHeadItem = v);
 				y = card(y, 40, "loothub.settings.hide_cape", "loothub.settings.hide_cape.tooltip",
