@@ -2,8 +2,8 @@
 // Bindung: KV-Namespace unter dem Variablennamen COSMETICS.
 //
 // GET  /all      → alle Profile { "<uuid>": { set, values, skins, name, t } } (60 s zwischengespeichert)
-// POST /profile  → eigenes Profil setzen: { name, serverId, profile } (profile = null löscht)
-//                  Wer man ist, wird bei Mojang geprüft (hasJoined) – ohne Passwort, ohne Zugangsschlüssel.
+// POST /profile  → eigenes Profil setzen, unterschrieben mit dem von Mojang beglaubigten Profil-Schlüssel
+//                  (derselbe wie für Chat-Signaturen). Keine Rückfrage bei Mojang nötig, kein Zugangsschlüssel.
 
 const MAX_SET = 30;
 const MAX_VALUES = 30;
@@ -43,6 +43,51 @@ function clean(profile) {
 	return out;
 }
 
+function b64(s) {
+	const bin = atob(s);
+	const out = new Uint8Array(bin.length);
+	for (let i = 0; i < bin.length; i++) out[i] = bin.charCodeAt(i);
+	return out;
+}
+
+function uuidBytes(uuid) {
+	const h = uuid.replace(/-/g, "");
+	const out = new Uint8Array(16);
+	for (let i = 0; i < 16; i++) out[i] = parseInt(h.substr(i * 2, 2), 16);
+	return out;
+}
+
+// Mojangs Prüfschlüssel für Spieler-Zertifikate: einmal am Tag holen und im KV-Speicher merken
+let keyCache = null;
+async function playerCertificateKeys(env) {
+	if (keyCache && keyCache.until > Date.now()) return keyCache.keys;
+	let stored = null;
+	try {
+		stored = JSON.parse((await env.COSMETICS.get("mojang-keys")) || "null");
+	} catch {
+		stored = null;
+	}
+	if (stored && stored.until > Date.now()) {
+		keyCache = stored;
+		return stored.keys;
+	}
+	try {
+		const r = await fetch("https://api.minecraftservices.com/publickeys", { headers: { "User-Agent": "Loothub-Cosmetics/1.0" } });
+		if (r.ok) {
+			const data = await r.json();
+			const keys = (data.playerCertificateKeys || []).map((k) => k.publicKey).filter((k) => typeof k === "string");
+			if (keys.length > 0) {
+				keyCache = { keys, until: Date.now() + 24 * 3600_000 };
+				await env.COSMETICS.put("mojang-keys", JSON.stringify(keyCache));
+				return keys;
+			}
+		}
+	} catch {
+		// unten: alter Stand
+	}
+	return stored ? stored.keys : [];
+}
+
 export default {
 	async fetch(request, env, ctx) {
 		const url = new URL(request.url);
@@ -68,30 +113,65 @@ export default {
 			} catch {
 				return json({ error: "bad json" }, 400);
 			}
-			const { name, serverId } = body || {};
-			if (typeof name !== "string" || !NAME.test(name) || typeof serverId !== "string" || !/^[0-9a-f]{1,64}$/.test(serverId)) {
+			const { uuid, name, ts, profile: profileJson, publicKey, expiresAt, keySignature, signature } = body || {};
+			if (typeof uuid !== "string" || !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/.test(uuid)
+				|| typeof name !== "string" || !NAME.test(name) || typeof ts !== "number" || typeof profileJson !== "string"
+				|| typeof publicKey !== "string" || typeof expiresAt !== "number" || typeof keySignature !== "string"
+				|| typeof signature !== "string") {
 				return json({ error: "bad request" }, 400);
 			}
-			if (JSON.stringify(body.profile ?? null).length > 4000) {
+			if (profileJson.length > 4000) {
 				return json({ error: "too large" }, 413);
 			}
-			// Mojang: Hat sich dieser Spieler gerade mit diesem Code angemeldet?
-			const check = await fetch(
-				`https://sessionserver.mojang.com/session/minecraft/hasJoined?username=${encodeURIComponent(name)}&serverId=${encodeURIComponent(serverId)}`,
-				{ headers: { "User-Agent": "Loothub-Cosmetics/1.0" } },
-			);
-			if (check.status !== 200) {
-				// Für die Fehlersuche: was Mojang geantwortet hat (204 = nicht angemeldet, 403/429 = gesperrt/zu viele)
-				const text = (await check.text()).slice(0, 200);
-				return json({ error: "not verified", mojang: check.status, body: text }, 403);
+			const now = Date.now();
+			if (Math.abs(now - ts) > 5 * 60_000) {
+				return json({ error: "clock" }, 400);
 			}
-			const who = await check.json();
-			const uuid = dashed(who.id);
+			if (expiresAt < now) {
+				return json({ error: "key expired" }, 403);
+			}
+			// 1) Ist der Spieler-Schlüssel von Mojang für diese UUID beglaubigt?
+			const keyBytes = b64(publicKey);
+			const certified = new Uint8Array(24 + keyBytes.length);
+			certified.set(uuidBytes(uuid), 0);
+			new DataView(certified.buffer).setBigInt64(16, BigInt(expiresAt));
+			certified.set(keyBytes, 24);
+			const mojangKeys = await playerCertificateKeys(env);
+			if (mojangKeys.length === 0) {
+				return json({ error: "mojang keys unavailable" }, 503);
+			}
+			let ok = false;
+			for (const k of mojangKeys) {
+				try {
+					const key = await crypto.subtle.importKey("spki", b64(k), { name: "RSASSA-PKCS1-v1_5", hash: "SHA-1" }, false, ["verify"]);
+					if (await crypto.subtle.verify("RSASSA-PKCS1-v1_5", key, b64(keySignature), certified)) {
+						ok = true;
+						break;
+					}
+				} catch {
+					// nächster Schlüssel
+				}
+			}
+			if (!ok) {
+				return json({ error: "key not certified" }, 403);
+			}
+			// 2) Hat dieser Schlüssel genau diese Auswahl unterschrieben?
+			const playerKey = await crypto.subtle.importKey("spki", keyBytes, { name: "RSASSA-PKCS1-v1_5", hash: "SHA-256" }, false, ["verify"]);
+			const message = new TextEncoder().encode(`loothub-cosmetics\n${uuid}\n${ts}\n${profileJson}`);
+			if (!(await crypto.subtle.verify("RSASSA-PKCS1-v1_5", playerKey, b64(signature), message))) {
+				return json({ error: "bad signature" }, 403);
+			}
 
+			let parsed = null;
+			try {
+				parsed = JSON.parse(profileJson);
+			} catch {
+				return json({ error: "bad profile" }, 400);
+			}
 			const all = JSON.parse((await env.COSMETICS.get("all")) || "{}");
-			const profile = clean(body.profile);
+			const profile = clean(parsed);
 			if (profile) {
-				all[uuid] = { ...profile, name: who.name, t: Date.now() };
+				all[uuid] = { ...profile, name, t: now };
 			} else {
 				delete all[uuid];
 			}

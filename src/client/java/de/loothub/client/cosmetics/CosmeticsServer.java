@@ -1,12 +1,10 @@
 package de.loothub.client.cosmetics;
 
-import java.math.BigInteger;
 import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.nio.charset.StandardCharsets;
-import java.security.SecureRandom;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -17,7 +15,6 @@ import java.util.Map;
 import java.util.Set;
 
 import com.google.gson.JsonElement;
-import com.google.gson.JsonNull;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 
@@ -32,9 +29,9 @@ import de.loothub.client.jobs.WidgetConfig;
  * Geteilte Cosmetics über den Loothub-Cosmetics-Server (Cloudflare Worker): Die eigene Auswahl wird hochgeladen,
  * sobald sie sich ändert; die Auswahl aller anderen Loothub-Spieler wird alle paar Minuten geladen.
  * <p>
- * Wer man ist, prüft der Server über die normale Minecraft-Anmeldung: Die Mod meldet sich bei Mojang mit einem
- * Zufallscode an (wie beim Betreten eines Servers), der Server fragt Mojang, ob dieser Spieler sich mit dem Code
- * angemeldet hat. Der Zugangsschlüssel des Minecraft-Kontos geht dabei nur an Mojang, nie an den Cosmetics-Server.
+ * Wer man ist, prüft der Server über den Profil-Schlüssel des Kontos, den Mojang beglaubigt (derselbe, mit dem
+ * Chat-Nachrichten signiert werden): Die Mod unterschreibt ihre Auswahl damit, der Server prüft Unterschrift und
+ * Beglaubigung. Der Zugangsschlüssel des Minecraft-Kontos verlässt dabei nie das Spiel.
  */
 public final class CosmeticsServer {
 	/** Adresse des Workers, z. B. https://loothub-cosmetics.NAME.workers.dev – leer = aus (nur cosmetics.json). */
@@ -44,7 +41,6 @@ public final class CosmeticsServer {
 	/** Nach der letzten Änderung so lange warten, bevor hochgeladen wird (z. B. beim Durchklicken von Farben). */
 	private static final long SETTLE_MS = 20_000L;
 	private static final HttpClient HTTP = HttpClient.newBuilder().connectTimeout(Duration.ofSeconds(8)).build();
-	private static final SecureRandom RANDOM = new SecureRandom();
 
 	/** Alle Profile vom Server: UUID → {name, set, values, skins}. */
 	private static volatile JsonObject all = new JsonObject();
@@ -144,16 +140,29 @@ public final class CosmeticsServer {
 		String sent = profile == null ? "" : profile.toString();
 		String name = mc.getUser().getName();
 		java.util.UUID id = mc.getUser().getProfileId();
-		String token = mc.getUser().getAccessToken();
 		Thread t = new Thread(() -> {
 			try {
-				String serverId = new BigInteger(130, RANDOM).toString(16);
-				// Bei Mojang anmelden wie beim Betreten eines Servers – der Cosmetics-Server prüft das danach
-				mc.services().sessionService().joinServer(id, token, serverId);
+				// Mit dem von Mojang beglaubigten Schlüssel des Kontos unterschreiben (derselbe wie für Chat-Signaturen).
+				// Der Zugangsschlüssel des Kontos verlässt dabei nie das Spiel.
+				var pair = mc.getProfileKeyPairManager().prepareKeyPair().get(20, java.util.concurrent.TimeUnit.SECONDS)
+						.orElseThrow(() -> new IllegalStateException("kein Profil-Schlüssel (Offline-Konto?)"));
+				var data = pair.publicKey().data();
+				String uuid = id.toString().toLowerCase(Locale.ROOT);
+				long ts = System.currentTimeMillis();
+				String profileJson = profile == null ? "null" : profile.toString();
+				java.security.Signature sig = java.security.Signature.getInstance("SHA256withRSA");
+				sig.initSign(pair.privateKey());
+				sig.update(("loothub-cosmetics\n" + uuid + "\n" + ts + "\n" + profileJson).getBytes(StandardCharsets.UTF_8));
+				java.util.Base64.Encoder b64 = java.util.Base64.getEncoder();
 				JsonObject body = new JsonObject();
+				body.addProperty("uuid", uuid);
 				body.addProperty("name", name);
-				body.addProperty("serverId", serverId);
-				body.add("profile", profile == null ? JsonNull.INSTANCE : profile);
+				body.addProperty("ts", ts);
+				body.addProperty("profile", profileJson);
+				body.addProperty("publicKey", b64.encodeToString(data.key().getEncoded()));
+				body.addProperty("expiresAt", data.expiresAt().toEpochMilli());
+				body.addProperty("keySignature", b64.encodeToString(data.keySignature()));
+				body.addProperty("signature", b64.encodeToString(sig.sign()));
 				HttpResponse<String> r = HTTP.send(HttpRequest.newBuilder(URI.create(BASE + "/profile"))
 						.timeout(Duration.ofSeconds(15)).header("Content-Type", "application/json")
 						.header("User-Agent", "Loothub-Mod")
