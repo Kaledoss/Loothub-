@@ -15,8 +15,8 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import de.loothub.client.jobs.WidgetConfig;
 
 /**
- * Kopf-Item (z. B. das „Auto“) und den Talismanrucksack in der Zweithand am eigenen Spieler nicht zeichnen.
- * Nur eigene Darstellung; andere Spieler sehen es weiterhin, die Wirkung des Items bleibt.
+ * Kopf-Item (z. B. das „Auto“) und den Talismanrucksack in der Zweithand nicht zeichnen – am eigenen Spieler und an
+ * anderen Spielern (dort bleiben echte Helme sichtbar). Nur die eigene Darstellung; die Wirkung des Items bleibt.
  */
 @Mixin(HumanoidMobRenderer.class)
 public abstract class HumanoidHeadMixin {
@@ -28,6 +28,16 @@ public abstract class HumanoidHeadMixin {
 		if (entity != Minecraft.getInstance().player) {
 			// Andere Spieler, die seit 5 Minuten völlig stillstehen, schlafen (nur eigene Darstellung)
 			de.loothub.client.quick.AfkView.markLying(state, de.loothub.client.quick.OtherAfk.lieProgress(entity));
+			if (entity instanceof net.minecraft.world.entity.player.Player) {
+				// Kopf-Items (Autos, Köpfe …) auch bei anderen Spielern ausblenden – echte Helme bleiben sichtbar
+				if (WidgetConfig.get().hideOwnHeadItem) {
+					state.headItem.clear();
+					if (!state.headEquipment.is(net.minecraft.tags.ItemTags.HEAD_ARMOR)) {
+						state.headEquipment = ItemStack.EMPTY;
+					}
+				}
+				hideBackpack(entity, state);
+			}
 			return;
 		}
 		// AFK-Ansicht: eigener Charakter liegt schlafend da (nur eigene Darstellung)
@@ -40,6 +50,10 @@ public abstract class HumanoidHeadMixin {
 			state.headItem.clear();
 		}
 		// Talismanrucksack in der Zweithand (von außen gesehen)
+		hideBackpack(entity, state);
+	}
+
+	private static void hideBackpack(LivingEntity entity, HumanoidRenderState state) {
 		if (de.loothub.client.quick.HiddenItems.hideOffhand(entity.getOffhandItem())) {
 			if (entity.getMainArm() == net.minecraft.world.entity.HumanoidArm.RIGHT) {
 				state.leftHandItemState.clear();

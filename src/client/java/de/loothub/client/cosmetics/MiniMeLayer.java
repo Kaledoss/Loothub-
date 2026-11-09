@@ -247,8 +247,11 @@ public final class MiniMeLayer extends RenderLayer<AvatarRenderState, PlayerMode
 			PlayerSkin skin = state.skin;
 			if (!other.isEmpty()) {
 				PlayerSkin s = SkinLookup.get(other);
+				if (s == null && !SkinLookup.gaveUp(other)) {
+					continue; // erst zeigen, wenn der richtige Skin da ist – nicht zwischendurch mit falschem Skin
+				}
 				if (s != null) {
-					skin = s; // fremder Skin (solange er lädt: eigener)
+					skin = s; // fremder Skin (nicht gefunden: eigener)
 				}
 			}
 			float side = i % 2 == 0 ? 1.0F : -1.0F; // gerade = rechts, ungerade = links (Modellraum)
