@@ -38,7 +38,7 @@ import de.loothub.client.jobs.WidgetConfig;
  */
 public final class CosmeticsServer {
 	/** Adresse des Workers, z. B. https://loothub-cosmetics.NAME.workers.dev – leer = aus (nur cosmetics.json). */
-	static final String BASE = "";
+	static final String BASE = "https://loothub.kaledoss564.workers.dev";
 
 	private static final long REFRESH_MS = 5 * 60_000L;
 	/** Nach der letzten Änderung so lange warten, bevor hochgeladen wird (z. B. beim Durchklicken von Farben). */
