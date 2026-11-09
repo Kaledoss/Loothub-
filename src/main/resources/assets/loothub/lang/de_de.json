@@ -555,7 +555,7 @@
 	"loothub.chatassign.hide": "Solche Nachrichten im Tab „%s“ ausblenden",
 	"loothub.command.too_fast": "Loothub: Befehl nicht gesendet – bitte kurz warten",
 	"loothub.settings.streamer": "Streamer-Modus",
-	"loothub.settings.streamer.tooltip": "Zeigt im Menü die Seite „Streamer“: mit dem eigenen Twitch-Konto verbinden, Twitch-Chat im Minecraft-Chat und Streamereignisse (Kanalbelohnungen, Stream-Serien) als Liste im HUD zum Abhaken.",
+	"loothub.settings.streamer.tooltip": "Zeigt im Menü die Seite „Streamer“: mit dem eigenen Twitch-Konto verbinden, Twitch-Chat im Minecraft-Chat und Streamereignisse (Kanalbelohnungen, Abos, Stream-Serien) als Liste im HUD zum Abhaken.",
 	"loothub.tab.streamer": "Streamer",
 	"loothub.tab.streamer.header": "Streamer – Twitch-Konto, Chat und Streamereignisse",
 	"loothub.streamer.connect": "Mit Twitch verbinden",

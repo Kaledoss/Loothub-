@@ -226,13 +226,15 @@ public final class Alerts {
 			case "sub", "resub" -> {
 				String plan = plan(tags.getOrDefault("msg-param-sub-plan", ""));
 				String months = tags.getOrDefault("msg-param-cumulative-months", "");
-				String sub = msgId.equals("resub") && !months.isBlank() && !months.equals("1")
-						? "abonniert seit " + months + " Monaten (" + plan + ")" : "hat abonniert (" + plan + ")";
-				if (!text.isBlank()) {
-					sub += " – " + text;
-				}
-				String s = sub;
-				mc.execute(() -> post(Type.SUB, name, s));
+				boolean resub = msgId.equals("resub") && !months.isBlank() && !months.equals("1");
+				String what = resub ? "Abo: " + months + " Monate (" + plan + ")" : "Neues Abo (" + plan + ")";
+				String sub = (resub ? "abonniert seit " + months + " Monaten (" + plan + ")" : "hat abonniert (" + plan + ")")
+						+ (text.isBlank() ? "" : " – " + text);
+				String id = tags.getOrDefault("id", "");
+				mc.execute(() -> {
+					post(Type.SUB, name, sub);
+					Redemptions.addEvent("sub", id, name, what, text);
+				});
 			}
 			case "submysterygift" -> {
 				String count = tags.getOrDefault("msg-param-mass-gift-count", "1");
@@ -242,10 +244,16 @@ public final class Alerts {
 				} catch (NumberFormatException ignored) {
 					// keine Zahl – Einzel-Meldungen kommen dann einzeln
 				}
-				mc.execute(() -> post(Type.GIFT, name, "verschenkt " + count + (count.equals("1") ? " Abo" : " Abos")));
+				String what = "Verschenkt " + count + (count.equals("1") ? " Abo" : " Abos");
+				String id = tags.getOrDefault("id", "");
+				mc.execute(() -> {
+					post(Type.GIFT, name, "verschenkt " + count + (count.equals("1") ? " Abo" : " Abos"));
+					Redemptions.addEvent("sub", id, name, what, "");
+				});
 			}
 			case "subgift" -> {
 				String to = tags.getOrDefault("msg-param-recipient-display-name", "?");
+				String id = tags.getOrDefault("id", "");
 				mc.execute(() -> {
 					Integer left = MASS_GIFTS.get(login);
 					if (left != null && left > 0) {
@@ -258,6 +266,7 @@ public final class Alerts {
 						return;
 					}
 					post(Type.GIFT, name, "schenkt " + to + " ein Abo");
+					Redemptions.addEvent("sub", id, name, "Schenkt " + to + " ein Abo", "");
 				});
 			}
 			case "viewermilestone" -> {

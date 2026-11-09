@@ -45,7 +45,7 @@ public final class Redemptions {
 		public int cost;
 		public long time;
 		public boolean done;
-		/** "redeem" = Kanalbelohnung, "streak" = Stream-Serie eines Zuschauers. */
+		/** "redeem" = Kanalbelohnung, "streak" = Stream-Serie, "sub" = Abo oder Geschenk-Abo. */
 		public String kind = "redeem";
 	}
 
@@ -123,16 +123,22 @@ public final class Redemptions {
 
 	/** Zuschauer teilt seine Stream-Serie (Watch Streak) im Chat – Spiel-Thread. */
 	static void addStreak(String id, String user, String streams, String message) {
+		if (addEvent("streak", id, user, "Stream-Serie: " + streams + " Streams in Folge", message)) {
+			Alerts.post(Alerts.Type.STREAK, user, streams + " Streams in Folge"
+					+ (message == null || message.isBlank() ? "" : " – „" + message + "“"));
+		}
+	}
+
+	/** Streamereignis aus dem Twitch-Chat (Abo, Geschenk-Abo, Stream-Serie) in die Liste – Spiel-Thread. */
+	static boolean addEvent(String kind, String id, String user, String title, String message) {
 		Entry e = new Entry();
-		e.id = id.isBlank() ? "streak-" + user + "-" + streams + "-" + System.currentTimeMillis() / 60_000L : "streak-" + id;
-		e.kind = "streak";
+		e.id = id == null || id.isBlank() ? kind + "-" + user + "-" + title + "-" + System.currentTimeMillis() / 60_000L : kind + "-" + id;
+		e.kind = kind;
 		e.user = user;
-		e.reward = "Stream-Serie: " + streams + " Streams in Folge";
+		e.reward = title;
 		e.input = message == null ? "" : message;
 		e.time = System.currentTimeMillis();
-		if (add(e)) {
-			Alerts.post(Alerts.Type.STREAK, user, streams + " Streams in Folge" + (e.input.isBlank() ? "" : " – „" + e.input + "“"));
-		}
+		return add(e);
 	}
 
 	private static boolean add(Entry e) {
@@ -148,8 +154,12 @@ public final class Redemptions {
 		}
 		save();
 		Minecraft mc = Minecraft.getInstance();
-		if (WidgetConfig.get().streamerSound && mc.player != null
-				&& !Alerts.enabled("streak".equals(e.kind) ? Alerts.Type.STREAK : Alerts.Type.REDEEM)) {
+		Alerts.Type t = switch (e.kind == null ? "" : e.kind) {
+			case "streak" -> Alerts.Type.STREAK;
+			case "sub" -> Alerts.Type.SUB;
+			default -> Alerts.Type.REDEEM;
+		};
+		if (WidgetConfig.get().streamerSound && mc.player != null && !Alerts.enabled(t)) {
 			mc.getSoundManager().play(SimpleSoundInstance.forUI(SoundEvents.NOTE_BLOCK_CHIME.value(), 1.5F, 0.8F));
 		}
 		return true;
