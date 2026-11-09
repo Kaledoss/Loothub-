@@ -207,6 +207,19 @@ public final class WidgetConfig {
 	public double pcgOverlayY = 0.0;
 	public int pcgPanelOffsetX = 0;
 	public int pcgPanelOffsetY = 0;
+	/** Streamer-Modus: eigene Menüseite mit Twitch-Konto, Twitch-Chat im Minecraft-Chat und Kanalbelohnungen. */
+	public boolean streamerMode = false;
+	/** Twitch-Chat des eigenen Kanals im Minecraft-Chat anzeigen. */
+	public boolean streamerChat = false;
+	/** Offene Kanalbelohnungen als Liste im HUD. */
+	public boolean streamerHud = true;
+	public boolean streamerHudLocked = false;
+	public double streamerHudX = 1.0;
+	public double streamerHudY = 0.5;
+	/** Höchstens so viele Einträge im HUD. */
+	public int streamerHudRows = 5;
+	/** Ton bei einer neuen Einlösung. */
+	public boolean streamerSound = true;
 	/** Befehls-Leiste gesperrt: Knöpfe und Feld lassen sich nicht verschieben. */
 	public boolean quickPanelLocked = false;
 	/** Verschiebung des Feldes gegenüber der Standardposition unter dem Inventar. */
@@ -279,6 +292,8 @@ public final class WidgetConfig {
 		invHudEnabled = false;
 		musicEnabled = false;
 		pcgEnabled = false;
+		streamerMode = false;
+		streamerChat = false;
 	}
 
 	private static WidgetConfig load() {

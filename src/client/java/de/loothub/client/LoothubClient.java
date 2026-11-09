@@ -127,6 +127,12 @@ public class LoothubClient implements ClientModInitializer {
 		HudElementRegistry.attachElementBefore(VanillaHudElements.CHAT,
 				Identifier.fromNamespaceAndPath(Loothub.MOD_ID, "music"), de.loothub.client.music.MusicWidget::renderHud);
 		de.loothub.client.music.MusicWidget.register();
+
+		// Streamer-Modus: offene Kanalbelohnungen im HUD, Twitch-Chat und Belohnungen im Hintergrund
+		HudElementRegistry.attachElementBefore(VanillaHudElements.CHAT,
+				Identifier.fromNamespaceAndPath(Loothub.MOD_ID, "redemptions"), de.loothub.client.streamer.RedemptionHud::renderHud);
+		de.loothub.client.streamer.RedemptionHud.register();
+		de.loothub.client.streamer.Streamer.apply();
 		de.loothub.client.music.YtMusic.ensure(de.loothub.client.jobs.WidgetConfig.get().musicEnabled);
 
 		// Beim Verlassen des Servers nur speichern – die Job-Sitzung läuft bis zum Schließen des Spiels weiter
@@ -137,6 +143,7 @@ public class LoothubClient implements ClientModInitializer {
 		// Beim Beenden des Spiels die laufende Sitzung noch im Verlauf speichern
 		ClientLifecycleEvents.CLIENT_STOPPING.register(client -> {
 			de.loothub.client.pcg.TwitchChat.stop();
+			de.loothub.client.streamer.Streamer.stopAll();
 			JobTracker.reset();
 			StatsStore.saveIfDirty(true);
 		});

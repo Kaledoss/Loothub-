@@ -640,6 +640,11 @@ public class SettingsScreen extends LoothubScreen {
 				y = card(y, 40, "loothub.settings.pcg_sound", "loothub.settings.pcg_sound.tooltip",
 						() -> c.pcgSound, v -> c.pcgSound = v);
 				pcgFieldW = fieldW;
+				y = card(y, 40, "loothub.settings.streamer", "loothub.settings.streamer.tooltip",
+						() -> c.streamerMode, v -> {
+							c.streamerMode = v;
+							de.loothub.client.streamer.Streamer.apply();
+						});
 
 			}
 				}

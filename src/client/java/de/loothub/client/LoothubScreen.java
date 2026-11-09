@@ -50,6 +50,7 @@ public abstract class LoothubScreen extends Screen {
 		ITEMDEX("loothub.tab.itemdex", Items.NETHER_STAR),
 		COSMETICS("loothub.tab.cosmetics", Items.ARMOR_STAND),
 		ALLTAG("loothub.tab.alltag", Items.CLOCK),
+		STREAMER("loothub.tab.streamer", Items.AMETHYST_CLUSTER),
 		CHANGELOG("loothub.tab.changelog", Items.BOOK),
 		SETTINGS("loothub.tab.settings", Items.COMPARATOR);
 
@@ -59,6 +60,11 @@ public abstract class LoothubScreen extends Screen {
 		Page(String translationKey, Item icon) {
 			this.translationKey = translationKey;
 			this.icon = icon;
+		}
+
+		/** Seite in der Leiste zeigen? „Streamer“ nur bei eingeschaltetem Streamer-Modus. */
+		boolean shown() {
+			return this != STREAMER || de.loothub.client.jobs.WidgetConfig.get().streamerMode;
 		}
 	}
 
@@ -85,6 +91,7 @@ public abstract class LoothubScreen extends Screen {
 			case ITEMDEX -> new ItemdexScreen();
 			case COSMETICS -> new CosmeticsScreen();
 			case ALLTAG -> new AlltagScreen();
+			case STREAMER -> new de.loothub.client.streamer.StreamerScreen();
 			case CHANGELOG -> new ChangelogScreen();
 			case SETTINGS -> new SettingsScreen();
 		});
@@ -169,6 +176,9 @@ public abstract class LoothubScreen extends Screen {
 		}
 		Page hoveredPage = null;
 		for (Page p : Page.values()) {
+			if (!p.shown()) {
+				continue;
+			}
 			boolean selected = p == page;
 			boolean hover = mouseX >= sx && mouseX < sx + sidebarW && mouseY >= ey && mouseY < ey + ENTRY_H;
 			if (hover) {
@@ -215,6 +225,9 @@ public abstract class LoothubScreen extends Screen {
 			int sx = frameX + 4;
 			int ey = frameY + TITLE_H + 4 + 6 + (sidebarW < 60 ? 0 : 16);
 			for (Page p : Page.values()) {
+				if (!p.shown()) {
+					continue;
+				}
 				if (event.x() >= sx && event.x() < sx + sidebarW && event.y() >= ey && event.y() < ey + ENTRY_H) {
 					if (p != page) {
 						open(p);
