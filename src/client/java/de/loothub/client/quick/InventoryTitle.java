@@ -73,10 +73,7 @@ public final class InventoryTitle {
 				AbstractContainerScreenAccessor acc = (AbstractContainerScreenAccessor) s;
 				for (IconButton b : BUTTONS) {
 					if (b.contains(e.x(), e.y(), acc.loothub$leftPos(), acc.loothub$topPos())) {
-						Minecraft mc = Minecraft.getInstance();
-						if (mc.getConnection() != null) {
-							mc.getConnection().sendCommand(b.command());
-						}
+						CommandGuard.send(b.command(), "Inventar-Knopf");
 						return false; // Klick nicht ans Inventar weitergeben
 					}
 				}

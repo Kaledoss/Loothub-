@@ -552,5 +552,6 @@
 	"loothub.offhand.list.blocked": "Gesperrt:",
 	"loothub.offhand.list.allowed": "Erlaubt:",
 	"loothub.offhand.empty": "Keine Items – oben hinzufügen.",
-	"loothub.chatassign.hide": "Solche Nachrichten im Tab „%s“ ausblenden"
+	"loothub.chatassign.hide": "Solche Nachrichten im Tab „%s“ ausblenden",
+	"loothub.command.too_fast": "Loothub: Befehl nicht gesendet – bitte kurz warten"
 }

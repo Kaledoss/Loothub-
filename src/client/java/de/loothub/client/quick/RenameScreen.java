@@ -113,8 +113,8 @@ public class RenameScreen extends Screen {
 	private void send() {
 		String text = box.getValue().strip();
 		Minecraft mc = Minecraft.getInstance();
-		if (!text.isEmpty() && mc.getConnection() != null) {
-			mc.getConnection().sendCommand(command + " " + text);
+		if (!text.isEmpty()) {
+			CommandGuard.send(command + " " + text, "Umbenennen");
 		}
 		onClose();
 	}

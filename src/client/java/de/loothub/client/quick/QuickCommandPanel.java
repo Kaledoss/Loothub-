@@ -89,8 +89,8 @@ public final class QuickCommandPanel {
 			de.loothub.client.LoothubScreen.open(de.loothub.client.LoothubScreen.Page.MERCHANT);
 			return;
 		}
-		if (mc.player != null && mc.getConnection() != null) {
-			mc.getConnection().sendCommand(command.strip().replaceFirst("^/", ""));
+		if (mc.player != null) {
+			CommandGuard.send(command, "Schnellbefehle");
 		}
 	}
 
