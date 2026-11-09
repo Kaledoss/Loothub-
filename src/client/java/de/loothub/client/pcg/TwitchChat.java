@@ -265,9 +265,9 @@ public final class TwitchChat {
 					int at = pm > 0 ? pm : un;
 					if (at > 0 && line.startsWith(":")) {
 						String sender = line.substring(1, line.indexOf('!') > 0 ? line.indexOf('!') : 1);
-						String login = tag(tags, "login");
-						if (!login.isEmpty()) {
-							sender = login;
+						String tagLogin = tag(tags, "login");
+						if (!tagLogin.isEmpty()) {
+							sender = tagLogin;
 						}
 						int textStart = line.indexOf(" :", at);
 						String text = textStart > 0 ? line.substring(textStart + 2) : "";
