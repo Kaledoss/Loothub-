@@ -179,6 +179,7 @@ public class LoothubClient implements ClientModInitializer {
 		de.loothub.client.quick.AfkView.register();
 		de.loothub.client.quick.OtherAfk.register();
 		de.loothub.client.cosmetics.Cosmetics.register();
+		de.loothub.client.cosmetics.CosmeticsServer.register();
 		de.loothub.client.cosmetics.CosmeticEffects.register();
 		de.loothub.client.itemdex.Itemdex.register();
 		de.loothub.client.jobs.TreasureWatcher.register();

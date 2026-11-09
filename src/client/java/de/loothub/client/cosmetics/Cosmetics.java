@@ -86,6 +86,8 @@ public final class Cosmetics {
 	/** Spieler → einfache Werte je Cosmetic (z. B. "wings" → "angel"). */
 	private static volatile Map<String, Map<String, String>> singles = Map.of();
 	private static volatile long lastFetch;
+	/** Zuletzt geladene cosmetics.json (Rückfall, falls der Cosmetics-Server nicht erreichbar ist). */
+	private static volatile String fileJson = "{}";
 	private static volatile boolean loading;
 
 	/** Cosmetics je Render-Zustand (nur für den aktuellen Frame). */
@@ -118,13 +120,8 @@ public final class Cosmetics {
 		HTTP.sendAsync(req, HttpResponse.BodyHandlers.ofString(StandardCharsets.UTF_8)).whenComplete((r, t) -> {
 			try {
 				if (t == null && r.statusCode() == 200) {
-					Map<String, List<String>> skins = new HashMap<>();
-					Map<String, String> auras = new HashMap<>();
-					Map<String, Map<String, String>> single = new HashMap<>();
-					owners = parse(r.body(), skins, auras, single);
-					singles = single;
-					miniMeSkins = skins;
-					auraColors = auras;
+					fileJson = r.body();
+					rebuild();
 				}
 			} catch (RuntimeException e) {
 				Loothub.LOGGER.warn("Cosmetics-Liste nicht lesbar", e);
@@ -132,6 +129,24 @@ public final class Cosmetics {
 				loading = false;
 			}
 		});
+	}
+
+	/** cosmetics.json und die Daten vom Cosmetics-Server zusammenführen (der Server gewinnt je Spieler). */
+	static synchronized void rebuild() {
+		Map<String, List<String>> skins = new HashMap<>();
+		Map<String, String> auras = new HashMap<>();
+		Map<String, Map<String, String>> single = new HashMap<>();
+		Map<String, Set<String>> out;
+		try {
+			out = parse(fileJson, skins, auras, single);
+		} catch (RuntimeException e) {
+			out = new HashMap<>();
+		}
+		CosmeticsServer.mergeInto(out, skins, auras, single);
+		owners = out;
+		singles = single;
+		miniMeSkins = skins;
+		auraColors = auras;
 	}
 
 	/**
@@ -230,40 +245,8 @@ public final class Cosmetics {
 		}
 		Map<String, String> values = new HashMap<>(singles.getOrDefault(key, Map.of()));
 		if (p == net.minecraft.client.Minecraft.getInstance().player) {
-			WidgetConfig cfg = WidgetConfig.get();
 			Set<String> mine = new HashSet<>(set == null ? Set.of() : set);
-			if (cfg.wings != null && !cfg.wings.isBlank()) {
-				values.put(WINGS, cfg.wings);
-				mine.add(WINGS);
-			}
-			if (cfg.miniMeWings != null && !cfg.miniMeWings.replace(",", "").isBlank()) {
-				values.put(MINI_ME_WINGS, cfg.miniMeWings);
-				mine.add(MINI_ME_WINGS);
-			}
-			values.put(AURA_STRENGTH, String.valueOf(cfg.auraStrength));
-			putOwn(mine, values, EYES, cfg.eyeColor);
-			putOwn(mine, values, WING_COLOR, cfg.wingColor);
-			putOwn(mine, values, MINI_WING_COLOR, cfg.miniMeWingColor);
-			putOwn(mine, values, WING_COLOR_OUTER, cfg.wingColorOuter);
-			putOwn(mine, values, MINI_WING_COLOR_OUTER, cfg.miniMeWingColorOuter);
-			putOwn(mine, values, FOOTSTEPS, cfg.footsteps);
-			putOwn(mine, values, PETS, cfg.pets == null || cfg.pets.replace(",", "").isBlank() ? "" : cfg.pets);
-			putOwn(mine, values, MINI_TRAITS, cfg.miniMeTraits == null || cfg.miniMeTraits.replace(",", "").isBlank() ? "" : cfg.miniMeTraits);
-			if (cfg.crown) {
-				mine.add(CROWN);
-			}
-			if (cfg.flyTrail) {
-				mine.add(FLY_TRAIL);
-			}
-			if (cfg.auraLevels) {
-				mine.add(AURA_LEVELS);
-			}
-			if (cfg.riseTrail) {
-				mine.add(RISE_TRAIL);
-			}
-			if (cfg.miniMeEmotes) {
-				mine.add(EMOTES);
-			}
+			ownInto(mine, values);
 			set = mine.isEmpty() ? set : mine;
 		}
 		if (aura != null && !aura.isBlank()) {
@@ -314,6 +297,85 @@ public final class Cosmetics {
 				AURAS.put(state, aura != null && !aura.isBlank() ? aura : "gold");
 			}
 		}
+	}
+
+	/** Eigene Auswahl aus den Einstellungen (Flügel, Augen, Krone …) in Menge und Werte eintragen. */
+	private static void ownInto(Set<String> mine, Map<String, String> values) {
+		WidgetConfig cfg = WidgetConfig.get();
+		if (cfg.wings != null && !cfg.wings.isBlank()) {
+			values.put(WINGS, cfg.wings);
+			mine.add(WINGS);
+		}
+		if (cfg.miniMeWings != null && !cfg.miniMeWings.replace(",", "").isBlank()) {
+			values.put(MINI_ME_WINGS, cfg.miniMeWings);
+			mine.add(MINI_ME_WINGS);
+		}
+		values.put(AURA_STRENGTH, String.valueOf(cfg.auraStrength));
+		putOwn(mine, values, EYES, cfg.eyeColor);
+		putOwn(mine, values, WING_COLOR, cfg.wingColor);
+		putOwn(mine, values, MINI_WING_COLOR, cfg.miniMeWingColor);
+		putOwn(mine, values, WING_COLOR_OUTER, cfg.wingColorOuter);
+		putOwn(mine, values, MINI_WING_COLOR_OUTER, cfg.miniMeWingColorOuter);
+		putOwn(mine, values, FOOTSTEPS, cfg.footsteps);
+		putOwn(mine, values, PETS, cfg.pets == null || cfg.pets.replace(",", "").isBlank() ? "" : cfg.pets);
+		putOwn(mine, values, MINI_TRAITS, cfg.miniMeTraits == null || cfg.miniMeTraits.replace(",", "").isBlank() ? "" : cfg.miniMeTraits);
+		if (cfg.crown) {
+			mine.add(CROWN);
+		}
+		if (cfg.flyTrail) {
+			mine.add(FLY_TRAIL);
+		}
+		if (cfg.auraLevels) {
+			mine.add(AURA_LEVELS);
+		}
+		if (cfg.riseTrail) {
+			mine.add(RISE_TRAIL);
+		}
+		if (cfg.miniMeEmotes) {
+			mine.add(EMOTES);
+		}
+	}
+
+	/**
+	 * Eigene Cosmetics aus den Einstellungen als Profil für den Cosmetics-Server ({set, values, skins}), sortiert,
+	 * damit gleiche Auswahl immer gleich aussieht. null = keine Cosmetics.
+	 */
+	static JsonObject ownProfile() {
+		WidgetConfig cfg = WidgetConfig.get();
+		Set<String> set = new java.util.TreeSet<>();
+		Map<String, String> values = new java.util.TreeMap<>();
+		List<String> skins = ownMiniMes();
+		if (skins != null) {
+			set.add(MINI_ME);
+		}
+		if (cfg.auraColor != null && !cfg.auraColor.isBlank()) {
+			set.add(AURA);
+			values.put(AURA, cfg.auraColor.strip());
+		}
+		ownInto(set, values);
+		set.remove(AURA_STRENGTH);
+		if (set.isEmpty()) {
+			return null;
+		}
+		JsonObject o = new JsonObject();
+		com.google.gson.JsonArray sa = new com.google.gson.JsonArray();
+		set.forEach(sa::add);
+		o.add("set", sa);
+		JsonObject vo = new JsonObject();
+		values.forEach(vo::addProperty);
+		o.add("values", vo);
+		if (skins != null) {
+			com.google.gson.JsonArray sk = new com.google.gson.JsonArray();
+			for (String sv : skins) {
+				if (sv == null) {
+					sk.add(com.google.gson.JsonNull.INSTANCE);
+				} else {
+					sk.add(sv);
+				}
+			}
+			o.add("skins", sk);
+		}
+		return o;
 	}
 
 	private static void putOwn(Set<String> mine, Map<String, String> values, String cosmetic, String value) {
