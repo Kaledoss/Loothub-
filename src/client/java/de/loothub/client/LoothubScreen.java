@@ -43,6 +43,7 @@ public abstract class LoothubScreen extends Screen {
 	/** Die Seiten in der Kategorie-Leiste. */
 	public enum Page {
 		HISTORY("loothub.tab.history", Items.WRITABLE_BOOK),
+		FISHING("loothub.tab.fishing", Items.FISHING_ROD),
 		MARKET("loothub.tab.market", Items.EMERALD),
 		MERCHANT("loothub.tab.merchant", Items.COMPOSTER),
 		STATS("loothub.tab.stats", Items.FILLED_MAP),
@@ -84,6 +85,7 @@ public abstract class LoothubScreen extends Screen {
 	public static void open(Page page) {
 		Minecraft.getInstance().setScreen(switch (page) {
 			case HISTORY -> new JobHistoryScreen();
+			case FISHING -> new de.loothub.client.jobs.FishingHistoryScreen();
 			case MARKET -> new MarketScreen();
 			case MERCHANT -> new MerchantScreen();
 			case STATS -> new StatsScreen();
