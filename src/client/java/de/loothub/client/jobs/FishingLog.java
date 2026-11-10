@@ -38,6 +38,8 @@ public final class FishingLog {
 		public int fishColor = -1;
 		public int sizeColor = -1;
 		public int rarityColor = -1;
+		/** Biom am Schwimmer (sonst am Spieler), z. B. "minecraft:warm_ocean"; "" = unbekannt (ältere Einträge). */
+		public String biome = "";
 	}
 
 	private static final int MAX = 50_000;
@@ -151,6 +153,7 @@ public final class FishingLog {
 		c.fishColor = colorOf(message, fish);
 		c.sizeColor = size.isEmpty() ? -1 : colorOf(message, size);
 		c.rarityColor = colorOf(message, rarity);
+		c.biome = currentBiome();
 		List<Catch> l = all();
 		l.add(c);
 		if (l.size() > MAX) {
@@ -158,6 +161,44 @@ public final class FishingLog {
 		}
 		version++;
 		save();
+	}
+
+	/** Biom am Schwimmer – dort beißt der Fisch –, sonst am Spieler. */
+	private static String currentBiome() {
+		net.minecraft.client.Minecraft mc = net.minecraft.client.Minecraft.getInstance();
+		if (mc.level == null || mc.player == null) {
+			return "";
+		}
+		net.minecraft.core.BlockPos pos = mc.player.fishing != null ? mc.player.fishing.blockPosition() : mc.player.blockPosition();
+		// ResourceKey.toString(): "ResourceKey[minecraft:worldgen/biome / minecraft:warm_ocean]"
+		return mc.level.getBiome(pos).unwrapKey().map(k -> {
+			String t = k.toString();
+			int a = t.lastIndexOf(" / ");
+			int b = t.lastIndexOf(']');
+			return a >= 0 && b > a ? t.substring(a + 3, b).strip() : "";
+		}).orElse("");
+	}
+
+	/** Anzeigename eines Bioms (übersetzt, sonst aus der ID gebildet). */
+	public static String biomeName(String id) {
+		if (id == null || id.isBlank()) {
+			return "–";
+		}
+		int colon = id.indexOf(':');
+		String ns = colon > 0 ? id.substring(0, colon) : "minecraft";
+		String path = colon > 0 ? id.substring(colon + 1) : id;
+		String key = "biome." + ns + "." + path.replace('/', '.');
+		if (net.minecraft.client.resources.language.I18n.exists(key)) {
+			return net.minecraft.client.resources.language.I18n.get(key);
+		}
+		String[] words = path.substring(path.lastIndexOf('/') + 1).split("_");
+		StringBuilder sb = new StringBuilder();
+		for (String w : words) {
+			if (!w.isEmpty()) {
+				sb.append(sb.isEmpty() ? "" : " ").append(Character.toUpperCase(w.charAt(0))).append(w.substring(1));
+			}
+		}
+		return sb.toString();
 	}
 
 	/** Farbe, in der der Server diesen Textteil anzeigt. */

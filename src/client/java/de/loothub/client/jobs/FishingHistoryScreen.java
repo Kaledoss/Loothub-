@@ -59,6 +59,21 @@ public class FishingHistoryScreen extends LoothubScreen {
 		String best = "";
 		int bestColor = -1;
 		long last;
+		final Map<String, Integer> biomes = new LinkedHashMap<>();
+
+		/** Häufigstes Biom dieses Fisches (+ Anzahl weiterer). */
+		String topBiome() {
+			String best = "";
+			int n = -1;
+			for (Map.Entry<String, Integer> e : biomes.entrySet()) {
+				if (e.getValue() > n) {
+					n = e.getValue();
+					best = e.getKey();
+				}
+			}
+			String name = FishingLog.biomeName(best);
+			return biomes.size() > 1 ? name + " +" + (biomes.size() - 1) : name;
+		}
 	}
 
 	public FishingHistoryScreen() {
@@ -191,6 +206,9 @@ public class FishingHistoryScreen extends LoothubScreen {
 			});
 			g.count++;
 			g.last = Math.max(g.last, c.t);
+			if (c.biome != null && !c.biome.isBlank()) {
+				g.biomes.merge(c.biome, 1, Integer::sum);
+			}
 			if (g.best.isEmpty() || FishingLog.rank(c.rarity) > FishingLog.rank(g.best)) {
 				g.best = c.rarity;
 				g.bestColor = c.rarityColor;
@@ -303,19 +321,27 @@ public class FishingHistoryScreen extends LoothubScreen {
 		scroll = Mth.clamp(scroll, 0, Math.max(0, total - visible));
 		// Spalten
 		int c1 = cl + 4;
-		int c2 = byFish ? cl + cw * 45 / 100 : cl + 92;
-		int c3 = byFish ? cl + cw * 60 / 100 : cl + cw * 60 / 100;
-		int c4 = byFish ? cl + cw * 80 / 100 : cl + cw * 78 / 100;
+		int c2, c3, c4, c5;
 		if (byFish) {
+			c2 = cl + cw * 34 / 100;
+			c3 = cl + cw * 44 / 100;
+			c4 = cl + cw * 60 / 100;
+			c5 = cl + cw * 82 / 100;
 			head(g, "loothub.fishing.col.fish", c1);
 			head(g, "loothub.fishing.col.count", c2);
 			head(g, "loothub.fishing.col.best", c3);
-			head(g, "loothub.fishing.col.last", c4);
+			head(g, "loothub.fishing.col.biome", c4);
+			head(g, "loothub.fishing.col.last", c5);
 		} else {
+			c2 = cl + 92;
+			c3 = cl + cw * 48 / 100;
+			c4 = cl + cw * 61 / 100;
+			c5 = cl + cw * 76 / 100;
 			head(g, "loothub.fishing.col.time", c1);
 			head(g, "loothub.fishing.col.fish", c2);
 			head(g, "loothub.fishing.col.size", c3);
 			head(g, "loothub.fishing.col.rarity", c4);
+			head(g, "loothub.fishing.col.biome", c5);
 		}
 		if (total == 0) {
 			Component m = Component.translatable("loothub.fishing.empty");
@@ -335,14 +361,16 @@ public class FishingHistoryScreen extends LoothubScreen {
 				g.drawString(font, ellipsize(gr.fish, c2 - c1 - 6), c1, y + 2, argb(gr.fishColor, TEXT), false);
 				g.drawString(font, gr.count + "×", c2, y + 2, GOLD, false);
 				g.drawString(font, ellipsize(gr.best, c4 - c3 - 6), c3, y + 2, argb(gr.bestColor, MUTED), false);
-				g.drawString(font, TIME.format(Instant.ofEpochMilli(gr.last).atZone(zone)), c4, y + 2, FAINT, false);
+				g.drawString(font, ellipsize(gr.biomes.isEmpty() ? "–" : gr.topBiome(), c5 - c4 - 6), c4, y + 2, MUTED, false);
+				g.drawString(font, ellipsize(TIME.format(Instant.ofEpochMilli(gr.last).atZone(zone)), cr - c5 - 4), c5, y + 2, FAINT, false);
 			} else {
 				FishingLog.Catch c = shown.get(scroll + i);
 				g.drawString(font, TIME.format(Instant.ofEpochMilli(c.t).atZone(zone)), c1, y + 2, FAINT, false);
 				g.drawString(font, ellipsize(c.fish, c3 - c2 - 6), c2, y + 2, argb(c.fishColor, TEXT), false);
 				g.drawString(font, ellipsize(c.size.isEmpty() ? "–" : c.size, c4 - c3 - 6), c3, y + 2,
 						argb(c.sizeColor, MUTED), false);
-				g.drawString(font, ellipsize(c.rarity, cr - c4 - 4), c4, y + 2, argb(c.rarityColor, MUTED), false);
+				g.drawString(font, ellipsize(c.rarity, c5 - c4 - 6), c4, y + 2, argb(c.rarityColor, MUTED), false);
+				g.drawString(font, ellipsize(FishingLog.biomeName(c.biome), cr - c5 - 4), c5, y + 2, MUTED, false);
 			}
 		}
 		if (total > visible) {
