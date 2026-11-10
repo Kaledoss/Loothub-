@@ -253,21 +253,46 @@ public class FishingHistoryScreen extends LoothubScreen {
 	}
 
 	private void renderKpis(GuiGraphics g) {
-		int w = (cw - 12) / 3;
+		int gap = 6;
+		int w = (cw - 3 * gap) / 4;
 		int h = 30;
+		int x1 = cl, x2 = cl + w + gap, x3 = cl + 2 * (w + gap), x4 = cl + 3 * (w + gap);
 		// Fänge
-		card(g, cl, kpiY, w, h);
-		g.drawString(font, Component.translatable("loothub.fishing.kpi.catches"), cl + 6, kpiY + 5, MUTED, false);
-		g.drawString(font, String.valueOf(shown.size()), cl + 6, kpiY + 17, GOLD, false);
+		card(g, x1, kpiY, w, h);
+		g.drawString(font, Component.translatable("loothub.fishing.kpi.catches"), x1 + 6, kpiY + 5, MUTED, false);
+		g.drawString(font, String.valueOf(shown.size()), x1 + 6, kpiY + 17, GOLD, false);
 		// Arten
-		int x2 = cl + w + 6;
 		card(g, x2, kpiY, w, h);
-		g.drawString(font, Component.translatable("loothub.fishing.kpi.kinds"), x2 + 6, kpiY + 5, MUTED, false);
+		g.drawString(font, ellipsize(Component.translatable("loothub.fishing.kpi.kinds").getString(), w - 12), x2 + 6, kpiY + 5, MUTED, false);
 		g.drawString(font, String.valueOf(groups.size()), x2 + 6, kpiY + 17, GOLD, false);
-		// Bester Fang
-		int x3 = cl + 2 * (w + 6);
-		card(g, x3, kpiY, cr - x3, h);
-		g.drawString(font, Component.translatable("loothub.fishing.kpi.best"), x3 + 6, kpiY + 5, MUTED, false);
+		// Am meisten gefangen in
+		card(g, x3, kpiY, w, h);
+		g.drawString(font, ellipsize(Component.translatable("loothub.fishing.kpi.biome").getString(), w - 12), x3 + 6, kpiY + 5, MUTED, false);
+		Map<String, Integer> biomes = new LinkedHashMap<>();
+		for (FishingLog.Catch c : shown) {
+			if (c.biome != null && !c.biome.isBlank()) {
+				biomes.merge(c.biome, 1, Integer::sum);
+			}
+		}
+		String topBiome = null;
+		int topCount = 0;
+		for (Map.Entry<String, Integer> e : biomes.entrySet()) {
+			if (e.getValue() > topCount) {
+				topCount = e.getValue();
+				topBiome = e.getKey();
+			}
+		}
+		if (topBiome == null) {
+			g.drawString(font, "–", x3 + 6, kpiY + 17, FAINT, false);
+		} else {
+			String count = " " + topCount + "×";
+			String name = ellipsize(FishingLog.biomeName(topBiome), w - 12 - font.width(count));
+			g.drawString(font, name, x3 + 6, kpiY + 17, TEXT, false);
+			g.drawString(font, count, x3 + 6 + font.width(name), kpiY + 17, GOLD, false);
+		}
+		// Seltenster Fang
+		card(g, x4, kpiY, cr - x4, h);
+		g.drawString(font, Component.translatable("loothub.fishing.kpi.best"), x4 + 6, kpiY + 5, MUTED, false);
 		FishingLog.Catch best = null;
 		for (FishingLog.Catch c : shown) {
 			if (best == null || FishingLog.rank(c.rarity) > FishingLog.rank(best.rarity)) {
@@ -275,11 +300,11 @@ public class FishingHistoryScreen extends LoothubScreen {
 			}
 		}
 		if (best == null) {
-			g.drawString(font, "–", x3 + 6, kpiY + 17, FAINT, false);
+			g.drawString(font, "–", x4 + 6, kpiY + 17, FAINT, false);
 		} else {
 			String r = best.rarity + " ";
-			g.drawString(font, r, x3 + 6, kpiY + 17, argb(best.rarityColor, GOLD), false);
-			g.drawString(font, ellipsize(best.fish, cr - x3 - 12 - font.width(r)), x3 + 6 + font.width(r), kpiY + 17,
+			g.drawString(font, r, x4 + 6, kpiY + 17, argb(best.rarityColor, GOLD), false);
+			g.drawString(font, ellipsize(best.fish, cr - x4 - 12 - font.width(r)), x4 + 6 + font.width(r), kpiY + 17,
 					argb(best.fishColor, TEXT), false);
 		}
 	}

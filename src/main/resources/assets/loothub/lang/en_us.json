@@ -636,5 +636,6 @@
 	"loothub.fishing.empty": "Nothing caught in this period",
 	"loothub.fishing.clear": "Clear fishing log",
 	"loothub.fishing.clear.question": "Really delete the whole fishing log? This cannot be undone.",
-	"loothub.fishing.col.biome": "Biome"
+	"loothub.fishing.col.biome": "Biome",
+	"loothub.fishing.kpi.biome": "Most caught in"
 }

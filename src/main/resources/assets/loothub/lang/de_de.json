@@ -636,5 +636,6 @@
 	"loothub.fishing.empty": "In diesem Zeitraum wurde nichts gefangen",
 	"loothub.fishing.clear": "Angelverlauf löschen",
 	"loothub.fishing.clear.question": "Den kompletten Angelverlauf wirklich löschen? Das lässt sich nicht rückgängig machen.",
-	"loothub.fishing.col.biome": "Biom"
+	"loothub.fishing.col.biome": "Biom",
+	"loothub.fishing.kpi.biome": "Am meisten gefangen in"
 }
