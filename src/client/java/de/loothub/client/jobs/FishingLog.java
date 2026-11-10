@@ -106,6 +106,11 @@ public final class FishingLog {
 		de.loothub.client.AsyncSave.write(file(), GSON.toJson(all()));
 	}
 
+	/** Bekannte Seltenheiten in Reihenfolge (klein geschrieben). */
+	public static List<String> knownRarities() {
+		return ORDER;
+	}
+
 	/** Rang der Seltenheit (0 = gewöhnlich/unbekannt). */
 	public static int rank(String rarity) {
 		int i = ORDER.indexOf(rarity == null ? "" : rarity.strip().toLowerCase(Locale.ROOT));
@@ -161,6 +166,7 @@ public final class FishingLog {
 		}
 		version++;
 		save();
+		FishAlert.post(c);
 	}
 
 	/** Biom am Schwimmer – dort beißt der Fisch –, sonst am Spieler. */

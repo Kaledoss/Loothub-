@@ -196,8 +196,8 @@ public final class JobTracker {
 				if (mc.player != null) {
 					mc.player.displayClientMessage(net.minecraft.network.chat.Component.translatable("loothub.treasure.chance")
 							.withStyle(net.minecraft.ChatFormatting.GOLD), false);
-					mc.getSoundManager().play(net.minecraft.client.resources.sounds.SimpleSoundInstance.forUI(
-							net.minecraft.sounds.SoundEvents.PLAYER_LEVELUP, 1.4f));
+					de.loothub.client.Sounds.play(de.loothub.client.Sounds.Group.JOBS,
+							net.minecraft.sounds.SoundEvents.PLAYER_LEVELUP, 1.4F, 0.25F);
 				}
 			});
 		}

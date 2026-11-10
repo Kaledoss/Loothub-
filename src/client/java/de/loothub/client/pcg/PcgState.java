@@ -125,7 +125,7 @@ public final class PcgState {
 			GermanNames.of(name); // deutschen Namen schon mal nachschlagen
 			Minecraft mc = Minecraft.getInstance();
 			if (de.loothub.client.jobs.WidgetConfig.get().pcgSound) {
-				mc.execute(() -> mc.getSoundManager().play(SimpleSoundInstance.forUI(SoundEvents.NOTE_BLOCK_PLING, 1.6f)));
+				de.loothub.client.Sounds.play(de.loothub.client.Sounds.Group.PCG, SoundEvents.NOTE_BLOCK_PLING, 1.6F, 0.25F);
 			}
 			return;
 		}

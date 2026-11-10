@@ -110,6 +110,7 @@ public class LoothubClient implements ClientModInitializer {
 		de.loothub.client.quick.LookInfo.register();
 		de.loothub.client.quick.RarityFrames.register();
 		de.loothub.client.quick.Timers.register();
+		de.loothub.client.Sounds.register();
 		de.loothub.client.quick.CustomChat.register();
 		de.loothub.client.cosmetics.Life.register();
 		de.loothub.client.quick.ShaderPack.install();
@@ -136,6 +137,10 @@ public class LoothubClient implements ClientModInitializer {
 		HudElementRegistry.attachElementBefore(VanillaHudElements.CHAT,
 				Identifier.fromNamespaceAndPath(Loothub.MOD_ID, "stream_alerts"), de.loothub.client.streamer.Alerts::renderHud);
 		de.loothub.client.streamer.Streamer.apply();
+		// Fang-Einblendung (gefangener Fisch), im Chat verschiebbar
+		HudElementRegistry.attachElementBefore(VanillaHudElements.CHAT,
+				Identifier.fromNamespaceAndPath(Loothub.MOD_ID, "fish_alert"), de.loothub.client.jobs.FishAlert::renderHud);
+		de.loothub.client.jobs.FishAlert.register();
 		de.loothub.client.music.YtMusic.ensure(de.loothub.client.jobs.WidgetConfig.get().musicEnabled);
 
 		// Beim Verlassen des Servers nur speichern – die Job-Sitzung läuft bis zum Schließen des Spiels weiter

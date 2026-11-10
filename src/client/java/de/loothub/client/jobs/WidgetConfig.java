@@ -207,6 +207,19 @@ public final class WidgetConfig {
 	public double pcgOverlayY = 0.0;
 	public int pcgPanelOffsetX = 0;
 	public int pcgPanelOffsetY = 0;
+	/** Timer-Ton: "bell" (Glocke), "gong" oder "alarm" (alter Wecker). */
+	public String timerSoundType = "bell";
+	/** Lautstärke je Ton-Bereich in Prozent (siehe Sounds.Group), fehlend = 100. */
+	public java.util.Map<String, Integer> soundVolumes = new java.util.HashMap<>();
+	/** Lage der Twitch-Einblendungen (Anteil, Standard oben Mitte). */
+	public double streamAlertX = 0.5;
+	public double streamAlertY = 0.03;
+	/** Fang-Einblendung: gefangener Fisch im Stil der Twitch-Einblendungen. */
+	public boolean fishAlert = true;
+	public double fishAlertX = 0.5;
+	public double fishAlertY = 0.2;
+	/** Seltenheiten (klein geschrieben), die nicht eingeblendet werden. */
+	public java.util.List<String> fishAlertOff = new java.util.ArrayList<>();
 	/** Krönchen vor Loothub-Nutzern in der Tab-Liste. */
 	public boolean loothubCrown = true;
 	/** Verbundene Texturen (Glas ohne Ränder zwischen gleichen Blöcken). */
@@ -303,6 +316,7 @@ public final class WidgetConfig {
 		streamerChat = false;
 		connectedTextures = false;
 		loothubCrown = false;
+		fishAlert = false;
 	}
 
 	private static WidgetConfig load() {
@@ -368,6 +382,15 @@ public final class WidgetConfig {
 					if (c.miniMes.isEmpty() && c.miniMeSkin != null && !c.miniMeSkin.isBlank()) {
 						c.miniMes.add(c.miniMeSkin.strip());
 						c.miniMeSkin = "";
+					}
+					if (c.soundVolumes == null) {
+						c.soundVolumes = new java.util.HashMap<>();
+					}
+					if (c.fishAlertOff == null) {
+						c.fishAlertOff = new java.util.ArrayList<>();
+					}
+					if (c.timerSoundType == null) {
+						c.timerSoundType = "bell";
 					}
 					if (c.streamerAlertsOff == null) {
 						c.streamerAlertsOff = new java.util.ArrayList<>();

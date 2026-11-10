@@ -141,7 +141,7 @@ public final class ToolProtection {
 			return;
 		}
 		warnedFor = st.copy();
-		mc.getSoundManager().play(SimpleSoundInstance.forUI(SoundEvents.NOTE_BLOCK_BASS, 0.7f));
+		de.loothub.client.Sounds.play(de.loothub.client.Sounds.Group.PROTECT, SoundEvents.NOTE_BLOCK_BASS, 0.7F, 0.25F);
 		mc.player.displayClientMessage(Component.literal("⚠ " + st.getHoverName().getString() + " fast kaputt ("
 				+ percentText(st) + ", " + remaining(st) + " übrig) – Werkzeugschutz aktiv").withStyle(ChatFormatting.GOLD), true);
 	}

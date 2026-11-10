@@ -47,7 +47,7 @@ public final class DropProtection {
 		if (mc.player != null) {
 			mc.gui.setOverlayMessage(Component.translatable("loothub.drop_protection.hint", st.getHoverName())
 					.withStyle(ChatFormatting.GOLD), false);
-			mc.getSoundManager().play(SimpleSoundInstance.forUI(SoundEvents.NOTE_BLOCK_HAT.value(), 1.6F, 0.5F));
+			de.loothub.client.Sounds.play(de.loothub.client.Sounds.Group.PROTECT, SoundEvents.NOTE_BLOCK_HAT, 1.6F, 0.5F);
 		}
 		return false;
 	}

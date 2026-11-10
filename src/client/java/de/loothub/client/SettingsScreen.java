@@ -77,6 +77,7 @@ public class SettingsScreen extends LoothubScreen {
 		PACK("loothub.settings.tab.pack"),
 		INVENTORY("loothub.settings.tab.inventory"),
 		JOBS("loothub.settings.tab.jobs"),
+		SOUNDS("loothub.settings.tab.sounds"),
 		EXTRAS("loothub.settings.tab.extras");
 
 		final String key;
@@ -108,6 +109,7 @@ public class SettingsScreen extends LoothubScreen {
 
 	@Override
 	protected void initPage() {
+		pickButton = null;
 		cards.clear();
 		checks.clear();
 		buttons.clear();
@@ -197,6 +199,14 @@ public class SettingsScreen extends LoothubScreen {
 				y = versionY + 50;
 				y = card(y, 40, "loothub.settings.update_check", "loothub.settings.update_check.tooltip",
 						() -> c.updateCheck, v -> c.updateCheck = v);
+				{
+					int hY = y;
+					int hDescX = cl + labelW + 12;
+					buttons.add(addRenderableWidget(Button.builder(Component.translatable("loothub.settings.hud_layout.open"),
+							b -> minecraft.setScreen(new HudLayoutScreen(this)))
+							.bounds(hDescX, hY + 24, Math.min(160, cr - 8 - hDescX), 16).build()));
+					y = cardNoToggle(hY, 46, "loothub.settings.hud_layout", "loothub.settings.hud_layout.tooltip");
+				}
 				y = card(y, 40, "loothub.settings.tooltip_prices", "loothub.settings.tooltip_prices.tooltip",
 						() -> c.tooltipPrices, v -> c.tooltipPrices = v);
 				y = card(y, 40, "loothub.settings.stats", "loothub.settings.stats.tooltip",
@@ -533,6 +543,31 @@ public class SettingsScreen extends LoothubScreen {
 				}
 			}
 			case JOBS -> {
+				{
+					// Fang-Einblendung: an/aus, Seltenheiten als Kästchen, Test und Verschieben
+					int fY = y;
+					int fDescX = cl + labelW + 12;
+					int fW = Math.min(240, cr - 8 - fDescX);
+					int fHalf = (fW - 4) / 2;
+					buttons.add(addRenderableWidget(Button.builder(Component.translatable("loothub.streamer.alert.test"),
+							b -> de.loothub.client.jobs.FishAlert.test()).bounds(fDescX, fY + 34, fHalf, 16).build()));
+					buttons.add(addRenderableWidget(Button.builder(Component.translatable("loothub.settings.fish_alert.move"),
+							b -> minecraft.setScreen(HudLayoutScreen.select(this, "loothub.hud.fish")))
+							.bounds(fDescX + fHalf + 4, fY + 34, fHalf, 16).build()));
+					List<String> rar = de.loothub.client.jobs.FishAlert.rarities();
+					int fCols = 4;
+					int fColW = (cr - 8 - fDescX) / fCols;
+					for (int i = 0; i < rar.size(); i++) {
+						String k = rar.get(i);
+						String label = k.isEmpty() ? k : Character.toUpperCase(k.charAt(0)) + k.substring(1);
+						checks.add(new Check(fDescX + (i % fCols) * fColW, fY + 56 + (i / fCols) * 14, fColW - 4, label,
+								() -> de.loothub.client.jobs.FishAlert.shows(k),
+								v -> de.loothub.client.jobs.FishAlert.setShows(k, v)));
+					}
+					int fRows = (rar.size() + fCols - 1) / fCols;
+					y = card(fY, 60 + fRows * 14, "loothub.settings.fish_alert", "loothub.settings.fish_alert.tooltip",
+							() -> c.fishAlert, v -> c.fishAlert = v);
+				}
 				// Job-Widget: Schalter + zwei Knöpfe unter der Beschreibung + Kästchen für jede Zeile
 				int jobY = y;
 				y = card(jobY, 64 + ((JobWidget.ROW_IDS.size() + 3) / 4) * 14, "loothub.settings.section.job_widget", "loothub.settings.job_widget.tooltip",
@@ -589,6 +624,52 @@ public class SettingsScreen extends LoothubScreen {
 				}
 				y = card(y, 40, "loothub.settings.market_sales", "loothub.settings.market_sales.tooltip",
 						() -> c.marketSales, v -> c.marketSales = v);
+			}
+			case SOUNDS -> {
+				int descX = cl + labelW + 12;
+				int sW = Math.min(320, cr - 8 - descX);
+				int halfW = (sW - 4) / 2;
+				de.loothub.client.Sounds.Group[] groups = de.loothub.client.Sounds.Group.values();
+				int volY = y;
+				for (int i = 0; i < groups.length; i++) {
+					de.loothub.client.Sounds.Group grp = groups[i];
+					int sx = descX + (i % 2) * (halfW + 4);
+					int sy = volY + 30 + (i / 2) * 20;
+					buttons.add(addRenderableWidget(new net.minecraft.client.gui.components.AbstractSliderButton(
+							sx, sy, halfW, 16, Component.empty(), de.loothub.client.Sounds.volume(grp)) {
+						{
+							updateMessage();
+						}
+
+						@Override
+						protected void updateMessage() {
+							setMessage(Component.translatable(grp.key()).append(": " + (int) Math.round(value * 100) + " %"));
+						}
+
+						@Override
+						protected void applyValue() {
+							de.loothub.client.Sounds.setVolume(grp, (int) Math.round(value * 100));
+						}
+					}));
+				}
+				y = cardNoToggle(volY, 34 + ((groups.length + 1) / 2) * 20, "loothub.settings.sound_volume",
+						"loothub.settings.sound_volume.tooltip");
+				// Timer-Ton: Auswahl (Dropdown) + Anhören
+				int tY = y;
+				Button pick = addRenderableWidget(Button.builder(timerSoundLabel(), b -> {
+					openPicker(b, de.loothub.client.Sounds.TIMER_SOUNDS, "loothub.sound.timer.", v -> {
+						WidgetConfig.get().timerSoundType = v;
+						WidgetConfig.get().save();
+						b.setMessage(timerSoundLabel());
+						de.loothub.client.Sounds.timer(v);
+					});
+				}).bounds(descX, tY + 30, halfW, 16).build());
+				buttons.add(pick);
+				buttons.add(addRenderableWidget(Button.builder(Component.translatable("loothub.settings.sound.listen"),
+						b -> de.loothub.client.Sounds.timer(WidgetConfig.get().timerSoundType))
+						.bounds(descX + halfW + 4, tY + 30, halfW, 16).build()));
+				y = card(tY, 52, "loothub.settings.timer_sound", "loothub.settings.timer_sound.tooltip",
+						() -> c.timerSound, v -> c.timerSound = v);
 			}
 			case EXTRAS -> {
 				int descX = cl + labelW + 12;
@@ -801,6 +882,63 @@ public class SettingsScreen extends LoothubScreen {
 		return y + h + GAP;
 	}
 
+	// ------------------------------------------------------------------ Auswahlliste (Dropdown)
+
+	private static final int PICK_ROW = 14;
+	private Button pickButton;
+	private String[] pickOptions;
+	private String pickKeyPrefix;
+	private Consumer<String> pickSet;
+
+	private static Component timerSoundLabel() {
+		return Component.translatable("loothub.settings.timer_sound.pick")
+				.append(Component.translatable("loothub.sound.timer." + WidgetConfig.get().timerSoundType)).append(" ▾");
+	}
+
+	private void openPicker(Button b, String[] options, String keyPrefix, Consumer<String> set) {
+		if (pickButton == b) {
+			pickButton = null;
+			return;
+		}
+		pickButton = b;
+		pickOptions = options;
+		pickKeyPrefix = keyPrefix;
+		pickSet = set;
+	}
+
+	private void renderPicker(GuiGraphics g, int mx, int my) {
+		if (pickButton == null || !pickButton.visible) {
+			return;
+		}
+		g.nextStratum();
+		int x = pickButton.getX(), y = pickButton.getY() + pickButton.getHeight(), w = pickButton.getWidth();
+		g.fill(x, y, x + w, y + pickOptions.length * PICK_ROW + 2, 0xF0120A0C);
+		g.fill(x, y, x + w, y + 1, 0xFFE23B3B);
+		for (int i = 0; i < pickOptions.length; i++) {
+			int ry = y + 1 + i * PICK_ROW;
+			boolean hover = mx >= x && mx < x + w && my >= ry && my < ry + PICK_ROW;
+			if (hover) {
+				g.fill(x + 1, ry, x + w - 1, ry + PICK_ROW, 0x30FFFFFF);
+			}
+			g.drawString(font, Component.translatable(pickKeyPrefix + pickOptions[i]), x + 6, ry + 3, hover ? 0xFFFFFFFF : TEXT, false);
+		}
+	}
+
+	/** Klick in die offene Auswahlliste: Wahl übernehmen. true = Klick verbraucht. */
+	private boolean clickPicker(double mx, double my) {
+		if (pickButton == null) {
+			return false;
+		}
+		int x = pickButton.getX(), y = pickButton.getY() + pickButton.getHeight(), w = pickButton.getWidth();
+		Button b = pickButton;
+		pickButton = null;
+		if (mx >= x && mx < x + w && my >= y + 1 && my < y + 1 + pickOptions.length * PICK_ROW) {
+			pickSet.accept(pickOptions[(int) ((my - y - 1) / PICK_ROW)]);
+			return true;
+		}
+		return mx >= b.getX() && mx < b.getX() + b.getWidth() && my >= b.getY() && my < b.getY() + b.getHeight();
+	}
+
 	private int card(int y, int h, String titleKey, String descKey, BooleanSupplier get, Consumer<Boolean> set) {
 		int tx = cl + 8 + (labelW - Toggle.W) / 2;
 		Toggle t = new Toggle(tx, y + 20, get, set);
@@ -930,6 +1068,8 @@ public class SettingsScreen extends LoothubScreen {
 		}
 		g.disableScissor();
 
+		renderPicker(g, mouseX, mouseY);
+
 		// Scrollleiste
 		int max = maxScroll();
 		if (max > 0) {
@@ -1008,6 +1148,9 @@ public class SettingsScreen extends LoothubScreen {
 
 	@Override
 	public boolean mouseClicked(MouseButtonEvent event, boolean doubleClick) {
+		if (clickPicker(event.x(), event.y())) {
+			return true;
+		}
 		searchFocused = searchBox != null && searchBox.isMouseOver(event.x(), event.y());
 		if (super.mouseClicked(event, doubleClick)) {
 			return true;

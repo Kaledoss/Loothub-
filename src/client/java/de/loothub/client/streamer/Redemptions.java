@@ -160,7 +160,7 @@ public final class Redemptions {
 			default -> Alerts.Type.REDEEM;
 		};
 		if (WidgetConfig.get().streamerSound && mc.player != null && !Alerts.enabled(t)) {
-			mc.getSoundManager().play(SimpleSoundInstance.forUI(SoundEvents.NOTE_BLOCK_CHIME.value(), 1.5F, 0.8F));
+			de.loothub.client.Sounds.play(de.loothub.client.Sounds.Group.STREAM, SoundEvents.NOTE_BLOCK_CHIME, 1.5F, 0.8F);
 		}
 		return true;
 	}

@@ -143,8 +143,7 @@ public final class Timers {
 				Component.literal(t.name).withStyle(ChatFormatting.GOLD)).withStyle(ChatFormatting.YELLOW), false);
 		mc.gui.setOverlayMessage(Component.literal("⏰ " + t.name).withStyle(ChatFormatting.GOLD), false);
 		if (WidgetConfig.get().timerSound) {
-			mc.getSoundManager().play(SimpleSoundInstance.forUI(SoundEvents.NOTE_BLOCK_BELL.value(), 1.2F, 1.0F));
-			mc.getSoundManager().play(SimpleSoundInstance.forUI(SoundEvents.NOTE_BLOCK_BELL.value(), 1.6F, 1.0F));
+			de.loothub.client.Sounds.timer(WidgetConfig.get().timerSoundType);
 		}
 	}
 

@@ -33,6 +33,8 @@ public class AlltagScreen extends LoothubScreen {
 	private boolean repeat;
 	private Button modeButton;
 	private boolean modeOpen;
+	private boolean soundOpen;
+	private Button soundButton;
 	private int listTop;
 	private int scroll;
 
@@ -64,6 +66,8 @@ public class AlltagScreen extends LoothubScreen {
 			rebuildWidgets();
 		}).bounds(cl + tw + 4, ct, tw, 16).build());
 		modeOpen = false;
+		soundOpen = false;
+		soundButton = null;
 		if (jobsTab) {
 			buildJobs();
 			listTop = ct + 40;
@@ -85,6 +89,8 @@ public class AlltagScreen extends LoothubScreen {
 		addRenderableWidget(Button.builder(Component.translatable("loothub.alltag.move"),
 				b -> minecraft.setScreen(new de.loothub.client.quick.TimerHudEditScreen(this)))
 				.bounds(cl + 218, y, 90, 16).build());
+		soundButton = addRenderableWidget(Button.builder(soundLabel(), b -> soundOpen = !soundOpen)
+				.bounds(cl + 312, y, Math.max(70, Math.min(120, cr - cl - 312)), 16).build());
 
 		// Neuer Timer: Name, Art (Liste), Minuten bzw. Uhrzeit, Wiederholen, Hinzufügen
 		y += 24;
@@ -156,6 +162,11 @@ public class AlltagScreen extends LoothubScreen {
 
 	private static Component onOff(String key, boolean on) {
 		return Component.translatable(key).append(": ").append(Component.translatable(on ? "options.on" : "options.off"));
+	}
+
+	private static Component soundLabel() {
+		return Component.translatable("loothub.settings.timer_sound.pick")
+				.append(Component.translatable("loothub.sound.timer." + WidgetConfig.get().timerSoundType)).append(" ▾");
 	}
 
 	private Component modeLabel() {
@@ -245,6 +256,23 @@ public class AlltagScreen extends LoothubScreen {
 			String left = t.enabled && t.nextAt > 0 ? Timers.format(t.nextAt - now) : "–";
 			g.drawString(font, left, cr - 90 - font.width(left), ry + 6, t.enabled ? GOLD : FAINT, false);
 		}
+		if (soundOpen && soundButton != null) {
+			g.nextStratum();
+			int x = soundButton.getX(), y = soundButton.getY() + 17, w = soundButton.getWidth();
+			String[] opts = de.loothub.client.Sounds.TIMER_SOUNDS;
+			g.fill(x - 1, y - 1, x + w + 1, y + opts.length * DD_ROW + 1, RED);
+			g.fill(x, y, x + w, y + opts.length * DD_ROW, 0xF0140B0D);
+			for (int i = 0; i < opts.length; i++) {
+				int ry = y + i * DD_ROW;
+				boolean hover = mouseX >= x && mouseX < x + w && mouseY >= ry && mouseY < ry + DD_ROW;
+				if (hover) {
+					g.fill(x, ry, x + w, ry + DD_ROW, 0x40E23B3B);
+				}
+				boolean sel = opts[i].equals(WidgetConfig.get().timerSoundType);
+				g.drawString(font, (sel ? "✔ " : "   ") + Component.translatable("loothub.sound.timer." + opts[i]).getString(),
+						x + 4, ry + 3, sel ? TEXT : MUTED, false);
+			}
+		}
 		if (modeOpen) {
 			g.nextStratum();
 			int x = modeButton.getX(), y = modeButton.getY() + 17, w = modeButton.getWidth();
@@ -321,6 +349,22 @@ public class AlltagScreen extends LoothubScreen {
 
 	@Override
 	public boolean mouseClicked(MouseButtonEvent event, boolean doubleClick) {
+		if (soundOpen && soundButton != null) {
+			int x = soundButton.getX(), y = soundButton.getY() + 17, w = soundButton.getWidth();
+			String[] opts = de.loothub.client.Sounds.TIMER_SOUNDS;
+			soundOpen = false;
+			if (event.x() >= x && event.x() < x + w && event.y() >= y && event.y() < y + opts.length * DD_ROW) {
+				WidgetConfig c = WidgetConfig.get();
+				c.timerSoundType = opts[(int) ((event.y() - y) / DD_ROW)];
+				c.save();
+				soundButton.setMessage(soundLabel());
+				de.loothub.client.Sounds.timer(c.timerSoundType); // gleich anhören
+				return true;
+			}
+			if (soundButton.isMouseOver(event.x(), event.y())) {
+				return true;
+			}
+		}
 		if (modeOpen) {
 			int x = modeButton.getX(), y = modeButton.getY() + 17, w = modeButton.getWidth();
 			String[] opts = {"interval", "daily"};

@@ -325,43 +325,109 @@ public final class Alerts {
 	}
 
 	private static void draw(GuiGraphics g, Font font, Alert al, int sw, float a) {
-		int alpha = Math.max(8, (int) (a * 255)) << 24;
 		String title = al.type().icon + " " + al.title();
-		String sub = RedemptionHud.fit(font, al.sub(), 300);
+		int[] size = boxSize(font, title, al.sub());
+		int[] p = pos(sw, Minecraft.getInstance().getWindow().getGuiScaledHeight(), size[0], size[1]);
+		int x = p[0];
+		int y = p[1] + (int) ((1 - a) * -12); // von oben hereinrutschen
+		drawBox(g, font, title, al.sub(), al.type().color, x, y, a);
+	}
+
+	/** Lage aus der Einstellung (Standard: oben in der Mitte). */
+	public static int[] pos(int sw, int sh, int w, int h) {
+		WidgetConfig c = WidgetConfig.get();
+		return new int[]{(int) Math.round(c.streamAlertX * Math.max(0, sw - w)), (int) Math.round(c.streamAlertY * Math.max(0, sh - h))};
+	}
+
+	/** Größe der Beispiel-Einblendung (für „HUD-Positionen“). */
+	public static int[] sampleSize(Font font) {
+		return boxSize(font, "♥ Zuschauer123", "folgt jetzt");
+	}
+
+	/** Größe einer Einblendung (Breite, Höhe) – auch für die Fang-Einblendung. */
+	public static int[] boxSize(Font font, String title, String sub) {
+		String s = RedemptionHud.fit(font, sub, 300);
 		int tw = (int) (font.width(title) * 1.5f);
-		int w = Math.max(tw, font.width(sub)) + 28;
-		int h = al.sub().isBlank() ? 24 : 36;
-		int x = (sw - w) / 2;
-		int y = 14 + (int) ((1 - a) * -12); // von oben hereinrutschen
+		return new int[]{Math.max(tw, font.width(s)) + 28, sub == null || sub.isBlank() ? 24 : 36};
+	}
+
+	/** Einblendung im Twitch-Stil zeichnen: dunkle Box, farbige Kante, großer Titel, Untertitel. */
+	public static void drawBox(GuiGraphics g, Font font, String title, String sub, int color, int x, int y, float a) {
+		int alpha = Math.max(8, (int) (a * 255)) << 24;
+		int[] size = boxSize(font, title, sub);
+		int w = size[0], h = size[1];
+		String s = RedemptionHud.fit(font, sub == null ? "" : sub, 300);
+		int tw = (int) (font.width(title) * 1.5f);
 		int bg = (int) (a * 0xD0) << 24 | 0x120A0C;
 		g.fill(x, y, x + w, y + h, bg);
-		g.fill(x, y + h - 2, x + w, y + h, alpha | al.type().color);
-		g.fill(x, y, x + 2, y + h - 2, alpha | al.type().color);
+		g.fill(x, y + h - 2, x + w, y + h, alpha | (color & 0xFFFFFF));
+		g.fill(x, y, x + 2, y + h - 2, alpha | (color & 0xFFFFFF));
 		g.pose().pushMatrix();
 		g.pose().translate(x + (w - tw) / 2f, y + 5);
 		g.pose().scale(1.5f, 1.5f);
-		g.drawString(font, title, 0, 0, alpha | al.type().color, true);
+		g.drawString(font, title, 0, 0, alpha | (color & 0xFFFFFF), true);
 		g.pose().popMatrix();
-		if (!al.sub().isBlank()) {
-			g.drawString(font, sub, x + (w - font.width(sub)) / 2, y + 22, alpha | 0xFFFFFF, true);
+		if (!s.isBlank()) {
+			g.drawString(font, s, x + (w - font.width(s)) / 2, y + 22, alpha | 0xFFFFFF, true);
 		}
 	}
+
 
 	private static void sound(Minecraft mc, Type t) {
 		if (!WidgetConfig.get().streamerSound || mc.player == null) {
 			return;
 		}
-		float pitch = switch (t) {
-			case FOLLOW -> 1.6F;
-			case SUB, GIFT -> 1.2F;
-			case RAID, HYPE -> 0.8F;
-			case CHEER -> 1.8F;
-			case REDEEM -> 1.5F;
-			default -> 1.0F;
-		};
-		mc.getSoundManager().play(SimpleSoundInstance.forUI(SoundEvents.NOTE_BLOCK_CHIME.value(), pitch, 0.8F));
-		if (t == Type.SUB || t == Type.GIFT || t == Type.RAID || t == Type.HYPE) {
-			mc.getSoundManager().play(SimpleSoundInstance.forUI(SoundEvents.NOTE_BLOCK_BELL.value(), pitch * 1.26F, 0.8F));
-		}
+		de.loothub.client.Sounds.play(de.loothub.client.Sounds.Group.STREAM, sounds(t));
 	}
+
+	/** Eigene Klangfolge je Ereignis. */
+	static java.util.List<de.loothub.client.Sounds.Note> sounds(Type t) {
+		java.util.List<de.loothub.client.Sounds.Note> l = new java.util.ArrayList<>();
+		switch (t) {
+			case FOLLOW -> {
+				l.add(de.loothub.client.Sounds.n(0, SoundEvents.AMETHYST_BLOCK_CHIME, 1.2F, 1.0F));
+				l.addAll(de.loothub.client.Sounds.arpeggio(SoundEvents.NOTE_BLOCK_CHIME, 1.0F, 0.7F, 3));
+			}
+			case SUB -> {
+				l.add(de.loothub.client.Sounds.n(0, SoundEvents.PLAYER_LEVELUP, 1.0F, 0.6F));
+				l.addAll(de.loothub.client.Sounds.arpeggio(SoundEvents.NOTE_BLOCK_BELL, 0.84F, 0.8F, 3));
+			}
+			case GIFT -> {
+				l.add(de.loothub.client.Sounds.n(0, SoundEvents.UI_TOAST_CHALLENGE_COMPLETE, 1.0F, 0.5F));
+				l.add(de.loothub.client.Sounds.n(6, SoundEvents.AMETHYST_BLOCK_CHIME, 1.5F, 1.0F));
+			}
+			case RAID -> {
+				l.add(de.loothub.client.Sounds.n(0, SoundEvents.RAID_HORN, 1.0F, 0.6F));
+				for (int i = 0; i < 4; i++) {
+					l.add(de.loothub.client.Sounds.n(10 + i * 4, SoundEvents.NOTE_BLOCK_BASEDRUM, 0.8F, 0.9F));
+				}
+			}
+			case CHEER -> {
+				for (int i = 0; i < 4; i++) {
+					l.add(de.loothub.client.Sounds.n(i * 2, SoundEvents.EXPERIENCE_ORB_PICKUP, 0.9F + i * 0.25F, 0.6F));
+				}
+				l.add(de.loothub.client.Sounds.n(8, SoundEvents.AMETHYST_BLOCK_CHIME, 1.8F, 1.0F));
+			}
+			case REDEEM -> l.addAll(de.loothub.client.Sounds.arpeggio(SoundEvents.NOTE_BLOCK_CHIME, 0.9F, 0.8F, 2));
+			case STREAK -> {
+				l.addAll(de.loothub.client.Sounds.arpeggio(SoundEvents.NOTE_BLOCK_FLUTE, 0.8F, 0.8F, 3));
+				l.add(de.loothub.client.Sounds.n(12, SoundEvents.AMETHYST_BLOCK_CHIME, 1.6F, 1.0F));
+			}
+			case HYPE -> {
+				l.add(de.loothub.client.Sounds.n(0, SoundEvents.FIREWORK_ROCKET_LAUNCH, 1.0F, 0.8F));
+				l.add(de.loothub.client.Sounds.n(14, SoundEvents.FIREWORK_ROCKET_LARGE_BLAST, 1.0F, 0.8F));
+				l.add(de.loothub.client.Sounds.n(20, SoundEvents.FIREWORK_ROCKET_TWINKLE, 1.0F, 0.8F));
+			}
+			case AD -> {
+				l.add(de.loothub.client.Sounds.n(0, SoundEvents.NOTE_BLOCK_BASS, 1.0F, 0.8F));
+				l.add(de.loothub.client.Sounds.n(5, SoundEvents.NOTE_BLOCK_BASS, 0.75F, 0.8F));
+			}
+			case POLL, PREDICTION -> {
+				l.add(de.loothub.client.Sounds.n(0, SoundEvents.NOTE_BLOCK_COW_BELL, 1.0F, 0.8F));
+				l.add(de.loothub.client.Sounds.n(4, SoundEvents.NOTE_BLOCK_COW_BELL, 1.33F, 0.8F));
+			}
+		}
+		return l;
+	}
+
 }
