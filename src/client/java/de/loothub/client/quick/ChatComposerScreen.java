@@ -150,8 +150,10 @@ public class ChatComposerScreen extends Screen {
 		WidgetConfig.get().chatDraft = "";
 		WidgetConfig.get().save();
 		if (text.startsWith("/")) {
-			minecraft.getConnection().sendCommand(text.substring(1));
+			// über die Befehlsbremse: höchstens ein Befehl je 1,2 s, und jeder Befehl steht mit Quelle im Log
+			CommandGuard.send(text, "Nachrichten-Editor");
 		} else {
+			de.loothub.Loothub.LOGGER.info("Loothub: sende Chatnachricht (Nachrichten-Editor)");
 			minecraft.getConnection().sendChat(text);
 		}
 		onClose();
