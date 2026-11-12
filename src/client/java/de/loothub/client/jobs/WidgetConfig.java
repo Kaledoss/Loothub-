@@ -236,6 +236,8 @@ public final class WidgetConfig {
 	public int auctionAlarmMinutes = 10;
 	/** Entwurf aus dem /chat-Editor. */
 	public String chatDraft = "";
+	/** Notizblock im Nachrichten-Editor: gespeicherte Sätze (mit Farbcodes). */
+	public java.util.List<String> chatNotes = new java.util.ArrayList<>();
 	/** Menüseite „Pokédex“ anzeigen. */
 	public boolean pokedexPage = true;
 	/** Krönchen vor Loothub-Nutzern in der Tab-Liste. */

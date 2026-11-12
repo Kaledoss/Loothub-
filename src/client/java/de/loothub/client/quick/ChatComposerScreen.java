@@ -8,6 +8,7 @@ import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.components.EditBox;
 import net.minecraft.client.gui.screens.Screen;
+import net.minecraft.client.input.MouseButtonEvent;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.MutableComponent;
 import net.minecraft.network.chat.Style;
@@ -19,7 +20,7 @@ import de.loothub.client.jobs.WidgetConfig;
 /**
  * „/chat“: Nachricht in Ruhe vorbereiten – mit Farbcodes (&a, &l …, auch &#RRGGBB) und Live-Vorschau, wie sie im
  * Chat aussehen wird. Gesendet wird nur auf Knopfdruck (oder kopieren und selbst einfügen). Die letzten Entwürfe
- * bleiben erhalten.
+ * bleiben erhalten. Im Notizblock lassen sich häufige Sätze speichern und per Klick wieder einsetzen.
  */
 public class ChatComposerScreen extends Screen {
 	private static final String CODES = "0123456789abcdef";
@@ -28,6 +29,9 @@ public class ChatComposerScreen extends Screen {
 	private final String initial;
 	private EditBox box;
 	private int previewY;
+	private int notesY;
+	private int notesScroll;
+	private static final int NOTE_H = 14;
 
 	public ChatComposerScreen(String initial) {
 		super(Component.translatable("loothub.composer.title"));
@@ -76,6 +80,10 @@ public class ChatComposerScreen extends Screen {
 				minecraft.setScreen(new ColorPickerScreen(this, Component.translatable("loothub.composer.hex"), 0xE23B3B,
 						rgb -> insert(String.format("&#%06X", rgb & 0xFFFFFF)))))
 				.bounds(x + fmt.length * (fw + 2) + 4, y + 44, 90, 16).build());
+		addRenderableWidget(Button.builder(Component.translatable("loothub.composer.note.save"), b -> saveNote())
+				.bounds(x + w - 130, y + 44, 130, 16)
+				.tooltip(net.minecraft.client.gui.components.Tooltip.create(Component.translatable("loothub.composer.note.save.tooltip")))
+				.build());
 
 		previewY = y + 72;
 		int by = previewY + 44;
@@ -88,6 +96,32 @@ public class ChatComposerScreen extends Screen {
 		}).bounds(x + bw + 4, by, bw, 18).build());
 		addRenderableWidget(Button.builder(Component.translatable("gui.cancel"), b -> onClose())
 				.bounds(x + 2 * (bw + 4), by, bw, 18).build());
+		notesY = by + 28;
+	}
+
+	private List<String> notes() {
+		WidgetConfig c = WidgetConfig.get();
+		if (c.chatNotes == null) {
+			c.chatNotes = new ArrayList<>();
+		}
+		return c.chatNotes;
+	}
+
+	private void saveNote() {
+		String text = box.getValue().strip();
+		if (text.isEmpty()) {
+			return;
+		}
+		List<String> n = notes();
+		n.remove(text); // doppelte vermeiden, neu gespeichert steht oben
+		n.add(0, text);
+		WidgetConfig.get().save();
+		notesScroll = 0;
+	}
+
+	/** Wie viele Notizzeilen auf den Bildschirm passen. */
+	private int visibleNotes() {
+		return Math.max(1, (height - notesY - 22) / NOTE_H);
 	}
 
 	private void insert(String s) {
@@ -136,8 +170,90 @@ public class ChatComposerScreen extends Screen {
 		for (int i = 0; i < Math.min(2, lines.size()); i++) {
 			g.drawString(font, lines.get(i), x + 4, previewY + 14 + i * 10, 0xFFFFFFFF, true);
 		}
+		renderNotes(g, x, w, mouseX, mouseY);
 		String count = box.getValue().length() + " / " + MAX;
 		g.drawString(font, count, x + w - font.width(count), box.getY() - 12, 0xFF9A9A9A, false);
+	}
+
+	private void renderNotes(GuiGraphics g, int x, int w, int mouseX, int mouseY) {
+		List<String> n = notes();
+		g.drawString(font, Component.translatable("loothub.composer.notes", n.size()), x, notesY, 0xFFFFFFFF, true);
+		int top = notesY + 12;
+		if (n.isEmpty()) {
+			g.drawString(font, Component.translatable("loothub.composer.notes.empty"), x + 4, top + 3, 0xFF9A9A9A, false);
+			return;
+		}
+		int vis = Math.min(visibleNotes(), n.size());
+		notesScroll = Math.max(0, Math.min(notesScroll, n.size() - vis));
+		g.fill(x, top, x + w, top + vis * NOTE_H, 0x90000000);
+		for (int i = 0; i < vis; i++) {
+			int idx = i + notesScroll;
+			int ry = top + i * NOTE_H;
+			boolean hover = mouseX >= x && mouseX < x + w && mouseY >= ry && mouseY < ry + NOTE_H;
+			if (hover) {
+				g.fill(x, ry, x + w, ry + NOTE_H, 0x40FFFFFF);
+			}
+			Component line = parse(n.get(idx));
+			String shown = font.plainSubstrByWidth(line.getString(), w - 70);
+			List<net.minecraft.util.FormattedCharSequence> cut = font.split(line, w - 70);
+			if (!cut.isEmpty()) {
+				g.drawString(font, cut.get(0), x + 4, ry + 3, 0xFFFFFFFF, true);
+			}
+			if (cut.size() > 1 || shown.length() < line.getString().length()) {
+				g.drawString(font, "…", x + w - 64, ry + 3, 0xFF9A9A9A, false);
+			}
+			// Aktionen rechts: senden ▶, löschen ✕
+			boolean overSend = hover && mouseX >= x + w - 40 && mouseX < x + w - 22;
+			boolean overDel = hover && mouseX >= x + w - 20;
+			g.drawString(font, "▶", x + w - 34, ry + 3, overSend ? 0xFF55FF55 : 0xFFAAAAAA, false);
+			g.drawString(font, "✕", x + w - 14, ry + 3, overDel ? 0xFFFF5555 : 0xFFAAAAAA, false);
+		}
+		if (n.size() > vis) {
+			String more = (notesScroll + 1) + "–" + (notesScroll + vis) + " / " + n.size();
+			g.drawString(font, more, x + w - font.width(more), notesY, 0xFF9A9A9A, false);
+		}
+	}
+
+	@Override
+	public boolean mouseClicked(MouseButtonEvent e, boolean doubleClick) {
+		if (super.mouseClicked(e, doubleClick)) {
+			return true;
+		}
+		int w = Math.min(420, width - 40);
+		int x = (width - w) / 2;
+		int top = notesY + 12;
+		List<String> n = notes();
+		int vis = Math.min(visibleNotes(), n.size());
+		if (e.button() != 0 || e.x() < x || e.x() >= x + w || e.y() < top || e.y() >= top + vis * NOTE_H) {
+			return false;
+		}
+		int idx = (int) ((e.y() - top) / NOTE_H) + notesScroll;
+		if (idx < 0 || idx >= n.size()) {
+			return false;
+		}
+		String text = n.get(idx);
+		if (e.x() >= x + w - 20) {
+			n.remove(idx);
+			WidgetConfig.get().save();
+		} else if (e.x() >= x + w - 40 && e.x() < x + w - 22) {
+			box.setValue(text);
+			send();
+		} else {
+			box.setValue(text); // in das Feld übernehmen, dort weiter bearbeiten
+			box.moveCursorToEnd(false);
+			setFocused(box);
+		}
+		return true;
+	}
+
+	@Override
+	public boolean mouseScrolled(double mx, double my, double horizontal, double vertical) {
+		if (my >= notesY) {
+			notesScroll -= (int) Math.signum(vertical);
+			notesScroll = Math.max(0, notesScroll);
+			return true;
+		}
+		return super.mouseScrolled(mx, my, horizontal, vertical);
 	}
 
 	/** Text mit &-Codes (und &#RRGGBB) in eine farbige Vorschau umwandeln. */
