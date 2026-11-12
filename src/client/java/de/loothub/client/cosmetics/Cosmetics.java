@@ -66,10 +66,10 @@ public final class Cosmetics {
 	public static final String MINI_TRAITS = "minimetraits";
 	public static final List<String> TRAITS = List.of("playful", "shy", "brave", "lazy", "curious");
 	public static final List<String> FOOTSTEP_STYLES = List.of("sparks", "flames");
-	public static final List<String> PET_TYPES = List.of("slime", "allay", "bee", "vex", "wolf", "penguin", "dragon");
+	public static final List<String> PET_TYPES = List.of("slime", "allay", "bee", "vex", "wolf", "penguin", "dragon", "panda", "zombie", "serpent");
 	public static final int MAX_PETS = 2;
 	/** Flügel-Stile (Textur textures/entity/wing_<stil>.png). */
-	public static final List<String> WING_STYLES = List.of("dragon", "devil", "angel");
+	public static final List<String> WING_STYLES = List.of("dragon", "devil", "angel", "drake");
 
 	private static final String URL = "https://raw.githubusercontent.com/Kaledoss/Loothub-/main/cosmetics.json";
 	private static final long REFRESH_MS = 10 * 60_000L;
@@ -269,6 +269,15 @@ public final class Cosmetics {
 			RESOLVED.values().removeIf(x -> nowMs - x.time() > 60_000L);
 		}
 		return r;
+	}
+
+	/** Hat dieser Spieler (gerade in der Welt) das Cosmetic? – für Begegnungen zwischen Spielern. */
+	public static boolean playerHas(Player p, String cosmetic) {
+		if (p == null || !WidgetConfig.get().cosmetics) {
+			return false;
+		}
+		Set<String> set = resolve(p).set();
+		return set != null && set.contains(cosmetic);
 	}
 
 	/** UUID des Spielers zu diesem Render-Zustand (oder null). */

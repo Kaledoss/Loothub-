@@ -57,6 +57,10 @@ public final class Wings {
 	 */
 	public static void submit(PoseStack poseStack, SubmitNodeCollector collector, String style, Pose pose, int light,
 			String inner, String outer) {
+		if ("drake".equals(style)) {
+			DrakeWings.submit(poseStack, collector, pose, light, inner, outer); // echtes Knochengerüst statt Bildfläche
+			return;
+		}
 		boolean in = inner != null && !inner.isBlank(), out = outer != null && !outer.isBlank();
 		if (!in && !out) {
 			draw(poseStack, collector, tex(style, ""), 0xFFFFFFFF, pose, light);

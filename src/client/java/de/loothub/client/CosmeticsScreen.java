@@ -118,6 +118,14 @@ public class CosmeticsScreen extends LoothubScreen {
 				sections.add(new Section(y, 42, "loothub.cosmetics.show", "loothub.cosmetics.show.desc"));
 				y += 42 + GAP;
 
+				// Vorschau auf dem Drehteller und Ego-Perspektive
+				addRenderableWidget(Button.builder(Component.translatable("loothub.cosmetics.preview"),
+						b -> minecraft.setScreen(new de.loothub.client.cosmetics.CosmeticsPreviewScreen(this)))
+						.bounds(descX, y + 24, 120, 16).build());
+				toggle(lx, y + 20, lw, () -> c.cosmeticsFirstPerson, v -> c.cosmeticsFirstPerson = v);
+				sections.add(new Section(y, 44, "loothub.cosmetics.first_person", "loothub.cosmetics.first_person.desc"));
+				y += 44 + GAP;
+
 				// Mini-Mes: je Zeile ein Mini-Me mit Spielername, Flügeln und Flügelfarbe
 				int x0 = cl + 8;
 				int ddW = 110, colW = 46;
@@ -363,8 +371,8 @@ public class CosmeticsScreen extends LoothubScreen {
 
 	// ------------------------------------------------------------------ Auswahllisten
 
-	private static final String[] WING_OPTIONS = {"", "dragon", "devil", "angel"};
-	private static final String[] PET_OPTIONS = {"", "slime", "allay", "bee", "vex", "wolf", "penguin", "dragon"};
+	private static final String[] WING_OPTIONS = {"", "dragon", "devil", "angel", "drake"};
+	private static final String[] PET_OPTIONS = {"", "slime", "allay", "bee", "vex", "wolf", "penguin", "dragon", "panda", "zombie", "serpent"};
 	private static final String[] TRAIT_OPTIONS = {"", "playful", "shy", "brave", "lazy", "curious"};
 	private static final String[] STEP_OPTIONS = {"", "sparks", "flames"};
 

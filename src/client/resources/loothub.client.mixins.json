@@ -27,7 +27,8 @@
 		"ChatSearchKeysMixin",
 		"OffhandFilterMixin",
 		"TabListCrownMixin",
-		"FishSoundMixin"
+		"FishSoundMixin",
+		"LevelRendererFirstPersonMixin"
 	],
 	"injectors": {
 		"defaultRequire": 0

@@ -32,10 +32,19 @@ public final class Cloud {
 	}
 
 	public static void submit(PoseStack poseStack, SubmitNodeCollector collector, float t, int light, float alpha) {
+		submit(poseStack, collector, t, light, alpha, CY, W);
+	}
+
+	/**
+	 * Wolke an beliebiger Stelle: {@code cy} = Mitte (y im aktuellen Raum), {@code width} = Breite im aktuellen Raum.
+	 * Für den Schlafplatz neben dem Spieler.
+	 */
+	public static void submit(PoseStack poseStack, SubmitNodeCollector collector, float t, int light, float alpha, float cy,
+			float width) {
 		int a = Math.max(0, Math.min(255, (int) (alpha * 255)));
 		int argb = (a << 24) | 0xFFFFFF;
 		Matrix4f m = poseStack.last().pose();
-		Vector3f center = m.transformPosition(0.0F, CY + (float) Math.sin(t * 0.07F) * 0.03F, 0.0F, new Vector3f());
+		Vector3f center = m.transformPosition(0.0F, cy + (float) Math.sin(t * 0.07F) * 0.03F, 0.0F, new Vector3f());
 		float scale = m.getScale(new Vector3f()).y;
 		Quaternionf cam = Minecraft.getInstance().gameRenderer.getMainCamera().rotation();
 		poseStack.pushPose();
@@ -45,7 +54,7 @@ public final class Cloud {
 		poseStack.mulPose(Axis.ZP.rotationDegrees((float) Math.sin(t * 0.045F) * 3.0F));
 		float breathe = 1.0F + (float) Math.sin(t * 0.09F) * 0.02F;
 		poseStack.scale(scale * breathe, scale / breathe, scale);
-		float hw = W / 2.0F, hh = H / 2.0F;
+		float hw = width / 2.0F, hh = width * 169F / 256F / 2.0F;
 		collector.submitCustomGeometry(poseStack, RenderTypes.entityTranslucent(TEXTURE), (pose, vc) -> {
 			v(pose, vc, -hw, hh, 0, 1, light, argb);
 			v(pose, vc, -hw, -hh, 0, 0, light, argb);

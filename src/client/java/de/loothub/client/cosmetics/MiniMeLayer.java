@@ -344,7 +344,8 @@ public final class MiniMeLayer extends RenderLayer<AvatarRenderState, PlayerMode
 	@Override
 	public void submit(PoseStack poseStack, SubmitNodeCollector collector, int light, AvatarRenderState state,
 			float yRot, float xRot) {
-		if (state.isInvisible || !Cosmetics.has(state, Cosmetics.MINI_ME) || state.skin == null) {
+		boolean firstPerson = FirstPerson.is(state);
+		if ((state.isInvisible && !firstPerson) || !Cosmetics.has(state, Cosmetics.MINI_ME) || state.skin == null) {
 			return;
 		}
 		List<String> skins = Cosmetics.miniMes(state);
@@ -353,6 +354,9 @@ public final class MiniMeLayer extends RenderLayer<AvatarRenderState, PlayerMode
 			String other = skins.get(i);
 			if (other == null) {
 				continue; // Platz frei
+			}
+			if (firstPerson && i < 2) {
+				continue; // Ego-Perspektive: Schulter-Mini-Mes säßen direkt vor der Kamera
 			}
 			PlayerSkin skin = state.skin;
 			if (!other.isEmpty()) {
@@ -410,9 +414,10 @@ public final class MiniMeLayer extends RenderLayer<AvatarRenderState, PlayerMode
 			// AFK: liegt der Spieler, legen sich die Mini-Mes neben ihn und schlafen mit
 			float lie = de.loothub.client.quick.AfkView.lying(state);
 			if (lie > 0.001F) {
-				float[] bed = SLEEP[i];
+				// alle zusammengekuschelt in einer Reihe auf der gelben Wolke neben dem Spieler
+				float[] bed = {BED_X, BED_Z0 + i * BED_STEP};
 				tx = tx + (bed[0] - tx) * lie;
-				ty = ty + (1.5F - 0.25F * SCALE - ty) * lie;
+				ty = ty + (1.5F - 0.25F * SCALE - BED_H - ty) * lie;
 				tz = tz + (bed[1] - tz) * lie;
 				rx = rx + (-90.0F - rx) * lie; // auf dem Rücken
 				rz = rz * (1.0F - lie);
@@ -422,6 +427,15 @@ public final class MiniMeLayer extends RenderLayer<AvatarRenderState, PlayerMode
 			boolean swimming = i >= 4 && (env & Motion.ENV_WATER) != 0 && fly < 0.5F && lie < 0.5F;
 			// Krabbler setzen sich hin, wenn der Spieler eine Weile stillsteht
 			boolean sitDown = i >= 4 && idleLong && !swimming && fly < 0.5F && lie < 0.5F;
+			boolean preview = CosmeticsPreviewScreen.is(state);
+			// Besuch: bei einem anderen Spieler mit Mini-Mes ab und zu zueinander laufen und winken
+			Visits.Visit visit = i >= 2 && lie < 0.5F && fly < 0.5F && !swimming && !preview ? Visits.of(state, i, side) : null;
+			// Spielen: das erste krabbelnde Mini-Me rennt im Kreis, die Haustiere jagen es
+			float play = i >= 4 && lie < 0.5F && !swimming && visit == null && Play.runner(state) == i ? Play.angle(state)
+					: Float.NaN;
+			if (visit != null || !Float.isNaN(play)) {
+				sitDown = false;
+			}
 			if (sitDown) {
 				rx = 0.0F;
 			}
@@ -429,19 +443,31 @@ public final class MiniMeLayer extends RenderLayer<AvatarRenderState, PlayerMode
 				// eigenständig: folgt seinem Platz gefedert, schwebt/krabbelt etwas herum, schaut in Laufrichtung;
 				// am Boden klettern sie Stufen hoch statt durch Blöcke zu laufen
 				boolean air = i < 4 || fly > 0.5F;
-				if (lie < 0.5F && !sitDown) {
+				if (visit != null) {
+					tx = visit.x();
+					tz = visit.z();
+				} else if (!Float.isNaN(play)) {
+					float[] c = Play.at(play);
+					tx = c[0];
+					tz = c[1];
+				} else if (lie < 0.5F && !sitDown && !preview) {
 					// herumstreifen statt starr am Platz zu kleben
 					float[] r = Roam.offset(state.id, i, t, side, air ? 1.1F : 1.6F);
 					tx += r[0];
 					tz += r[1];
 				}
-				float[] f = Followers.follow(state, i, tx, ty, tz, air ? 4.5F : 7.0F, air ? 0.12F : (sitDown ? 0.0F : 0.06F),
+				float[] f = preview ? new float[]{tx, ty, tz, 0.0F, 0.0F}
+						: Followers.follow(state, i, tx, ty, tz, !Float.isNaN(play) ? 12.0F : air ? 4.5F : 7.0F,
+						air ? 0.12F : (sitDown || visit != null || !Float.isNaN(play) ? 0.0F : 0.06F),
 						air ? 0.5F : 0.0F, !air && lie < 0.5F && !swimming);
 				tx = f[0];
 				ty = f[1];
 				tz = f[2];
 				ry = f[3];
 				ownSpeed = f[4];
+				if (visit != null && visit.progress() > 0.2F && visit.progress() < 0.85F && ownSpeed < 0.6F) {
+					ry = visit.yaw(); // angekommen: zum Besuch drehen
+				}
 			}
 			boolean sleeping = lie > 0.5F;
 			// das erste schwebende Mini-Me sitzt auf einer kleinen Wolke, das zweite fliegt frei (fliegt der Spieler, beide frei)
@@ -484,6 +510,14 @@ public final class MiniMeLayer extends RenderLayer<AvatarRenderState, PlayerMode
 				k = Math.min(1F, k * 2F);
 				mini.yRot += (side * 70F - mini.yRot) * k;
 				mini.xRot += ((emote[0] == Emotes.HIGHFIVE ? -20F : 5F) - mini.xRot) * k;
+			}
+			if (visit != null && !crawling) {
+				float vp = visit.progress();
+				if (vp > 0.25F && vp < 0.55F) {
+					emote = new float[]{Emotes.WAVE, (vp - 0.25F) / 0.3F};
+				} else if (vp >= 0.6F && vp < 0.8F) {
+					emote = new float[]{Emotes.HIGHFIVE, (vp - 0.6F) / 0.2F};
+				}
 			}
 			Emotes.attach(mini, emote);
 			if (emote != null && emote[0] == Emotes.CHEER) {
@@ -573,6 +607,15 @@ public final class MiniMeLayer extends RenderLayer<AvatarRenderState, PlayerMode
 			}
 			poseStack.popPose();
 		}
+		// Schlafplatz: eine gelbe Wolke neben dem Spieler, auf der die Mini-Mes liegen
+		float lieAll = de.loothub.client.quick.AfkView.lying(state);
+		if (lieAll > 0.3F) {
+			poseStack.pushPose();
+			BodyPose.undo(poseStack, state, true);
+			poseStack.translate(BED_X, 1.5F - BED_H * 0.5F, BED_Z0 + BED_STEP * 2.5F);
+			Cloud.submit(poseStack, collector, t, light, Mth.clamp((lieAll - 0.3F) / 0.4F, 0.0F, 1.0F), 0.0F, 1.6F);
+			poseStack.popPose();
+		}
 	}
 
 	/**
@@ -616,8 +659,8 @@ public final class MiniMeLayer extends RenderLayer<AvatarRenderState, PlayerMode
 	}
 
 	/** Schlafplätze (x, z) neben dem Spieler, wenn er in der AFK-Ansicht liegt. */
-	private static final float[][] SLEEP = {{0.75F, -0.1F}, {-0.75F, -0.1F}, {1.2F, 0.5F}, {-1.2F, 0.5F}, {0.9F, -0.8F},
-			{-0.9F, -0.8F}};
+	/** Schlafplatz (AFK): Wolke neben dem Spieler, Mini-Mes in einer Reihe darauf. */
+	private static final float BED_X = 1.15F, BED_Z0 = -0.55F, BED_STEP = 0.22F, BED_H = 0.2F;
 
 	/** Dreht (x, z) um die Hochachse (Grad) – für das Hinterherschwenken. */
 	private static float[] rotateY(float x, float z, float degrees) {

@@ -154,6 +154,8 @@ public final class WidgetConfig {
 	public long dailyItemLimit = -1;
 	/** Loothub-Cosmetics (z. B. Mini-Me) bei Spielern anzeigen. */
 	public boolean cosmetics = true;
+	/** Begleiter (Haustiere, freie Mini-Mes) auch in der Ego-Perspektive zeigen. */
+	public boolean cosmeticsFirstPerson = false;
 	/** Früher: ein Mini-Me-Skin (wird in {@link #miniMes} übernommen). */
 	public String miniMeSkin = "";
 	/** Bis zu 4 eigene Mini-Mes – je ein Spielername, dessen Skin es trägt. */

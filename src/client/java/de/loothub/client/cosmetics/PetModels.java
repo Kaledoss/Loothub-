@@ -191,4 +191,91 @@ final class PetModels {
 			}
 		}
 	}
+
+	/**
+	 * Himmelsdrache (eigener Entwurf im Minecraft-Stil): langer, schlangenartiger Drache in Rot mit goldenem Bauch und
+	 * goldener Mähne, kleinen Beinen und Barthaaren. Er „schwimmt“ durch die Luft – eine Welle läuft vom Kopf bis zur
+	 * Schwanzflosse durch alle Glieder.
+	 */
+	static final class Serpent extends EntityModel<LivingEntityRenderState> {
+		private static final int SEGMENTS = 8;
+		private final ModelPart head;
+		private final ModelPart[] seg = new ModelPart[SEGMENTS];
+		private final ModelPart tail;
+		private final ModelPart[] legs = new ModelPart[4];
+
+		Serpent() {
+			this(create().bakeRoot());
+		}
+
+		private Serpent(ModelPart root) {
+			super(root);
+			head = root.getChild("head");
+			ModelPart p = root;
+			for (int i = 0; i < SEGMENTS; i++) {
+				p = p.getChild("seg" + i);
+				seg[i] = p;
+			}
+			tail = p.getChild("tail");
+			legs[0] = seg[1].getChild("leg_l");
+			legs[1] = seg[1].getChild("leg_r");
+			legs[2] = seg[5].getChild("leg_l");
+			legs[3] = seg[5].getChild("leg_r");
+		}
+
+		static LayerDefinition create() {
+			MeshDefinition mesh = new MeshDefinition();
+			PartDefinition r = mesh.getRoot();
+			PartDefinition head = r.addOrReplaceChild("head", CubeListBuilder.create().texOffs(16, 0)
+					.addBox(-3F, -3F, -6F, 6F, 5F, 6F), PartPose.offset(0F, 14F, -14F));
+			head.addOrReplaceChild("snout", CubeListBuilder.create().texOffs(40, 0).addBox(-2F, -1F, -4F, 4F, 3F, 4F),
+					PartPose.offset(0F, 0F, -6F));
+			head.addOrReplaceChild("horn_l", CubeListBuilder.create().texOffs(56, 0).addBox(-0.5F, -4F, -0.5F, 1F, 4F, 1F),
+					PartPose.offsetAndRotation(1.8F, -3F, -1F, -0.8F, 0F, 0.25F));
+			head.addOrReplaceChild("horn_r", CubeListBuilder.create().texOffs(56, 0).addBox(-0.5F, -4F, -0.5F, 1F, 4F, 1F),
+					PartPose.offsetAndRotation(-1.8F, -3F, -1F, -0.8F, 0F, -0.25F));
+			head.addOrReplaceChild("whisker_l", CubeListBuilder.create().texOffs(8, 10).addBox(0F, -0.5F, -0.5F, 1F, 1F, 5F),
+					PartPose.offsetAndRotation(2F, 1F, -8F, 0.3F, 0.9F, 0F));
+			head.addOrReplaceChild("whisker_r", CubeListBuilder.create().texOffs(8, 10).addBox(-1F, -0.5F, -0.5F, 1F, 1F, 5F),
+					PartPose.offsetAndRotation(-2F, 1F, -8F, 0.3F, -0.9F, 0F));
+			// Körper: Kette aus Gliedern, jedes hängt am vorigen – so läuft die Welle hindurch
+			PartDefinition parent = r;
+			for (int i = 0; i < SEGMENTS; i++) {
+				PartPose pose = i == 0 ? PartPose.offset(0F, 14.5F, -14F) : PartPose.offset(0F, 0F, 4F);
+				PartDefinition s = parent.addOrReplaceChild("seg" + i, CubeListBuilder.create().texOffs(0, 0)
+						.addBox(-2F, -2F, 0F, 4F, 4F, 4F).texOffs(0, 10).addBox(-0.5F, -3.5F, 1F, 1F, 2F, 2F), pose);
+				if (i == 1 || i == 5) {
+					s.addOrReplaceChild("leg_l", CubeListBuilder.create().texOffs(32, 12).addBox(-1F, 0F, -1F, 2F, 3F, 2F),
+							PartPose.offsetAndRotation(2F, 1.5F, 2F, 0.6F, 0F, -0.3F));
+					s.addOrReplaceChild("leg_r", CubeListBuilder.create().texOffs(32, 12).addBox(-1F, 0F, -1F, 2F, 3F, 2F),
+							PartPose.offsetAndRotation(-2F, 1.5F, 2F, 0.6F, 0F, 0.3F));
+				}
+				parent = s;
+			}
+			PartDefinition tail = parent.addOrReplaceChild("tail", CubeListBuilder.create().texOffs(20, 12)
+					.addBox(-1F, -1F, 0F, 2F, 2F, 4F), PartPose.offset(0F, 0F, 4F));
+			tail.addOrReplaceChild("fin", CubeListBuilder.create().texOffs(40, 12).addBox(-2F, 0F, 0F, 4F, 0F, 3F),
+					PartPose.offset(0F, 0F, 3.5F));
+			return LayerDefinition.create(mesh, 64, 64);
+		}
+
+		@Override
+		public void setupAnim(LivingEntityRenderState s) {
+			super.setupAnim(s);
+			float t = s.ageInTicks;
+			// Welle vom Kopf nach hinten: seitlich schlängeln und leicht auf und ab
+			for (int i = 0; i < SEGMENTS; i++) {
+				seg[i].yRot = Mth.sin(t * 0.14F - i * 0.7F) * 0.32F;
+				seg[i].xRot = Mth.sin(t * 0.1F - i * 0.55F) * 0.16F;
+			}
+			tail.yRot = Mth.sin(t * 0.14F - SEGMENTS * 0.7F) * 0.4F;
+			// Kopf ruhig halten (gleicht die Welle aus) und sich umschauen
+			head.yRot = Mth.sin(t * 0.05F) * 0.3F;
+			head.xRot = Mth.sin(t * 0.07F) * 0.1F;
+			head.y = 14F + Mth.sin(t * 0.1F + 0.5F) * 0.6F;
+			for (int i = 0; i < 4; i++) {
+				legs[i].xRot = 0.6F + Mth.sin(t * 0.2F + i * 1.3F) * 0.35F; // paddeln durch die Luft
+			}
+		}
+	}
 }

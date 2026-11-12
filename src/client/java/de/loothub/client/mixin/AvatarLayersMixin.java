@@ -28,4 +28,24 @@ public abstract class AvatarLayersMixin {
 		((LivingEntityRendererInvoker) this).loothub$addLayer(new MiniMeLayer(parent, context.getModelSet()));
 		((LivingEntityRendererInvoker) this).loothub$addLayer(new de.loothub.client.cosmetics.PetsLayer(parent, context.getModelSet()));
 	}
+
+	/**
+	 * Ego-Perspektive mit Begleitern: den eigenen Spieler unsichtbar und „leer“ vorbereiten, damit nur Haustiere und freie
+	 * Mini-Mes gezeichnet werden. Außerdem: Vorschau-Zustände des Drehtellers erkennen.
+	 */
+	@Inject(method = "extractRenderState(Lnet/minecraft/world/entity/Avatar;Lnet/minecraft/client/renderer/entity/state/AvatarRenderState;F)V",
+			at = @At("TAIL"))
+	private void loothub$firstPerson(net.minecraft.world.entity.Avatar entity, AvatarRenderState state, float partialTicks,
+			CallbackInfo ci) {
+		net.minecraft.client.Minecraft mc = net.minecraft.client.Minecraft.getInstance();
+		if (entity == mc.player && !de.loothub.client.cosmetics.CosmeticsPreviewScreen.rendering()
+				&& de.loothub.client.cosmetics.FirstPerson.active()) {
+			de.loothub.client.cosmetics.FirstPerson.strip(state);
+		} else {
+			de.loothub.client.cosmetics.FirstPerson.unmark(state);
+		}
+		if (de.loothub.client.cosmetics.CosmeticsPreviewScreen.rendering() && entity == mc.player) {
+			de.loothub.client.cosmetics.CosmeticsPreviewScreen.mark(state);
+		}
+	}
 }

@@ -7,6 +7,8 @@ import net.minecraft.client.model.EntityModel;
 import net.minecraft.client.model.animal.allay.AllayModel;
 import net.minecraft.client.model.animal.bee.BeeModel;
 import net.minecraft.client.model.animal.wolf.WolfModel;
+import net.minecraft.client.model.animal.panda.PandaModel;
+import net.minecraft.client.model.monster.zombie.ZombieModel;
 import net.minecraft.client.model.geom.EntityModelSet;
 import net.minecraft.client.model.geom.ModelLayers;
 import net.minecraft.client.model.monster.slime.SlimeModel;
@@ -22,6 +24,8 @@ import net.minecraft.client.renderer.entity.state.LivingEntityRenderState;
 import net.minecraft.client.renderer.entity.state.SlimeRenderState;
 import net.minecraft.client.renderer.entity.state.VexRenderState;
 import net.minecraft.client.renderer.entity.state.WolfRenderState;
+import net.minecraft.client.renderer.entity.state.PandaRenderState;
+import net.minecraft.client.renderer.entity.state.ZombieRenderState;
 import net.minecraft.client.renderer.rendertype.RenderTypes;
 import net.minecraft.client.renderer.texture.OverlayTexture;
 import net.minecraft.resources.Identifier;
@@ -40,6 +44,9 @@ public final class PetsLayer extends RenderLayer<AvatarRenderState, PlayerModel>
 	private static final Identifier WOLF_TEX = Identifier.withDefaultNamespace("textures/entity/wolf/wolf_tame.png");
 	private static final Identifier PENGUIN_TEX = Identifier.fromNamespaceAndPath("loothub", "textures/entity/penguin.png");
 	private static final Identifier DRAGON_TEX = Identifier.fromNamespaceAndPath("loothub", "textures/entity/mini_dragon.png");
+	private static final Identifier PANDA_TEX = Identifier.withDefaultNamespace("textures/entity/panda/panda.png");
+	private static final Identifier ZOMBIE_TEX = Identifier.withDefaultNamespace("textures/entity/zombie/zombie.png");
+	private static final Identifier SERPENT_TEX = Identifier.fromNamespaceAndPath("loothub", "textures/entity/sky_serpent.png");
 
 	private final SlimeModel slimeInner;
 	private final SlimeModel slimeOuter;
@@ -49,6 +56,10 @@ public final class PetsLayer extends RenderLayer<AvatarRenderState, PlayerModel>
 	private final WolfModel wolf;
 	private final PetModels.Penguin penguin = new PetModels.Penguin();
 	private final PetModels.Dragon dragon = new PetModels.Dragon();
+	private final PetModels.Serpent serpent = new PetModels.Serpent();
+	private final PandaModel panda;
+	@SuppressWarnings("rawtypes")
+	private final ZombieModel zombie;
 
 	public PetsLayer(RenderLayerParent<AvatarRenderState, PlayerModel> parent, EntityModelSet models) {
 		super(parent);
@@ -58,12 +69,14 @@ public final class PetsLayer extends RenderLayer<AvatarRenderState, PlayerModel>
 		bee = new BeeModel(models.bakeLayer(ModelLayers.BEE));
 		vex = new VexModel(models.bakeLayer(ModelLayers.VEX));
 		wolf = new WolfModel(models.bakeLayer(ModelLayers.WOLF));
+		panda = new PandaModel(models.bakeLayer(ModelLayers.PANDA_BABY));
+		zombie = new ZombieModel(models.bakeLayer(ModelLayers.ZOMBIE_BABY));
 	}
 
 	@Override
 	public void submit(PoseStack poseStack, SubmitNodeCollector collector, int light, AvatarRenderState state,
 			float yRot, float xRot) {
-		if (state.isInvisible || !Cosmetics.has(state, Cosmetics.PETS)) {
+		if ((state.isInvisible && !FirstPerson.is(state)) || !Cosmetics.has(state, Cosmetics.PETS)) {
 			return;
 		}
 		float t = state.ageInTicks;
@@ -78,7 +91,7 @@ public final class PetsLayer extends RenderLayer<AvatarRenderState, PlayerModel>
 				continue;
 			}
 			float side = slot == 0 ? 1.0F : -1.0F;
-			boolean walker = type.equals("wolf") || type.equals("penguin");
+			boolean walker = Play.walker(type);
 			boolean ground = type.equals("slime") || walker;
 			float scale = switch (type) {
 				case "slime" -> 0.7F;
@@ -87,6 +100,9 @@ public final class PetsLayer extends RenderLayer<AvatarRenderState, PlayerModel>
 				case "wolf" -> 0.45F;
 				case "penguin" -> 0.6F;
 				case "dragon" -> 0.35F;
+				case "serpent" -> 0.35F;
+				case "panda" -> 0.55F;
+				case "zombie" -> 0.6F;
 				default -> 0.65F;
 			};
 			float tx = side * 1.35F, tz = 0.35F;
@@ -109,7 +125,7 @@ public final class PetsLayer extends RenderLayer<AvatarRenderState, PlayerModel>
 				tz += (1.4F - tz) * fly;
 			}
 			// Neugier: ab und zu kurz zu einem Tier oder Spieler in der Nähe und wieder zurück
-			float[] curious = lie < 0.5F && fly < 0.5F ? Curiosity.target(state, slot, ground) : null;
+			float[] curious = lie < 0.5F && fly < 0.5F && !CosmeticsPreviewScreen.is(state) ? Curiosity.target(state, slot, ground) : null;
 			if (curious != null) {
 				tx = curious[0];
 				tz = curious[2];
@@ -117,7 +133,17 @@ public final class PetsLayer extends RenderLayer<AvatarRenderState, PlayerModel>
 					ty = curious[1];
 				}
 			}
-			if (curious == null && lie < 0.5F) {
+			// Spielen: dem rennenden Mini-Me auf dem Kreis hinterherjagen (etwas dahinter)
+			float play = walker ? Play.angle(state) : Float.NaN;
+			boolean playing = !Float.isNaN(play);
+			if (playing) {
+				float[] c = Play.at(play - 0.75F - slot * 0.45F);
+				tx = c[0];
+				tz = c[1];
+				curious = null;
+			}
+			boolean preview = CosmeticsPreviewScreen.is(state);
+			if (curious == null && lie < 0.5F && !playing && !preview) {
 				// herumstreifen: alle paar Sekunden ein neuer Platz in der Nähe, dazwischen bleibt es stehen
 				float[] r = Roam.offset(state.id, 8 + slot, t, side, ground ? 1.3F : 1.0F);
 				tx += r[0];
@@ -126,14 +152,17 @@ public final class PetsLayer extends RenderLayer<AvatarRenderState, PlayerModel>
 			// eigenständig: gefedert hinterher, schwebt bzw. hüpft um seinen Platz, schaut in Laufrichtung
 			boolean hopping = ground && !walker && fly < 0.5F;
 			float hopY = hopping ? ty - (1.5F - 1.5F * scale) : 0.0F;
-			float[] p = Followers.follow(state, 8 + slot, tx, ty - hopY, tz, ground ? 7.0F : 4.5F,
-					curious != null ? 0.05F : ground ? 0.05F : 0.15F, hopping || walker ? 0.0F : 0.6F, (hopping || walker && fly < 0.5F) && lie < 0.5F);
+			// in der Vorschau fest am Platz (der Drehteller dreht den Spieler, nicht die Welt)
+			float[] p = preview ? new float[]{tx, ty - hopY, tz, 0.0F, 0.0F}
+					: Followers.follow(state, 8 + slot, tx, ty - hopY, tz, playing ? 12.0F : ground ? 7.0F : 4.5F,
+					curious != null || playing ? 0.05F : ground ? 0.05F : 0.15F, hopping || walker ? 0.0F : 0.6F,
+					(hopping || walker && fly < 0.5F) && lie < 0.5F);
 			// Landestaub: beim Aufkommen ein paar Partikel des Bodens
 			if (hopping) {
 				Curiosity.landing(state, slot, hopY > -0.005F, p);
 			}
 			// nie im Boden verschwinden: Füße mindestens auf dem Boden (Fliegende etwas darüber)
-			{
+			if (!preview) {
 				double[] w = Followers.layerToWorld(state, p[0], p[1], p[2]);
 				double feetY = state.y + 1.501 - (p[1] + hopY + 1.5F * scale);
 				double gy = Followers.groundY(w[0], feetY + 0.6, w[2]);
@@ -144,7 +173,9 @@ public final class PetsLayer extends RenderLayer<AvatarRenderState, PlayerModel>
 			}
 			poseStack.pushPose();
 			BodyPose.undo(poseStack, state, true);
-			shadow(poseStack, collector, state, p, scale, ground);
+			if (!preview) {
+				shadow(poseStack, collector, state, p, scale, ground);
+			}
 			poseStack.translate(p[0], p[1] + hopY, p[2]);
 			poseStack.mulPose(Axis.YP.rotationDegrees(p[3]));
 			poseStack.scale(scale, scale, scale);
@@ -171,10 +202,33 @@ public final class PetsLayer extends RenderLayer<AvatarRenderState, PlayerModel>
 					submit(collector, poseStack, wolf, s, WOLF_TEX);
 				}
 				case "penguin" -> {
-					// Minecraft-Stil (Würfelmodell); das 3D-Modell wirkte zwischen den Blöcken zu künstlich
+					// Minecraft-Stil (Würfelmodell); beim Spielen rutscht er auf dem Bauch hinterher
+					if (playing) {
+						poseStack.translate(0.0F, 1.5F - 0.28F, 0.0F);
+						poseStack.mulPose(Axis.XP.rotationDegrees(80.0F)); // Kopf nach vorn, Bauch nach unten
+						poseStack.translate(0.0F, -1.5F, 0.0F);
+					}
 					submit(collector, poseStack, penguin,
 							base(new LivingEntityRenderState(), t, Math.min(1F, Math.max(state.walkAnimationSpeed * 1.5F, p[4] * 2.5F))), PENGUIN_TEX);
 				}
+				case "panda" -> {
+					PandaRenderState s = base(new PandaRenderState(), t, Math.min(1F, Math.max(state.walkAnimationSpeed * 1.5F, p[4] * 2.5F)));
+					s.variant = net.minecraft.world.entity.animal.panda.Panda.Gene.NORMAL;
+					s.isBaby = true;
+					if (playing) {
+						s.rollAmount = 1.0F; // purzelt beim Spielen
+						s.rollTime = t;
+					}
+					submit(collector, poseStack, panda, s, PANDA_TEX);
+				}
+				case "zombie" -> {
+					ZombieRenderState s = base(new ZombieRenderState(), t, Math.min(1F, Math.max(state.walkAnimationSpeed * 1.5F, p[4] * 2.5F)));
+					s.isBaby = true;
+					s.isAggressive = playing; // jagt mit hochgerissenen Armen
+					submit(collector, poseStack, zombie, s, ZOMBIE_TEX);
+				}
+				case "serpent" -> submit(collector, poseStack, serpent, base(new LivingEntityRenderState(), t + slot * 17.0F, 0.0F),
+						SERPENT_TEX);
 				case "dragon" -> {
 					// Minecraft-Stil (Würfelmodell) – passend zum Pinguin
 					submit(collector, poseStack, dragon, base(new LivingEntityRenderState(), t + slot * 13.0F, 0.0F), DRAGON_TEX);
