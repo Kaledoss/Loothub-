@@ -367,7 +367,7 @@ public final class MiniMeLayer extends RenderLayer<AvatarRenderState, PlayerMode
 			float side = i % 2 == 0 ? 1.0F : -1.0F; // gerade = rechts, ungerade = links (Modellraum)
 			AvatarRenderState mini = miniState(state.id, i, skin, t);
 			// Platz-Haltung: Position (x, y, z) und Neigung (vorn/hinten, seitlich)
-			float tx, ty, tz, rx, rz = 0.0F, ry = 0.0F;
+			float tx, ty, tz, rx, rz = 0.0F, ry = 0.0F, ownSpeed = 0.0F;
 			// Nachziehen: beim Drehen schwenken sie hinterher, beim Laufen bleiben sie etwas zurück
 			float lag = Motion.yawLag(state);
 			float fwd = Mth.clamp(Motion.forward(state), -0.3F, 0.7F);
@@ -435,12 +435,13 @@ public final class MiniMeLayer extends RenderLayer<AvatarRenderState, PlayerMode
 					tx += r[0];
 					tz += r[1];
 				}
-				float[] f = Followers.follow(state, i, tx, ty, tz, air ? 4.5F : 7.0F, air ? 0.5F : (sitDown ? 0.0F : 0.3F),
+				float[] f = Followers.follow(state, i, tx, ty, tz, air ? 4.5F : 7.0F, air ? 0.12F : (sitDown ? 0.0F : 0.06F),
 						air ? 0.5F : 0.0F, !air && lie < 0.5F && !swimming);
 				tx = f[0];
 				ty = f[1];
 				tz = f[2];
 				ry = f[3];
+				ownSpeed = f[4];
 			}
 			boolean sleeping = lie > 0.5F;
 			// das erste schwebende Mini-Me sitzt auf einer kleinen Wolke, das zweite fliegt frei (fliegt der Spieler, beide frei)
@@ -456,7 +457,8 @@ public final class MiniMeLayer extends RenderLayer<AvatarRenderState, PlayerMode
 				mini.walkAnimationSpeed = 0.8F;
 			} else if (i >= 4 && !sleeping) {
 				mini.walkAnimationPos = crawlPhase(state, i);
-				mini.walkAnimationSpeed = Math.min(1.0F, state.walkAnimationSpeed * 1.5F);
+				// krabbelt mit, wenn der Spieler läuft – und auch, wenn es selbst zu einem neuen Platz unterwegs ist
+				mini.walkAnimationSpeed = Math.min(1.0F, Math.max(state.walkAnimationSpeed * 1.5F, ownSpeed * 2.5F));
 			}
 			boolean crawling = i >= 4 && !sleeping && fly < 0.5F && !sitDown && !swimming;
 			if (!sleeping && !crawling && !swimming) {

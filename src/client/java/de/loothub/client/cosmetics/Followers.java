@@ -19,9 +19,12 @@ public final class Followers {
 		float yaw;
 		long last;
 		boolean init;
+		int player;
 	}
 
 	private static final Map<Long, F> MAP = new HashMap<>();
+	/** Mindestabstand zwischen zwei Begleitern bzw. zum Spieler (Blöcke). */
+	private static final double SPACING = 0.75, BODY = 0.65;
 
 	private Followers() {
 	}
@@ -69,7 +72,7 @@ public final class Followers {
 	 * @param stiffness wie fest die Feder zieht (höher = folgt enger)
 	 * @param wander wie weit er um seinen Platz herumschwebt (Blöcke)
 	 * @param wanderY Anteil des Herumschwebens in der Höhe (0 = bleibt am Boden)
-	 * @return {x, y, z, Drehung relativ zum Spieler in Grad}
+	 * @return {x, y, z, Drehung relativ zum Spieler in Grad, eigenes Tempo relativ zum Spieler (Blöcke/s)}
 	 */
 	public static float[] follow(AvatarRenderState s, int slot, float tx, float ty, float tz, float stiffness, float wander,
 			float wanderY) {
@@ -81,6 +84,7 @@ public final class Followers {
 			float wanderY, boolean ground) {
 		long key = ((long) s.id << 5) | slot;
 		F f = MAP.computeIfAbsent(key, k -> new F());
+		f.player = s.id;
 		long now = System.nanoTime();
 		float t = now / 1.0e9F;
 		float seed = slot * 1.73F + (s.id % 97) * 0.31F;
@@ -114,6 +118,31 @@ public final class Followers {
 			f.vx += (stiffness * (gx - f.ox) - damp * f.vx) * dt;
 			f.vy += (stiffness * (gy - f.oy) - damp * f.vy) * dt;
 			f.vz += (stiffness * (gz - f.oz) - damp * f.vz) * dt;
+			// Abstand halten: Begleiter desselben Spielers schieben sich sanft auseinander, und keiner läuft durch
+			// den Spieler hindurch – so schneiden sie sich nicht
+			double push = Math.max(12.0, stiffness * 3.0);
+			for (F o : MAP.values()) {
+				if (o == f || o.player != f.player || !o.init || now - o.last > 500_000_000L) {
+					continue;
+				}
+				double dx = f.ox - o.ox, dy = f.oy - o.oy, dz = f.oz - o.oz;
+				double d = Math.sqrt(dx * dx + dy * dy * 0.5 + dz * dz);
+				if (d < SPACING) {
+					if (d < 1.0e-4) {
+						dx = (f.player + slot) % 2 == 0 ? 0.01 : -0.01;
+						d = 0.01;
+					}
+					double k = push * (SPACING - d) / d;
+					f.vx += dx * k * dt;
+					f.vz += dz * k * dt;
+				}
+			}
+			double hd = Math.sqrt(f.ox * f.ox + f.oz * f.oz);
+			if (hd < BODY && f.oy > -0.3 && f.oy < 2.0) {
+				double k = push * (BODY - hd) / Math.max(hd, 1.0e-3);
+				f.vx += (hd < 1.0e-3 ? 0.01 : f.ox) * k * dt;
+				f.vz += (hd < 1.0e-3 ? 0.0 : f.oz) * k * dt;
+			}
 			f.ox += f.vx * dt;
 			f.oy += f.vy * dt;
 			f.oz += f.vz * dt;
@@ -128,6 +157,7 @@ public final class Followers {
 			long cut = now - 30_000_000_000L;
 			MAP.values().removeIf(v -> v.last < cut);
 		}
-		return new float[]{(float) -lx, (float) (1.501 - f.oy), (float) lz, Mth.wrapDegrees(f.yaw - s.bodyRot)};
+		return new float[]{(float) -lx, (float) (1.501 - f.oy), (float) lz, Mth.wrapDegrees(f.yaw - s.bodyRot),
+				(float) Math.sqrt(f.vx * f.vx + f.vz * f.vz)};
 	}
 }

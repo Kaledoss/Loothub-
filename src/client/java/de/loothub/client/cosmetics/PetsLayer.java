@@ -117,11 +117,17 @@ public final class PetsLayer extends RenderLayer<AvatarRenderState, PlayerModel>
 					ty = curious[1];
 				}
 			}
+			if (curious == null && lie < 0.5F) {
+				// herumstreifen: alle paar Sekunden ein neuer Platz in der Nähe, dazwischen bleibt es stehen
+				float[] r = Roam.offset(state.id, 8 + slot, t, side, ground ? 1.3F : 1.0F);
+				tx += r[0];
+				tz += r[1];
+			}
 			// eigenständig: gefedert hinterher, schwebt bzw. hüpft um seinen Platz, schaut in Laufrichtung
 			boolean hopping = ground && !walker && fly < 0.5F;
 			float hopY = hopping ? ty - (1.5F - 1.5F * scale) : 0.0F;
 			float[] p = Followers.follow(state, 8 + slot, tx, ty - hopY, tz, ground ? 7.0F : 4.5F,
-					curious != null ? 0.1F : ground ? 0.45F : 0.6F, hopping || walker ? 0.0F : 0.6F, (hopping || walker && fly < 0.5F) && lie < 0.5F);
+					curious != null ? 0.05F : ground ? 0.05F : 0.15F, hopping || walker ? 0.0F : 0.6F, (hopping || walker && fly < 0.5F) && lie < 0.5F);
 			// Landestaub: beim Aufkommen ein paar Partikel des Bodens
 			if (hopping) {
 				Curiosity.landing(state, slot, hopY > -0.005F, p);
@@ -161,15 +167,15 @@ public final class PetsLayer extends RenderLayer<AvatarRenderState, PlayerModel>
 					submit(collector, poseStack, bee, s, BEE_TEX);
 				}
 				case "wolf" -> {
-					WolfRenderState s = base(new WolfRenderState(), t, Math.min(1F, state.walkAnimationSpeed * 1.5F));
+					WolfRenderState s = base(new WolfRenderState(), t, Math.min(1F, Math.max(state.walkAnimationSpeed * 1.5F, p[4] * 2.5F)));
 					submit(collector, poseStack, wolf, s, WOLF_TEX);
 				}
 				case "penguin" -> {
 					if (PENGUIN_3D.ready()) {
-						penguin3d(poseStack, collector, t, Math.min(1F, state.walkAnimationSpeed * 1.5F), slot);
+						penguin3d(poseStack, collector, t, Math.min(1F, Math.max(state.walkAnimationSpeed * 1.5F, p[4] * 2.5F)), slot);
 					} else {
 						submit(collector, poseStack, penguin,
-								base(new LivingEntityRenderState(), t, Math.min(1F, state.walkAnimationSpeed * 1.5F)), PENGUIN_TEX);
+								base(new LivingEntityRenderState(), t, Math.min(1F, Math.max(state.walkAnimationSpeed * 1.5F, p[4] * 2.5F))), PENGUIN_TEX);
 					}
 				}
 				case "dragon" -> {
