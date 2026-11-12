@@ -176,68 +176,13 @@ public final class PetsLayer extends RenderLayer<AvatarRenderState, PlayerModel>
 							base(new LivingEntityRenderState(), t, Math.min(1F, Math.max(state.walkAnimationSpeed * 1.5F, p[4] * 2.5F))), PENGUIN_TEX);
 				}
 				case "dragon" -> {
-					if (DRAGON_3D.ready()) {
-						dragon3d(poseStack, collector, t, slot);
-					} else {
-						submit(collector, poseStack, dragon, base(new LivingEntityRenderState(), t, 0.0F), DRAGON_TEX);
-					}
+					// Minecraft-Stil (Würfelmodell) – passend zum Pinguin
+					submit(collector, poseStack, dragon, base(new LivingEntityRenderState(), t + slot * 13.0F, 0.0F), DRAGON_TEX);
 				}
 				default -> submit(collector, poseStack, vex, base(new VexRenderState(), t, 0.3F), VEX_TEX);
 			}
 			poseStack.popPose();
 		}
-	}
-
-	private static final Mesh3D DRAGON_3D = new Mesh3D("dragon");
-	/** Spannweite des Drachens in Modell-Einheiten (vor dem Tier-Maßstab). */
-	private static final float DRAGON_W = 2.6F;
-	/** Flügelansatz des Drachens (Mesh-Einheiten); y wird beim ersten Mal aus dem Modell bestimmt. */
-	private static final float WING_ROOT = 0.1F;
-	private static float wingY = Float.NaN;
-
-	/** Mini-Drache (3D): schlägt mit den Flügeln (Spitzen verzögert), schwebt sanft auf und ab. */
-	private static void dragon3d(PoseStack poseStack, SubmitNodeCollector collector, float t, int slot) {
-		if (Float.isNaN(wingY)) {
-			float[] d = DRAGON_3D.data();
-			double sum = 0;
-			int n = 0;
-			for (int i = 0; i < d.length; i += 8) {
-				float ax = Math.abs(d[i]);
-				if (ax > 0.12F && ax < 0.18F) {
-					sum += d[i + 1];
-					n++;
-				}
-			}
-			wingY = n > 0 ? (float) (sum / n) : -0.35F;
-		}
-		poseStack.pushPose();
-		poseStack.translate(0.0F, 1.5F, 0.0F);
-		float ph = t * 0.32F + slot * 1.7F;
-		float flap = (float) Math.sin(ph);
-		poseStack.translate(0.0F, flap * 0.04F, 0.0F); // Auftrieb: beim Abschlag leicht hoch
-		poseStack.mulPose(Axis.XP.rotationDegrees(6.0F + (float) Math.sin(t * 0.05F + slot) * 3.0F));
-		poseStack.scale(DRAGON_W, DRAGON_W, DRAGON_W);
-		final float wy = wingY;
-		DRAGON_3D.submit(poseStack, collector, 0xF000F0, p -> {
-			float ax = Math.abs(p[0]);
-			if (ax <= WING_ROOT) {
-				return;
-			}
-			float sgn = Math.signum(p[0]);
-			float w = Mth.clamp((ax - WING_ROOT) / 0.1F, 0.0F, 1.0F);
-			w = w * w * (3.0F - 2.0F * w);
-			// außen etwas später als innen: die Spitzen schwingen nach
-			float a = (float) Math.sin(ph - (ax - WING_ROOT) * 2.5F) * 0.6F * w;
-			float th = -sgn * a;
-			float c = (float) Math.cos(th), s = (float) Math.sin(th);
-			float dx = p[0] - sgn * WING_ROOT, dy = p[1] - wy;
-			p[0] = sgn * WING_ROOT + dx * c - dy * s;
-			p[1] = wy + dx * s + dy * c;
-			float nx = p[3], ny = p[4];
-			p[3] = nx * c - ny * s;
-			p[4] = nx * s + ny * c;
-		});
-		poseStack.popPose();
 	}
 
 	private static final Identifier SHADOW = Identifier.withDefaultNamespace("textures/misc/shadow.png");

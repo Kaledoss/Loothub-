@@ -95,6 +95,8 @@ public final class Cosmetics {
 	private static final Map<Object, List<String>> SKINS = new WeakHashMap<>();
 	private static final Map<Object, String> AURAS = new WeakHashMap<>();
 	private static final Map<Object, Map<String, String>> VALUES = new WeakHashMap<>();
+	/** Render-Zustand → UUID des Spielers (für geteilte Gesten). */
+	private static final Map<Object, java.util.UUID> OWNERS = new WeakHashMap<>();
 	/** Zuletzt gesehene Cosmetics je Spieler (Entity-ID) – für Partikel im Tick. */
 	private static final Map<Integer, Snapshot> BY_PLAYER = new HashMap<>();
 
@@ -269,11 +271,21 @@ public final class Cosmetics {
 		return r;
 	}
 
+	/** UUID des Spielers zu diesem Render-Zustand (oder null). */
+	public static java.util.UUID owner(Object state) {
+		return state == null ? null : OWNERS.get(state);
+	}
+
 	/** Beim Vorbereiten des Renderns: Cosmetics des Spielers an seinen Render-Zustand hängen. */
 	public static void mark(Object state, LivingEntity entity) {
 		SKINS.remove(state);
 		AURAS.remove(state);
 		VALUES.remove(state);
+		if (entity instanceof Player owner) {
+			OWNERS.put(state, owner.getUUID());
+		} else {
+			OWNERS.remove(state);
+		}
 		if (!(entity instanceof Player p) || !WidgetConfig.get().cosmetics) {
 			STATES.remove(state);
 			return;

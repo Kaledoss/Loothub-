@@ -21,9 +21,15 @@ public final class Emotes {
 	public static void play(int type) {
 		played = type;
 		playedAt = System.currentTimeMillis();
+		EmoteShare.send(type); // andere Loothub-Spieler sehen die Geste auch
 	}
 
 	/** Läuft gerade eine Geste aus dem Emote-Rad? {Art, Fortschritt 0..1} oder null – auch der Spieler selbst macht sie. */
+	/** Geste aus dem Emote-Rad für diesen Spieler-Zustand: eigene oder die eines anderen Loothub-Spielers. */
+	public static float[] wheel(Object playerState) {
+		return Motion.local(playerState) ? wheel() : EmoteShare.remote(Cosmetics.owner(playerState));
+	}
+
 	public static float[] wheel() {
 		long d = System.currentTimeMillis() - playedAt;
 		return played != NONE && d >= 0 && d < PLAY_MS ? new float[]{played, d / (float) PLAY_MS} : null;
@@ -126,6 +132,13 @@ public final class Emotes {
 			float p = Math.max(0F, (now - playedAt - slot * 120L) / (float) PLAY_MS);
 			return new float[]{played, Math.min(1F, p)};
 		}
+		if (!local) {
+			// Geste, die ein anderer Loothub-Spieler gerade im Emote-Rad gewählt hat
+			float[] r = EmoteShare.remote(Cosmetics.owner(playerState));
+			if (r != null) {
+				return new float[]{r[0], Math.max(0F, Math.min(1F, r[1] - slot * 0.03F))};
+			}
+		}
 		if (gestures && local && now - cheerAt < CHEER_MS) {
 			return new float[]{CHEER, (now - cheerAt) / (float) CHEER_MS};
 		}
@@ -205,6 +218,13 @@ public final class Emotes {
 			boolean morning = day >= 23_000L || day < 1_000L;
 			if (morning) {
 				float p = window(now, 20_000L, slot * 3_100L, 2_200L);
+				if (p >= 0) {
+					return new float[]{YAWN, p};
+				}
+			}
+			// nachts gähnen sie ab und zu auch unterwegs
+			if (night && !(lazy) && Motion.idle(playerState) <= 6.0F) {
+				float p = window(now, 40_000L, slot * 4_700L + 6_000L, 2_200L);
 				if (p >= 0) {
 					return new float[]{YAWN, p};
 				}

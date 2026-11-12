@@ -95,6 +95,48 @@ async function playerCertificateKeys(env) {
 	return stored ? [...new Set([...stored.keys, ...BUILTIN_KEYS])] : BUILTIN_KEYS;
 }
 
+/**
+ * Prüft, ob {@code message} mit dem von Mojang für diese UUID beglaubigten Spieler-Schlüssel unterschrieben ist.
+ * Gibt null zurück, wenn alles stimmt, sonst den Grund.
+ */
+async function verifySigned(env, uuid, publicKey, expiresAt, keySignature, signature, messageText) {
+	// 1) Ist der Spieler-Schlüssel von Mojang für diese UUID beglaubigt?
+	const keyBytes = b64(publicKey);
+	const certified = new Uint8Array(24 + keyBytes.length);
+	certified.set(uuidBytes(uuid), 0);
+	new DataView(certified.buffer).setBigInt64(16, BigInt(expiresAt));
+	certified.set(keyBytes, 24);
+	const mojangKeys = await playerCertificateKeys(env);
+	if (mojangKeys.length === 0) {
+		return "mojang keys unavailable";
+	}
+	let ok = false;
+	for (const k of mojangKeys) {
+		try {
+			const key = await crypto.subtle.importKey("spki", b64(k), { name: "RSASSA-PKCS1-v1_5", hash: "SHA-1" }, false, ["verify"]);
+			if (await crypto.subtle.verify("RSASSA-PKCS1-v1_5", key, b64(keySignature), certified)) {
+				ok = true;
+				break;
+			}
+		} catch {
+			// nächster Schlüssel
+		}
+	}
+	if (!ok) {
+		return "key not certified";
+	}
+	// 2) Hat dieser Schlüssel genau diese Nachricht unterschrieben?
+	const playerKey = await crypto.subtle.importKey("spki", keyBytes, { name: "RSASSA-PKCS1-v1_5", hash: "SHA-256" }, false, ["verify"]);
+	if (!(await crypto.subtle.verify("RSASSA-PKCS1-v1_5", playerKey, b64(signature), new TextEncoder().encode(messageText)))) {
+		return "bad signature";
+	}
+	return null;
+}
+
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
+/** Gesten werden nur kurz im Cache des Rechenzentrums gehalten (kein KV – das wäre zu langsam und begrenzt). */
+const EMOTE_TTL = 15;
+
 export default {
 	async fetch(request, env, ctx) {
 		const url = new URL(request.url);
@@ -137,36 +179,10 @@ export default {
 			if (expiresAt < now) {
 				return json({ error: "key expired" }, 403);
 			}
-			// 1) Ist der Spieler-Schlüssel von Mojang für diese UUID beglaubigt?
-			const keyBytes = b64(publicKey);
-			const certified = new Uint8Array(24 + keyBytes.length);
-			certified.set(uuidBytes(uuid), 0);
-			new DataView(certified.buffer).setBigInt64(16, BigInt(expiresAt));
-			certified.set(keyBytes, 24);
-			const mojangKeys = await playerCertificateKeys(env);
-			if (mojangKeys.length === 0) {
-				return json({ error: "mojang keys unavailable" }, 503);
-			}
-			let ok = false;
-			for (const k of mojangKeys) {
-				try {
-					const key = await crypto.subtle.importKey("spki", b64(k), { name: "RSASSA-PKCS1-v1_5", hash: "SHA-1" }, false, ["verify"]);
-					if (await crypto.subtle.verify("RSASSA-PKCS1-v1_5", key, b64(keySignature), certified)) {
-						ok = true;
-						break;
-					}
-				} catch {
-					// nächster Schlüssel
-				}
-			}
-			if (!ok) {
-				return json({ error: "key not certified" }, 403);
-			}
-			// 2) Hat dieser Schlüssel genau diese Auswahl unterschrieben?
-			const playerKey = await crypto.subtle.importKey("spki", keyBytes, { name: "RSASSA-PKCS1-v1_5", hash: "SHA-256" }, false, ["verify"]);
-			const message = new TextEncoder().encode(`loothub-cosmetics\n${uuid}\n${ts}\n${profileJson}`);
-			if (!(await crypto.subtle.verify("RSASSA-PKCS1-v1_5", playerKey, b64(signature), message))) {
-				return json({ error: "bad signature" }, 403);
+			const why = await verifySigned(env, uuid, publicKey, expiresAt, keySignature, signature,
+				`loothub-cosmetics\n${uuid}\n${ts}\n${profileJson}`);
+			if (why) {
+				return json({ error: why }, why === "mojang keys unavailable" ? 503 : 403);
 			}
 
 			let parsed = null;
@@ -185,6 +201,59 @@ export default {
 			await env.COSMETICS.put("all", JSON.stringify(all));
 			ctx.waitUntil(caches.default.delete(cacheKey));
 			return json({ ok: true });
+		}
+
+		// Geste aus dem Emote-Rad melden: nur unterschrieben, nur eigene UUID, höchstens kurz gespeichert
+		if (url.pathname === "/emote" && request.method === "POST") {
+			let body;
+			try {
+				body = await request.json();
+			} catch {
+				return json({ error: "bad json" }, 400);
+			}
+			const { uuid, ts, emote, publicKey, expiresAt, keySignature, signature } = body || {};
+			if (typeof uuid !== "string" || !UUID_RE.test(uuid) || typeof ts !== "number" || !Number.isInteger(emote)
+				|| emote < 1 || emote > 63 || typeof publicKey !== "string" || typeof expiresAt !== "number"
+				|| typeof keySignature !== "string" || typeof signature !== "string") {
+				return json({ error: "bad request" }, 400);
+			}
+			const now = Date.now();
+			if (Math.abs(now - ts) > 30_000 || expiresAt < now) {
+				return json({ error: "stale" }, 400);
+			}
+			const why = await verifySigned(env, uuid, publicKey, expiresAt, keySignature, signature,
+				`loothub-emote\n${uuid}\n${ts}\n${emote}`);
+			if (why) {
+				return json({ error: why }, why === "mojang keys unavailable" ? 503 : 403);
+			}
+			const key = new Request(`${url.origin}/emote-cache/${uuid}`);
+			ctx.waitUntil(caches.default.put(key, new Response(JSON.stringify({ e: emote, t: now }), {
+				headers: { "content-type": "application/json", "cache-control": `public, max-age=${EMOTE_TTL}` },
+			})));
+			return json({ ok: true });
+		}
+
+		// Gesten mehrerer Spieler abfragen: {uuid: {e, age}} – nur die der letzten Sekunden
+		if (url.pathname === "/emotes" && request.method === "GET") {
+			const ids = (url.searchParams.get("ids") || "").split(",").filter((id) => UUID_RE.test(id)).slice(0, 20);
+			const out = {};
+			const now = Date.now();
+			await Promise.all(ids.map(async (id) => {
+				const hit = await caches.default.match(new Request(`${url.origin}/emote-cache/${id}`));
+				if (hit) {
+					try {
+						const v = await hit.json();
+						if (now - v.t < EMOTE_TTL * 1000) {
+							out[id] = { e: v.e, age: now - v.t };
+						}
+					} catch {
+						// kaputter Eintrag – ignorieren
+					}
+				}
+			}));
+			return new Response(JSON.stringify(out), {
+				headers: { "content-type": "application/json; charset=utf-8", "cache-control": "no-store" },
+			});
 		}
 
 		return new Response("Loothub Cosmetics", { status: 200 });

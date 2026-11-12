@@ -44,13 +44,14 @@ public abstract class FlyPoseModelMixin {
 		m.leftLeg.zRot = lerp(f, m.leftLeg.zRot, -0.03F);
 	}
 
-	/** Emote-Rad: der eigene Spieler macht die Geste mit (nur Darstellung, nicht beim Zuschlagen oder Benutzen). */
+	/** Emote-Rad: der Spieler macht die Geste mit (auch andere Loothub-Spieler) (nur Darstellung, nicht beim Zuschlagen oder Benutzen). */
 	private void loothub$wheelEmote(AvatarRenderState state) {
-		if (de.loothub.client.cosmetics.MiniMeLayer.mini(this) || !Motion.local(state) || Motion.fly(state) > 0.5F
+		if (de.loothub.client.cosmetics.MiniMeLayer.mini(this) || Motion.fly(state) > 0.5F
 				|| state.attackTime > 0.0F || state.isUsingItem) {
 			return;
 		}
-		float[] e = de.loothub.client.cosmetics.Emotes.wheel();
+		// eigene Geste oder die eines anderen Loothub-Spielers
+		float[] e = de.loothub.client.cosmetics.Emotes.wheel(state);
 		if (e != null) {
 			de.loothub.client.cosmetics.MiniMeLayer.pose((PlayerModel) (Object) this, state, e);
 		}

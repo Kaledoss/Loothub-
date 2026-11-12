@@ -83,9 +83,13 @@ final class PetModels {
 		}
 	}
 
-	/** Kleiner Drache mit Flügelschlag und schwingendem Schwanz. */
+	/**
+	 * Mini-Drache im Minecraft-Stil (Würfel, 128×64-Pixeltextur): großer Kopf mit Hörnern und leuchtenden Augen,
+	 * zweiteiliger Hals, dreiteiliger Schwanz mit Stacheln, Flügel aus Knochen und Flughaut mit beweglicher Spitze.
+	 */
 	static final class Dragon extends EntityModel<LivingEntityRenderState> {
-		private final ModelPart body, neck, head, tail, leftWing, rightWing;
+		private final ModelPart body, neck1, neck2, head, tail1, tail2, tail3, leftWing, rightWing, leftTip, rightTip;
+		private final ModelPart[] legs = new ModelPart[4];
 
 		Dragon() {
 			this(create().bakeRoot());
@@ -94,51 +98,97 @@ final class PetModels {
 		private Dragon(ModelPart root) {
 			super(root);
 			body = root.getChild("body");
-			neck = body.getChild("neck");
-			head = neck.getChild("head");
-			tail = body.getChild("tail");
+			neck1 = body.getChild("neck1");
+			neck2 = neck1.getChild("neck2");
+			head = neck2.getChild("head");
+			tail1 = body.getChild("tail1");
+			tail2 = tail1.getChild("tail2");
+			tail3 = tail2.getChild("tail3");
 			leftWing = body.getChild("left_wing");
 			rightWing = body.getChild("right_wing");
+			leftTip = leftWing.getChild("tip");
+			rightTip = rightWing.getChild("tip");
+			for (int i = 0; i < 4; i++) {
+				legs[i] = body.getChild("leg" + i);
+			}
 		}
 
 		static LayerDefinition create() {
 			MeshDefinition mesh = new MeshDefinition();
 			PartDefinition r = mesh.getRoot();
 			PartDefinition body = r.addOrReplaceChild("body", CubeListBuilder.create().texOffs(0, 0)
-					.addBox(-3F, -2F, -6F, 6F, 4F, 12F), PartPose.offset(0F, 16F, 0F));
-			PartDefinition neck = body.addOrReplaceChild("neck", CubeListBuilder.create().texOffs(0, 16)
-					.addBox(-1.5F, -1.5F, -5F, 3F, 3F, 5F), PartPose.offsetAndRotation(0F, -1F, -6F, -0.35F, 0F, 0F));
-			PartDefinition head = neck.addOrReplaceChild("head", CubeListBuilder.create().texOffs(20, 16)
-					.addBox(-2.5F, -2F, -5F, 5F, 4F, 5F), PartPose.offsetAndRotation(0F, 0F, -5F, 0.35F, 0F, 0F));
-			head.addOrReplaceChild("snout", CubeListBuilder.create().texOffs(40, 16).addBox(-1.5F, 0F, -3F, 3F, 2F, 3F),
-					PartPose.offset(0F, -0.5F, -5F));
-			body.addOrReplaceChild("tail", CubeListBuilder.create().texOffs(0, 28).addBox(-1F, -1F, 0F, 2F, 2F, 8F),
-					PartPose.offsetAndRotation(0F, 0F, 6F, 0.2F, 0F, 0F));
-			body.addOrReplaceChild("left_wing", CubeListBuilder.create().texOffs(0, 40).addBox(0F, -0.5F, -4F, 12F, 1F, 8F),
-					PartPose.offset(3F, -1.5F, -1F));
-			body.addOrReplaceChild("right_wing", CubeListBuilder.create().texOffs(0, 52).mirror()
-					.addBox(-12F, -0.5F, -4F, 12F, 1F, 8F), PartPose.offset(-3F, -1.5F, -1F));
-			for (int i = 0; i < 4; i++) {
-				float x = i % 2 == 0 ? 2F : -3F;
-				float z = i < 2 ? -4F : 3F;
-				body.addOrReplaceChild("leg" + i, CubeListBuilder.create().texOffs(48, 0).addBox(0F, 0F, 0F, 1F, 3F, 1F),
-						PartPose.offset(x, 2F, z));
+					.addBox(-4F, -3F, -7F, 8F, 6F, 14F), PartPose.offset(0F, 15F, 0F));
+			for (int i = 0; i < 3; i++) { // Rückenstacheln
+				body.addOrReplaceChild("spine" + i, CubeListBuilder.create().texOffs(48, 20).addBox(-0.5F, -2F, -1F, 1F, 2F, 2F),
+						PartPose.offset(0F, -3F, -4F + i * 4.5F));
 			}
-			return LayerDefinition.create(mesh, 64, 64);
+			PartDefinition neck1 = body.addOrReplaceChild("neck1", CubeListBuilder.create().texOffs(44, 0)
+					.addBox(-2F, -2F, -4F, 4F, 4F, 4F), PartPose.offsetAndRotation(0F, -1.5F, -7F, -0.3F, 0F, 0F));
+			PartDefinition neck2 = neck1.addOrReplaceChild("neck2", CubeListBuilder.create().texOffs(60, 0)
+					.addBox(-1.5F, -1.5F, -3F, 3F, 3F, 3F), PartPose.offsetAndRotation(0F, 0F, -4F, -0.25F, 0F, 0F));
+			PartDefinition head = neck2.addOrReplaceChild("head", CubeListBuilder.create().texOffs(72, 0)
+					.addBox(-3.5F, -3.5F, -6F, 7F, 6F, 6F), PartPose.offsetAndRotation(0F, 0F, -2.5F, 0.55F, 0F, 0F));
+			head.addOrReplaceChild("snout", CubeListBuilder.create().texOffs(98, 0).addBox(-2F, -1F, -4F, 4F, 3F, 4F),
+					PartPose.offset(0F, 0F, -6F));
+			head.addOrReplaceChild("horn_l", CubeListBuilder.create().texOffs(114, 0).addBox(-0.5F, -3F, -0.5F, 1F, 3F, 1F),
+					PartPose.offsetAndRotation(2F, -3.5F, -1.5F, -0.6F, 0F, 0.2F));
+			head.addOrReplaceChild("horn_r", CubeListBuilder.create().texOffs(114, 0).addBox(-0.5F, -3F, -0.5F, 1F, 3F, 1F),
+					PartPose.offsetAndRotation(-2F, -3.5F, -1.5F, -0.6F, 0F, -0.2F));
+			PartDefinition tail1 = body.addOrReplaceChild("tail1", CubeListBuilder.create().texOffs(0, 20)
+					.addBox(-2F, -2F, 0F, 4F, 4F, 5F), PartPose.offsetAndRotation(0F, -0.5F, 7F, -0.12F, 0F, 0F));
+			PartDefinition tail2 = tail1.addOrReplaceChild("tail2", CubeListBuilder.create().texOffs(18, 20)
+					.addBox(-1.5F, -1.5F, 0F, 3F, 3F, 5F), PartPose.offset(0F, 0F, 5F));
+			tail2.addOrReplaceChild("tail3", CubeListBuilder.create().texOffs(34, 20).addBox(-1F, -1F, 0F, 2F, 2F, 5F)
+					.texOffs(48, 20).addBox(-0.5F, -2.5F, 1F, 1F, 2F, 2F), PartPose.offset(0F, 0F, 5F));
+			// Flügel: Knochen vorn, Flughaut dahinter; die Spitze ist ein eigenes Gelenk
+			PartDefinition lw = body.addOrReplaceChild("left_wing", CubeListBuilder.create().texOffs(62, 20)
+					.addBox(0F, -1F, -1F, 10F, 2F, 2F).texOffs(0, 30).addBox(0F, 0F, 1F, 10F, 0F, 9F),
+					PartPose.offset(4F, -2F, -3F));
+			lw.addOrReplaceChild("tip", CubeListBuilder.create().texOffs(62, 24).addBox(0F, -0.5F, -0.5F, 9F, 1F, 1F)
+					.texOffs(40, 30).addBox(0F, 0F, 0.5F, 9F, 0F, 9F), PartPose.offset(10F, 0F, 0F));
+			PartDefinition rw = body.addOrReplaceChild("right_wing", CubeListBuilder.create().mirror().texOffs(62, 20)
+					.addBox(-10F, -1F, -1F, 10F, 2F, 2F).texOffs(0, 30).addBox(-10F, 0F, 1F, 10F, 0F, 9F),
+					PartPose.offset(-4F, -2F, -3F));
+			rw.addOrReplaceChild("tip", CubeListBuilder.create().mirror().texOffs(62, 24).addBox(-9F, -0.5F, -0.5F, 9F, 1F, 1F)
+					.texOffs(40, 30).addBox(-9F, 0F, 0.5F, 9F, 0F, 9F), PartPose.offset(-10F, 0F, 0F));
+			for (int i = 0; i < 4; i++) {
+				float x = i % 2 == 0 ? 2.5F : -2.5F;
+				float z = i < 2 ? -4.5F : 4.5F;
+				body.addOrReplaceChild("leg" + i, CubeListBuilder.create().texOffs(54, 20).addBox(-1F, 0F, -1F, 2F, 4F, 2F),
+						PartPose.offset(x, 2.5F, z));
+			}
+			return LayerDefinition.create(mesh, 128, 64);
 		}
 
 		@Override
 		public void setupAnim(LivingEntityRenderState s) {
 			super.setupAnim(s);
 			float t = s.ageInTicks;
-			float flap = Mth.sin(t * 0.32F);
-			leftWing.zRot = -0.25F + flap * 0.7F;
-			rightWing.zRot = 0.25F - flap * 0.7F;
-			body.y = 16F + flap * 0.6F; // hebt sich mit jedem Flügelschlag
-			tail.yRot = Mth.sin(t * 0.12F) * 0.35F;
-			tail.xRot = 0.2F + Mth.sin(t * 0.09F) * 0.1F;
-			head.yRot = Mth.sin(t * 0.05F) * 0.3F;
-			neck.xRot = -0.35F + Mth.sin(t * 0.08F) * 0.08F;
+			float ph = t * 0.3F;
+			float flap = Mth.sin(ph);
+			float lag = Mth.sin(ph - 0.9F); // die Spitzen schwingen nach
+			leftWing.zRot = -0.15F - flap * 0.6F;
+			rightWing.zRot = 0.15F + flap * 0.6F;
+			leftTip.zRot = -0.25F - lag * 0.45F;
+			rightTip.zRot = 0.25F + lag * 0.45F;
+			leftWing.yRot = -0.1F + flap * 0.08F;
+			rightWing.yRot = 0.1F - flap * 0.08F;
+			body.y = 15F + flap * 0.8F; // hebt sich mit jedem Abschlag
+			body.xRot = Mth.sin(t * 0.05F) * 0.05F;
+			// Schwanz wellt sich, jedes Glied etwas später
+			tail1.yRot = Mth.sin(t * 0.12F) * 0.25F;
+			tail2.yRot = Mth.sin(t * 0.12F - 0.7F) * 0.3F;
+			tail3.yRot = Mth.sin(t * 0.12F - 1.4F) * 0.35F;
+			tail1.xRot = -0.12F + Mth.sin(t * 0.09F) * 0.06F;
+			// Hals und Kopf schauen sich um
+			neck1.yRot = Mth.sin(t * 0.04F) * 0.2F;
+			neck2.yRot = Mth.sin(t * 0.04F - 0.5F) * 0.15F;
+			neck1.xRot = -0.3F + Mth.sin(t * 0.08F) * 0.06F;
+			head.yRot = Mth.sin(t * 0.05F + 1.0F) * 0.2F;
+			// Beine baumeln im Flug
+			for (int i = 0; i < 4; i++) {
+				legs[i].xRot = 0.5F + Mth.sin(t * 0.1F + i) * 0.12F;
+			}
 		}
 	}
 }

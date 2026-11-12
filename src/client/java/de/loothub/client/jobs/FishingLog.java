@@ -213,6 +213,10 @@ public final class FishingLog {
 		save();
 		FishSounds.onCatch();
 		FishAlert.post(c);
+		// ab Legendär jubeln die Mini-Mes mit
+		if (rank(c.rarity) >= 5) {
+			de.loothub.client.cosmetics.Emotes.cheer();
+		}
 	}
 
 	/** Biom am Schwimmer – dort beißt der Fisch –, sonst am Spieler. */

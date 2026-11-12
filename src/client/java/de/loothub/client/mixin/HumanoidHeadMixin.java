@@ -37,6 +37,12 @@ public abstract class HumanoidHeadMixin {
 					}
 				}
 				hideBackpack(entity, state);
+				// geteilte Geste: Hände leer, solange der andere Spieler sie macht
+				if (de.loothub.client.cosmetics.EmoteShare.remote(entity.getUUID()) != null && !state.isUsingItem
+						&& state.attackTime <= 0.0F && de.loothub.client.cosmetics.Motion.fly(state) <= 0.5F) {
+					state.leftHandItemState.clear();
+					state.rightHandItemState.clear();
+				}
 			}
 			return;
 		}
