@@ -485,6 +485,8 @@
 	"loothub.settings.chat_filter.tooltip": "Hides messages with these words in every chat – also the normal Minecraft chat.",
 	"loothub.settings.timers": "Custom timers",
 	"loothub.settings.timers.tooltip": "Countdowns and daily reminders with display and sound. Create them in the menu under “Daily”.",
+	"loothub.settings.compressor_icon": "Compressor icon",
+	"loothub.settings.compressor_icon.tooltip": "Shows a small icon on the compressor in your inventory and hotbar of what it compresses. Open the compressor menu once and Loothub remembers its targets. Several alternate.",
 	"loothub.settings.durability_numbers": "Durability as number",
 	"loothub.settings.durability_numbers.tooltip": "Shows the remaining durability small in the top left of the slot.",
 	"loothub.settings.drop_protection": "Drop protection",

@@ -161,6 +161,8 @@ public final class WidgetConfig {
 	public boolean invMove = false;
 	public boolean autoRefill = false;
 	public boolean toolSaver = false;
+	/** Kompressor: kleines Symbol des Ziel-Items am Kompressor im Inventar/in der Schnellleiste. */
+	public boolean compressorIcon = true;
 	/** Früher: ein Mini-Me-Skin (wird in {@link #miniMes} übernommen). */
 	public String miniMeSkin = "";
 	/** Bis zu 4 eigene Mini-Mes – je ein Spielername, dessen Skin es trägt. */
@@ -302,6 +304,7 @@ public final class WidgetConfig {
 	 * Nutzer neue Funktionen behalten; für Neulinge werden sie hier abgeschaltet.
 	 */
 	private void freshInstallDefaults() {
+		compressorIcon = false;
 		jobWidgetEnabled = false;
 		tooltipPrices = false;
 		statsEnabled = false;

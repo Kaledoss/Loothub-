@@ -494,6 +494,8 @@ public class SettingsScreen extends LoothubScreen {
 					y = card(y, 56, "loothub.settings.offhand", "loothub.settings.offhand.tooltip",
 							() -> c.offhandFilter, v -> c.offhandFilter = v);
 				}
+				y = card(y, 40, "loothub.settings.compressor_icon", "loothub.settings.compressor_icon.tooltip",
+						() -> c.compressorIcon, v -> c.compressorIcon = v);
 				y = card(y, 40, "loothub.settings.durability_numbers", "loothub.settings.durability_numbers.tooltip",
 						() -> c.durabilityNumbers, v -> c.durabilityNumbers = v);
 				y = card(y, 40, "loothub.settings.drop_protection", "loothub.settings.drop_protection.tooltip",

@@ -57,6 +57,8 @@ public class LoothubClient implements ClientModInitializer {
 				"key.loothub.emotes", InputConstants.Type.KEYSYM, GLFW.GLFW_KEY_B, CATEGORY));
 		// Inventar: Sortieren, Verschieben (Tasten selbst belegen), Auto-Refill
 		de.loothub.client.quick.InvTools.register(CATEGORY);
+		// Kompressor: Symbol, was er komprimiert
+		de.loothub.client.quick.Compressor.register();
 
 		// Eigene Statistik
 		ClientTickEvents.END_CLIENT_TICK.register(StatsTracker::tick);

@@ -485,6 +485,8 @@
 	"loothub.settings.chat_filter.tooltip": "Blendet Nachrichten mit diesen Wörtern in jedem Chat aus – auch im normalen Minecraft-Chat.",
 	"loothub.settings.timers": "Eigene Timer",
 	"loothub.settings.timers.tooltip": "Countdowns und tägliche Erinnerungen mit Anzeige und Ton. Anlegen im Menü unter „Alltag“.",
+	"loothub.settings.compressor_icon": "Kompressor-Symbol",
+	"loothub.settings.compressor_icon.tooltip": "Zeigt am Kompressor im Inventar und in der Schnellleiste klein an, was er komprimiert. Einmal das Menü des Kompressors öffnen, dann merkt sich Loothub die Ziele. Mehrere wechseln sich ab.",
 	"loothub.settings.durability_numbers": "Haltbarkeit als Zahl",
 	"loothub.settings.durability_numbers.tooltip": "Zeigt die restliche Haltbarkeit klein oben links im Slot.",
 	"loothub.settings.drop_protection": "Wegwerf-Schutz",

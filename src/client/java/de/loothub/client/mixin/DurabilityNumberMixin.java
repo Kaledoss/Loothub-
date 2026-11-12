@@ -19,6 +19,8 @@ public abstract class DurabilityNumberMixin {
 	@Inject(method = "renderItemDecorations(Lnet/minecraft/client/gui/Font;Lnet/minecraft/world/item/ItemStack;IILjava/lang/String;)V",
 			at = @At("TAIL"))
 	private void loothub$durability(Font font, ItemStack stack, int x, int y, @Nullable String text, CallbackInfo ci) {
+		// Kompressor: kleines Symbol, was er komprimiert
+		de.loothub.client.quick.Compressor.decorate((GuiGraphics) (Object) this, stack, x, y);
 		if (stack.isEmpty() || !stack.isDamageableItem() || stack.getDamageValue() <= 0
 				|| !WidgetConfig.get().durabilityNumbers) {
 			return;
