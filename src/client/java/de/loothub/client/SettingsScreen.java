@@ -472,6 +472,15 @@ public class SettingsScreen extends LoothubScreen {
 					y = card(aY, 56, "loothub.settings.auction_alarm", "loothub.settings.auction_alarm.tooltip",
 							() -> c.auctionAlarm, v -> c.auctionAlarm = v);
 				}
+				y = section(y, "loothub.settings.section.inv_tools");
+				y = card(y, 40, "loothub.settings.inv_sort", "loothub.settings.inv_sort.tooltip",
+						() -> c.invSort, v -> c.invSort = v);
+				y = card(y, 40, "loothub.settings.inv_move", "loothub.settings.inv_move.tooltip",
+						() -> c.invMove, v -> c.invMove = v);
+				y = card(y, 40, "loothub.settings.auto_refill", "loothub.settings.auto_refill.tooltip",
+						() -> c.autoRefill, v -> c.autoRefill = v);
+				y = card(y, 40, "loothub.settings.tool_saver", "loothub.settings.tool_saver.tooltip",
+						() -> c.toolSaver, v -> c.toolSaver = v);
 				y = section(y, "loothub.settings.section.inventory");
 				y = card(y, 40, "loothub.settings.rarity_frames", "loothub.settings.rarity_frames.tooltip",
 						() -> c.rarityFrames, v -> c.rarityFrames = v);

@@ -55,6 +55,8 @@ public class LoothubClient implements ClientModInitializer {
 		// B öffnet das Emote-Rad der Mini-Mes
 		emoteKey = KeyBindingHelper.registerKeyBinding(new KeyMapping(
 				"key.loothub.emotes", InputConstants.Type.KEYSYM, GLFW.GLFW_KEY_B, CATEGORY));
+		// Inventar: Sortieren (R / mittlere Maustaste), Verschieben (seitliche Maustaste), Auto-Refill
+		de.loothub.client.quick.InvTools.register(CATEGORY);
 
 		// Eigene Statistik
 		ClientTickEvents.END_CLIENT_TICK.register(StatsTracker::tick);

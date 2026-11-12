@@ -156,6 +156,11 @@ public final class WidgetConfig {
 	public boolean cosmetics = true;
 	/** Begleiter (Haustiere, freie Mini-Mes) auch in der Ego-Perspektive zeigen. */
 	public boolean cosmeticsFirstPerson = false;
+	/** Inventar-Werkzeuge: Sortieren, Verschieben, Auto-Refill, Werkzeugschutz. */
+	public boolean invSort = false;
+	public boolean invMove = false;
+	public boolean autoRefill = false;
+	public boolean toolSaver = false;
 	/** Früher: ein Mini-Me-Skin (wird in {@link #miniMes} übernommen). */
 	public String miniMeSkin = "";
 	/** Bis zu 4 eigene Mini-Mes – je ein Spielername, dessen Skin es trägt. */
