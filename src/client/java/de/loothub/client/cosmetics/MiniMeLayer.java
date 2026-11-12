@@ -411,8 +411,8 @@ public final class MiniMeLayer extends RenderLayer<AvatarRenderState, PlayerMode
 				ry = f[3];
 			}
 			boolean sleeping = lie > 0.5F;
-			// schwebende Mini-Mes sitzen auf einer kleinen Wolke (fliegt der Spieler, fliegen sie frei mit)
-			float cloud = (i == 2 || i == 3) && !sleeping ? Mth.clamp(1.0F - fly * 2.0F, 0.0F, 1.0F) : 0.0F;
+			// das erste schwebende Mini-Me sitzt auf einer kleinen Wolke, das zweite fliegt frei (fliegt der Spieler, beide frei)
+			float cloud = i == 2 && !sleeping ? Mth.clamp(1.0F - fly * 2.0F, 0.0F, 1.0F) : 0.0F;
 			if (cloud > 0.5F) {
 				rx = rx * (1.0F - cloud) + (5.0F + Math.max(0.0F, fwd) * 12.0F) * cloud; // aufrecht sitzen, beim Tempo leicht vor
 			}

@@ -11,7 +11,7 @@ import net.minecraft.resources.Identifier;
 import de.loothub.Loothub;
 
 /**
- * Kleine, weiche Wolke, auf der schwebende Mini-Mes sitzen. Aus mehreren unterschiedlich großen Quadern gebaut, die
+ * Kleine, weiche gelbe Wolke, auf der das erste schwebende Mini-Me sitzt. Aus mehreren unterschiedlich großen Quadern gebaut, die
  * sich leicht gegeneinander bewegen („wabern“). Modellraum des Mini-Mes (y nach unten, Hüfte im Sitzen bei 0.75).
  */
 public final class Cloud {
@@ -31,9 +31,9 @@ public final class Cloud {
 
 	public static void submit(PoseStack poseStack, SubmitNodeCollector collector, float t, int light, float alpha) {
 		int a = Math.max(0, Math.min(255, (int) (alpha * 235)));
-		int top = (a << 24) | 0xFFFFFF;
-		int side = (a << 24) | 0xE6ECF5;
-		int bottom = (a << 24) | 0xC9D3E3;
+		int top = (a << 24) | 0xFFE45C;
+		int side = (a << 24) | 0xF5CC3A;
+		int bottom = (a << 24) | 0xD9A520;
 		collector.submitCustomGeometry(poseStack, RenderTypes.entityTranslucent(TEXTURE), (pose, vc) -> {
 			for (float[] p : PUFFS) {
 				float w = (float) Math.sin(t * 0.06F + p[6]) * 0.03F;
