@@ -85,7 +85,7 @@ public final class PetsLayer extends RenderLayer<AvatarRenderState, PlayerModel>
 				case "bee" -> 0.6F;
 				case "vex" -> 0.6F;
 				case "wolf" -> 0.45F;
-				case "penguin" -> 0.7F;
+				case "penguin" -> 0.6F;
 				case "dragon" -> 0.35F;
 				default -> 0.65F;
 			};
@@ -171,12 +171,9 @@ public final class PetsLayer extends RenderLayer<AvatarRenderState, PlayerModel>
 					submit(collector, poseStack, wolf, s, WOLF_TEX);
 				}
 				case "penguin" -> {
-					if (PENGUIN_3D.ready()) {
-						penguin3d(poseStack, collector, t, Math.min(1F, Math.max(state.walkAnimationSpeed * 1.5F, p[4] * 2.5F)), slot);
-					} else {
-						submit(collector, poseStack, penguin,
-								base(new LivingEntityRenderState(), t, Math.min(1F, Math.max(state.walkAnimationSpeed * 1.5F, p[4] * 2.5F))), PENGUIN_TEX);
-					}
+					// Minecraft-Stil (Würfelmodell); das 3D-Modell wirkte zwischen den Blöcken zu künstlich
+					submit(collector, poseStack, penguin,
+							base(new LivingEntityRenderState(), t, Math.min(1F, Math.max(state.walkAnimationSpeed * 1.5F, p[4] * 2.5F))), PENGUIN_TEX);
 				}
 				case "dragon" -> {
 					if (DRAGON_3D.ready()) {
@@ -191,29 +188,12 @@ public final class PetsLayer extends RenderLayer<AvatarRenderState, PlayerModel>
 		}
 	}
 
-	private static final Mesh3D PENGUIN_3D = new Mesh3D("penguin");
 	private static final Mesh3D DRAGON_3D = new Mesh3D("dragon");
-	/** Höhe des Pinguins bzw. Spannweite des Drachens in Modell-Einheiten (vor dem Tier-Maßstab). */
-	private static final float PENGUIN_H = 0.85F, DRAGON_W = 2.6F;
+	/** Spannweite des Drachens in Modell-Einheiten (vor dem Tier-Maßstab). */
+	private static final float DRAGON_W = 2.6F;
 	/** Flügelansatz des Drachens (Mesh-Einheiten); y wird beim ersten Mal aus dem Modell bestimmt. */
 	private static final float WING_ROOT = 0.1F;
 	private static float wingY = Float.NaN;
-
-	/** Pinguin (3D): watschelt beim Laufen hin und her, wippt und atmet im Stehen. */
-	private static void penguin3d(PoseStack poseStack, SubmitNodeCollector collector, float t, float walk, int slot) {
-		poseStack.pushPose();
-		poseStack.translate(0.0F, 1.5F, 0.0F); // Füße auf den Boden
-		float ph = t * 0.45F + slot * 2.0F;
-		float waddle = (float) Math.sin(ph) * (2.0F + 9.0F * walk);
-		poseStack.mulPose(Axis.ZP.rotationDegrees(waddle));
-		poseStack.mulPose(Axis.XP.rotationDegrees(-4.0F * walk)); // beim Laufen leicht nach vorn
-		float hop = Math.abs((float) Math.sin(ph)) * 0.05F * walk;
-		float breathe = 1.0F + (float) Math.sin(t * 0.08F + slot) * 0.015F;
-		poseStack.translate(0.0F, -hop, 0.0F);
-		poseStack.scale(PENGUIN_H * breathe, PENGUIN_H / breathe, PENGUIN_H * breathe);
-		PENGUIN_3D.submit(poseStack, collector, 0xF000F0, null);
-		poseStack.popPose();
-	}
 
 	/** Mini-Drache (3D): schlägt mit den Flügeln (Spitzen verzögert), schwebt sanft auf und ab. */
 	private static void dragon3d(PoseStack poseStack, SubmitNodeCollector collector, float t, int slot) {

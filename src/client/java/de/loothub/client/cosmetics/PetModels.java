@@ -15,7 +15,10 @@ final class PetModels {
 	private PetModels() {
 	}
 
-	/** Watschelnder Pinguin mit Flossen. */
+	/**
+	 * Watschelnder Pinguin im Minecraft-Stil (Würfel wie Vanilla-Tiere, 64×64-Pixeltextur): rundlicher Rumpf mit
+	 * weißem Bauch, eigener Kopf mit Schnabel, Flossen, Füße und kleiner Schwanz.
+	 */
 	static final class Penguin extends EntityModel<LivingEntityRenderState> {
 		private final ModelPart body, head, leftWing, rightWing, leftFoot, rightFoot;
 
@@ -26,9 +29,9 @@ final class PetModels {
 		private Penguin(ModelPart root) {
 			super(root);
 			body = root.getChild("body");
-			head = root.getChild("head");
-			leftWing = root.getChild("left_wing");
-			rightWing = root.getChild("right_wing");
+			head = body.getChild("head");
+			leftWing = body.getChild("left_wing");
+			rightWing = body.getChild("right_wing");
 			leftFoot = root.getChild("left_foot");
 			rightFoot = root.getChild("right_foot");
 		}
@@ -36,21 +39,24 @@ final class PetModels {
 		static LayerDefinition create() {
 			MeshDefinition mesh = new MeshDefinition();
 			PartDefinition r = mesh.getRoot();
-			r.addOrReplaceChild("body", CubeListBuilder.create().texOffs(0, 0).addBox(-3F, -8F, -2.5F, 6F, 8F, 5F),
-					PartPose.offset(0F, 23F, 0F));
-			PartDefinition head = r.addOrReplaceChild("head", CubeListBuilder.create().texOffs(24, 0)
-					.addBox(-2.5F, -4F, -2F, 5F, 4F, 4F), PartPose.offset(0F, 15F, 0F));
-			head.addOrReplaceChild("beak", CubeListBuilder.create().texOffs(44, 0).addBox(-1F, -2F, -4F, 2F, 1F, 2F),
+			// Rumpf: Drehpunkt unten, damit er beim Watscheln auf den Füßen kippt
+			PartDefinition body = r.addOrReplaceChild("body", CubeListBuilder.create().texOffs(0, 0)
+					.addBox(-4F, -9F, -3.5F, 8F, 9F, 7F), PartPose.offset(0F, 23F, 0F));
+			PartDefinition head = body.addOrReplaceChild("head", CubeListBuilder.create().texOffs(32, 0)
+					.addBox(-3.5F, -6F, -3F, 7F, 6F, 6F), PartPose.offset(0F, -9F, -0.5F));
+			head.addOrReplaceChild("beak", CubeListBuilder.create().texOffs(32, 16).addBox(-1.5F, -3F, -5F, 3F, 1F, 2F),
 					PartPose.ZERO);
-			r.addOrReplaceChild("left_wing", CubeListBuilder.create().texOffs(0, 16).addBox(0F, 0F, -1.5F, 1F, 5F, 3F),
-					PartPose.offset(3F, 16F, 0F));
-			r.addOrReplaceChild("right_wing", CubeListBuilder.create().texOffs(10, 16).addBox(-1F, 0F, -1.5F, 1F, 5F, 3F),
-					PartPose.offset(-3F, 16F, 0F));
-			r.addOrReplaceChild("left_foot", CubeListBuilder.create().texOffs(20, 16).addBox(-1F, 0F, -2F, 2F, 1F, 2F),
-					PartPose.offset(1.5F, 23F, -1F));
-			r.addOrReplaceChild("right_foot", CubeListBuilder.create().texOffs(30, 16).addBox(-1F, 0F, -2F, 2F, 1F, 2F),
-					PartPose.offset(-1.5F, 23F, -1F));
-			return LayerDefinition.create(mesh, 64, 32);
+			body.addOrReplaceChild("left_wing", CubeListBuilder.create().texOffs(0, 20).addBox(0F, 0F, -2F, 1F, 7F, 4F),
+					PartPose.offset(4F, -8F, 0F));
+			body.addOrReplaceChild("right_wing", CubeListBuilder.create().texOffs(12, 20).addBox(-1F, 0F, -2F, 1F, 7F, 4F),
+					PartPose.offset(-4F, -8F, 0F));
+			body.addOrReplaceChild("tail", CubeListBuilder.create().texOffs(24, 26).addBox(-2F, -1F, 0F, 4F, 1F, 2F),
+					PartPose.offsetAndRotation(0F, -0.5F, 3.5F, -0.35F, 0F, 0F));
+			r.addOrReplaceChild("left_foot", CubeListBuilder.create().texOffs(24, 20).addBox(-1.5F, 0F, -3F, 3F, 1F, 3F),
+					PartPose.offset(2F, 23F, -0.5F));
+			r.addOrReplaceChild("right_foot", CubeListBuilder.create().texOffs(40, 20).addBox(-1.5F, 0F, -3F, 3F, 1F, 3F),
+					PartPose.offset(-2F, 23F, -0.5F));
+			return LayerDefinition.create(mesh, 64, 64);
 		}
 
 		@Override
@@ -58,17 +64,22 @@ final class PetModels {
 			super.setupAnim(s);
 			float t = s.ageInTicks;
 			float walk = Math.min(1F, s.walkAnimationSpeed);
-			// Watscheln: von Seite zu Seite kippen, Füße abwechselnd
-			float waddle = Mth.sin(t * 0.45F) * (0.06F + 0.18F * walk);
+			float ph = t * 0.45F;
+			// Watscheln: auf dem jeweils belasteten Fuß zur Seite kippen, Füße heben sich abwechselnd
+			float waddle = Mth.sin(ph) * (0.04F + 0.2F * walk);
 			body.zRot = waddle;
-			head.zRot = waddle * 0.6F;
-			head.xRot = Mth.sin(t * 0.07F) * 0.08F;
-			leftFoot.xRot = Mth.sin(t * 0.45F) * 0.6F * walk;
-			rightFoot.xRot = -Mth.sin(t * 0.45F) * 0.6F * walk;
-			// ab und zu mit den Flossen schlagen
-			float flap = Mth.sin(t * 0.06F) > 0.85F ? Mth.sin(t * 1.4F) * 0.6F : 0F;
-			leftWing.zRot = -0.12F - Math.abs(flap) - waddle;
-			rightWing.zRot = 0.12F + Math.abs(flap) - waddle;
+			body.xRot = 0.08F * walk; // beim Laufen etwas nach vorn
+			head.zRot = -waddle * 0.5F; // Kopf gleicht aus
+			head.xRot = Mth.sin(t * 0.07F) * 0.06F - 0.08F * walk;
+			head.yRot = Mth.sin(t * 0.031F) * 0.25F * (1F - walk); // schaut sich im Stehen um
+			leftFoot.xRot = Math.max(0F, Mth.sin(ph)) * -0.7F * walk;
+			rightFoot.xRot = Math.max(0F, -Mth.sin(ph)) * -0.7F * walk;
+			leftFoot.y = 23F - Math.max(0F, Mth.sin(ph)) * 1.2F * walk;
+			rightFoot.y = 23F - Math.max(0F, -Mth.sin(ph)) * 1.2F * walk;
+			// Flossen balancieren mit; ab und zu fröhliches Flattern
+			float flap = Mth.sin(t * 0.06F) > 0.85F ? Math.abs(Mth.sin(t * 1.4F)) * 0.7F : 0F;
+			leftWing.zRot = -0.1F - flap - 0.25F * walk * Math.max(0F, Mth.sin(ph));
+			rightWing.zRot = 0.1F + flap + 0.25F * walk * Math.max(0F, -Mth.sin(ph));
 		}
 	}
 
