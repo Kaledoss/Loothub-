@@ -64,11 +64,11 @@ public final class InvTools {
 	}
 
 	public static void register(KeyMapping.Category category) {
-		// Sortieren: R oder mittlere Maustaste; Verschieben: seitliche Maustaste (mit Shift: alles). Unter
-		// Optionen › Steuerung › Loothub+ frei änderbar. Achtung: Inventory Profiles Next nutzt R/Mausrad-Klick selbst.
-		sortKey = key("key.loothub.inv_sort", InputConstants.Type.KEYSYM, GLFW.GLFW_KEY_R, category);
-		sortMouseKey = key("key.loothub.inv_sort_mouse", InputConstants.Type.MOUSE, GLFW.GLFW_MOUSE_BUTTON_MIDDLE, category);
-		moveKey = key("key.loothub.inv_move", InputConstants.Type.MOUSE, GLFW.GLFW_MOUSE_BUTTON_4, category);
+		// Ohne Standard-Tasten: unter Optionen › Steuerung › Loothub+ selbst belegen (z. B. R / mittlere Maustaste
+		// zum Sortieren, seitliche Maustaste zum Verschieben)
+		sortKey = key("key.loothub.inv_sort", category);
+		sortMouseKey = key("key.loothub.inv_sort_mouse", category);
+		moveKey = key("key.loothub.inv_move", category);
 		ClientTickEvents.END_CLIENT_TICK.register(InvTools::tick);
 		ScreenEvents.AFTER_INIT.register((client, screen, w, h) -> {
 			if (!(screen instanceof AbstractContainerScreen<?> cs)) {
@@ -87,8 +87,9 @@ public final class InvTools {
 		});
 	}
 
-	private static KeyMapping key(String id, InputConstants.Type type, int code, KeyMapping.Category category) {
-		return KeyBindingHelper.registerKeyBinding(new KeyMapping(id, type, code, category));
+	private static KeyMapping key(String id, KeyMapping.Category category) {
+		return KeyBindingHelper.registerKeyBinding(new KeyMapping(id, InputConstants.Type.KEYSYM, GLFW.GLFW_KEY_UNKNOWN,
+				category));
 	}
 
 	// ---------------------------------------------------------------- Bereiche
