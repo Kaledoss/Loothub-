@@ -121,10 +121,20 @@ public final class PetsLayer extends RenderLayer<AvatarRenderState, PlayerModel>
 			boolean hopping = ground && !walker && fly < 0.5F;
 			float hopY = hopping ? ty - (1.5F - 1.5F * scale) : 0.0F;
 			float[] p = Followers.follow(state, 8 + slot, tx, ty - hopY, tz, ground ? 7.0F : 4.5F,
-					curious != null ? 0.1F : ground ? 0.45F : 0.6F, hopping ? 0.0F : 0.6F, hopping && lie < 0.5F);
+					curious != null ? 0.1F : ground ? 0.45F : 0.6F, hopping || walker ? 0.0F : 0.6F, (hopping || walker && fly < 0.5F) && lie < 0.5F);
 			// Landestaub: beim Aufkommen ein paar Partikel des Bodens
 			if (hopping) {
 				Curiosity.landing(state, slot, hopY > -0.005F, p);
+			}
+			// nie im Boden verschwinden: Füße mindestens auf dem Boden (Fliegende etwas darüber)
+			{
+				double[] w = Followers.layerToWorld(state, p[0], p[1], p[2]);
+				double feetY = state.y + 1.501 - (p[1] + hopY + 1.5F * scale);
+				double gy = Followers.groundY(w[0], feetY + 0.6, w[2]);
+				double min = gy + (ground ? 0.0 : 0.25);
+				if (feetY < min) {
+					p[1] -= (float) (min - feetY);
+				}
 			}
 			poseStack.pushPose();
 			BodyPose.undo(poseStack, state, true);
@@ -154,13 +164,94 @@ public final class PetsLayer extends RenderLayer<AvatarRenderState, PlayerModel>
 					WolfRenderState s = base(new WolfRenderState(), t, Math.min(1F, state.walkAnimationSpeed * 1.5F));
 					submit(collector, poseStack, wolf, s, WOLF_TEX);
 				}
-				case "penguin" -> submit(collector, poseStack, penguin,
-						base(new LivingEntityRenderState(), t, Math.min(1F, state.walkAnimationSpeed * 1.5F)), PENGUIN_TEX);
-				case "dragon" -> submit(collector, poseStack, dragon, base(new LivingEntityRenderState(), t, 0.0F), DRAGON_TEX);
+				case "penguin" -> {
+					if (PENGUIN_3D.ready()) {
+						penguin3d(poseStack, collector, t, Math.min(1F, state.walkAnimationSpeed * 1.5F), slot);
+					} else {
+						submit(collector, poseStack, penguin,
+								base(new LivingEntityRenderState(), t, Math.min(1F, state.walkAnimationSpeed * 1.5F)), PENGUIN_TEX);
+					}
+				}
+				case "dragon" -> {
+					if (DRAGON_3D.ready()) {
+						dragon3d(poseStack, collector, t, slot);
+					} else {
+						submit(collector, poseStack, dragon, base(new LivingEntityRenderState(), t, 0.0F), DRAGON_TEX);
+					}
+				}
 				default -> submit(collector, poseStack, vex, base(new VexRenderState(), t, 0.3F), VEX_TEX);
 			}
 			poseStack.popPose();
 		}
+	}
+
+	private static final Mesh3D PENGUIN_3D = new Mesh3D("penguin");
+	private static final Mesh3D DRAGON_3D = new Mesh3D("dragon");
+	/** Höhe des Pinguins bzw. Spannweite des Drachens in Modell-Einheiten (vor dem Tier-Maßstab). */
+	private static final float PENGUIN_H = 0.85F, DRAGON_W = 2.6F;
+	/** Flügelansatz des Drachens (Mesh-Einheiten); y wird beim ersten Mal aus dem Modell bestimmt. */
+	private static final float WING_ROOT = 0.1F;
+	private static float wingY = Float.NaN;
+
+	/** Pinguin (3D): watschelt beim Laufen hin und her, wippt und atmet im Stehen. */
+	private static void penguin3d(PoseStack poseStack, SubmitNodeCollector collector, float t, float walk, int slot) {
+		poseStack.pushPose();
+		poseStack.translate(0.0F, 1.5F, 0.0F); // Füße auf den Boden
+		float ph = t * 0.45F + slot * 2.0F;
+		float waddle = (float) Math.sin(ph) * (2.0F + 9.0F * walk);
+		poseStack.mulPose(Axis.ZP.rotationDegrees(waddle));
+		poseStack.mulPose(Axis.XP.rotationDegrees(-4.0F * walk)); // beim Laufen leicht nach vorn
+		float hop = Math.abs((float) Math.sin(ph)) * 0.05F * walk;
+		float breathe = 1.0F + (float) Math.sin(t * 0.08F + slot) * 0.015F;
+		poseStack.translate(0.0F, -hop, 0.0F);
+		poseStack.scale(PENGUIN_H * breathe, PENGUIN_H / breathe, PENGUIN_H * breathe);
+		PENGUIN_3D.submit(poseStack, collector, 0xF000F0, null);
+		poseStack.popPose();
+	}
+
+	/** Mini-Drache (3D): schlägt mit den Flügeln (Spitzen verzögert), schwebt sanft auf und ab. */
+	private static void dragon3d(PoseStack poseStack, SubmitNodeCollector collector, float t, int slot) {
+		if (Float.isNaN(wingY)) {
+			float[] d = DRAGON_3D.data();
+			double sum = 0;
+			int n = 0;
+			for (int i = 0; i < d.length; i += 8) {
+				float ax = Math.abs(d[i]);
+				if (ax > 0.12F && ax < 0.18F) {
+					sum += d[i + 1];
+					n++;
+				}
+			}
+			wingY = n > 0 ? (float) (sum / n) : -0.35F;
+		}
+		poseStack.pushPose();
+		poseStack.translate(0.0F, 1.5F, 0.0F);
+		float ph = t * 0.32F + slot * 1.7F;
+		float flap = (float) Math.sin(ph);
+		poseStack.translate(0.0F, flap * 0.04F, 0.0F); // Auftrieb: beim Abschlag leicht hoch
+		poseStack.mulPose(Axis.XP.rotationDegrees(6.0F + (float) Math.sin(t * 0.05F + slot) * 3.0F));
+		poseStack.scale(DRAGON_W, DRAGON_W, DRAGON_W);
+		final float wy = wingY;
+		DRAGON_3D.submit(poseStack, collector, 0xF000F0, p -> {
+			float ax = Math.abs(p[0]);
+			if (ax <= WING_ROOT) {
+				return;
+			}
+			float sgn = Math.signum(p[0]);
+			float w = Mth.clamp((ax - WING_ROOT) / 0.1F, 0.0F, 1.0F);
+			w = w * w * (3.0F - 2.0F * w);
+			// außen etwas später als innen: die Spitzen schwingen nach
+			float a = (float) Math.sin(ph - (ax - WING_ROOT) * 2.5F) * 0.6F * w;
+			float th = -sgn * a;
+			float c = (float) Math.cos(th), s = (float) Math.sin(th);
+			float dx = p[0] - sgn * WING_ROOT, dy = p[1] - wy;
+			p[0] = sgn * WING_ROOT + dx * c - dy * s;
+			p[1] = wy + dx * s + dy * c;
+			float nx = p[3], ny = p[4];
+			p[3] = nx * c - ny * s;
+			p[4] = nx * s + ny * c;
+		});
+		poseStack.popPose();
 	}
 
 	private static final Identifier SHADOW = Identifier.withDefaultNamespace("textures/misc/shadow.png");

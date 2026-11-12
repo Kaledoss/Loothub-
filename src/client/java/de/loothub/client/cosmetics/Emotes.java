@@ -17,10 +17,16 @@ public final class Emotes {
 	private static volatile int played;
 	private static volatile long playedAt;
 
-	/** Geste aus dem Emote-Rad: alle eigenen Mini-Mes machen sie ein paar Sekunden lang. */
+	/** Geste aus dem Emote-Rad: der Spieler und alle eigenen Mini-Mes machen sie ein paar Sekunden lang. */
 	public static void play(int type) {
 		played = type;
 		playedAt = System.currentTimeMillis();
+	}
+
+	/** Läuft gerade eine Geste aus dem Emote-Rad? {Art, Fortschritt 0..1} oder null – auch der Spieler selbst macht sie. */
+	public static float[] wheel() {
+		long d = System.currentTimeMillis() - playedAt;
+		return played != NONE && d >= 0 && d < PLAY_MS ? new float[]{played, d / (float) PLAY_MS} : null;
 	}
 
 	/** Spielt gerade Musik (Musik-Anzeige)? Dann tanzen die Mini-Mes ab und zu. */

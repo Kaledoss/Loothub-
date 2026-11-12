@@ -20,6 +20,7 @@ public abstract class FlyPoseModelMixin {
 	private void loothub$flyPose(AvatarRenderState state, CallbackInfo ci) {
 		loothub$afkLimbs(state);
 		loothub$risePose(state);
+		loothub$wheelEmote(state);
 		float f = Motion.fly(state);
 		if (f <= 0.0F) {
 			return;
@@ -41,6 +42,18 @@ public abstract class FlyPoseModelMixin {
 		m.leftLeg.xRot = lerp(f, m.leftLeg.xRot, 0.02F - (float) Math.sin(t * 0.25F) * 0.05F);
 		m.rightLeg.zRot = lerp(f, m.rightLeg.zRot, 0.03F);
 		m.leftLeg.zRot = lerp(f, m.leftLeg.zRot, -0.03F);
+	}
+
+	/** Emote-Rad: der eigene Spieler macht die Geste mit (nur Darstellung, nicht beim Zuschlagen oder Benutzen). */
+	private void loothub$wheelEmote(AvatarRenderState state) {
+		if (de.loothub.client.cosmetics.MiniMeLayer.mini(this) || !Motion.local(state) || Motion.fly(state) > 0.5F
+				|| state.attackTime > 0.0F || state.isUsingItem) {
+			return;
+		}
+		float[] e = de.loothub.client.cosmetics.Emotes.wheel();
+		if (e != null) {
+			de.loothub.client.cosmetics.MiniMeLayer.pose((PlayerModel) (Object) this, state, e);
+		}
 	}
 
 	/**
