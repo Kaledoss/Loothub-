@@ -41,6 +41,7 @@ public final class MiniMeLayer extends RenderLayer<AvatarRenderState, PlayerMode
 		@Override
 		public void setupAnim(AvatarRenderState s) {
 			super.setupAnim(s);
+			chibi(this);
 			float[] e = Emotes.of(s);
 			if (e == null) {
 				applyLife(s, false);
@@ -262,6 +263,19 @@ public final class MiniMeLayer extends RenderLayer<AvatarRenderState, PlayerMode
 	}
 	private final CrawlModel crawlSlim;
 
+	/** Kopf des Mini-Mes (Hals bleibt Drehpunkt). */
+	private static final float HEAD = 1.45F;
+
+	/**
+	 * Chibi-Proportionen wie bei Sammelfiguren: großer Kopf (wächst vom Hals nach oben, dadurch bleibt alles darunter
+	 * an seinem Platz), etwas rundlicherer Rumpf. So wirken die Kleinen niedlich statt wie geschrumpfte Erwachsene.
+	 */
+	private static void chibi(PlayerModel m) {
+		m.head.xScale = m.head.yScale = m.head.zScale = HEAD;
+		m.body.xScale = 1.08F;
+		m.body.zScale = 1.12F;
+	}
+
 	/**
 	 * Mini-Me auf allen vieren: Arme und Beine stehen senkrecht zum Körper (nach dem Vorkippen also zum Boden), der Kopf
 	 * schaut nach vorn. Arme und Beine greifen über Kreuz abwechselnd vor (rechter Arm mit linkem Bein).
@@ -275,6 +289,7 @@ public final class MiniMeLayer extends RenderLayer<AvatarRenderState, PlayerMode
 		@Override
 		public void setupAnim(AvatarRenderState s) {
 			super.setupAnim(s);
+			chibi(this);
 			float p = s.walkAnimationPos;
 			float amp = 0.18F + 0.4F * s.walkAnimationSpeed;
 			float swing = (float) Math.sin(p) * amp;
@@ -396,7 +411,12 @@ public final class MiniMeLayer extends RenderLayer<AvatarRenderState, PlayerMode
 				ry = f[3];
 			}
 			boolean sleeping = lie > 0.5F;
-			if ((i < 2 || sitDown) && !sleeping) {
+			// schwebende Mini-Mes sitzen auf einer kleinen Wolke (fliegt der Spieler, fliegen sie frei mit)
+			float cloud = (i == 2 || i == 3) && !sleeping ? Mth.clamp(1.0F - fly * 2.0F, 0.0F, 1.0F) : 0.0F;
+			if (cloud > 0.5F) {
+				rx = rx * (1.0F - cloud) + (5.0F + Math.max(0.0F, fwd) * 12.0F) * cloud; // aufrecht sitzen, beim Tempo leicht vor
+			}
+			if ((i < 2 || sitDown || cloud > 0.5F) && !sleeping) {
 				mini.isPassenger = true;
 			} else if (swimming) {
 				mini.swimAmount = 1.0F;
@@ -465,6 +485,9 @@ public final class MiniMeLayer extends RenderLayer<AvatarRenderState, PlayerMode
 				poseStack.translate(0F, pivot, 0F);
 				poseStack.scale(life.sx(), life.sy(), life.sx());
 				poseStack.translate(0F, -pivot, 0F);
+			}
+			if (cloud > 0.01F) {
+				Cloud.submit(poseStack, collector, t + i * 40.0F, light, cloud);
 			}
 			boolean slimSkin = skin.model() == PlayerModelType.SLIM;
 			PlayerModel model = crawling ? (slimSkin ? crawlSlim : crawlWide) : (slimSkin ? slim : wide);
