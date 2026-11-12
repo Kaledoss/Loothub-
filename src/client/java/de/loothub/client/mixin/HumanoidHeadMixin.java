@@ -51,6 +51,13 @@ public abstract class HumanoidHeadMixin {
 		}
 		// Talismanrucksack in der Zweithand (von außen gesehen)
 		hideBackpack(entity, state);
+		// Emote-Rad: während der Geste nichts in den Händen zeigen (wie die Geste selbst nur, wenn nicht gekämpft,
+		// benutzt oder geflogen wird)
+		if (de.loothub.client.cosmetics.Emotes.wheel() != null && !state.isUsingItem && state.attackTime <= 0.0F
+				&& de.loothub.client.cosmetics.Motion.fly(state) <= 0.5F) {
+			state.leftHandItemState.clear();
+			state.rightHandItemState.clear();
+		}
 	}
 
 	private static void hideBackpack(LivingEntity entity, HumanoidRenderState state) {
