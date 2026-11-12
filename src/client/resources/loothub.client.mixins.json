@@ -28,7 +28,8 @@
 		"OffhandFilterMixin",
 		"TabListCrownMixin",
 		"FishSoundMixin",
-		"LevelRendererFirstPersonMixin"
+		"LevelRendererFirstPersonMixin",
+		"CommandTraceMixin"
 	],
 	"injectors": {
 		"defaultRequire": 0
