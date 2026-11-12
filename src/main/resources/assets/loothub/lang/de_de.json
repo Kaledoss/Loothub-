@@ -735,5 +735,8 @@
 	"loothub.emotes.3": "Strecken",
 	"loothub.cosmetics.pets.type.wolf": "Wolf",
 	"loothub.cosmetics.pets.type.penguin": "Pinguin",
-	"loothub.cosmetics.pets.type.dragon": "Mini-Drache"
+	"loothub.cosmetics.pets.type.dragon": "Mini-Drache",
+	"loothub.settings.auction_alarm": "Auktions-Alarm",
+	"loothub.settings.auction_alarm.tooltip": "Kurz bevor eine gemerkte Auktion (Merkliste) endet, kommt eine Einblendung mit Ton. Öffne die Merkliste ab und zu, dann wird die Zeit genauer.",
+	"loothub.settings.auction_alarm.minutes": "%s Min. vorher warnen"
 }

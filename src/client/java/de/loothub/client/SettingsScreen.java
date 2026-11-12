@@ -449,6 +449,29 @@ public class SettingsScreen extends LoothubScreen {
 						() -> c.renameWindow, v -> c.renameWindow = v);
 				y = card(y, 40, "loothub.settings.sign_window", "loothub.settings.sign_window.tooltip",
 						() -> c.signWindow, v -> c.signWindow = v);
+				{
+					int aY = y;
+					int aDescX = cl + labelW + 12;
+					buttons.add(addRenderableWidget(new net.minecraft.client.gui.components.AbstractSliderButton(
+							aDescX, aY + 34, Math.min(200, cr - 8 - aDescX), 16, Component.empty(),
+							(Math.max(1, Math.min(60, c.auctionAlarmMinutes)) - 1) / 59.0) {
+						{
+							updateMessage();
+						}
+
+						@Override
+						protected void updateMessage() {
+							setMessage(Component.translatable("loothub.settings.auction_alarm.minutes", 1 + (int) Math.round(value * 59)));
+						}
+
+						@Override
+						protected void applyValue() {
+							c.auctionAlarmMinutes = 1 + (int) Math.round(value * 59);
+						}
+					}));
+					y = card(aY, 56, "loothub.settings.auction_alarm", "loothub.settings.auction_alarm.tooltip",
+							() -> c.auctionAlarm, v -> c.auctionAlarm = v);
+				}
 				y = section(y, "loothub.settings.section.inventory");
 				y = card(y, 40, "loothub.settings.rarity_frames", "loothub.settings.rarity_frames.tooltip",
 						() -> c.rarityFrames, v -> c.rarityFrames = v);

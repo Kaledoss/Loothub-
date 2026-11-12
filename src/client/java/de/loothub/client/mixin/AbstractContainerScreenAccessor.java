@@ -19,4 +19,7 @@ public interface AbstractContainerScreenAccessor {
 
 	@Accessor("imageHeight")
 	int loothub$imageHeight();
+
+	@Accessor("hoveredSlot")
+	net.minecraft.world.inventory.Slot loothub$hoveredSlot();
 }

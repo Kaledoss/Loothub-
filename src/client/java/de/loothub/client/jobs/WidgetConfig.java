@@ -231,6 +231,9 @@ public final class WidgetConfig {
 	public java.util.List<String> fishSoundAllowed = new java.util.ArrayList<>();
 	/** Warnung, wenn die Köder ausgehen. */
 	public boolean baitWarning = true;
+	/** Alarm kurz vor dem Ende gemerkter Auktionen (Merkliste). */
+	public boolean auctionAlarm = true;
+	public int auctionAlarmMinutes = 10;
 	/** Entwurf aus dem /chat-Editor. */
 	public String chatDraft = "";
 	/** Menüseite „Pokédex“ anzeigen. */
@@ -333,6 +336,7 @@ public final class WidgetConfig {
 		loothubCrown = false;
 		fishAlert = false;
 		baitWarning = false;
+		auctionAlarm = false;
 	}
 
 	private static WidgetConfig load() {

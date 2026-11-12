@@ -124,6 +124,11 @@ public final class FishAlert {
 		sound(rarity);
 	}
 
+	/** Allgemeine Hinweis-Einblendung im selben Stil (z. B. Auktions-Alarm), ohne eigenen Ton. */
+	public static void notice(String title, String sub, int color) {
+		QUEUE.addFirst(new Shown(title, sub, color, "!silent"));
+	}
+
 	/** Köder sind aufgebraucht: rote Warnung mit Alarm, unabhängig von der Seltenheits-Auswahl. */
 	static void baitEmpty() {
 		QUEUE.addFirst(new Shown("⚠ Keine Köder mehr!", "Neue Köder auffüllen", 0xFF5050, "!bait"));
@@ -167,6 +172,9 @@ public final class FishAlert {
 	/** Eigener Klang je Seltenheit – je seltener, desto prächtiger. */
 	private static void sound(String rarity) {
 		List<Sounds.Note> l = new ArrayList<>();
+		if ("!silent".equals(rarity)) {
+			return;
+		}
 		if ("!bait".equals(rarity)) {
 			for (int i = 0; i < 3; i++) {
 				l.add(Sounds.n(i * 6, SoundEvents.NOTE_BLOCK_DIDGERIDOO, 1.0F, 1.0F));
@@ -202,19 +210,29 @@ public final class FishAlert {
 				l.add(Sounds.n(0, SoundEvents.AMETHYST_BLOCK_CHIME, 1.0F, 1.0F));
 				l.addAll(Sounds.arpeggio(SoundEvents.NOTE_BLOCK_CHIME, 0.9F, 0.7F, 2));
 			}
-			case 5 -> { // Legendär
-				l.add(Sounds.n(0, SoundEvents.PLAYER_LEVELUP, 1.2F, 0.6F));
+			case 5 -> { // Legendär: schöner, aber noch bodenständig – Glockenspiel mit Amethyst-Funkeln
+				l.add(Sounds.n(0, SoundEvents.AMETHYST_BLOCK_CHIME, 1.2F, 1.0F));
 				l.addAll(Sounds.arpeggio(SoundEvents.NOTE_BLOCK_BELL, 0.84F, 0.9F, 3));
+				l.add(Sounds.n(12, SoundEvents.PLAYER_LEVELUP, 1.3F, 0.4F));
 			}
-			case 6 -> { // Spektakulär
-				l.add(Sounds.n(0, SoundEvents.UI_TOAST_CHALLENGE_COMPLETE, 1.0F, 0.5F));
-				l.add(Sounds.n(8, SoundEvents.FIREWORK_ROCKET_TWINKLE, 1.2F, 0.7F));
+			case 6 -> { // Spektakulär: episch – tiefer Gong, Glocken-Wirbel, Fanfare, Feuerwerk
+				l.add(Sounds.n(0, SoundEvents.BELL_BLOCK, 0.6F, 1.0F));
+				l.add(Sounds.n(0, SoundEvents.NOTE_BLOCK_BASS, 0.5F, 0.9F));
+				for (int i = 0; i < 6; i++) {
+					l.add(Sounds.n(6 + i * 2, SoundEvents.NOTE_BLOCK_BELL, 0.7F + i * 0.2F, 0.8F));
+				}
+				l.add(Sounds.n(18, SoundEvents.UI_TOAST_CHALLENGE_COMPLETE, 1.0F, 0.6F));
+				l.add(Sounds.n(26, SoundEvents.FIREWORK_ROCKET_LARGE_BLAST, 1.0F, 0.6F));
+				l.add(Sounds.n(32, SoundEvents.FIREWORK_ROCKET_TWINKLE, 1.1F, 0.7F));
 			}
-			default -> { // Sensationell
-				l.add(Sounds.n(0, SoundEvents.BEACON_ACTIVATE, 1.4F, 0.8F));
-				l.add(Sounds.n(4, SoundEvents.UI_TOAST_CHALLENGE_COMPLETE, 1.1F, 0.5F));
-				l.add(Sounds.n(12, SoundEvents.FIREWORK_ROCKET_LARGE_BLAST, 1.0F, 0.6F));
-				l.add(Sounds.n(18, SoundEvents.FIREWORK_ROCKET_TWINKLE, 1.0F, 0.7F));
+			default -> { // Sensationell: das ganz große Ereignis
+				l.add(Sounds.n(0, SoundEvents.END_PORTAL_SPAWN, 1.2F, 0.35F));
+				l.add(Sounds.n(4, SoundEvents.BEACON_ACTIVATE, 1.4F, 0.8F));
+				l.add(Sounds.n(10, SoundEvents.UI_TOAST_CHALLENGE_COMPLETE, 1.1F, 0.6F));
+				for (int i = 0; i < 3; i++) {
+					l.add(Sounds.n(18 + i * 8, SoundEvents.FIREWORK_ROCKET_LARGE_BLAST, 0.9F + i * 0.1F, 0.6F));
+					l.add(Sounds.n(22 + i * 8, SoundEvents.FIREWORK_ROCKET_TWINKLE, 1.0F, 0.7F));
+				}
 			}
 		}
 		Sounds.play(Sounds.Group.FISH, l);

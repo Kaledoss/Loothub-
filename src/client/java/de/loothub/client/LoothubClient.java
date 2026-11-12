@@ -156,6 +156,7 @@ public class LoothubClient implements ClientModInitializer {
 		HudElementRegistry.attachElementBefore(VanillaHudElements.CHAT,
 				Identifier.fromNamespaceAndPath(Loothub.MOD_ID, "fish_alert"), de.loothub.client.jobs.FishAlert::renderHud);
 		de.loothub.client.jobs.FishAlert.register();
+		de.loothub.client.quick.AuctionWatch.register();
 		de.loothub.client.music.YtMusic.ensure(de.loothub.client.jobs.WidgetConfig.get().musicEnabled);
 
 		// Beim Verlassen des Servers nur speichern – die Job-Sitzung läuft bis zum Schließen des Spiels weiter
