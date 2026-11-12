@@ -11,7 +11,7 @@ import net.minecraft.resources.Identifier;
 import de.loothub.Loothub;
 
 /**
- * Kleine, weiche gelbe Wolke, auf der das erste schwebende Mini-Me sitzt. Aus mehreren unterschiedlich großen Quadern gebaut, die
+ * Kleine, weiche gelbe Wolke, auf der das erste schwebende Mini-Me sitzt. Aus mehreren ineinander liegenden, weich schattierten Kugeln gebaut, die
  * sich leicht gegeneinander bewegen („wabern“). Modellraum des Mini-Mes (y nach unten, Hüfte im Sitzen bei 0.75).
  */
 public final class Cloud {
@@ -29,37 +29,52 @@ public final class Cloud {
 	private Cloud() {
 	}
 
+	/** Auflösung der Kugeln (Segmente rundum, Ringe von oben nach unten). */
+	private static final int SEGS = 14, RINGS = 9;
+	private static final int TOP = 0xFFF2A0, MID = 0xFFD84A, LOW = 0xD99A1E;
+
 	public static void submit(PoseStack poseStack, SubmitNodeCollector collector, float t, int light, float alpha) {
-		int a = Math.max(0, Math.min(255, (int) (alpha * 235)));
-		int top = (a << 24) | 0xFFE45C;
-		int side = (a << 24) | 0xF5CC3A;
-		int bottom = (a << 24) | 0xD9A520;
-		collector.submitCustomGeometry(poseStack, RenderTypes.entityTranslucent(TEXTURE), (pose, vc) -> {
+		int a = Math.max(0, Math.min(255, (int) (alpha * 255)));
+		collector.submitCustomGeometry(poseStack, RenderTypes.entityCutoutNoCull(TEXTURE), (pose, vc) -> {
 			for (float[] p : PUFFS) {
-				float w = (float) Math.sin(t * 0.06F + p[6]) * 0.03F;
-				box(pose, vc, p[0], p[1] + w, p[2], p[3] + w, p[4], p[5] - w, light, top, side, bottom);
+				// jede Kugel atmet leicht für sich – dadurch wabert die Wolke weich
+				float w = (float) Math.sin(t * 0.06F + p[6]) * 0.025F;
+				ellipsoid(pose, vc, p[0], p[1] + w, p[2], p[3] * 1.15F + w, p[4] * 1.5F + w, p[5] * 1.15F + w, light, a);
 			}
 		});
 	}
 
-	private static void box(PoseStack.Pose pose, VertexConsumer vc, float cx, float cy, float cz, float hx, float hy, float hz,
-			int light, int top, int side, int bottom) {
-		float x0 = cx - hx, x1 = cx + hx, y0 = cy - hy, y1 = cy + hy, z0 = cz - hz, z1 = cz + hz;
-		// oben (y klein = oben im Modellraum)
-		face(pose, vc, light, top, 0, -1, 0, x0, y0, z0, x1, y0, z0, x1, y0, z1, x0, y0, z1);
-		face(pose, vc, light, bottom, 0, 1, 0, x0, y1, z1, x1, y1, z1, x1, y1, z0, x0, y1, z0);
-		face(pose, vc, light, side, 0, 0, -1, x0, y1, z0, x1, y1, z0, x1, y0, z0, x0, y0, z0);
-		face(pose, vc, light, side, 0, 0, 1, x1, y1, z1, x0, y1, z1, x0, y0, z1, x1, y0, z1);
-		face(pose, vc, light, side, -1, 0, 0, x0, y1, z1, x0, y1, z0, x0, y0, z0, x0, y0, z1);
-		face(pose, vc, light, side, 1, 0, 0, x1, y1, z0, x1, y1, z1, x1, y0, z1, x1, y0, z0);
+	/** Runde, weich schattierte Kugel: oben hell, unten goldener – ohne Kanten wie bei Würfeln. */
+	private static void ellipsoid(PoseStack.Pose pose, VertexConsumer vc, float cx, float cy, float cz, float rx, float ry, float rz,
+			int light, int a) {
+		for (int r = 0; r < RINGS; r++) {
+			double t0 = Math.PI * r / RINGS, t1 = Math.PI * (r + 1) / RINGS;
+			for (int sgm = 0; sgm < SEGS; sgm++) {
+				double p0 = 2 * Math.PI * sgm / SEGS, p1 = 2 * Math.PI * (sgm + 1) / SEGS;
+				point(pose, vc, cx, cy, cz, rx, ry, rz, t0, p0, light, a);
+				point(pose, vc, cx, cy, cz, rx, ry, rz, t1, p0, light, a);
+				point(pose, vc, cx, cy, cz, rx, ry, rz, t1, p1, light, a);
+				point(pose, vc, cx, cy, cz, rx, ry, rz, t0, p1, light, a);
+			}
+		}
 	}
 
-	private static void face(PoseStack.Pose pose, VertexConsumer vc, int light, int argb, float nx, float ny, float nz,
-			float ax, float ay, float az, float bx, float by, float bz, float cx, float cy, float cz, float dx, float dy, float dz) {
-		v(pose, vc, ax, ay, az, 0, 1, light, argb, nx, ny, nz);
-		v(pose, vc, bx, by, bz, 1, 1, light, argb, nx, ny, nz);
-		v(pose, vc, cx, cy, cz, 1, 0, light, argb, nx, ny, nz);
-		v(pose, vc, dx, dy, dz, 0, 0, light, argb, nx, ny, nz);
+	private static void point(PoseStack.Pose pose, VertexConsumer vc, float cx, float cy, float cz, float rx, float ry, float rz,
+			double theta, double phi, int light, int a) {
+		float nx = (float) (Math.sin(theta) * Math.cos(phi));
+		float ny = (float) -Math.cos(theta); // theta 0 = oben (y klein im Modellraum)
+		float nz = (float) (Math.sin(theta) * Math.sin(phi));
+		float up = -ny; // 1 oben … -1 unten
+		int rgb = up > 0 ? lerp(MID, TOP, up) : lerp(MID, LOW, -up);
+		v(pose, vc, cx + nx * rx, cy + ny * ry, cz + nz * rz, (float) (phi / (2 * Math.PI)), (float) (theta / Math.PI), light,
+				(a << 24) | rgb, nx, ny, nz);
+	}
+
+	private static int lerp(int c0, int c1, float k) {
+		int r = (int) (((c0 >> 16) & 255) + ((((c1 >> 16) & 255) - ((c0 >> 16) & 255)) * k));
+		int g = (int) (((c0 >> 8) & 255) + ((((c1 >> 8) & 255) - ((c0 >> 8) & 255)) * k));
+		int b = (int) ((c0 & 255) + (((c1 & 255) - (c0 & 255)) * k));
+		return (r << 16) | (g << 8) | b;
 	}
 
 	private static void v(PoseStack.Pose pose, VertexConsumer vc, float x, float y, float z, float u, float w, int light, int argb,

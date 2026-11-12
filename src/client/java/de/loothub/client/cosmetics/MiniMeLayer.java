@@ -263,17 +263,28 @@ public final class MiniMeLayer extends RenderLayer<AvatarRenderState, PlayerMode
 	}
 	private final CrawlModel crawlSlim;
 
-	/** Kopf des Mini-Mes (Hals bleibt Drehpunkt). */
-	private static final float HEAD = 1.45F;
+	/** Chibi-Maße: Kopf groß, Rumpf und Arme kurz, Beine kurz. */
+	private static final float HEAD = 1.8F, BODY = 0.75F, LEGS = 0.8F;
+	/** Der verkürzte Rumpf beginnt so viel tiefer (Pixel), damit die Hüfte an ihrem Platz bleibt (Sitzen auf der Schulter). */
+	private static final float DROP = 12.0F * (1.0F - BODY);
+	/** Um so viel (Blöcke) stehen die Füße wegen der kürzeren Beine höher – stehende Mini-Mes werden so weit abgesenkt. */
+	static final float FOOT_LIFT = 12.0F * (1.0F - LEGS) / 16.0F * SCALE;
 
 	/**
-	 * Chibi-Proportionen wie bei Sammelfiguren: großer Kopf (wächst vom Hals nach oben, dadurch bleibt alles darunter
-	 * an seinem Platz), etwas rundlicherer Rumpf. So wirken die Kleinen niedlich statt wie geschrumpfte Erwachsene.
+	 * Chibi-Proportionen wie bei Sammelfiguren: sehr großer Kopf, kurzer, etwas rundlicher Rumpf, kurze Arme und
+	 * Beine. Die Hüfte bleibt an ihrem Platz, damit Sitzen und Liegen weiter passen.
 	 */
 	private static void chibi(PlayerModel m) {
+		m.head.y += DROP;
 		m.head.xScale = m.head.yScale = m.head.zScale = HEAD;
-		m.body.xScale = 1.08F;
-		m.body.zScale = 1.12F;
+		m.body.y += DROP;
+		m.body.yScale = BODY;
+		m.body.xScale = 1.1F;
+		m.body.zScale = 1.15F;
+		m.rightArm.y += DROP;
+		m.leftArm.y += DROP;
+		m.rightArm.yScale = m.leftArm.yScale = BODY;
+		m.rightLeg.yScale = m.leftLeg.yScale = LEGS;
 	}
 
 	/**
@@ -478,6 +489,9 @@ public final class MiniMeLayer extends RenderLayer<AvatarRenderState, PlayerMode
 			if (rz != 0.0F) {
 				poseStack.mulPose(Axis.ZP.rotationDegrees(rz));
 			}
+			if (!mini.isPassenger && !sleeping && !crawling) {
+				poseStack.translate(0.0F, FOOT_LIFT, 0.0F); // kürzere Beine: Füße wieder auf den Boden
+			}
 			poseStack.scale(SCALE, SCALE, SCALE);
 			if (life.sx() != 1F || life.sy() != 1F) {
 				// um die Füße (bzw. beim Sitzen um die Hüfte) stauchen/strecken
@@ -507,6 +521,7 @@ public final class MiniMeLayer extends RenderLayer<AvatarRenderState, PlayerMode
 						: (i == 2 || i == 3 || fly > 0.5F) ? new Wings.Pose(0.9F, t * 0.25F + i * 1.3F, 0.8F, -ry)
 						: crawling ? new Wings.Pose(0.35F, t * 0.08F + i, 0.2F, 0.0F)
 						: new Wings.Pose(0.5F, t * 0.1F + i, 0.35F, 0.0F);
+				poseStack.translate(0.0F, DROP / 16.0F, 0.0F); // Rücken beginnt beim Chibi-Rumpf tiefer
 				Wings.submit(poseStack, collector, wings, wp, light, Cosmetics.miniMeWingColor(state, i),
 						Cosmetics.miniMeWingColorOuter(state, i));
 			}
