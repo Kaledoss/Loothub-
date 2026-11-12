@@ -36,9 +36,10 @@ function clean(profile) {
 		const v = values[k];
 		if (/^[a-z]{1,24}$/.test(k) && typeof v === "string" && SAFE.test(v)) out.values[k] = v;
 	}
+	// Skins: Java-Namen oder Bedrock-Namen mit Floodgate-Präfix („.“ oder „*“)
 	if (Array.isArray(profile.skins)) {
 		out.skins = profile.skins.slice(0, MAX_SKINS)
-			.map((s) => (s === null ? null : typeof s === "string" && /^[A-Za-z0-9_]{0,16}$/.test(s) ? s : null));
+			.map((s) => (s === null ? null : typeof s === "string" && /^[.*]?[A-Za-z0-9_]{0,16}$/.test(s) ? s : null));
 	}
 	return out;
 }

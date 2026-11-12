@@ -136,7 +136,7 @@ public class CosmeticsScreen extends LoothubScreen {
 					final int slot = i;
 					int by = y + 30 + i * 20;
 					EditBox box = new EditBox(font, x0, by, nameW, 16, Component.translatable("loothub.settings.minime"));
-					box.setMaxLength(16);
+					box.setMaxLength(20); // Bedrock: Präfix + Gamertag (bis 16 Zeichen)
 					box.setHint(Component.translatable("loothub.cosmetics.minime.slot" + (i + 1)).withStyle(ChatFormatting.DARK_GRAY));
 					box.setValue(i < c.miniMes.size() && c.miniMes.get(i) != null ? c.miniMes.get(i) : "");
 					box.setResponder(t -> namesChangedAt = System.currentTimeMillis()); // übernimmt kurz nach dem Tippen

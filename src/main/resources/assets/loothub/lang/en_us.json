@@ -406,7 +406,7 @@
 	"loothub.cosmetics.wings.short": "Wings",
 	"loothub.cosmetics.color": "Colour …",
 	"loothub.cosmetics.color.reset": "Original colours",
-	"loothub.cosmetics.minime.rows.desc": "Per Mini-Me: player name (empty = free slot), wings and two wing colours (inner/outer). Save names with “Apply”.",
+	"loothub.cosmetics.minime.rows.desc": "Per Mini-Me: player name (empty = free slot; Bedrock players with a dot in front, e.g. “.Gamertag”), wings and two wing colours (inner/outer).",
 	"loothub.cosmetics.color.inner": "Inner …",
 	"loothub.cosmetics.color.outer": "Outer …",
 	"loothub.cosmetics.risetrail": "Rising flight",
