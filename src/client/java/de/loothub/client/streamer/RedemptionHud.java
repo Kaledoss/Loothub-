@@ -24,7 +24,7 @@ import de.loothub.client.jobs.WidgetConfig;
  * Kopfzeile verschieben (außer „Sperren“ ist an). Abhaken ist rein lokal.
  */
 public final class RedemptionHud {
-	static final int W = 210;
+	static final int W = 270;
 	private static final int ROW = 11;
 	private static final int HEAD = 13;
 	private static final DateTimeFormatter TIME = DateTimeFormatter.ofPattern("HH:mm");
@@ -77,9 +77,23 @@ public final class RedemptionHud {
 		return HEAD + Math.max(1, rows) * ROW + 3;
 	}
 
+	/** Zeilenhöhe eines Eintrags: mit Nachricht des Zuschauers zwei Zeilen. */
+	private static int rowH(Redemptions.Entry e) {
+		return e.input == null || e.input.isBlank() ? ROW : 2 * ROW - 1;
+	}
+
+	/** Höhe für die ersten {@code rows} Einträge. */
+	private static int height(List<Redemptions.Entry> open, int rows) {
+		int h = HEAD + 3;
+		for (int i = 0; i < rows; i++) {
+			h += rowH(open.get(i));
+		}
+		return rows == 0 ? HEAD + ROW + 3 : h;
+	}
+
 	/** Oberkante bleibt fest – gemessen an der vollen Höhe, damit die Liste beim Abhaken nicht springt. */
 	static int[] pos(int sw, int sh, int ignored) {
-		int h = height(maxRows());
+		int h = HEAD + maxRows() * (2 * ROW - 1) + 3; // höchstmögliche Höhe (alle mit Nachricht)
 		WidgetConfig c = WidgetConfig.get();
 		int x = (int) Math.round(c.streamerHudX * Math.max(0, sw - W - 8)) + 4;
 		int y = (int) Math.round(c.streamerHudY * Math.max(0, sh - h - 8)) + 4;
@@ -101,7 +115,7 @@ public final class RedemptionHud {
 	/** Zeichnet die Liste; gibt die Position zurück. */
 	private static int[] draw(GuiGraphics g, Font font, List<Redemptions.Entry> open, int sw, int sh, int mx, int my) {
 		int rows = Math.min(open.size(), maxRows());
-		int h = height(rows);
+		int h = height(open, rows);
 		int[] p = pos(sw, sh, h);
 		int x = p[0], y = p[1];
 		g.fill(x, y, x + W, y + h, de.loothub.client.Theme.bg(0xC0120A0C));
@@ -114,12 +128,13 @@ public final class RedemptionHud {
 			g.drawString(font, "Keine offenen Ereignisse", x + 6, y + HEAD + 1, 0xFF9A9A9A, false);
 			return p;
 		}
+		int ry = y + HEAD;
 		for (int i = 0; i < rows; i++) {
 			Redemptions.Entry e = open.get(i);
-			int ry = y + HEAD + i * ROW;
-			boolean hover = mx >= x && mx < x + W && my >= ry && my < ry + ROW;
+			int rh = rowH(e);
+			boolean hover = mx >= x && mx < x + W && my >= ry && my < ry + rh;
 			if (hover) {
-				g.fill(x + 1, ry, x + W, ry + ROW, 0x20FFFFFF);
+				g.fill(x + 1, ry, x + W, ry + rh, 0x20FFFFFF);
 			}
 			// Kästchen
 			g.fill(x + 5, ry + 1, x + 13, ry + 9, hover ? 0xFFFFFFFF : 0xFF6A5A8A);
@@ -127,8 +142,12 @@ public final class RedemptionHud {
 			String time = TIME.format(Instant.ofEpochMilli(e.time).atZone(ZoneId.systemDefault()));
 			g.drawString(font, time, x + 16, ry + 1, 0xFFB9A9AB, true);
 			int tx = x + 18 + font.width(time);
-			String text = e.user + ": " + e.reward + (e.input == null || e.input.isBlank() ? "" : " – " + e.input);
+			String text = e.user + ": " + e.reward;
 			g.drawString(font, fit(font, text, x + W - 4 - tx), tx, ry + 1, 0xFFFFFFFF, true);
+			if (e.input != null && !e.input.isBlank()) {
+				g.drawString(font, fit(font, "„" + e.input + "“", x + W - 4 - tx), tx, ry + ROW, 0xFFB9A9AB, true);
+			}
+			ry += rh;
 		}
 		return p;
 	}
@@ -149,7 +168,7 @@ public final class RedemptionHud {
 	private static void renderEditable(Screen screen, GuiGraphics g, int mx, int my) {
 		Font font = Minecraft.getInstance().font;
 		List<Redemptions.Entry> open = Redemptions.open();
-		int h = height(Math.min(open.size(), maxRows()));
+		int h = height(open, Math.min(open.size(), maxRows()));
 		int[] p = draw(g, font, open, screen.width, screen.height, mx, my);
 		int x = p[0], y = p[1];
 		boolean locked = WidgetConfig.get().streamerHudLocked;
@@ -179,7 +198,7 @@ public final class RedemptionHud {
 		WidgetConfig c = WidgetConfig.get();
 		List<Redemptions.Entry> open = Redemptions.open();
 		int rows = Math.min(open.size(), maxRows());
-		int[] p = pos(screen.width, screen.height, height(rows));
+		int[] p = pos(screen.width, screen.height, height(open, rows));
 		int x = p[0], y = p[1];
 		Font font = Minecraft.getInstance().font;
 		int lx = x + W - 10;
@@ -200,10 +219,14 @@ public final class RedemptionHud {
 			}
 			return true;
 		}
-		int i = (int) Math.floor((e.y() - y - HEAD) / ROW);
-		if (e.y() >= y + HEAD && i >= 0 && i < rows) {
-			Redemptions.toggle(open.get(i));
-			return true;
+		int ry = y + HEAD;
+		for (int i = 0; i < rows; i++) {
+			int rh = rowH(open.get(i));
+			if (e.y() >= ry && e.y() < ry + rh) {
+				Redemptions.toggle(open.get(i));
+				return true;
+			}
+			ry += rh;
 		}
 		return false;
 	}
@@ -213,7 +236,7 @@ public final class RedemptionHud {
 			return false;
 		}
 		WidgetConfig c = WidgetConfig.get();
-		int h = height(maxRows());
+		int h = HEAD + maxRows() * (2 * ROW - 1) + 3;
 		c.streamerHudX = Math.max(0, Math.min(1, (e.x() - grabX - 4) / Math.max(1, screen.width - W - 8)));
 		c.streamerHudY = Math.max(0, Math.min(1, (e.y() - grabY - 4) / Math.max(1, screen.height - h - 8)));
 		return true;

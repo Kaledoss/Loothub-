@@ -364,7 +364,7 @@ public class CosmeticsScreen extends LoothubScreen {
 	// ------------------------------------------------------------------ Auswahllisten
 
 	private static final String[] WING_OPTIONS = {"", "dragon", "devil", "angel"};
-	private static final String[] PET_OPTIONS = {"", "slime", "allay", "bee", "vex"};
+	private static final String[] PET_OPTIONS = {"", "slime", "allay", "bee", "vex", "wolf", "penguin", "dragon"};
 	private static final String[] TRAIT_OPTIONS = {"", "playful", "shy", "brave", "lazy", "curious"};
 	private static final String[] STEP_OPTIONS = {"", "sparks", "flames"};
 

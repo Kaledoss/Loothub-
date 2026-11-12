@@ -6,6 +6,7 @@ import com.mojang.math.Axis;
 import net.minecraft.client.model.EntityModel;
 import net.minecraft.client.model.animal.allay.AllayModel;
 import net.minecraft.client.model.animal.bee.BeeModel;
+import net.minecraft.client.model.animal.wolf.WolfModel;
 import net.minecraft.client.model.geom.EntityModelSet;
 import net.minecraft.client.model.geom.ModelLayers;
 import net.minecraft.client.model.monster.slime.SlimeModel;
@@ -20,6 +21,7 @@ import net.minecraft.client.renderer.entity.state.BeeRenderState;
 import net.minecraft.client.renderer.entity.state.LivingEntityRenderState;
 import net.minecraft.client.renderer.entity.state.SlimeRenderState;
 import net.minecraft.client.renderer.entity.state.VexRenderState;
+import net.minecraft.client.renderer.entity.state.WolfRenderState;
 import net.minecraft.client.renderer.rendertype.RenderTypes;
 import net.minecraft.client.renderer.texture.OverlayTexture;
 import net.minecraft.resources.Identifier;
@@ -35,12 +37,18 @@ public final class PetsLayer extends RenderLayer<AvatarRenderState, PlayerModel>
 	private static final Identifier ALLAY_TEX = Identifier.withDefaultNamespace("textures/entity/allay/allay.png");
 	private static final Identifier BEE_TEX = Identifier.withDefaultNamespace("textures/entity/bee/bee.png");
 	private static final Identifier VEX_TEX = Identifier.withDefaultNamespace("textures/entity/illager/vex.png");
+	private static final Identifier WOLF_TEX = Identifier.withDefaultNamespace("textures/entity/wolf/wolf_tame.png");
+	private static final Identifier PENGUIN_TEX = Identifier.fromNamespaceAndPath("loothub", "textures/entity/penguin.png");
+	private static final Identifier DRAGON_TEX = Identifier.fromNamespaceAndPath("loothub", "textures/entity/mini_dragon.png");
 
 	private final SlimeModel slimeInner;
 	private final SlimeModel slimeOuter;
 	private final AllayModel allay;
 	private final BeeModel bee;
 	private final VexModel vex;
+	private final WolfModel wolf;
+	private final PetModels.Penguin penguin = new PetModels.Penguin();
+	private final PetModels.Dragon dragon = new PetModels.Dragon();
 
 	public PetsLayer(RenderLayerParent<AvatarRenderState, PlayerModel> parent, EntityModelSet models) {
 		super(parent);
@@ -49,6 +57,7 @@ public final class PetsLayer extends RenderLayer<AvatarRenderState, PlayerModel>
 		allay = new AllayModel(models.bakeLayer(ModelLayers.ALLAY));
 		bee = new BeeModel(models.bakeLayer(ModelLayers.BEE));
 		vex = new VexModel(models.bakeLayer(ModelLayers.VEX));
+		wolf = new WolfModel(models.bakeLayer(ModelLayers.WOLF));
 	}
 
 	@Override
@@ -69,17 +78,23 @@ public final class PetsLayer extends RenderLayer<AvatarRenderState, PlayerModel>
 				continue;
 			}
 			float side = slot == 0 ? 1.0F : -1.0F;
-			boolean ground = type.equals("slime");
+			boolean walker = type.equals("wolf") || type.equals("penguin");
+			boolean ground = type.equals("slime") || walker;
 			float scale = switch (type) {
 				case "slime" -> 0.7F;
 				case "bee" -> 0.6F;
 				case "vex" -> 0.6F;
+				case "wolf" -> 0.45F;
+				case "penguin" -> 0.7F;
+				case "dragon" -> 0.35F;
 				default -> 0.65F;
 			};
 			float tx = side * 1.35F, tz = 0.35F;
 			float ty;
 			float squish = 0.0F;
-			if (ground && fly < 0.5F) {
+			if (walker && fly < 0.5F) {
+				ty = 0.0F; // läuft am Boden
+			} else if (ground && fly < 0.5F) {
 				// hüpft: schneller, wenn der Spieler läuft; beim Aufkommen kurz platt
 				float phase = t * (0.16F + state.walkAnimationSpeed * 0.15F) + slot * 1.9F;
 				float hop = Math.max(0.0F, (float) Math.sin(phase));
@@ -103,7 +118,7 @@ public final class PetsLayer extends RenderLayer<AvatarRenderState, PlayerModel>
 				}
 			}
 			// eigenständig: gefedert hinterher, schwebt bzw. hüpft um seinen Platz, schaut in Laufrichtung
-			boolean hopping = ground && fly < 0.5F;
+			boolean hopping = ground && !walker && fly < 0.5F;
 			float hopY = hopping ? ty - (1.5F - 1.5F * scale) : 0.0F;
 			float[] p = Followers.follow(state, 8 + slot, tx, ty - hopY, tz, ground ? 7.0F : 4.5F,
 					curious != null ? 0.1F : ground ? 0.45F : 0.6F, hopping ? 0.0F : 0.6F, hopping && lie < 0.5F);
@@ -135,6 +150,13 @@ public final class PetsLayer extends RenderLayer<AvatarRenderState, PlayerModel>
 					s.isOnGround = false;
 					submit(collector, poseStack, bee, s, BEE_TEX);
 				}
+				case "wolf" -> {
+					WolfRenderState s = base(new WolfRenderState(), t, Math.min(1F, state.walkAnimationSpeed * 1.5F));
+					submit(collector, poseStack, wolf, s, WOLF_TEX);
+				}
+				case "penguin" -> submit(collector, poseStack, penguin,
+						base(new LivingEntityRenderState(), t, Math.min(1F, state.walkAnimationSpeed * 1.5F)), PENGUIN_TEX);
+				case "dragon" -> submit(collector, poseStack, dragon, base(new LivingEntityRenderState(), t, 0.0F), DRAGON_TEX);
 				default -> submit(collector, poseStack, vex, base(new VexRenderState(), t, 0.3F), VEX_TEX);
 			}
 			poseStack.popPose();

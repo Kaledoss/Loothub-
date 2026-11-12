@@ -47,6 +47,8 @@ public final class Life {
 		public float breath, legL, legR, armDrag, armSpread, flinch, duck, armSwing;
 		/** +1 = Mini-Me sitzt/fliegt links vom Spieler (Modell-x positiv), −1 = rechts. */
 		public float side = 1F;
+		/** Platz des Mini-Mes (0 …). */
+		public int slot;
 	}
 
 	private static final Map<Long, S> STATES = new HashMap<>();
@@ -99,6 +101,7 @@ public final class Life {
 		s.lastT = t;
 		Pose p = POSES.computeIfAbsent(mini, k -> new Pose());
 		p.side = side;
+		p.slot = slot;
 		if (L <= 0 || sleeping) {
 			p.breath = p.legL = p.legR = p.armDrag = p.armSpread = p.flinch = p.duck = p.armSwing = 0;
 			return new Frame(0, 1, 1, 0, baseYaw, basePitch, false);

@@ -171,7 +171,7 @@ public final class AfkView {
 			lastX = Double.NaN;
 			return;
 		}
-		if (moved(mc)) {
+		if (moved(mc) || fishing(mc.player)) {
 			lastMove = now;
 			wake();
 		} else if (!sleeping && now - lastMove >= AFK_AFTER_MS) {
@@ -187,6 +187,12 @@ public final class AfkView {
 			ZOOM.to(1, ZOOM_OUT_MS);
 		}
 		finishCamera(mc, false);
+	}
+
+	/** Wer eine Angel in der Hand hält, angelt – nicht AFK. */
+	public static boolean fishing(net.minecraft.world.entity.LivingEntity p) {
+		return p != null && (p.getMainHandItem().is(net.minecraft.world.item.Items.FISHING_ROD)
+				|| p.getOffhandItem().is(net.minecraft.world.item.Items.FISHING_ROD));
 	}
 
 	/** Nur echte Bewegung zählt: die Position hat sich geändert. Maus, Chat und Menüs nicht. */

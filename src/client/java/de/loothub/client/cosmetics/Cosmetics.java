@@ -66,7 +66,7 @@ public final class Cosmetics {
 	public static final String MINI_TRAITS = "minimetraits";
 	public static final List<String> TRAITS = List.of("playful", "shy", "brave", "lazy", "curious");
 	public static final List<String> FOOTSTEP_STYLES = List.of("sparks", "flames");
-	public static final List<String> PET_TYPES = List.of("slime", "allay", "bee", "vex");
+	public static final List<String> PET_TYPES = List.of("slime", "allay", "bee", "vex", "wolf", "penguin", "dragon");
 	public static final int MAX_PETS = 2;
 	/** Flügel-Stile (Textur textures/entity/wing_<stil>.png). */
 	public static final List<String> WING_STYLES = List.of("dragon", "devil", "angel");

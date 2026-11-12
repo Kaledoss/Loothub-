@@ -145,6 +145,71 @@ public final class MiniMeLayer extends RenderLayer<AvatarRenderState, PlayerMode
 					arm.yRot = mix(arm.yRot, sd > 0 ? 0.6F : -0.6F, k);
 					head.zRot = mix(head.zRot, (float) Math.sin(p * 30.0F) * 0.12F, k);
 				}
+				case Emotes.DANCE -> {
+					// tanzen: Arme abwechselnd hoch, Kopf wippt im Takt
+					float beat = (float) Math.sin(p * 40.0F);
+					rightArm.xRot = mix(rightArm.xRot, beat > 0 ? up * 0.8F : -0.4F, k);
+					leftArm.xRot = mix(leftArm.xRot, beat > 0 ? -0.4F : up * 0.8F, k);
+					rightArm.zRot = mix(rightArm.zRot, -0.5F, k);
+					leftArm.zRot = mix(leftArm.zRot, 0.5F, k);
+					head.zRot = mix(head.zRot, beat * 0.18F, k);
+					rightLeg.xRot += beat * 0.35F * k;
+					leftLeg.xRot -= beat * 0.35F * k;
+				}
+				case Emotes.BOW -> {
+					// verbeugen: Kopf tief, eine Hand vor den Bauch, die andere zur Seite
+					head.xRot = mix(head.xRot, 0.9F, k);
+					rightArm.xRot = mix(rightArm.xRot, -0.9F, k);
+					rightArm.yRot = mix(rightArm.yRot, 0.5F, k);
+					leftArm.zRot = mix(leftArm.zRot, 0.6F, k);
+				}
+				case Emotes.CLAP -> {
+					// klatschen: beide Hände vor der Brust zusammen und auseinander
+					float open = 0.35F + 0.35F * (float) Math.abs(Math.sin(p * 35.0F));
+					rightArm.xRot = mix(rightArm.xRot, -1.3F, k);
+					leftArm.xRot = mix(leftArm.xRot, -1.3F, k);
+					rightArm.yRot = mix(rightArm.yRot, -open, k);
+					leftArm.yRot = mix(leftArm.yRot, open, k);
+					head.xRot = mix(head.xRot, -0.15F, k);
+				}
+				case Emotes.FACEPALM -> {
+					// Hand vors Gesicht, Kopf gesenkt und kopfschüttelnd
+					rightArm.xRot = mix(rightArm.xRot, -2.1F, k);
+					rightArm.yRot = mix(rightArm.yRot, -0.5F, k);
+					rightArm.zRot = mix(rightArm.zRot, 0.25F, k);
+					head.xRot = mix(head.xRot, 0.35F, k);
+					head.yRot = mix(head.yRot, (float) Math.sin(p * 18.0F) * 0.2F, k);
+				}
+				case Emotes.HEART -> {
+					// Herz: beide Arme über dem Kopf zusammen, leichtes Wiegen
+					rightArm.xRot = mix(rightArm.xRot, (float) Math.toRadians(-160.0), k);
+					leftArm.xRot = mix(leftArm.xRot, (float) Math.toRadians(-160.0), k);
+					rightArm.zRot = mix(rightArm.zRot, 0.55F, k);
+					leftArm.zRot = mix(leftArm.zRot, -0.55F, k);
+					head.zRot = mix(head.zRot, (float) Math.sin(p * 10.0F) * 0.12F, k);
+				}
+				case Emotes.GAME -> {
+					// Schere-Stein-Papier: dreimal die Faust schütteln, dann Ergebnis
+					Life.Pose lp = Life.pose(s);
+					float sd = lp == null ? 1F : lp.side;
+					ModelPart arm = sd > 0 ? rightArm : leftArm;
+					if (p < 0.55F) {
+						arm.xRot = mix(arm.xRot, -1.2F + (float) Math.sin(p / 0.55F * Math.PI * 6) * 0.35F, k);
+						head.xRot = mix(head.xRot, 0.2F, k);
+					} else {
+						int slot = lp == null ? 0 : lp.slot;
+						if (Emotes.wins(slot)) {
+							float pump = (float) Math.sin(p * 30.0F) * 0.25F;
+							rightArm.xRot = mix(rightArm.xRot, up + pump, k);
+							leftArm.xRot = mix(leftArm.xRot, up - pump, k);
+							head.xRot = mix(head.xRot, -0.3F, k);
+						} else {
+							rightArm.xRot = mix(rightArm.xRot, -2.1F, k);
+							rightArm.yRot = mix(rightArm.yRot, -0.5F, k);
+							head.xRot = mix(head.xRot, 0.4F, k);
+						}
+					}
+				}
 				case Emotes.DANGLE -> {
 					// Beine baumeln abwechselnd
 					float swing = (float) Math.sin(p * 4.5F) * 0.35F;
@@ -353,7 +418,8 @@ public final class MiniMeLayer extends RenderLayer<AvatarRenderState, PlayerMode
 			ty += life.dy();
 			rz += life.rz();
 			float[] emote = crawling || swimming ? null : Emotes.pick(state, i, sleeping, i < 2 || sitDown, partner, trait);
-			if (emote != null && (emote[0] == Emotes.NOD || emote[0] == Emotes.POKE || emote[0] == Emotes.HIGHFIVE)) {
+			if (emote != null && (emote[0] == Emotes.NOD || emote[0] == Emotes.POKE || emote[0] == Emotes.HIGHFIVE
+					|| emote[0] == Emotes.GAME)) {
 				// zum Partner drehen (der sitzt/fliegt/krabbelt auf der anderen Seite)
 				float k = Emotes.envelope(emote[1]);
 				k = Math.min(1F, k * 2F);
@@ -363,6 +429,17 @@ public final class MiniMeLayer extends RenderLayer<AvatarRenderState, PlayerMode
 			Emotes.attach(mini, emote);
 			if (emote != null && emote[0] == Emotes.CHEER) {
 				ty -= Math.abs((float) Math.sin(emote[1] * Math.PI * 4.0)) * 0.12F; // Freudensprünge
+			}
+			if (emote != null && emote[0] == Emotes.DANCE) {
+				ty -= Math.abs((float) Math.sin(emote[1] * 40.0)) * 0.06F; // im Takt hüpfen
+				rz += (float) Math.sin(emote[1] * 20.0) * 6F;
+				ry += (float) Math.sin(emote[1] * 6.0) * 25F; // hin und her drehen
+			}
+			if (emote != null && emote[0] == Emotes.BOW) {
+				rx += 25F * Emotes.envelope(emote[1]); // ganzer Körper nach vorn
+			}
+			if (emote != null && emote[0] == Emotes.GAME && emote[1] >= 0.55F && Emotes.wins(i)) {
+				ty -= Math.abs((float) Math.sin(emote[1] * Math.PI * 6.0)) * 0.1F;
 			}
 			poseStack.pushPose();
 			BodyPose.undo(poseStack, state, i >= 2);

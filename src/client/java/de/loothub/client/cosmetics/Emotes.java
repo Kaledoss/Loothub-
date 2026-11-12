@@ -9,10 +9,34 @@ import java.util.WeakHashMap;
  */
 public final class Emotes {
 	public static final int NONE = 0, WAVE = 1, CHEER = 2, YAWN = 3, SCRATCH = 4, HOLD = 5, RAIN = 6, SHIVER = 7, FAN = 8,
-			DANGLE = 9, NOD = 10, HIGHFIVE = 11, TIRED = 12, POKE = 13;
+			DANGLE = 9, NOD = 10, HIGHFIVE = 11, TIRED = 12, POKE = 13, DANCE = 14, BOW = 15, CLAP = 16, FACEPALM = 17,
+			GAME = 18, HEART = 19;
+	/** Gesten im Emote-Rad (Reihenfolge im Kreis). */
+	public static final int[] WHEEL = {WAVE, CHEER, DANCE, BOW, CLAP, HEART, FACEPALM, YAWN};
+	private static final long PLAY_MS = 4_000L;
+	private static volatile int played;
+	private static volatile long playedAt;
+
+	/** Geste aus dem Emote-Rad: alle eigenen Mini-Mes machen sie ein paar Sekunden lang. */
+	public static void play(int type) {
+		played = type;
+		playedAt = System.currentTimeMillis();
+	}
+
+	/** Spielt gerade Musik (Musik-Anzeige)? Dann tanzen die Mini-Mes ab und zu. */
+	private static boolean music() {
+		var s = de.loothub.client.music.YtMusic.song();
+		return s != null && !s.paused();
+	}
 	/** Dauerhafte Gesten (kein Ein-/Ausblenden über den Verlauf). */
 	public static boolean steady(int type) {
 		return type == HOLD || type == RAIN || type == SHIVER || type == DANGLE || type == TIRED;
+	}
+
+	/** Wer gewinnt das Schere-Stein-Papier-Spiel dieser Runde (für beide gleich)? */
+	public static boolean wins(int slot) {
+		long round = Math.floorDiv(System.currentTimeMillis(), 60_000L) + slot / 2;
+		return (round % 2 == 0) == (slot % 2 == 0);
 	}
 	private static final long CHEER_MS = 3200L;
 	private static volatile long cheerAt;
@@ -90,6 +114,12 @@ public final class Emotes {
 		boolean gestures = Cosmetics.has(playerState, Cosmetics.EMOTES);
 		boolean local = Motion.local(playerState);
 		boolean lazy = "lazy".equals(trait), playful = "playful".equals(trait);
+		// Emote-Rad: Vorrang vor allem anderen
+		if (local && played != NONE && now - playedAt < PLAY_MS) {
+			// leicht versetzt, damit nicht alle exakt gleich zappeln
+			float p = Math.max(0F, (now - playedAt - slot * 120L) / (float) PLAY_MS);
+			return new float[]{played, Math.min(1F, p)};
+		}
 		if (gestures && local && now - cheerAt < CHEER_MS) {
 			return new float[]{CHEER, (now - cheerAt) / (float) CHEER_MS};
 		}
@@ -132,11 +162,26 @@ public final class Emotes {
 				return new float[]{FAN, p};
 			}
 		}
-		// fremde Mini-Mes in der Nähe: zuwinken
+		// Musik läuft: immer wieder gemeinsam tanzen (verspielte öfter)
+		if (local && music() && !sitting) {
+			float p = window(now, playful ? 14_000L : lazy ? 40_000L : 22_000L, slot * 300L, 6_000L);
+			if (p >= 0) {
+				return new float[]{DANCE, p};
+			}
+		}
+		// fremde Mini-Mes in der Nähe: zuwinken oder höflich verbeugen
 		if (Life.foreignNear(playerState)) {
+			long cycleNo = Math.floorDiv(now - slot * 700L, 9_000L);
 			float p = window(now, 9_000L, slot * 700L, 2_000L);
 			if (p >= 0) {
-				return new float[]{WAVE, p};
+				return new float[]{cycleNo % 3 == 2 ? BOW : WAVE, p};
+			}
+		}
+		// Paare spielen ab und zu Schere-Stein-Papier: dreimal schütteln, dann jubelt einer, der andere ärgert sich
+		if (partner && slot < 4) {
+			float p = window(now, playful ? 35_000L : 60_000L, (slot / 2) * 7_100L + 21_000L, 3_600L);
+			if (p >= 0) {
+				return new float[]{GAME, p};
 			}
 		}
 		// Gespräch (Paare): beide gleichzeitig, abwechselnd nicken – Krabbler spielen stattdessen

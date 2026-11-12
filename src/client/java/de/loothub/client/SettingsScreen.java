@@ -51,6 +51,8 @@ public class SettingsScreen extends LoothubScreen {
 	}
 
 	private final List<Card> cards = new ArrayList<>();
+	/** Abschnitts-Überschriften: {y} und Schlüssel (bei der Suche ausgeblendet). */
+	private final List<Object[]> sections = new ArrayList<>();
 	private final List<Check> checks = new ArrayList<>();
 	private final List<net.minecraft.client.gui.components.AbstractWidget> buttons = new ArrayList<>();
 	/** Scroll-Position bleibt beim Neuaufbau (Fenstergröße, Scrollen) erhalten. */
@@ -75,6 +77,7 @@ public class SettingsScreen extends LoothubScreen {
 		GENERAL("loothub.settings.tab.general"),
 		LOOK("loothub.settings.tab.look"),
 		PACK("loothub.settings.tab.pack"),
+		CHAT("loothub.settings.tab.chat"),
 		INVENTORY("loothub.settings.tab.inventory"),
 		JOBS("loothub.settings.tab.jobs"),
 		SOUNDS("loothub.settings.tab.sounds"),
@@ -112,6 +115,7 @@ public class SettingsScreen extends LoothubScreen {
 		pickButton = null;
 		cards.clear();
 		checks.clear();
+		sections.clear();
 		buttons.clear();
 		WidgetConfig c = WidgetConfig.get();
 		labelW = Math.min(130, cw / 3);
@@ -207,45 +211,15 @@ public class SettingsScreen extends LoothubScreen {
 							.bounds(hDescX, hY + 24, Math.min(160, cr - 8 - hDescX), 16).build()));
 					y = cardNoToggle(hY, 46, "loothub.settings.hud_layout", "loothub.settings.hud_layout.tooltip");
 				}
-				y = card(y, 40, "loothub.settings.tooltip_prices", "loothub.settings.tooltip_prices.tooltip",
-						() -> c.tooltipPrices, v -> c.tooltipPrices = v);
 				y = card(y, 40, "loothub.settings.stats", "loothub.settings.stats.tooltip",
 						() -> c.statsEnabled, v -> c.statsEnabled = v);
-				y = card(y, 40, "loothub.settings.amount_shortcut", "loothub.settings.amount_shortcut.tooltip",
-						() -> c.amountShortcut, v -> c.amountShortcut = v);
-				y = card(y, 40, "loothub.settings.rename_window", "loothub.settings.rename_window.tooltip",
-						() -> c.renameWindow, v -> c.renameWindow = v);
-				y = card(y, 40, "loothub.settings.chat_time", "loothub.settings.chat_time.tooltip",
-						() -> c.chatTimestamps, v -> c.chatTimestamps = v);
-				y = card(y, 40, "loothub.settings.chat_copy", "loothub.settings.chat_copy.tooltip",
-						() -> c.chatCopy, v -> c.chatCopy = v);
-				y = card(y, 40, "loothub.settings.chat_mention", "loothub.settings.chat_mention.tooltip",
-						() -> c.chatMention, v -> c.chatMention = v);
-				y = card(y, 40, "loothub.settings.chat_mention_sound", "loothub.settings.chat_mention_sound.tooltip",
-						() -> c.chatMentionSound, v -> c.chatMentionSound = v);
-				y = card(y, 40, "loothub.settings.custom_chat", "loothub.settings.custom_chat.tooltip",
-						() -> c.customChat, v -> {
-							c.customChat = v;
-							de.loothub.client.quick.CustomChat.invalidate();
-						});
-				{
-					int fy = y;
-					int fDescX = cl + labelW + 12;
-					buttons.add(addRenderableWidget(Button.builder(Component.translatable("loothub.settings.chat_filter.edit",
-									c.chatFilterWords == null ? 0 : c.chatFilterWords.size()),
-							b -> minecraft.setScreen(new de.loothub.client.quick.ChatFilterScreen(this)))
-							.bounds(fDescX, fy + 34, Math.min(160, cr - 8 - fDescX), 16).build()));
-					y = card(y, 56, "loothub.settings.chat_filter", "loothub.settings.chat_filter.tooltip",
-							() -> c.chatFilter, v -> c.chatFilter = v);
-				}
 				y = card(y, 40, "loothub.settings.timers", "loothub.settings.timers.tooltip",
 						() -> c.timersEnabled, v -> c.timersEnabled = v);
-				y = card(y, 40, "loothub.settings.sign_window", "loothub.settings.sign_window.tooltip",
-						() -> c.signWindow, v -> c.signWindow = v);
 				y = card(y, 40, "loothub.settings.itemdex", "loothub.settings.itemdex.tooltip",
 						() -> c.itemdexEnabled, v -> c.itemdexEnabled = v);
 			}
 			case LOOK -> {
+				y = section(y, "loothub.settings.section.world");
 				// Farbschema und Deckkraft
 				{
 					int thY = y;
@@ -305,10 +279,6 @@ public class SettingsScreen extends LoothubScreen {
 							c.connectedTextures = v;
 							de.loothub.client.quick.ConnectedTextures.refresh();
 						});
-				y = card(y, 40, "loothub.settings.hide_head", "loothub.settings.hide_head.tooltip",
-						() -> c.hideOwnHeadItem, v -> c.hideOwnHeadItem = v);
-				y = card(y, 40, "loothub.settings.hide_cape", "loothub.settings.hide_cape.tooltip",
-						() -> c.hideOwnCape, v -> c.hideOwnCape = v);
 				{
 					// Block-Info: an/aus, Werkzeug/Preis einzeln, Größe; verschieben im Chat
 					int liY = y;
@@ -349,6 +319,11 @@ public class SettingsScreen extends LoothubScreen {
 					y = card(liY, 80, "loothub.settings.look_info", "loothub.settings.look_info.tooltip",
 							() -> c.lookInfo, v -> c.lookInfo = v);
 				}
+				y = section(y, "loothub.settings.section.players");
+				y = card(y, 40, "loothub.settings.hide_head", "loothub.settings.hide_head.tooltip",
+						() -> c.hideOwnHeadItem, v -> c.hideOwnHeadItem = v);
+				y = card(y, 40, "loothub.settings.hide_cape", "loothub.settings.hide_cape.tooltip",
+						() -> c.hideOwnCape, v -> c.hideOwnCape = v);
 				y = card(y, 40, "loothub.settings.fly_pose", "loothub.settings.fly_pose.tooltip",
 						() -> c.flyPose, v -> c.flyPose = v);
 				y = card(y, 40, "loothub.settings.hide_offhand", "loothub.settings.hide_offhand.tooltip",
@@ -427,7 +402,54 @@ public class SettingsScreen extends LoothubScreen {
 				y = card(y, 40, "loothub.settings.shader", iris ? "loothub.settings.shader.tooltip" : "loothub.settings.shader.no_iris",
 						de.loothub.client.quick.ShaderPack::active, v -> de.loothub.client.quick.ShaderPack.set(v));
 			}
+			case CHAT -> {
+				y = section(y, "loothub.settings.section.chat_window");
+				y = card(y, 40, "loothub.settings.chat_time", "loothub.settings.chat_time.tooltip",
+						() -> c.chatTimestamps, v -> c.chatTimestamps = v);
+				y = card(y, 40, "loothub.settings.chat_copy", "loothub.settings.chat_copy.tooltip",
+						() -> c.chatCopy, v -> c.chatCopy = v);
+				y = card(y, 40, "loothub.settings.chat_mention", "loothub.settings.chat_mention.tooltip",
+						() -> c.chatMention, v -> c.chatMention = v);
+				y = card(y, 40, "loothub.settings.chat_mention_sound", "loothub.settings.chat_mention_sound.tooltip",
+						() -> c.chatMentionSound, v -> c.chatMentionSound = v);
+				y = card(y, 40, "loothub.settings.custom_chat", "loothub.settings.custom_chat.tooltip",
+						() -> c.customChat, v -> {
+							c.customChat = v;
+							de.loothub.client.quick.CustomChat.invalidate();
+						});
+				{
+					int fy = y;
+					int fDescX = cl + labelW + 12;
+					buttons.add(addRenderableWidget(Button.builder(Component.translatable("loothub.settings.chat_filter.edit",
+									c.chatFilterWords == null ? 0 : c.chatFilterWords.size()),
+							b -> minecraft.setScreen(new de.loothub.client.quick.ChatFilterScreen(this)))
+							.bounds(fDescX, fy + 34, Math.min(160, cr - 8 - fDescX), 16).build()));
+					y = card(y, 56, "loothub.settings.chat_filter", "loothub.settings.chat_filter.tooltip",
+							() -> c.chatFilter, v -> c.chatFilter = v);
+				}
+				y = section(y, "loothub.settings.section.chat_tools");
+				{
+					int cY = y;
+					int cDescX = cl + labelW + 12;
+					buttons.add(addRenderableWidget(Button.builder(Component.translatable("loothub.settings.composer.open"),
+							b -> minecraft.setScreen(new de.loothub.client.quick.ChatComposerScreen("")))
+							.bounds(cDescX, cY + 30, Math.min(160, cr - 8 - cDescX), 16).build()));
+					y = cardNoToggle(cY, 52, "loothub.settings.composer", "loothub.settings.composer.tooltip");
+				}
+				y = card(y, 40, "loothub.settings.fish_chat_hide", "loothub.settings.fish_chat_hide.tooltip",
+						() -> c.fishChatHide, v -> c.fishChatHide = v);
+			}
 			case INVENTORY -> {
+				y = section(y, "loothub.settings.section.menus");
+				y = card(y, 40, "loothub.settings.tooltip_prices", "loothub.settings.tooltip_prices.tooltip",
+						() -> c.tooltipPrices, v -> c.tooltipPrices = v);
+				y = card(y, 40, "loothub.settings.amount_shortcut", "loothub.settings.amount_shortcut.tooltip",
+						() -> c.amountShortcut, v -> c.amountShortcut = v);
+				y = card(y, 40, "loothub.settings.rename_window", "loothub.settings.rename_window.tooltip",
+						() -> c.renameWindow, v -> c.renameWindow = v);
+				y = card(y, 40, "loothub.settings.sign_window", "loothub.settings.sign_window.tooltip",
+						() -> c.signWindow, v -> c.signWindow = v);
+				y = section(y, "loothub.settings.section.inventory");
 				y = card(y, 40, "loothub.settings.rarity_frames", "loothub.settings.rarity_frames.tooltip",
 						() -> c.rarityFrames, v -> c.rarityFrames = v);
 				{
@@ -543,31 +565,7 @@ public class SettingsScreen extends LoothubScreen {
 				}
 			}
 			case JOBS -> {
-				{
-					// Fang-Einblendung: an/aus, Seltenheiten als Kästchen, Test und Verschieben
-					int fY = y;
-					int fDescX = cl + labelW + 12;
-					int fW = Math.min(240, cr - 8 - fDescX);
-					int fHalf = (fW - 4) / 2;
-					buttons.add(addRenderableWidget(Button.builder(Component.translatable("loothub.streamer.alert.test"),
-							b -> de.loothub.client.jobs.FishAlert.test()).bounds(fDescX, fY + 34, fHalf, 16).build()));
-					buttons.add(addRenderableWidget(Button.builder(Component.translatable("loothub.settings.fish_alert.move"),
-							b -> minecraft.setScreen(HudLayoutScreen.select(this, "loothub.hud.fish")))
-							.bounds(fDescX + fHalf + 4, fY + 34, fHalf, 16).build()));
-					List<String> rar = de.loothub.client.jobs.FishAlert.rarities();
-					int fCols = 4;
-					int fColW = (cr - 8 - fDescX) / fCols;
-					for (int i = 0; i < rar.size(); i++) {
-						String k = rar.get(i);
-						String label = k.isEmpty() ? k : Character.toUpperCase(k.charAt(0)) + k.substring(1);
-						checks.add(new Check(fDescX + (i % fCols) * fColW, fY + 56 + (i / fCols) * 14, fColW - 4, label,
-								() -> de.loothub.client.jobs.FishAlert.shows(k),
-								v -> de.loothub.client.jobs.FishAlert.setShows(k, v)));
-					}
-					int fRows = (rar.size() + fCols - 1) / fCols;
-					y = card(fY, 60 + fRows * 14, "loothub.settings.fish_alert", "loothub.settings.fish_alert.tooltip",
-							() -> c.fishAlert, v -> c.fishAlert = v);
-				}
+				y = section(y, "loothub.settings.section.jobs");
 				// Job-Widget: Schalter + zwei Knöpfe unter der Beschreibung + Kästchen für jede Zeile
 				int jobY = y;
 				y = card(jobY, 64 + ((JobWidget.ROW_IDS.size() + 3) / 4) * 14, "loothub.settings.section.job_widget", "loothub.settings.job_widget.tooltip",
@@ -624,6 +622,62 @@ public class SettingsScreen extends LoothubScreen {
 				}
 				y = card(y, 40, "loothub.settings.market_sales", "loothub.settings.market_sales.tooltip",
 						() -> c.marketSales, v -> c.marketSales = v);
+				y = section(y, "loothub.settings.section.fishing");
+				{
+					// Fang-Einblendung: an/aus, Seltenheiten als Kästchen, Test und Verschieben
+					int fY = y;
+					int fDescX = cl + labelW + 12;
+					int fW = Math.min(240, cr - 8 - fDescX);
+					int fHalf = (fW - 4) / 2;
+					buttons.add(addRenderableWidget(Button.builder(Component.translatable("loothub.streamer.alert.test"),
+							b -> de.loothub.client.jobs.FishAlert.test()).bounds(fDescX, fY + 34, fHalf, 16).build()));
+					buttons.add(addRenderableWidget(Button.builder(Component.translatable("loothub.settings.fish_alert.move"),
+							b -> minecraft.setScreen(HudLayoutScreen.select(this, "loothub.hud.fish")))
+							.bounds(fDescX + fHalf + 4, fY + 34, fHalf, 16).build()));
+					List<String> rar = de.loothub.client.jobs.FishAlert.rarities();
+					int fCols = 4;
+					int fColW = (cr - 8 - fDescX) / fCols;
+					for (int i = 0; i < rar.size(); i++) {
+						String k = rar.get(i);
+						String label = k.isEmpty() ? k : Character.toUpperCase(k.charAt(0)) + k.substring(1);
+						checks.add(new Check(fDescX + (i % fCols) * fColW, fY + 56 + (i / fCols) * 14, fColW - 4, label,
+								() -> de.loothub.client.jobs.FishAlert.shows(k),
+								v -> de.loothub.client.jobs.FishAlert.setShows(k, v)));
+					}
+					int fRows = (rar.size() + fCols - 1) / fCols;
+					y = card(fY, 60 + fRows * 14, "loothub.settings.fish_alert", "loothub.settings.fish_alert.tooltip",
+							() -> c.fishAlert, v -> c.fishAlert = v);
+				}
+				{
+					// OPSUCHT-Fangton stumm: gelernte Töne als Kästchen (angehakt = stumm)
+					int mY = y;
+					int mDescX = cl + labelW + 12;
+					List<String> learned = de.loothub.client.jobs.FishSounds.learnedSounds();
+					for (int i = 0; i < learned.size(); i++) {
+						String id = learned.get(i);
+						String label = id.substring(id.indexOf(':') + 1);
+						checks.add(new Check(mDescX + (i % 2) * ((cr - 8 - mDescX) / 2), mY + 40 + (i / 2) * 14,
+								(cr - 8 - mDescX) / 2 - 4, label,
+								() -> !WidgetConfig.get().fishSoundAllowed.contains(id),
+								v -> {
+									WidgetConfig.get().fishSoundAllowed.remove(id);
+									if (!v) {
+										WidgetConfig.get().fishSoundAllowed.add(id);
+									}
+								}));
+					}
+					buttons.add(addRenderableWidget(Button.builder(Component.translatable("loothub.settings.fish_sound.reset"),
+							b -> {
+								de.loothub.client.jobs.FishSounds.reset();
+								rebuildWidgets();
+							}).bounds(cr - 8 - 90, mY + 22, 90, 14).build()));
+					int mRows = learned.isEmpty() ? 1 : (learned.size() + 1) / 2;
+					y = card(mY, 46 + mRows * 14, learned.isEmpty() ? "loothub.settings.fish_sound" : "loothub.settings.fish_sound",
+							learned.isEmpty() ? "loothub.settings.fish_sound.learning" : "loothub.settings.fish_sound.tooltip",
+							() -> c.fishSoundMute, v -> c.fishSoundMute = v);
+				}
+				y = card(y, 40, "loothub.settings.bait_warning", "loothub.settings.bait_warning.tooltip",
+						() -> c.baitWarning, v -> c.baitWarning = v);
 			}
 			case SOUNDS -> {
 				int descX = cl + labelW + 12;
@@ -728,6 +782,8 @@ public class SettingsScreen extends LoothubScreen {
 				y = card(y, 40, "loothub.settings.pcg_sound", "loothub.settings.pcg_sound.tooltip",
 						() -> c.pcgSound, v -> c.pcgSound = v);
 				pcgFieldW = fieldW;
+				y = card(y, 40, "loothub.settings.pokedex_page", "loothub.settings.pokedex_page.tooltip",
+						() -> c.pokedexPage, v -> c.pokedexPage = v);
 				y = card(y, 40, "loothub.settings.streamer", "loothub.settings.streamer.tooltip",
 						() -> c.streamerMode, v -> {
 							c.streamerMode = v;
@@ -939,6 +995,15 @@ public class SettingsScreen extends LoothubScreen {
 		return mx >= b.getX() && mx < b.getX() + b.getWidth() && my >= b.getY() && my < b.getY() + b.getHeight();
 	}
 
+	/** Überschrift über einer Gruppe von Karten. */
+	private int section(int y, String key) {
+		if (searching()) {
+			return y;
+		}
+		sections.add(new Object[]{y, key});
+		return y + 16;
+	}
+
 	private int card(int y, int h, String titleKey, String descKey, BooleanSupplier get, Consumer<Boolean> set) {
 		int tx = cl + 8 + (labelW - Toggle.W) / 2;
 		Toggle t = new Toggle(tx, y + 20, get, set);
@@ -983,6 +1048,12 @@ public class SettingsScreen extends LoothubScreen {
 		g.enableScissor(cl, top, cr, cb);
 		if (tab == Tab.GENERAL) {
 			renderVersion(g);
+		}
+		for (Object[] sec : sections) {
+			int sy = (int) sec[0];
+			Component t = Component.translatable((String) sec[1]);
+			g.drawString(font, t, cl + 2, sy + 4, 0xFFE2A13B, false);
+			g.fill(cl + 6 + font.width(t), sy + 8, cr, sy + 9, 0x40E2A13B);
 		}
 		if (searching() && cards.isEmpty()) {
 			Component none = Component.translatable("loothub.settings.search.none");

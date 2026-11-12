@@ -56,7 +56,8 @@ public final class OtherAfk {
 				t = new Track();
 				t.still = now;
 				TRACKS.put(p.getUUID(), t);
-			} else if (Math.abs(p.getX() - t.x) > 0.01 || Math.abs(p.getY() - t.y) > 0.01 || Math.abs(p.getZ() - t.z) > 0.01) {
+			} else if (Math.abs(p.getX() - t.x) > 0.01 || Math.abs(p.getY() - t.y) > 0.01 || Math.abs(p.getZ() - t.z) > 0.01
+					|| AfkView.fishing(p)) {
 				t.still = now; // nur Laufen/Springen zählt, Umschauen nicht
 				t.lie.to(0, 900);
 			} else if (now - t.still >= AfkView.AFK_AFTER_MS) {

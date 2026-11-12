@@ -59,7 +59,7 @@ public class HudLayoutScreen extends Screen {
 				v -> c.musicX = v, v -> c.musicY = v, 4, false, 0.0, 1.0, () -> c.musicEnabled));
 		huds.add(new Hud("loothub.hud.pcg", () -> new int[]{150, 32}, () -> c.pcgOverlayX, () -> c.pcgOverlayY,
 				v -> c.pcgOverlayX = v, v -> c.pcgOverlayY = v, 4, false, 1.0, 0.0, () -> c.pcgEnabled));
-		huds.add(new Hud("loothub.hud.stream", () -> new int[]{210, 13 + Math.max(1, Math.min(15, c.streamerHudRows)) * 11 + 3},
+		huds.add(new Hud("loothub.hud.stream", () -> new int[]{270, 13 + Math.max(1, Math.min(15, c.streamerHudRows)) * 21 + 3},
 				() -> c.streamerHudX, () -> c.streamerHudY, v -> c.streamerHudX = v, v -> c.streamerHudY = v, 4, false,
 				1.0, 0.5, () -> c.streamerMode && c.streamerHud));
 		huds.add(new Hud("loothub.hud.stream_alerts", () -> de.loothub.client.streamer.Alerts.sampleSize(font),

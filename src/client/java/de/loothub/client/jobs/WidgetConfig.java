@@ -220,6 +220,21 @@ public final class WidgetConfig {
 	public double fishAlertY = 0.2;
 	/** Seltenheiten (klein geschrieben), die nicht eingeblendet werden. */
 	public java.util.List<String> fishAlertOff = new java.util.ArrayList<>();
+	/** Fang-Meldungen von OPSUCHT im Chat ausblenden. */
+	public boolean fishChatHide = false;
+	/** OPSUCHT-Fangton beim Angeln stumm (gelernt, siehe FishSounds). */
+	public boolean fishSoundMute = false;
+	/** Gelernt: Ton → wie oft er zusammen mit einer Fang-Meldung kam. */
+	public java.util.Map<String, Integer> fishSoundSeen = new java.util.HashMap<>();
+	public int fishSoundCatches = 0;
+	/** Gelernte Töne, die trotzdem hörbar bleiben sollen. */
+	public java.util.List<String> fishSoundAllowed = new java.util.ArrayList<>();
+	/** Warnung, wenn die Köder ausgehen. */
+	public boolean baitWarning = true;
+	/** Entwurf aus dem /chat-Editor. */
+	public String chatDraft = "";
+	/** Menüseite „Pokédex“ anzeigen. */
+	public boolean pokedexPage = true;
 	/** Krönchen vor Loothub-Nutzern in der Tab-Liste. */
 	public boolean loothubCrown = true;
 	/** Verbundene Texturen (Glas ohne Ränder zwischen gleichen Blöcken). */
@@ -317,6 +332,7 @@ public final class WidgetConfig {
 		connectedTextures = false;
 		loothubCrown = false;
 		fishAlert = false;
+		baitWarning = false;
 	}
 
 	private static WidgetConfig load() {
@@ -382,6 +398,12 @@ public final class WidgetConfig {
 					if (c.miniMes.isEmpty() && c.miniMeSkin != null && !c.miniMeSkin.isBlank()) {
 						c.miniMes.add(c.miniMeSkin.strip());
 						c.miniMeSkin = "";
+					}
+					if (c.fishSoundSeen == null) {
+						c.fishSoundSeen = new java.util.HashMap<>();
+					}
+					if (c.fishSoundAllowed == null) {
+						c.fishSoundAllowed = new java.util.ArrayList<>();
 					}
 					if (c.soundVolumes == null) {
 						c.soundVolumes = new java.util.HashMap<>();

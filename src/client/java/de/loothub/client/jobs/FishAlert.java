@@ -28,7 +28,8 @@ import de.loothub.client.streamer.Alerts;
  * stellt man in den Einstellungen ein (wie die Erze beim Leuchten). Bei offenem Chat (T) verschiebbar.
  */
 public final class FishAlert {
-	private record Shown(String title, String sub, int color, int rank) {
+	/** rarity = Seltenheit (für den Ton), "!bait" = Köder-Warnung. */
+	private record Shown(String title, String sub, int color, String rarity) {
 	}
 
 	private static final long SHOW_MS = 4500;
@@ -109,13 +110,23 @@ public final class FishAlert {
 		int color = c.rarityColor >= 0 ? c.rarityColor : 0xB9A9AB;
 		String sub = c.rarity.toUpperCase(Locale.ROOT) + (c.size.isEmpty() ? "" : " · " + c.size);
 		if (QUEUE.size() < 10) {
-			QUEUE.add(new Shown("≋ " + c.fish, sub, color, FishingLog.rank(c.rarity)));
+			QUEUE.add(new Shown("≋ " + c.fish, sub, color, c.rarity));
 		}
 	}
 
 	/** Beispiel zum Ausprobieren (Knopf „Test“). */
 	public static void test() {
-		QUEUE.add(new Shown("≋ Orakelfisch", "EPISCH · Mittel", 0x55FF55, 3));
+		QUEUE.add(new Shown("≋ Orakelfisch", "EPISCH · Mittel", 0x55FF55, "episch"));
+	}
+
+	/** Ton einer Seltenheit zum Anhören (Einstellungen). */
+	public static void preview(String rarity) {
+		sound(rarity);
+	}
+
+	/** Köder sind aufgebraucht: rote Warnung mit Alarm, unabhängig von der Seltenheits-Auswahl. */
+	static void baitEmpty() {
+		QUEUE.addFirst(new Shown("⚠ Keine Köder mehr!", "Neue Köder auffüllen", 0xFF5050, "!bait"));
 	}
 
 	public static void renderHud(GuiGraphics g, DeltaTracker delta) {
@@ -127,7 +138,7 @@ public final class FishAlert {
 		if (current == null && !QUEUE.isEmpty()) {
 			current = QUEUE.poll();
 			since = now;
-			sound(current.rank());
+			sound(current.rarity());
 		}
 		if (current == null || mc.options.hideGui) {
 			return;
@@ -153,19 +164,58 @@ public final class FishAlert {
 		return Alerts.boxSize(font, "≋ Orakelfisch", "EPISCH · Mittel");
 	}
 
-	private static void sound(int rank) {
+	/** Eigener Klang je Seltenheit – je seltener, desto prächtiger. */
+	private static void sound(String rarity) {
 		List<Sounds.Note> l = new ArrayList<>();
-		if (rank >= 4) {
-			l.add(Sounds.n(0, SoundEvents.UI_TOAST_CHALLENGE_COMPLETE, 1.0F, 0.5F));
-			l.add(Sounds.n(8, SoundEvents.FIREWORK_ROCKET_TWINKLE, 1.2F, 0.7F));
-		} else if (rank == 3) {
-			l.add(Sounds.n(0, SoundEvents.AMETHYST_BLOCK_CHIME, 1.0F, 1.0F));
-			l.addAll(Sounds.arpeggio(SoundEvents.NOTE_BLOCK_CHIME, 0.9F, 0.7F, 2));
-		} else if (rank == 2) {
-			l.add(Sounds.n(0, SoundEvents.NOTE_BLOCK_CHIME, 1.2F, 0.7F));
-			l.add(Sounds.n(3, SoundEvents.NOTE_BLOCK_CHIME, 1.6F, 0.7F));
-		} else {
-			l.add(Sounds.n(0, SoundEvents.NOTE_BLOCK_PLING, 1.4F, 0.4F));
+		if ("!bait".equals(rarity)) {
+			for (int i = 0; i < 3; i++) {
+				l.add(Sounds.n(i * 6, SoundEvents.NOTE_BLOCK_DIDGERIDOO, 1.0F, 1.0F));
+				l.add(Sounds.n(i * 6 + 3, SoundEvents.NOTE_BLOCK_BIT, 0.7F, 0.8F));
+			}
+			Sounds.play(Sounds.Group.FISH, l);
+			return;
+		}
+		String k = rarity == null ? "" : rarity.strip().toLowerCase(Locale.ROOT);
+		if (!FishingLog.known(k)) {
+			// unbekannte Seltenheit: eigenes, auffälliges Xylophon-Motiv
+			l.addAll(Sounds.arpeggio(SoundEvents.NOTE_BLOCK_XYLOPHONE, 0.9F, 0.8F, 2));
+			l.add(Sounds.n(9, SoundEvents.AMETHYST_BLOCK_CHIME, 1.4F, 1.0F));
+			Sounds.play(Sounds.Group.FISH, l);
+			return;
+		}
+		switch (FishingLog.rank(k)) {
+			case 0 -> l.add(Sounds.n(0, SoundEvents.NOTE_BLOCK_PLING, 1.4F, 0.4F)); // Vanilla
+			case 1 -> { // Trödel: dumpfes Plopp
+				l.add(Sounds.n(0, SoundEvents.NOTE_BLOCK_BASS, 0.8F, 0.6F));
+				l.add(Sounds.n(3, SoundEvents.NOTE_BLOCK_BASS, 0.6F, 0.5F));
+			}
+			case 2 -> { // Schatz: Klimpern
+				l.add(Sounds.n(0, SoundEvents.EXPERIENCE_ORB_PICKUP, 1.0F, 0.6F));
+				l.add(Sounds.n(2, SoundEvents.EXPERIENCE_ORB_PICKUP, 1.3F, 0.6F));
+				l.add(Sounds.n(4, SoundEvents.AMETHYST_BLOCK_CHIME, 1.6F, 0.9F));
+			}
+			case 3 -> { // Häufig
+				l.add(Sounds.n(0, SoundEvents.NOTE_BLOCK_CHIME, 1.2F, 0.6F));
+				l.add(Sounds.n(3, SoundEvents.NOTE_BLOCK_CHIME, 1.5F, 0.6F));
+			}
+			case 4 -> { // Episch
+				l.add(Sounds.n(0, SoundEvents.AMETHYST_BLOCK_CHIME, 1.0F, 1.0F));
+				l.addAll(Sounds.arpeggio(SoundEvents.NOTE_BLOCK_CHIME, 0.9F, 0.7F, 2));
+			}
+			case 5 -> { // Legendär
+				l.add(Sounds.n(0, SoundEvents.PLAYER_LEVELUP, 1.2F, 0.6F));
+				l.addAll(Sounds.arpeggio(SoundEvents.NOTE_BLOCK_BELL, 0.84F, 0.9F, 3));
+			}
+			case 6 -> { // Spektakulär
+				l.add(Sounds.n(0, SoundEvents.UI_TOAST_CHALLENGE_COMPLETE, 1.0F, 0.5F));
+				l.add(Sounds.n(8, SoundEvents.FIREWORK_ROCKET_TWINKLE, 1.2F, 0.7F));
+			}
+			default -> { // Sensationell
+				l.add(Sounds.n(0, SoundEvents.BEACON_ACTIVATE, 1.4F, 0.8F));
+				l.add(Sounds.n(4, SoundEvents.UI_TOAST_CHALLENGE_COMPLETE, 1.1F, 0.5F));
+				l.add(Sounds.n(12, SoundEvents.FIREWORK_ROCKET_LARGE_BLAST, 1.0F, 0.6F));
+				l.add(Sounds.n(18, SoundEvents.FIREWORK_ROCKET_TWINKLE, 1.0F, 0.7F));
+			}
 		}
 		Sounds.play(Sounds.Group.FISH, l);
 	}

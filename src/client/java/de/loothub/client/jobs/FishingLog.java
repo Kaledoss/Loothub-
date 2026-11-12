@@ -48,9 +48,9 @@ public final class FishingLog {
 			"Du hast (.+?) in der Größe (.+?) und der Seltenheit (.+?) gefangen", Pattern.CASE_INSENSITIVE);
 	private static final Pattern NO_SIZE = Pattern.compile(
 			"Du hast (.+?) (?:mit|in) der Seltenheit (.+?) gefangen", Pattern.CASE_INSENSITIVE);
-	/** Bekannte Seltenheiten von gewöhnlich bis selten – unbekannte zählen als gewöhnlich. */
-	private static final List<String> ORDER = List.of("gewöhnlich", "ungewöhnlich", "selten", "episch", "legendär",
-			"mythisch", "göttlich");
+	/** OPSUCHT-Seltenheiten von niedrig bis hoch – unbekannte zählen wie die niedrigste. */
+	private static final List<String> ORDER = List.of("vanilla", "trödel", "schatz", "häufig", "episch", "legendär",
+			"spektakulär", "sensationell");
 
 	private static List<Catch> catches;
 	private static long lastText;
@@ -64,6 +64,7 @@ public final class FishingLog {
 		ClientReceiveMessageEvents.GAME.register((message, overlay) -> {
 			if (!overlay) {
 				scan(message);
+				bait(message);
 			}
 		});
 	}
@@ -111,21 +112,65 @@ public final class FishingLog {
 		return ORDER;
 	}
 
+	/** Steht die Seltenheit in der bekannten Liste? */
+	public static boolean known(String rarity) {
+		return ORDER.contains(rarity == null ? "" : rarity.strip().toLowerCase(Locale.ROOT));
+	}
+
 	/** Rang der Seltenheit (0 = gewöhnlich/unbekannt). */
 	public static int rank(String rarity) {
 		int i = ORDER.indexOf(rarity == null ? "" : rarity.strip().toLowerCase(Locale.ROOT));
 		return Math.max(0, i);
 	}
 
+	private static String plain(Component message) {
+		return message.getString().replaceAll("§.", "").replaceAll("\\s+", " ").strip();
+	}
+
+	/** Server-Meldung („OPSUCHT » …“) – kein Spieler, der den Satz selbst in den Chat schreibt? */
+	private static boolean fromServer(String plain, int at) {
+		String prefix = plain.substring(0, at).strip();
+		return prefix.isEmpty() || prefix.matches("(?i)opsucht\\s*[»>:]");
+	}
+
+	/** Ist das eine Fang-Meldung (für den Chat-Filter)? */
+	public static boolean isCatch(Component message) {
+		String plain = plain(message);
+		int at = plain.indexOf("Du hast");
+		return at >= 0 && plain.contains("gefangen") && plain.contains("Seltenheit") && fromServer(plain, at);
+	}
+
+	private static long lastBait;
+
+	/** „Keine Köder mehr“: große Warnung mit Ton (einmal pro halbe Minute). */
+	private static void bait(Component message) {
+		if (!WidgetConfig.get().baitWarning) {
+			return;
+		}
+		String plain = plain(message);
+		String low = plain.toLowerCase(Locale.ROOT);
+		// nur Server-Meldungen („OPSUCHT » …“ oder ohne Absender), keine Spieler-Nachrichten
+		boolean server = low.startsWith("opsucht") || !plain.contains("»");
+		if (!low.contains("köder") || !server) {
+			return;
+		}
+		boolean empty = low.contains("keine") || low.contains("leer") || low.contains("aufgebraucht")
+				|| low.contains("verbraucht") || low.contains("nicht mehr") || low.contains("kein ");
+		long now = System.currentTimeMillis();
+		if (empty && now - lastBait > 30_000L) {
+			lastBait = now;
+			FishAlert.baitEmpty();
+		}
+	}
+
 	static void scan(Component message) {
-		String plain = message.getString().replaceAll("§.", "").replaceAll("\\s+", " ").strip();
+		String plain = plain(message);
 		int at = plain.indexOf("Du hast");
 		if (at < 0 || !plain.contains("gefangen")) {
 			return;
 		}
 		// Nur die Server-Meldung („OPSUCHT » Du hast …“), kein Spieler, der den Satz in den Chat schreibt
-		String prefix = plain.substring(0, at).strip();
-		if (!prefix.isEmpty() && !prefix.matches("(?i)opsucht\\s*[»>:]")) {
+		if (!fromServer(plain, at)) {
 			return;
 		}
 		String fish;
@@ -166,6 +211,7 @@ public final class FishingLog {
 		}
 		version++;
 		save();
+		FishSounds.onCatch();
 		FishAlert.post(c);
 	}
 

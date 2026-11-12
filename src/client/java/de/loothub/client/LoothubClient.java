@@ -40,9 +40,11 @@ public class LoothubClient implements ClientModInitializer {
 			KeyMapping.Category.register(Identifier.fromNamespaceAndPath(Loothub.MOD_ID, "main"));
 
 	private static KeyMapping menuKey;
+	private static KeyMapping emoteKey;
 	private static boolean updateNoticeShown;
 	/** /loothub öffnet die Einstellungen erst im nächsten Tick – sonst schließt der Chat sie gleich wieder. */
 	private static boolean openSettings;
+	private static volatile String openComposer;
 
 	@Override
 	public void onInitializeClient() {
@@ -50,6 +52,9 @@ public class LoothubClient implements ClientModInitializer {
 		// Hinweis: In Minecraft liegt L standardmäßig auf „Fortschritte“ – das bitte unter Steuerung umlegen.
 		menuKey = KeyBindingHelper.registerKeyBinding(new KeyMapping(
 				"key.loothub.open", InputConstants.Type.KEYSYM, GLFW.GLFW_KEY_L, CATEGORY));
+		// B öffnet das Emote-Rad der Mini-Mes
+		emoteKey = KeyBindingHelper.registerKeyBinding(new KeyMapping(
+				"key.loothub.emotes", InputConstants.Type.KEYSYM, GLFW.GLFW_KEY_B, CATEGORY));
 
 		// Eigene Statistik
 		ClientTickEvents.END_CLIENT_TICK.register(StatsTracker::tick);
@@ -84,6 +89,16 @@ public class LoothubClient implements ClientModInitializer {
 			if (openSettings && client.screen == null) {
 				openSettings = false;
 				client.setScreen(new SettingsScreen());
+			}
+			if (openComposer != null && client.screen == null) {
+				String text = openComposer;
+				openComposer = null;
+				client.setScreen(new de.loothub.client.quick.ChatComposerScreen(text));
+			}
+			while (emoteKey.consumeClick()) {
+				if (client.screen == null && client.player != null) {
+					client.setScreen(new de.loothub.client.cosmetics.EmoteWheelScreen());
+				}
 			}
 			while (menuKey.consumeClick()) {
 				if (client.screen == null) {
@@ -165,6 +180,16 @@ public class LoothubClient implements ClientModInitializer {
 					openSettings = true;
 					return 1;
 				})));
+		// /chat → Nachricht mit Farbcodes in Ruhe vorbereiten (mit Vorschau); /chat <Text> füllt das Feld vor
+		ClientCommandRegistrationCallback.EVENT.register((dispatcher, registryAccess) ->
+				dispatcher.register(ClientCommandManager.literal("chat").executes(ctx -> {
+					openComposer = "";
+					return 1;
+				}).then(ClientCommandManager.argument("text", com.mojang.brigadier.arguments.StringArgumentType.greedyString())
+						.executes(ctx -> {
+							openComposer = com.mojang.brigadier.arguments.StringArgumentType.getString(ctx, "text");
+							return 1;
+						}))));
 		// Eingebautes Ressourcenpaket: Inventar in Schwarz-Rot (unter Optionen → Ressourcenpakete abschaltbar)
 		FabricLoader.getInstance().getModContainer(Loothub.MOD_ID).ifPresent(mod -> {
 			ResourceLoader.registerBuiltinPack(Identifier.fromNamespaceAndPath(Loothub.MOD_ID, "dark_inventory"), mod,

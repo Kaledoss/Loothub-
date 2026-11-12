@@ -65,7 +65,12 @@ public abstract class LoothubScreen extends Screen {
 
 		/** Seite in der Leiste zeigen? „Streamer“ nur bei eingeschaltetem Streamer-Modus. */
 		boolean shown() {
-			return this != STREAMER || de.loothub.client.jobs.WidgetConfig.get().streamerMode;
+			de.loothub.client.jobs.WidgetConfig c = de.loothub.client.jobs.WidgetConfig.get();
+			return switch (this) {
+				case STREAMER -> c.streamerMode;
+				case POKEDEX -> c.pokedexPage;
+				default -> true;
+			};
 		}
 	}
 

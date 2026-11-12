@@ -68,6 +68,9 @@ public final class ChatLog {
 	/** Das Filter-Wort, das die Nachricht ausblendet, oder null. */
 	public static String filterHit(Component message) {
 		WidgetConfig c = WidgetConfig.get();
+		if (c.fishChatHide && de.loothub.client.jobs.FishingLog.isCatch(message)) {
+			return "Fang"; // Fang-Meldungen stehen im Angelverlauf und in der Einblendung
+		}
 		if (!c.chatFilter || c.chatFilterWords == null || c.chatFilterWords.isEmpty()) {
 			return null;
 		}

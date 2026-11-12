@@ -26,7 +26,8 @@
 		"CustomChatMixin",
 		"ChatSearchKeysMixin",
 		"OffhandFilterMixin",
-		"TabListCrownMixin"
+		"TabListCrownMixin",
+		"FishSoundMixin"
 	],
 	"injectors": {
 		"defaultRequire": 0
