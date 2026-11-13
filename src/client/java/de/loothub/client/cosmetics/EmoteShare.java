@@ -27,12 +27,13 @@ import de.loothub.client.jobs.WidgetConfig;
 /**
  * Gesten aus dem Emote-Rad mit anderen Loothub-Spielern teilen. Die eigene Geste wird – mit dem von Mojang
  * beglaubigten Spieler-Schlüssel unterschrieben – kurz beim Cosmetics-Server gemeldet; Gesten von Loothub-Spielern
- * in der Nähe werden alle 1,5 Sekunden abgefragt, aber nur, wenn überhaupt jemand mit Loothub in Sichtweite ist.
+ * in der Nähe werden abgefragt, aber nur, wenn überhaupt jemand mit Loothub in Sichtweite ist – anfangs alle 1,5
+ * Sekunden; passiert nichts, wird schrittweise seltener gefragt (bis 6 s), bei Fehlern noch seltener.
  * Nur Darstellung: niemand sieht dadurch etwas anderes im Spiel als Figuren, die winken.
  */
 public final class EmoteShare {
 	private static final HttpClient HTTP = HttpClient.newBuilder().connectTimeout(Duration.ofSeconds(6)).build();
-	private static final long POLL_MS = 1_500L, SEND_GAP_MS = 1_500L;
+	private static final long POLL_MS = 1_500L, POLL_IDLE_MS = 6_000L, POLL_ERROR_MS = 20_000L, SEND_GAP_MS = 1_500L;
 	/** So lange läuft eine Geste (wie beim eigenen Emote-Rad). */
 	private static final long PLAY_MS = 4_000L;
 	private static final double RANGE = 48.0;
@@ -41,6 +42,8 @@ public final class EmoteShare {
 	private static final Map<UUID, long[]> REMOTE = new ConcurrentHashMap<>();
 	private static volatile boolean polling, sending;
 	private static long lastPoll, lastSend;
+	/** Aktueller Abstand zwischen zwei Abfragen (passt sich an). */
+	private static volatile long interval = POLL_MS;
 
 	private EmoteShare() {
 	}
@@ -55,7 +58,7 @@ public final class EmoteShare {
 				return;
 			}
 			long now = System.currentTimeMillis();
-			if (polling || now - lastPoll < POLL_MS) {
+			if (polling || now - lastPoll < interval) {
 				return;
 			}
 			lastPoll = now;
@@ -70,6 +73,9 @@ public final class EmoteShare {
 			}
 			if (!ids.isEmpty()) {
 				poll(ids);
+			} else {
+				// niemand in der Nähe: beim nächsten Treffen wieder zügig anfangen
+				interval = POLL_MS;
 			}
 			REMOTE.values().removeIf(v -> now - v[1] > PLAY_MS + 1_000L);
 		});
@@ -82,8 +88,10 @@ public final class EmoteShare {
 		HTTP.sendAsync(req, HttpResponse.BodyHandlers.ofString(StandardCharsets.UTF_8)).whenComplete((r, t) -> {
 			try {
 				if (t != null || r.statusCode() != 200) {
+					interval = POLL_ERROR_MS;
 					return;
 				}
+				boolean any = false;
 				JsonElement e = JsonParser.parseString(r.body());
 				if (!e.isJsonObject()) {
 					return;
@@ -99,6 +107,7 @@ public final class EmoteShare {
 					if (type <= 0 || age > PLAY_MS) {
 						continue;
 					}
+					any = true;
 					UUID id = UUID.fromString(en.getKey());
 					long start = now - age;
 					long[] old = REMOTE.get(id);
@@ -107,7 +116,10 @@ public final class EmoteShare {
 						REMOTE.put(id, new long[]{type, start});
 					}
 				}
+				// gerade wird gewunken → schnell bleiben, sonst langsam seltener fragen
+				interval = any ? POLL_MS : Math.min(POLL_IDLE_MS, interval + 1_000L);
 			} catch (RuntimeException ex) {
+				interval = POLL_ERROR_MS;
 				Loothub.LOGGER.debug("Gesten: Antwort nicht lesbar", ex);
 			} finally {
 				polling = false;
@@ -123,6 +135,8 @@ public final class EmoteShare {
 			return;
 		}
 		lastSend = now;
+		// wer selbst winkt, bekommt vermutlich gleich eine Antwort
+		interval = POLL_MS;
 		sending = true;
 		UUID id = mc.getUser().getProfileId();
 		Thread t = new Thread(() -> {
