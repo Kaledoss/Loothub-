@@ -220,7 +220,7 @@ public final class Timers {
 					continue; // beendet – nicht länger in der Anzeige
 				}
 				String name = t.name.length() > 22 ? t.name.substring(0, 21) + "…" : t.name;
-				out.add(new Line(name + "  " + (left <= 0 ? "beendet" : (t.approx ? "≥ " : "") + format(left)),
+				out.add(new Line(name + "  " + (left <= 0 ? Component.translatable("loothub.alltag.auction.ended").getString() : (t.approx ? "≥ " : "") + format(left)),
 						left <= 0 ? 0xFF9A9A9A : color(left), left));
 			} else {
 				out.add(new Line(t.name + "  " + format(left), color(left), left));

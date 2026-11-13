@@ -335,8 +335,9 @@ public final class AuctionWatch {
 			if (!w.warned && left <= alarmMs() && left > -60_000L) {
 				w.warned = true;
 				changed = true;
-				String when = left <= 60_000L ? "jetzt" : "in ca. " + Math.max(1, left / 60_000L) + " Min.";
-				de.loothub.client.jobs.FishAlert.notice("⏰ Auktion endet " + when, w.name + (w.seller.isEmpty() ? "" : " · " + w.seller),
+				String when = left <= 60_000L ? Component.translatable("loothub.auction.when.now").getString()
+						: Component.translatable("loothub.auction.when.minutes", Math.max(1, left / 60_000L)).getString();
+				de.loothub.client.jobs.FishAlert.notice(Component.translatable("loothub.auction.notice", when).getString(), w.name + (w.seller.isEmpty() ? "" : " · " + w.seller),
 						0xF2C14E);
 				Sounds.play(Sounds.Group.TIMER, List.of(
 						Sounds.n(0, SoundEvents.NOTE_BLOCK_BELL, 1.0F, 1.0F),
@@ -344,11 +345,10 @@ public final class AuctionWatch {
 						Sounds.n(8, SoundEvents.NOTE_BLOCK_BELL, 1.5F, 1.0F)));
 				if (mc.player != null) {
 					mc.player.displayClientMessage(Component.literal("[Loothub+] ").withStyle(ChatFormatting.GOLD)
-							.append(Component.literal("Gemerkte Auktion endet " + when + ": ").withStyle(ChatFormatting.YELLOW))
+							.append(Component.translatable("loothub.auction.chat", when).withStyle(ChatFormatting.YELLOW))
 							.append(Component.literal(w.name).withStyle(ChatFormatting.WHITE))
 							.append(Component.literal(w.price.isEmpty() ? "" : " (" + w.price + ")").withStyle(ChatFormatting.GRAY))
-							.append(Component.literal(w.precision >= 86_400_000L
-									? " – Restzeit war nur in Tagen bekannt, Merkliste öffnen für die genaue Zeit" : "")
+							.append((w.precision >= 86_400_000L ? Component.translatable("loothub.auction.rough") : Component.empty())
 									.withStyle(ChatFormatting.DARK_GRAY)), false);
 				}
 			}

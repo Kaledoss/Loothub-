@@ -799,5 +799,10 @@
 	"loothub.alltag.info.auction": "Auktion (Merkliste)",
 	"loothub.alltag.auction.ended": "beendet",
 	"loothub.cosmetics.seasonal": "Jahreszeiten",
-	"loothub.cosmetics.seasonal.desc": "Vom 5. bis 27. Dezember tragen die Mini-Mes Zipfelmützen, an Silvester steigen kleine Feuerwerks-Funken auf."
+	"loothub.cosmetics.seasonal.desc": "Vom 5. bis 27. Dezember tragen die Mini-Mes Zipfelmützen, an Silvester steigen kleine Feuerwerksfunken auf.",
+	"loothub.auction.when.now": "jetzt",
+	"loothub.auction.when.minutes": "in ca. %s Min.",
+	"loothub.auction.notice": "⏰ Auktion endet %s",
+	"loothub.auction.chat": "Gemerkte Auktion endet %s: ",
+	"loothub.auction.rough": " – die Restzeit war nur in Tagen bekannt; öffne die Merkliste für die genaue Zeit"
 }
