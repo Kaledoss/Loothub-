@@ -80,11 +80,14 @@ jobs:
         run: |
           # Änderungen seit dem vorigen Release (Commit-Überschriften) – die Mod zeigt sie im Chat an
           OLD=$(gh api "repos/${{ github.repository }}/git/ref/tags/latest" -q .object.sha 2>/dev/null || true)
-          if [ -n "$OLD" ] && git cat-file -e "$OLD" 2>/dev/null; then
-            git log --no-merges --format='- %s' "$OLD..$GITHUB_SHA" > notes.md
-          else
-            git log --no-merges --format='- %s' -n 10 "$GITHUB_SHA" > notes.md
-          fi
+          if [ -n "$OLD" ] && git cat-file -e "$OLD" 2>/dev/null; then RANGE="$OLD..$GITHUB_SHA"; else RANGE="-n 10 $GITHUB_SHA"; fi
+          # Geschriebener Changelog („Add:“, „Remove:“, „Fix:“ in den Commit-Texten) hat Vorrang vor den Überschriften
+          git log --no-merges --format='%B' $RANGE > bodies.txt
+          : > notes.md
+          for K in Add Remove Fix; do
+            grep -iE "^[[:space:]]*$K[[:space:]]*:" bodies.txt | sed -E "s/^[[:space:]]*[A-Za-z]+[[:space:]]*:[[:space:]]*/- $K: /" >> notes.md || true
+          done
+          [ -s notes.md ] || git log --no-merges --format='- %s' $RANGE > notes.md
           [ -s notes.md ] || echo "- Kleinere Verbesserungen" > notes.md
           printf '\nFür Minecraft 1.21.11 (Fabric). Benötigt Fabric API 0.141.6+1.21.11.\n' >> notes.md
           gh release delete latest --yes --cleanup-tag || true
