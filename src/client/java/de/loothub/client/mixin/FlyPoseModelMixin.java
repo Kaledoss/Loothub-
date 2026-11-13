@@ -102,8 +102,21 @@ public abstract class FlyPoseModelMixin {
 			m.head.xRot = lerp(stretch, m.head.xRot, -0.6F); // Kopf in den Nacken, Gähnen
 		}
 		float hands = p[de.loothub.client.quick.AfkView.HANDS];
-		if (hands > 0.0F) {
-			// entspannt: Hände hinter dem Kopf, Ellbogen nach außen
+		boolean crossed = p.length > de.loothub.client.quick.AfkView.STYLE
+				&& p[de.loothub.client.quick.AfkView.STYLE] == de.loothub.client.quick.AfkView.ARMS_CROSSED;
+		if (hands > 0.0F && crossed) {
+			// Hände hinter dem Kopf verschränkt: Arme eng angewinkelt, Hände treffen sich hinter dem Kopf,
+			// Ellbogen zeigen zur Seite, Kopf ruht leicht angehoben darauf
+			m.rightArm.xRot = lerp(hands, m.rightArm.xRot, (float) Math.toRadians(-140.0));
+			m.leftArm.xRot = lerp(hands, m.leftArm.xRot, (float) Math.toRadians(-140.0));
+			m.rightArm.yRot = lerp(hands, m.rightArm.yRot, -0.35F);
+			m.leftArm.yRot = lerp(hands, m.leftArm.yRot, 0.35F);
+			m.rightArm.zRot = lerp(hands, m.rightArm.zRot, 1.05F);
+			m.leftArm.zRot = lerp(hands, m.leftArm.zRot, -1.05F);
+			m.head.xRot = lerp(hands, m.head.xRot, 0.25F); // Kinn leicht zur Brust
+			m.head.yRot = lerp(hands, m.head.yRot, 0.0F);
+		} else if (hands > 0.0F) {
+			// entspannt: Arme über den Kopf gestreckt, Ellbogen nach außen
 			m.rightArm.xRot = lerp(hands, m.rightArm.xRot, (float) Math.toRadians(-155.0));
 			m.leftArm.xRot = lerp(hands, m.leftArm.xRot, (float) Math.toRadians(-155.0));
 			m.rightArm.zRot = lerp(hands, m.rightArm.zRot, 0.65F);

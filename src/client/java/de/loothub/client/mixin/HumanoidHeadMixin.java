@@ -27,7 +27,8 @@ public abstract class HumanoidHeadMixin {
 		de.loothub.client.cosmetics.Motion.update(state, entity, partialTick);
 		if (entity != Minecraft.getInstance().player) {
 			// Andere Spieler, die seit 5 Minuten völlig stillstehen, schlafen (nur eigene Darstellung)
-			de.loothub.client.quick.AfkView.markLying(state, de.loothub.client.quick.OtherAfk.lieProgress(entity));
+			de.loothub.client.quick.AfkView.markLying(state, de.loothub.client.quick.OtherAfk.lieProgress(entity),
+					de.loothub.client.quick.OtherAfk.style(entity));
 			if (entity instanceof net.minecraft.world.entity.player.Player) {
 				// Kopf-Items (Autos, Köpfe …) auch bei anderen Spielern ausblenden – echte Helme bleiben sichtbar
 				if (WidgetConfig.get().hideOwnHeadItem) {

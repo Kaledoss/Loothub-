@@ -38,7 +38,10 @@ public final class AfkView {
 	/** Haltung je Render-Zustand (eigener Spieler und andere AFK-Spieler), nur für diesen Frame. */
 	private static final Map<Object, float[]> LYING = new WeakHashMap<>();
 	/** Indizes in der Haltung: Kippwinkel nach hinten (Grad), Anheben (Blöcke), Strecken, Hände hinter Kopf, Knie. */
-	public static final int PITCH = 0, LIFT = 1, STRETCH = 2, HANDS = 3, KNEES = 4;
+	public static final int PITCH = 0, LIFT = 1, STRETCH = 2, HANDS = 3, KNEES = 4, STYLE = 5;
+	/** Liege-Haltung der Arme: wie bisher, oder Hände hinter dem Kopf verschränkt – je Hinlegen zufällig. */
+	public static final int ARMS_UP = 0, ARMS_CROSSED = 1;
+	private static int ownStyle;
 	private static long downStart, upStart;
 	private static float upFromPitch, upFromHands;
 
@@ -56,8 +59,12 @@ public final class AfkView {
 
 	/** Einfache Liege-Haltung (andere AFK-Spieler): gleichmäßig auf den Rücken. */
 	public static void markLying(Object renderState, float progress) {
+		markLying(renderState, progress, ARMS_UP);
+	}
+
+	public static void markLying(Object renderState, float progress, int style) {
 		if (progress > 0.001f) {
-			LYING.put(renderState, new float[]{90f * progress, 0f, 0f, progress, 0f});
+			LYING.put(renderState, new float[]{90f * progress, 0f, 0f, progress, 0f, style});
 		} else {
 			LYING.remove(renderState);
 		}
@@ -97,7 +104,8 @@ public final class AfkView {
 	/** Haltung des eigenen Charakters jetzt. */
 	private static float[] ownPose() {
 		long now = System.currentTimeMillis();
-		float[] p = new float[5];
+		float[] p = new float[6];
+		p[STYLE] = ownStyle;
 		if (sleeping) {
 			float t = Math.min(1f, (now - downStart) / (float) LIE_DOWN_MS);
 			// 1) strecken und gähnen, leicht nach hinten lehnen
@@ -182,6 +190,7 @@ public final class AfkView {
 			}
 			mc.options.setCameraType(CameraType.THIRD_PERSON_BACK);
 			downStart = now;
+			ownStyle = java.util.concurrent.ThreadLocalRandom.current().nextBoolean() ? ARMS_CROSSED : ARMS_UP;
 			upStart = 0;
 			LIE.to(1, LIE_DOWN_MS);
 			ZOOM.to(1, ZOOM_OUT_MS);

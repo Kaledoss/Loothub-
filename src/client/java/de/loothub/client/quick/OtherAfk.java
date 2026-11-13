@@ -23,6 +23,9 @@ public final class OtherAfk {
 		double x, y, z;
 		float yRot, xRot, headRot;
 		long still;
+		/** Arm-Haltung beim Liegen, je Hinlegen neu ausgewürfelt. */
+		int style;
+		boolean lying;
 		final Transition lie = new Transition();
 	}
 
@@ -60,7 +63,13 @@ public final class OtherAfk {
 					|| AfkView.fishing(p)) {
 				t.still = now; // nur Laufen/Springen zählt, Umschauen nicht
 				t.lie.to(0, 900);
+				t.lying = false;
 			} else if (now - t.still >= AfkView.AFK_AFTER_MS) {
+				if (!t.lying) {
+					t.lying = true;
+					t.style = java.util.concurrent.ThreadLocalRandom.current().nextBoolean() ? AfkView.ARMS_CROSSED
+							: AfkView.ARMS_UP;
+				}
 				t.lie.to(1, 1_400);
 			}
 			t.x = p.getX();
@@ -80,6 +89,12 @@ public final class OtherAfk {
 		}
 		Track t = TRACKS.get(e.getUUID());
 		return t == null ? 0f : t.lie.eased();
+	}
+
+	/** Arm-Haltung dieses (anderen) Spielers beim Liegen. */
+	public static int style(LivingEntity e) {
+		Track t = TRACKS.get(e.getUUID());
+		return t == null ? AfkView.ARMS_UP : t.style;
 	}
 
 	/** Steht dieser (andere) Spieler seit 5 Minuten völlig still? */
