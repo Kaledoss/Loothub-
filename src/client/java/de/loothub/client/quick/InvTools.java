@@ -77,14 +77,23 @@ public final class InvTools {
 			addButtons(cs);
 			ScreenKeyboardEvents.afterKeyPress(screen).register((s, event) -> {
 				// nicht beim Tippen (z. B. Suchfeld des Rezeptbuchs)
-				if (sortKey.matches(event) && !(cs.getFocused() instanceof net.minecraft.client.gui.components.EditBox)) {
+				if (cs.getFocused() instanceof net.minecraft.client.gui.components.EditBox) {
+					return;
+				}
+				if (bound(sortKey) && sortKey.matches(event) || bound(sortMouseKey) && sortMouseKey.matches(event)) {
 					sortHovered(cs);
+				} else if (bound(moveKey) && moveKey.matches(event) && WidgetConfig.get().invMove && realContainer(cs)) {
+					move(cs, Minecraft.getInstance().hasShiftDown());
 				}
 			});
 			// Maustasten: Klick wird verbraucht, wenn er eine Inventar-Aktion auslöst
 			net.fabricmc.fabric.api.client.screen.v1.ScreenMouseEvents.allowMouseClick(screen)
 					.register((s, e) -> !onMouse(cs, e));
 		});
+	}
+
+	private static boolean bound(KeyMapping k) {
+		return k != null && !k.isUnbound();
 	}
 
 	private static KeyMapping key(String id, KeyMapping.Category category) {
@@ -161,7 +170,14 @@ public final class InvTools {
 	}
 
 	private static Button small(int x, int y, String label, String tooltipKey, Runnable action) {
-		return Button.builder(Component.literal(label), b -> action.run()).bounds(x, y, 11, 11)
+		// nach dem Klick den Fokus abgeben – sonst löst Leertaste/Enter den Knopf erneut aus
+		return Button.builder(Component.literal(label), b -> {
+			action.run();
+			b.setFocused(false);
+			if (Minecraft.getInstance().screen != null) {
+				Minecraft.getInstance().screen.setFocused(null);
+			}
+		}).bounds(x, y, 11, 11)
 				.tooltip(Tooltip.create(Component.translatable(tooltipKey))).build();
 	}
 
@@ -189,14 +205,14 @@ public final class InvTools {
 	/** @return true, wenn der Mausklick eine Inventar-Aktion ausgelöst hat (dann wird er verbraucht) */
 	private static boolean onMouse(AbstractContainerScreen<?> screen, net.minecraft.client.input.MouseButtonEvent e) {
 		WidgetConfig c = WidgetConfig.get();
-		if (sortMouseKey.matchesMouse(e) || sortKey.matchesMouse(e)) {
+		if (bound(sortMouseKey) && sortMouseKey.matchesMouse(e) || bound(sortKey) && sortKey.matchesMouse(e)) {
 			if (!c.invSort) {
 				return false;
 			}
 			sortHovered(screen);
 			return true;
 		}
-		if (moveKey.matchesMouse(e) && c.invMove && realContainer(screen)) {
+		if (bound(moveKey) && moveKey.matchesMouse(e) && c.invMove && realContainer(screen)) {
 			move(screen, Minecraft.getInstance().hasShiftDown());
 			return true;
 		}
