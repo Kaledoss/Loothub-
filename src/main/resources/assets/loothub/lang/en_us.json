@@ -773,5 +773,20 @@
 	"loothub.settings.auction_alarm.tooltip": "Shortly before a watched auction (Merkliste) ends, an alert with sound appears. Open the watch list now and then to make the time more precise.",
 	"loothub.settings.auction_alarm.minutes": "Warn %s min before",
 	"loothub.backup.restored.title": "Loothub data restored",
-	"loothub.backup.restored": "Backup from %s was restored"
+	"loothub.backup.restored": "Backup from %s was restored",
+	"loothub.cosmetics.others": "Other players' companions",
+	"loothub.cosmetics.others.desc": "Show other players' Mini-Mes and pets only nearby or only for the closest players – helps in crowded places.",
+	"loothub.cosmetics.others.range.short": "Distance",
+	"loothub.cosmetics.others.range.off": "Unlimited",
+	"loothub.cosmetics.others.range.8": "8 blocks",
+	"loothub.cosmetics.others.range.16": "16 blocks",
+	"loothub.cosmetics.others.range.32": "32 blocks",
+	"loothub.cosmetics.others.range.64": "64 blocks",
+	"loothub.cosmetics.others.max.short": "Players",
+	"loothub.cosmetics.others.max.off": "All",
+	"loothub.cosmetics.others.max.0": "None",
+	"loothub.cosmetics.others.max.1": "Closest only",
+	"loothub.cosmetics.others.max.3": "3 closest",
+	"loothub.cosmetics.others.max.5": "5 closest",
+	"loothub.cosmetics.others.max.10": "10 closest"
 }

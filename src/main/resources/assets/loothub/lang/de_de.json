@@ -773,5 +773,20 @@
 	"loothub.settings.auction_alarm.tooltip": "Kurz bevor eine gemerkte Auktion (Merkliste) endet, kommt eine Einblendung mit Ton. Öffne die Merkliste ab und zu, dann wird die Zeit genauer.",
 	"loothub.settings.auction_alarm.minutes": "%s Min. vorher warnen",
 	"loothub.backup.restored.title": "Loothub-Daten wiederhergestellt",
-	"loothub.backup.restored": "Sicherung vom %s wurde eingespielt"
+	"loothub.backup.restored": "Sicherung vom %s wurde eingespielt",
+	"loothub.cosmetics.others": "Begleiter anderer Spieler",
+	"loothub.cosmetics.others.desc": "Mini-Mes und Haustiere anderer Spieler nur in der Nähe oder nur bei den nächsten Spielern zeigen – hilft bei vollen Plätzen.",
+	"loothub.cosmetics.others.range.short": "Abstand",
+	"loothub.cosmetics.others.range.off": "Unbegrenzt",
+	"loothub.cosmetics.others.range.8": "8 Blöcke",
+	"loothub.cosmetics.others.range.16": "16 Blöcke",
+	"loothub.cosmetics.others.range.32": "32 Blöcke",
+	"loothub.cosmetics.others.range.64": "64 Blöcke",
+	"loothub.cosmetics.others.max.short": "Spieler",
+	"loothub.cosmetics.others.max.off": "Alle",
+	"loothub.cosmetics.others.max.0": "Keine",
+	"loothub.cosmetics.others.max.1": "Nur der nächste",
+	"loothub.cosmetics.others.max.3": "Die 3 nächsten",
+	"loothub.cosmetics.others.max.5": "Die 5 nächsten",
+	"loothub.cosmetics.others.max.10": "Die 10 nächsten"
 }

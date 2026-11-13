@@ -156,6 +156,10 @@ public final class WidgetConfig {
 	public boolean cosmetics = true;
 	/** Begleiter (Haustiere, freie Mini-Mes) auch in der Ego-Perspektive zeigen. */
 	public boolean cosmeticsFirstPerson = false;
+	/** Begleiter (Mini-Mes, Haustiere) anderer Spieler nur bis zu diesem Abstand zeigen (Blöcke, 0 = unbegrenzt). */
+	public int othersCompanionRange = 0;
+	/** Höchstens so viele andere Spieler mit Begleitern zeigen (die nächsten; -1 = alle). */
+	public int othersCompanionMax = -1;
 	/** Inventar-Werkzeuge: Sortieren, Verschieben, Auto-Refill, Werkzeugschutz. */
 	public boolean invSort = false;
 	public boolean invMove = false;

@@ -126,6 +126,19 @@ public class CosmeticsScreen extends LoothubScreen {
 				sections.add(new Section(y, 44, "loothub.cosmetics.first_person", "loothub.cosmetics.first_person.desc"));
 				y += 44 + GAP;
 
+				// Begleiter anderer Spieler begrenzen (Abstand, Anzahl)
+				int odw = ddWidth();
+				dropdown(descX, y + 30, odw, Component.translatable("loothub.cosmetics.others.range.short").getString(),
+						RANGE_OPTIONS, "loothub.cosmetics.others.range.",
+						() -> c.othersCompanionRange <= 0 ? "" : String.valueOf(c.othersCompanionRange),
+						v -> c.othersCompanionRange = v.isEmpty() ? 0 : Integer.parseInt(v));
+				dropdown(descX + odw + 6, y + 30, odw, Component.translatable("loothub.cosmetics.others.max.short").getString(),
+						MAX_OPTIONS, "loothub.cosmetics.others.max.",
+						() -> c.othersCompanionMax < 0 ? "" : String.valueOf(c.othersCompanionMax),
+						v -> c.othersCompanionMax = v.isEmpty() ? -1 : Integer.parseInt(v));
+				sections.add(new Section(y, 54, "loothub.cosmetics.others", "loothub.cosmetics.others.desc"));
+				y += 54 + GAP;
+
 				// Mini-Mes: je Zeile ein Mini-Me mit Spielername, Flügeln und Flügelfarbe
 				int x0 = cl + 8;
 				int ddW = 110, colW = 46;
@@ -373,6 +386,8 @@ public class CosmeticsScreen extends LoothubScreen {
 
 	private static final String[] WING_OPTIONS = {"", "dragon", "devil", "angel", "drake"};
 	private static final String[] PET_OPTIONS = {"", "slime", "allay", "bee", "vex", "wolf", "penguin", "dragon", "panda", "zombie", "serpent"};
+	private static final String[] RANGE_OPTIONS = {"", "8", "16", "32", "64"};
+	private static final String[] MAX_OPTIONS = {"", "0", "1", "3", "5", "10"};
 	private static final String[] TRAIT_OPTIONS = {"", "playful", "shy", "brave", "lazy", "curious"};
 	private static final String[] STEP_OPTIONS = {"", "sparks", "flames"};
 

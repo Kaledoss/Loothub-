@@ -277,7 +277,52 @@ public final class Cosmetics {
 			return false;
 		}
 		Set<String> set = resolve(p).set();
-		return set != null && set.contains(cosmetic);
+		return set != null && set.contains(cosmetic) && (!isCompanion(cosmetic) || companionsShown(p));
+	}
+
+	private static boolean isCompanion(String cosmetic) {
+		return MINI_ME.equals(cosmetic) || PETS.equals(cosmetic);
+	}
+
+	/** Spieler-IDs, deren Begleiter gerade gezeigt werden dürfen (null = alle); alle 0,5 s neu bestimmt. */
+	private static java.util.Set<Integer> shownCompanions;
+	private static long shownAt;
+
+	/** Begleiter dieses Spielers zeigen? Eigene immer; andere nach Abstand und Anzahl aus den Einstellungen. */
+	static boolean companionsShown(Player p) {
+		net.minecraft.client.Minecraft mc = net.minecraft.client.Minecraft.getInstance();
+		if (p == mc.player || mc.player == null || mc.level == null) {
+			return true;
+		}
+		WidgetConfig cfg = WidgetConfig.get();
+		int range = cfg.othersCompanionRange, max = cfg.othersCompanionMax;
+		if (range <= 0 && max < 0) {
+			return true;
+		}
+		long now = System.currentTimeMillis();
+		if (shownCompanions == null || now - shownAt > 500L) {
+			shownAt = now;
+			List<Player> near = new java.util.ArrayList<>();
+			for (Player o : mc.level.players()) {
+				if (o == mc.player || (range > 0 && o.distanceToSqr(mc.player) > (double) range * range)) {
+					continue;
+				}
+				Set<String> os = resolve(o).set();
+				if (os != null && (os.contains(MINI_ME) || os.contains(PETS))) {
+					near.add(o);
+				}
+			}
+			if (max >= 0 && near.size() > max) {
+				near.sort(java.util.Comparator.comparingDouble(o -> o.distanceToSqr(mc.player)));
+				near = near.subList(0, max);
+			}
+			java.util.Set<Integer> ids = new HashSet<>();
+			for (Player o : near) {
+				ids.add(o.getId());
+			}
+			shownCompanions = ids;
+		}
+		return shownCompanions.contains(p.getId());
 	}
 
 	/** UUID des Spielers zu diesem Render-Zustand (oder null). */
@@ -304,6 +349,11 @@ public final class Cosmetics {
 		Map<String, String> values = r.values();
 		List<String> skins = r.skins();
 		String aura = r.aura();
+		if (set != null && (set.contains(MINI_ME) || set.contains(PETS)) && !companionsShown(p)) {
+			set = new HashSet<>(set);
+			set.remove(MINI_ME);
+			set.remove(PETS);
+		}
 		if (set == null || set.isEmpty()) {
 			STATES.remove(state);
 		} else {
