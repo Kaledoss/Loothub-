@@ -20,9 +20,15 @@ public final class Followers {
 		long last;
 		boolean init;
 		int player;
+		/** Zwischengespeicherte Bodenhöhe (nicht jedes Bild neu suchen). */
+		double ground;
+		long groundAt;
 	}
 
 	private static final Map<Long, F> MAP = new HashMap<>();
+	/** Begleiter je Spieler – das Auseinanderschieben prüft nur diese statt aller. */
+	private static final Map<Integer, java.util.List<F>> BY_PLAYER = new HashMap<>();
+	private static long lastCleanup;
 	/** Mindestabstand zwischen zwei Begleitern bzw. zum Spieler (Blöcke). */
 	private static final double SPACING = 0.75, BODY = 0.65;
 
@@ -83,8 +89,13 @@ public final class Followers {
 	public static float[] follow(AvatarRenderState s, int slot, float tx, float ty, float tz, float stiffness, float wander,
 			float wanderY, boolean ground) {
 		long key = ((long) s.id << 5) | slot;
-		F f = MAP.computeIfAbsent(key, k -> new F());
-		f.player = s.id;
+		F f = MAP.get(key);
+		if (f == null) {
+			f = new F();
+			f.player = s.id;
+			MAP.put(key, f);
+			BY_PLAYER.computeIfAbsent(s.id, k -> new java.util.ArrayList<>(4)).add(f);
+		}
 		long now = System.nanoTime();
 		float t = now / 1.0e9F;
 		float seed = slot * 1.73F + (s.id % 97) * 0.31F;
@@ -100,7 +111,11 @@ public final class Followers {
 		double gz = -X * sn + Z * c;
 		double gy = 1.501 - wy;
 		if (ground && f.init) {
-			gy += Mth.clamp(groundY(s.x + f.ox, s.y, s.z + f.oz) - s.y, -2.0, 1.2);
+			if (now - f.groundAt > 100_000_000L) {
+				f.ground = groundY(s.x + f.ox, s.y, s.z + f.oz) - s.y;
+				f.groundAt = now;
+			}
+			gy += Mth.clamp(f.ground, -2.0, 1.2);
 		}
 		float dt = f.last == 0 ? 0.0F : Math.min(0.05F, (now - f.last) / 1.0e9F);
 		if (!f.init || (now - f.last) > 2_000_000_000L) {
@@ -121,8 +136,8 @@ public final class Followers {
 			// Abstand halten: Begleiter desselben Spielers schieben sich sanft auseinander, und keiner läuft durch
 			// den Spieler hindurch – so schneiden sie sich nicht
 			double push = Math.max(12.0, stiffness * 3.0);
-			for (F o : MAP.values()) {
-				if (o == f || o.player != f.player || !o.init || now - o.last > 500_000_000L) {
+			for (F o : BY_PLAYER.getOrDefault(f.player, java.util.List.of())) {
+				if (o == f || !o.init || now - o.last > 500_000_000L) {
 					continue;
 				}
 				double dx = f.ox - o.ox, dy = f.oy - o.oy, dz = f.oz - o.oz;
@@ -153,9 +168,12 @@ public final class Followers {
 		}
 		// Welt-Abstand → Ebenen-Raum
 		double lx = f.ox * c - f.oz * sn, lz = f.ox * sn + f.oz * c;
-		if (MAP.size() > 400) {
+		if (now - lastCleanup > 10_000_000_000L) {
+			lastCleanup = now;
 			long cut = now - 30_000_000_000L;
 			MAP.values().removeIf(v -> v.last < cut);
+			BY_PLAYER.values().forEach(l -> l.removeIf(v -> v.last < cut));
+			BY_PLAYER.values().removeIf(java.util.List::isEmpty);
 		}
 		return new float[]{(float) -lx, (float) (1.501 - f.oy), (float) lz, Mth.wrapDegrees(f.yaw - s.bodyRot),
 				(float) Math.sqrt(f.vx * f.vx + f.vz * f.vz)};
