@@ -788,5 +788,9 @@
 	"loothub.cosmetics.others.max.1": "Closest only",
 	"loothub.cosmetics.others.max.3": "3 closest",
 	"loothub.cosmetics.others.max.5": "5 closest",
-	"loothub.cosmetics.others.max.10": "10 closest"
+	"loothub.cosmetics.others.max.10": "10 closest",
+	"loothub.settings.inv.sub.menus": "Menus",
+	"loothub.settings.inv.sub.tools": "Sorting & tools",
+	"loothub.settings.inv.sub.display": "Display",
+	"loothub.settings.inv.sub.quick": "Quick access"
 }

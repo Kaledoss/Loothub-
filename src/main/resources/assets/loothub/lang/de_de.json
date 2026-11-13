@@ -788,5 +788,9 @@
 	"loothub.cosmetics.others.max.1": "Nur der nächste",
 	"loothub.cosmetics.others.max.3": "Die 3 nächsten",
 	"loothub.cosmetics.others.max.5": "Die 5 nächsten",
-	"loothub.cosmetics.others.max.10": "Die 10 nächsten"
+	"loothub.cosmetics.others.max.10": "Die 10 nächsten",
+	"loothub.settings.inv.sub.menus": "Menüs",
+	"loothub.settings.inv.sub.tools": "Sortieren & Werkzeug",
+	"loothub.settings.inv.sub.display": "Anzeige",
+	"loothub.settings.inv.sub.quick": "Schnellzugriff"
 }

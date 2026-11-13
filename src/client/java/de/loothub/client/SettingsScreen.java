@@ -103,6 +103,10 @@ public class SettingsScreen extends LoothubScreen {
 
 	private static final int TAB_H = 22;
 	private static Tab tab = Tab.GENERAL;
+	/** Unterseiten des Inventar-Reiters. */
+	private static final String[] INV_SUBS = {"loothub.settings.inv.sub.menus", "loothub.settings.inv.sub.tools",
+			"loothub.settings.inv.sub.display", "loothub.settings.inv.sub.quick"};
+	private static int invSub;
 	/** Oberkante des scrollbaren Bereichs (unter den Reitern). */
 	private int top;
 
@@ -440,162 +444,182 @@ public class SettingsScreen extends LoothubScreen {
 						() -> c.fishChatHide, v -> c.fishChatHide = v);
 			}
 			case INVENTORY -> {
-				y = section(y, "loothub.settings.section.menus");
-				y = card(y, 40, "loothub.settings.tooltip_prices", "loothub.settings.tooltip_prices.tooltip",
-						() -> c.tooltipPrices, v -> c.tooltipPrices = v);
-				y = card(y, 40, "loothub.settings.amount_shortcut", "loothub.settings.amount_shortcut.tooltip",
-						() -> c.amountShortcut, v -> c.amountShortcut = v);
-				y = card(y, 40, "loothub.settings.rename_window", "loothub.settings.rename_window.tooltip",
-						() -> c.renameWindow, v -> c.renameWindow = v);
-				y = card(y, 40, "loothub.settings.sign_window", "loothub.settings.sign_window.tooltip",
-						() -> c.signWindow, v -> c.signWindow = v);
-				{
-					int aY = y;
-					int aDescX = cl + labelW + 12;
-					buttons.add(addRenderableWidget(new net.minecraft.client.gui.components.AbstractSliderButton(
-							aDescX, aY + 34, Math.min(200, cr - 8 - aDescX), 16, Component.empty(),
-							(Math.max(1, Math.min(60, c.auctionAlarmMinutes)) - 1) / 59.0) {
-						{
-							updateMessage();
-						}
-
-						@Override
-						protected void updateMessage() {
-							setMessage(Component.translatable("loothub.settings.auction_alarm.minutes", 1 + (int) Math.round(value * 59)));
-						}
-
-						@Override
-						protected void applyValue() {
-							c.auctionAlarmMinutes = 1 + (int) Math.round(value * 59);
-						}
-					}));
-					y = card(aY, 56, "loothub.settings.auction_alarm", "loothub.settings.auction_alarm.tooltip",
-							() -> c.auctionAlarm, v -> c.auctionAlarm = v);
+				// Unterseiten statt einer langen Liste (bei der Suche werden alle durchsucht)
+				if (!searching()) {
+					int sx = cl, sw = (cw - 3 * (INV_SUBS.length - 1)) / INV_SUBS.length;
+					for (int i = 0; i < INV_SUBS.length; i++) {
+						final int sub = i;
+						Button sb = Button.builder(Component.translatable(INV_SUBS[i]), b -> {
+							invSub = sub;
+							scroll = 0;
+							rebuildWidgets();
+						}).bounds(sx + i * (sw + 3), y, sw, 16).build();
+						sb.active = invSub != i;
+						buttons.add(addRenderableWidget(sb));
+					}
+					y += 22;
 				}
-				y = section(y, "loothub.settings.section.inv_tools");
-				y = card(y, 40, "loothub.settings.inv_sort", "loothub.settings.inv_sort.tooltip",
-						() -> c.invSort, v -> c.invSort = v);
-				y = card(y, 40, "loothub.settings.inv_move", "loothub.settings.inv_move.tooltip",
-						() -> c.invMove, v -> c.invMove = v);
-				y = card(y, 40, "loothub.settings.auto_refill", "loothub.settings.auto_refill.tooltip",
-						() -> c.autoRefill, v -> c.autoRefill = v);
-				y = card(y, 40, "loothub.settings.tool_saver", "loothub.settings.tool_saver.tooltip",
-						() -> c.toolSaver, v -> c.toolSaver = v);
-				y = section(y, "loothub.settings.section.inventory");
-				y = card(y, 40, "loothub.settings.rarity_frames", "loothub.settings.rarity_frames.tooltip",
-						() -> c.rarityFrames, v -> c.rarityFrames = v);
-				{
-					int oy = y;
-					int oDx = cl + labelW + 12;
-					buttons.add(addRenderableWidget(Button.builder(Component.translatable("loothub.settings.offhand.edit",
-									c.offhandItems == null ? 0 : c.offhandItems.size()),
-							b -> minecraft.setScreen(new de.loothub.client.quick.OffhandFilterScreen(this)))
-							.bounds(oDx, oy + 34, Math.min(160, cr - 8 - oDx), 16).build()));
-					y = card(y, 56, "loothub.settings.offhand", "loothub.settings.offhand.tooltip",
-							() -> c.offhandFilter, v -> c.offhandFilter = v);
+				if (invSub(0)) {
+					y = card(y, 40, "loothub.settings.tooltip_prices", "loothub.settings.tooltip_prices.tooltip",
+							() -> c.tooltipPrices, v -> c.tooltipPrices = v);
+					y = card(y, 40, "loothub.settings.amount_shortcut", "loothub.settings.amount_shortcut.tooltip",
+							() -> c.amountShortcut, v -> c.amountShortcut = v);
+					y = card(y, 40, "loothub.settings.rename_window", "loothub.settings.rename_window.tooltip",
+							() -> c.renameWindow, v -> c.renameWindow = v);
+					y = card(y, 40, "loothub.settings.sign_window", "loothub.settings.sign_window.tooltip",
+							() -> c.signWindow, v -> c.signWindow = v);
+					{
+						int aY = y;
+						int aDescX = cl + labelW + 12;
+						buttons.add(addRenderableWidget(new net.minecraft.client.gui.components.AbstractSliderButton(
+								aDescX, aY + 34, Math.min(200, cr - 8 - aDescX), 16, Component.empty(),
+								(Math.max(1, Math.min(60, c.auctionAlarmMinutes)) - 1) / 59.0) {
+							{
+								updateMessage();
+							}
+
+							@Override
+							protected void updateMessage() {
+								setMessage(Component.translatable("loothub.settings.auction_alarm.minutes", 1 + (int) Math.round(value * 59)));
+							}
+
+							@Override
+							protected void applyValue() {
+								c.auctionAlarmMinutes = 1 + (int) Math.round(value * 59);
+							}
+						}));
+						y = card(aY, 56, "loothub.settings.auction_alarm", "loothub.settings.auction_alarm.tooltip",
+								() -> c.auctionAlarm, v -> c.auctionAlarm = v);
+					}
 				}
-				y = card(y, 40, "loothub.settings.compressor_icon", "loothub.settings.compressor_icon.tooltip",
-						() -> c.compressorIcon, v -> c.compressorIcon = v);
-				y = card(y, 40, "loothub.settings.durability_numbers", "loothub.settings.durability_numbers.tooltip",
-						() -> c.durabilityNumbers, v -> c.durabilityNumbers = v);
-				y = card(y, 40, "loothub.settings.drop_protection", "loothub.settings.drop_protection.tooltip",
-						() -> c.dropProtection, v -> c.dropProtection = v);
-				y = card(y, 40, "loothub.settings.quick_panel", "loothub.settings.quick_panel.tooltip",
-						() -> c.quickPanelEnabled, v -> c.quickPanelEnabled = v);
-				// Knöpfe der Befehls-Leiste einzeln an/aus
-				List<de.loothub.client.quick.QuickCommand> qcs = c.quickCommands == null ? List.of() : c.quickCommands;
-				int qCols = 4;
-				int qRows = Math.max(1, (qcs.size() + qCols - 1) / qCols);
-				int qDescX = cl + labelW + 12;
-				int qColW = (cr - 8 - qDescX) / qCols;
-				for (int i = 0; i < qcs.size(); i++) {
-					de.loothub.client.quick.QuickCommand q = qcs.get(i);
-					String label = q.label == null || q.label.isBlank() ? "/" + q.command : q.label;
-					checks.add(new Check(qDescX + (i % qCols) * qColW, y + 22 + (i / qCols) * 14, qColW - 4, label,
-							() -> !q.hidden, v -> q.hidden = !v));
+				if (invSub(1)) {
+					y = card(y, 40, "loothub.settings.inv_sort", "loothub.settings.inv_sort.tooltip",
+							() -> c.invSort, v -> c.invSort = v);
+					y = card(y, 40, "loothub.settings.inv_move", "loothub.settings.inv_move.tooltip",
+							() -> c.invMove, v -> c.invMove = v);
+					y = card(y, 40, "loothub.settings.auto_refill", "loothub.settings.auto_refill.tooltip",
+							() -> c.autoRefill, v -> c.autoRefill = v);
+					y = card(y, 40, "loothub.settings.tool_saver", "loothub.settings.tool_saver.tooltip",
+							() -> c.toolSaver, v -> c.toolSaver = v);
+					// Werkzeugschutz: Schalter, Regler für die Grenze, Kästchen je Werkzeugart
+					{
+						int tpY = y;
+						int tDescX = cl + labelW + 12;
+						int tW = cr - 8 - tDescX;
+						List<String[]> kinds = de.loothub.client.quick.ToolProtection.KINDS;
+						int tCols = 4;
+						int tRows = (kinds.size() + tCols - 1) / tCols;
+						int tColW = tW / tCols;
+						buttons.add(addRenderableWidget(new net.minecraft.client.gui.components.AbstractSliderButton(
+								tDescX, tpY + 24, Math.min(220, tW), 16, Component.empty(), (c.toolProtectionPercent - 1) / 99.0) {
+							{
+								updateMessage();
+							}
+
+							@Override
+							protected void updateMessage() {
+								setMessage(Component.translatable("loothub.settings.tool_protection.min", 1 + (int) Math.round(value * 99)));
+							}
+
+							@Override
+							protected void applyValue() {
+								c.toolProtectionPercent = 1 + (int) Math.round(value * 99);
+							}
+						}));
+						for (int i = 0; i < kinds.size(); i++) {
+							String id = kinds.get(i)[0];
+							checks.add(new Check(tDescX + (i % tCols) * tColW, tpY + 46 + (i / tCols) * 14, tColW - 4, kinds.get(i)[1],
+									() -> !c.toolProtectionOff.contains(id), v -> {
+										c.toolProtectionOff.remove(id);
+										if (!v) {
+											c.toolProtectionOff.add(id);
+										}
+									}));
 				}
-				int qBtnY = y + 24 + qRows * 14;
-				buttons.add(addRenderableWidget(Button.builder(Component.translatable("loothub.quickedit.open"),
-								b -> minecraft.setScreen(new de.loothub.client.quick.QuickButtonsScreen(this)))
-						.bounds(qDescX, qBtnY, Math.min(200, cr - 8 - qDescX), 16).build()));
-				y = cardNoToggle(y, 48 + qRows * 14, "loothub.settings.quick_buttons", "loothub.settings.quick_buttons.tooltip");
-				// Inventar über der Hotbar: Schalter, Farbe, Deckkraft
-				{
-					int ihY = y;
-					int iDescX = cl + labelW + 12;
-					int iW = Math.min(300, cr - 8 - iDescX);
-					int half = (iW - 4) / 2;
-					buttons.add(addRenderableWidget(Button.builder(Component.translatable("loothub.settings.inv_hud.color"),
-									b -> minecraft.setScreen(new ColorPickerScreen(this,
-											Component.translatable("loothub.settings.inv_hud.color"), c.invHudColor, rgb -> {
-										c.invHudColor = rgb;
-										c.save();
-									})))
-							.bounds(iDescX, ihY + 30, half, 16).build()));
-					invHudSwatch = new int[]{iDescX + half - 12, ihY + 34};
-					buttons.add(addRenderableWidget(new net.minecraft.client.gui.components.AbstractSliderButton(
-							iDescX + half + 4, ihY + 30, half, 16, Component.empty(), c.invHudOpacity) {
-						{
-							updateMessage();
-						}
-
-						@Override
-						protected void updateMessage() {
-							setMessage(Component.translatable("loothub.settings.theme.opacity", (int) Math.round(value * 100)));
-						}
-
-						@Override
-						protected void applyValue() {
-							c.invHudOpacity = value;
-						}
-					}));
-					buttons.add(addRenderableWidget(Button.builder(Component.translatable("loothub.settings.job_widget.move"),
-									b -> minecraft.setScreen(new de.loothub.client.quick.InventoryHudEditScreen(this)))
-							.bounds(iDescX, ihY + 50, half, 16).build()));
-					y = card(ihY, 72, "loothub.settings.inv_hud", "loothub.settings.inv_hud.tooltip",
-							() -> c.invHudEnabled, v -> c.invHudEnabled = v);
+						y = card(tpY, 50 + tRows * 14, "loothub.settings.tool_protection", "loothub.settings.tool_protection.tooltip",
+								() -> c.toolProtection, v -> c.toolProtection = v);
+					}
+					y = card(y, 40, "loothub.settings.durability_numbers", "loothub.settings.durability_numbers.tooltip",
+							() -> c.durabilityNumbers, v -> c.durabilityNumbers = v);
+					y = card(y, 40, "loothub.settings.drop_protection", "loothub.settings.drop_protection.tooltip",
+							() -> c.dropProtection, v -> c.dropProtection = v);
 				}
-				y = card(y, 40, "loothub.settings.sell_highlight", "loothub.settings.sell_highlight.tooltip",
-						() -> c.sellHighlight, v -> c.sellHighlight = v);
-				y = card(y, 40, "loothub.settings.container_value", "loothub.settings.container_value.tooltip",
-						() -> c.containerValue, v -> c.containerValue = v);
-				// Werkzeugschutz: Schalter, Regler für die Grenze, Kästchen je Werkzeugart
-				{
-					int tpY = y;
-					int tDescX = cl + labelW + 12;
-					int tW = cr - 8 - tDescX;
-					List<String[]> kinds = de.loothub.client.quick.ToolProtection.KINDS;
-					int tCols = 4;
-					int tRows = (kinds.size() + tCols - 1) / tCols;
-					int tColW = tW / tCols;
-					buttons.add(addRenderableWidget(new net.minecraft.client.gui.components.AbstractSliderButton(
-							tDescX, tpY + 24, Math.min(220, tW), 16, Component.empty(), (c.toolProtectionPercent - 1) / 99.0) {
-						{
-							updateMessage();
-						}
+				if (invSub(2)) {
+					y = card(y, 40, "loothub.settings.rarity_frames", "loothub.settings.rarity_frames.tooltip",
+							() -> c.rarityFrames, v -> c.rarityFrames = v);
+					y = card(y, 40, "loothub.settings.compressor_icon", "loothub.settings.compressor_icon.tooltip",
+							() -> c.compressorIcon, v -> c.compressorIcon = v);
+					// Inventar über der Hotbar: Schalter, Farbe, Deckkraft
+					{
+						int ihY = y;
+						int iDescX = cl + labelW + 12;
+						int iW = Math.min(300, cr - 8 - iDescX);
+						int half = (iW - 4) / 2;
+						buttons.add(addRenderableWidget(Button.builder(Component.translatable("loothub.settings.inv_hud.color"),
+										b -> minecraft.setScreen(new ColorPickerScreen(this,
+												Component.translatable("loothub.settings.inv_hud.color"), c.invHudColor, rgb -> {
+											c.invHudColor = rgb;
+											c.save();
+										})))
+								.bounds(iDescX, ihY + 30, half, 16).build()));
+						invHudSwatch = new int[]{iDescX + half - 12, ihY + 34};
+						buttons.add(addRenderableWidget(new net.minecraft.client.gui.components.AbstractSliderButton(
+								iDescX + half + 4, ihY + 30, half, 16, Component.empty(), c.invHudOpacity) {
+							{
+								updateMessage();
+							}
 
-						@Override
-						protected void updateMessage() {
-							setMessage(Component.translatable("loothub.settings.tool_protection.min", 1 + (int) Math.round(value * 99)));
-						}
+							@Override
+							protected void updateMessage() {
+								setMessage(Component.translatable("loothub.settings.theme.opacity", (int) Math.round(value * 100)));
+							}
 
-						@Override
-						protected void applyValue() {
-							c.toolProtectionPercent = 1 + (int) Math.round(value * 99);
-						}
-					}));
-					for (int i = 0; i < kinds.size(); i++) {
-						String id = kinds.get(i)[0];
-						checks.add(new Check(tDescX + (i % tCols) * tColW, tpY + 46 + (i / tCols) * 14, tColW - 4, kinds.get(i)[1],
-								() -> !c.toolProtectionOff.contains(id), v -> {
-									c.toolProtectionOff.remove(id);
-									if (!v) {
-										c.toolProtectionOff.add(id);
-									}
-								}));
-			}
-					y = card(tpY, 50 + tRows * 14, "loothub.settings.tool_protection", "loothub.settings.tool_protection.tooltip",
-							() -> c.toolProtection, v -> c.toolProtection = v);
+							@Override
+							protected void applyValue() {
+								c.invHudOpacity = value;
+							}
+						}));
+						buttons.add(addRenderableWidget(Button.builder(Component.translatable("loothub.settings.job_widget.move"),
+										b -> minecraft.setScreen(new de.loothub.client.quick.InventoryHudEditScreen(this)))
+								.bounds(iDescX, ihY + 50, half, 16).build()));
+						y = card(ihY, 72, "loothub.settings.inv_hud", "loothub.settings.inv_hud.tooltip",
+								() -> c.invHudEnabled, v -> c.invHudEnabled = v);
+					}
+					y = card(y, 40, "loothub.settings.sell_highlight", "loothub.settings.sell_highlight.tooltip",
+							() -> c.sellHighlight, v -> c.sellHighlight = v);
+					y = card(y, 40, "loothub.settings.container_value", "loothub.settings.container_value.tooltip",
+							() -> c.containerValue, v -> c.containerValue = v);
+				}
+				if (invSub(3)) {
+					{
+						int oy = y;
+						int oDx = cl + labelW + 12;
+						buttons.add(addRenderableWidget(Button.builder(Component.translatable("loothub.settings.offhand.edit",
+										c.offhandItems == null ? 0 : c.offhandItems.size()),
+								b -> minecraft.setScreen(new de.loothub.client.quick.OffhandFilterScreen(this)))
+								.bounds(oDx, oy + 34, Math.min(160, cr - 8 - oDx), 16).build()));
+						y = card(y, 56, "loothub.settings.offhand", "loothub.settings.offhand.tooltip",
+								() -> c.offhandFilter, v -> c.offhandFilter = v);
+					}
+					y = card(y, 40, "loothub.settings.quick_panel", "loothub.settings.quick_panel.tooltip",
+							() -> c.quickPanelEnabled, v -> c.quickPanelEnabled = v);
+					// Knöpfe der Befehls-Leiste einzeln an/aus
+					List<de.loothub.client.quick.QuickCommand> qcs = c.quickCommands == null ? List.of() : c.quickCommands;
+					int qCols = 4;
+					int qRows = Math.max(1, (qcs.size() + qCols - 1) / qCols);
+					int qDescX = cl + labelW + 12;
+					int qColW = (cr - 8 - qDescX) / qCols;
+					for (int i = 0; i < qcs.size(); i++) {
+						de.loothub.client.quick.QuickCommand q = qcs.get(i);
+						String label = q.label == null || q.label.isBlank() ? "/" + q.command : q.label;
+						checks.add(new Check(qDescX + (i % qCols) * qColW, y + 22 + (i / qCols) * 14, qColW - 4, label,
+								() -> !q.hidden, v -> q.hidden = !v));
+					}
+					int qBtnY = y + 24 + qRows * 14;
+					buttons.add(addRenderableWidget(Button.builder(Component.translatable("loothub.quickedit.open"),
+									b -> minecraft.setScreen(new de.loothub.client.quick.QuickButtonsScreen(this)))
+							.bounds(qDescX, qBtnY, Math.min(200, cr - 8 - qDescX), 16).build()));
+					y = cardNoToggle(y, 48 + qRows * 14, "loothub.settings.quick_buttons", "loothub.settings.quick_buttons.tooltip");
 				}
 			}
 			case JOBS -> {
@@ -866,6 +890,11 @@ public class SettingsScreen extends LoothubScreen {
 	private static String rowLabel(String id) {
 		String s = Component.translatable("loothub.job.row." + id).getString();
 		return s.endsWith(":") ? s.substring(0, s.length() - 1) : s;
+	}
+
+	/** Gehört dieser Teil auf die gerade gewählte Unterseite? (Beim Suchen und für den Suchindex: alle.) */
+	private boolean invSub(int i) {
+		return indexing || searching() || invSub == i;
 	}
 
 	private static boolean searching() {
