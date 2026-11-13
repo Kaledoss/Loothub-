@@ -771,5 +771,7 @@
 	"loothub.cosmetics.pets.type.serpent": "Sky serpent",
 	"loothub.settings.auction_alarm": "Auction alarm",
 	"loothub.settings.auction_alarm.tooltip": "Shortly before a watched auction (Merkliste) ends, an alert with sound appears. Open the watch list now and then to make the time more precise.",
-	"loothub.settings.auction_alarm.minutes": "Warn %s min before"
+	"loothub.settings.auction_alarm.minutes": "Warn %s min before",
+	"loothub.backup.restored.title": "Loothub data restored",
+	"loothub.backup.restored": "Backup from %s was restored"
 }

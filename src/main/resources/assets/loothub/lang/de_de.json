@@ -771,5 +771,7 @@
 	"loothub.cosmetics.pets.type.serpent": "Himmelsdrache",
 	"loothub.settings.auction_alarm": "Auktions-Alarm",
 	"loothub.settings.auction_alarm.tooltip": "Kurz bevor eine gemerkte Auktion (Merkliste) endet, kommt eine Einblendung mit Ton. Öffne die Merkliste ab und zu, dann wird die Zeit genauer.",
-	"loothub.settings.auction_alarm.minutes": "%s Min. vorher warnen"
+	"loothub.settings.auction_alarm.minutes": "%s Min. vorher warnen",
+	"loothub.backup.restored.title": "Loothub-Daten wiederhergestellt",
+	"loothub.backup.restored": "Sicherung vom %s wurde eingespielt"
 }
