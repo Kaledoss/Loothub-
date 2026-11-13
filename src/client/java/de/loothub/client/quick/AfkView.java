@@ -217,6 +217,7 @@ public final class AfkView {
 		upStart = System.currentTimeMillis();
 		LIE.to(0, STAND_UP_MS);
 		ZOOM.to(0, ZOOM_IN_MS);
+		de.loothub.client.cosmetics.Emotes.welcomeBack(STAND_UP_MS + 300L);
 	}
 
 	/** Nach dem Zurückfahren die vorherige Ansicht wiederherstellen (sofort, wenn {@code now}). */

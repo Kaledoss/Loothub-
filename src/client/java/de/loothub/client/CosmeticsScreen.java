@@ -126,6 +126,11 @@ public class CosmeticsScreen extends LoothubScreen {
 				sections.add(new Section(y, 44, "loothub.cosmetics.first_person", "loothub.cosmetics.first_person.desc"));
 				y += 44 + GAP;
 
+				// Jahreszeiten (Zipfelmützen, Silvester-Funken)
+				toggle(lx, y + 20, lw, () -> c.seasonalCosmetics, v -> c.seasonalCosmetics = v);
+				sections.add(new Section(y, 42, "loothub.cosmetics.seasonal", "loothub.cosmetics.seasonal.desc"));
+				y += 42 + GAP;
+
 				// Begleiter anderer Spieler begrenzen (Abstand, Anzahl)
 				int odw = ddWidth();
 				dropdown(descX, y + 30, odw, Component.translatable("loothub.cosmetics.others.range.short").getString(),

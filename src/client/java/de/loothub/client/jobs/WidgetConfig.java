@@ -156,6 +156,8 @@ public final class WidgetConfig {
 	public boolean cosmetics = true;
 	/** Begleiter (Haustiere, freie Mini-Mes) auch in der Ego-Perspektive zeigen. */
 	public boolean cosmeticsFirstPerson = false;
+	/** Jahreszeiten: Zipfelmützen im Dezember, Funken an Silvester. */
+	public boolean seasonalCosmetics = true;
 	/** Begleiter (Mini-Mes, Haustiere) anderer Spieler nur bis zu diesem Abstand zeigen (Blöcke, 0 = unbegrenzt). */
 	public int othersCompanionRange = 0;
 	/** Höchstens so viele andere Spieler mit Begleitern zeigen (die nächsten; -1 = alle). */

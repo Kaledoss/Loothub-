@@ -797,5 +797,7 @@
 	"loothub.alltag.shown.limit": "At most %s timers shown at once – hide another one first",
 	"loothub.alltag.shown.count": "Shown: %s/%s",
 	"loothub.alltag.info.auction": "Auction (watchlist)",
-	"loothub.alltag.auction.ended": "ended"
+	"loothub.alltag.auction.ended": "ended",
+	"loothub.cosmetics.seasonal": "Seasons",
+	"loothub.cosmetics.seasonal.desc": "From December 1 to January 6 the Mini-Mes wear Santa hats, and on New Year's Eve small firework sparks rise up."
 }

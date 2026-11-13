@@ -564,6 +564,16 @@ public final class MiniMeLayer extends RenderLayer<AvatarRenderState, PlayerMode
 			PlayerModel model = crawling ? (slimSkin ? crawlSlim : crawlWide) : (slimSkin ? slim : wide);
 			collector.submitModel(model, mini, poseStack, RenderTypes.entityTranslucent(skin.body().texturePath()), light,
 					OverlayTexture.NO_OVERLAY, 0, null);
+			// in der Vorschau (Drehteller) immer, damit man sie schon vor Dezember sieht
+			if (Season.hats() || (preview && Season.enabled())) {
+				// Kopfhaltung jetzt schon ausrechnen (das Modell bewegt sich erst beim Zeichnen), Mütze daraufsetzen
+				model.setupAnim(mini);
+				poseStack.pushPose();
+				model.root().translateAndRotate(poseStack);
+				model.head.translateAndRotate(poseStack);
+				Season.submitHat(poseStack, collector, light);
+				poseStack.popPose();
+			}
 			String wings = Cosmetics.miniMeWing(state, i);
 			if (wings != null) {
 				// liegt der Körper waagerecht (krabbelnd oder in Flug-Haltung), Flügel tiefer an den Rücken und

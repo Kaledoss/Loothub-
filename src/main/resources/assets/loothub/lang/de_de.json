@@ -797,5 +797,7 @@
 	"loothub.alltag.shown.limit": "Höchstens %s Timer gleichzeitig eingeblendet – erst einen anderen ausblenden",
 	"loothub.alltag.shown.count": "Eingeblendet: %s/%s",
 	"loothub.alltag.info.auction": "Auktion (Merkliste)",
-	"loothub.alltag.auction.ended": "beendet"
+	"loothub.alltag.auction.ended": "beendet",
+	"loothub.cosmetics.seasonal": "Jahreszeiten",
+	"loothub.cosmetics.seasonal.desc": "Vom 1. Dezember bis 6. Januar tragen die Mini-Mes Zipfelmützen, an Silvester steigen kleine Feuerwerks-Funken auf."
 }

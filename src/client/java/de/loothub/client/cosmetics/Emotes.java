@@ -63,6 +63,11 @@ public final class Emotes {
 		cheerAt = System.currentTimeMillis();
 	}
 
+	/** Zurück vom AFK: nach dem Aufstehen freuen sich die Mini-Mes (jubeln, dann abklatschen). */
+	public static void welcomeBack(long delayMs) {
+		cheerAt = System.currentTimeMillis() + delayMs;
+	}
+
 	private static volatile long mentionAt, pmAt;
 
 	/** Jemand erwähnt den eigenen Namen im Chat: die Mini-Mes schauen auf und winken. */
@@ -139,7 +144,7 @@ public final class Emotes {
 				return new float[]{r[0], Math.max(0F, Math.min(1F, r[1] - slot * 0.03F))};
 			}
 		}
-		if (gestures && local && now - cheerAt < CHEER_MS) {
+		if (gestures && local && now >= cheerAt && now - cheerAt < CHEER_MS) {
 			return new float[]{CHEER, (now - cheerAt) / (float) CHEER_MS};
 		}
 		// nach dem Jubeln klatschen sich die beiden auf den Schultern ab
