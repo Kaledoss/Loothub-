@@ -40,6 +40,8 @@ public final class EmoteShare {
 
 	/** UUID → {Art, Startzeit (lokal, ms)}. */
 	private static final Map<UUID, long[]> REMOTE = new ConcurrentHashMap<>();
+	/** Standort, an dem der andere Spieler seine Geste begonnen hat – bewegt er sich, endet sie. */
+	private static final Map<UUID, double[]> REMOTE_POS = new ConcurrentHashMap<>();
 	private static volatile boolean polling, sending;
 	private static long lastPoll, lastSend;
 	/** Aktueller Abstand zwischen zwei Abfragen (passt sich an). */
@@ -54,7 +56,12 @@ public final class EmoteShare {
 
 	public static void register() {
 		ClientTickEvents.END_CLIENT_TICK.register(mc -> {
-			if (!active() || mc.level == null || mc.player == null) {
+			if (mc.level == null || mc.player == null) {
+				return;
+			}
+			Emotes.stopIfMoved(mc.player);
+			stopRemoteIfMoved(mc);
+			if (!active()) {
 				return;
 			}
 			long now = System.currentTimeMillis();
@@ -77,8 +84,24 @@ public final class EmoteShare {
 				// niemand in der Nähe: beim nächsten Treffen wieder zügig anfangen
 				interval = POLL_MS;
 			}
-			REMOTE.values().removeIf(v -> now - v[1] > PLAY_MS + 1_000L);
 		});
+	}
+
+	/** Gesten anderer laufen in Schleife, bis sich der Spieler bewegt oder außer Sicht ist. */
+	private static void stopRemoteIfMoved(net.minecraft.client.Minecraft mc) {
+		for (UUID id : REMOTE.keySet()) {
+			Player p = mc.level.getPlayerByUUID(id);
+			if (p == null) {
+				REMOTE.remove(id);
+				REMOTE_POS.remove(id);
+				continue;
+			}
+			double[] at = REMOTE_POS.computeIfAbsent(id, k -> new double[]{p.getX(), p.getY(), p.getZ()});
+			if (Emotes.moved(at, p)) {
+				REMOTE.remove(id);
+				REMOTE_POS.remove(id);
+			}
+		}
 	}
 
 	private static void poll(List<String> ids) {
@@ -114,6 +137,7 @@ public final class EmoteShare {
 					// dieselbe Geste nicht neu starten (sie kommt bei jeder Abfrage wieder)
 					if (old == null || old[0] != type || Math.abs(old[1] - start) > 1_500L) {
 						REMOTE.put(id, new long[]{type, start});
+						REMOTE_POS.remove(id); // Standort beim nächsten Tick neu merken
 					}
 				}
 				// gerade wird gewunken → schnell bleiben, sonst langsam seltener fragen
@@ -186,6 +210,6 @@ public final class EmoteShare {
 			return null;
 		}
 		long d = System.currentTimeMillis() - v[1];
-		return d >= 0 && d < PLAY_MS ? new float[]{v[0], d / (float) PLAY_MS} : null;
+		return d >= 0 ? Emotes.loop((int) v[0], d) : null; // Endlosschleife, bis er sich bewegt
 	}
 }

@@ -87,7 +87,7 @@ public final class MiniMeLayer extends RenderLayer<AvatarRenderState, PlayerMode
 	/** Pose einer Geste auf ein Spielermodell legen (Mini-Me oder, beim Emote-Rad, der Spieler selbst). */
 	public static void pose(PlayerModel m, AvatarRenderState s, float[] e) {
 		float p = e[1];
-		float k = Emotes.steady((int) e[0]) ? 1.0F : Emotes.envelope(p);
+		float k = Emotes.steady((int) e[0]) ? 1.0F : Emotes.strength(e);
 		float up = (float) Math.toRadians(-165.0);
 		switch ((int) e[0]) {
 			case Emotes.WAVE -> {
@@ -524,13 +524,13 @@ public final class MiniMeLayer extends RenderLayer<AvatarRenderState, PlayerMode
 				ty -= Math.abs((float) Math.sin(emote[1] * Math.PI * 4.0)) * 0.12F; // Freudensprünge
 			}
 			if (emote != null && emote[0] == Emotes.DANCE) {
-				float k = Emotes.envelope(emote[1]); // sanft ein- und ausblenden
+				float k = Emotes.strength(emote); // sanft einblenden, in der Schleife voll
 				ty -= (0.5F + 0.5F * (float) Math.sin(emote[1] * 80.0)) * 0.05F * k; // federn im Takt
 				rz += (float) Math.sin(emote[1] * 40.0) * 7F * k; // Hüftschwung, gleicher Takt wie die Arme
 				ry += (float) Math.sin(emote[1] * 6.0) * 25F * k; // langsam hin und her drehen
 			}
 			if (emote != null && emote[0] == Emotes.BOW) {
-				rx += 25F * Emotes.envelope(emote[1]); // ganzer Körper nach vorn
+				rx += 25F * Emotes.strength(emote); // ganzer Körper nach vorn
 			}
 			if (emote != null && emote[0] == Emotes.GAME && Emotes.wins(i)) {
 				float r = Mth.clamp((emote[1] - 0.5F) / 0.12F, 0F, 1F); // weich einsetzende Freudensprünge

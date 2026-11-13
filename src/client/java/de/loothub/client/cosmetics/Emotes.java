@@ -17,10 +17,15 @@ public final class Emotes {
 	private static volatile int played;
 	private static volatile long playedAt;
 
-	/** Geste aus dem Emote-Rad: der Spieler und alle eigenen Mini-Mes machen sie ein paar Sekunden lang. */
+	/** Wo die Geste begonnen wurde – sie läuft in Schleife, bis sich der Spieler von hier bewegt. */
+	private static volatile double[] playedPos;
+
+	/** Geste aus dem Emote-Rad: der Spieler und alle eigenen Mini-Mes machen sie in Schleife, bis man sich bewegt. */
 	public static void play(int type) {
 		played = type;
 		playedAt = System.currentTimeMillis();
+		var pl = net.minecraft.client.Minecraft.getInstance().player;
+		playedPos = pl == null ? null : new double[]{pl.getX(), pl.getY(), pl.getZ()};
 		EmoteShare.send(type); // andere Loothub-Spieler sehen die Geste auch
 	}
 
@@ -32,7 +37,23 @@ public final class Emotes {
 
 	public static float[] wheel() {
 		long d = System.currentTimeMillis() - playedAt;
-		return played != NONE && d >= 0 && d < PLAY_MS ? new float[]{played, d / (float) PLAY_MS} : null;
+		return played != NONE && d >= 0 ? loop(played, d) : null;
+	}
+
+	/** Hat sich der Spieler seit {@code at} bewegt (laufen, springen, fallen)? Umschauen zählt nicht. */
+	static boolean moved(double[] at, net.minecraft.world.entity.player.Player p) {
+		double dx = p.getX() - at[0], dz = p.getZ() - at[2];
+		return dx * dx + dz * dz > 0.15 * 0.15 || Math.abs(p.getY() - at[1]) > 0.3;
+	}
+
+	/** Eigene Geste beenden, sobald man sich bewegt. */
+	static void stopIfMoved(net.minecraft.world.entity.player.Player p) {
+		double[] at = playedPos;
+		// auch beenden, wenn man sich AFK hinlegt
+		if (played != NONE && (at != null && moved(at, p) || de.loothub.client.quick.AfkView.lieProgress() > 0.05F)) {
+			played = NONE;
+			playedPos = null;
+		}
 	}
 
 	/** Spielt gerade Musik (Musik-Anzeige)? Dann tanzen die Mini-Mes ab und zu. */
@@ -132,16 +153,16 @@ public final class Emotes {
 		boolean local = Motion.local(playerState);
 		boolean lazy = "lazy".equals(trait), playful = "playful".equals(trait);
 		// Emote-Rad: Vorrang vor allem anderen
-		if (local && played != NONE && now - playedAt < PLAY_MS) {
-			// leicht versetzt, damit nicht alle exakt gleich zappeln
-			float p = Math.max(0F, (now - playedAt - slot * 120L) / (float) PLAY_MS);
-			return new float[]{played, Math.min(1F, p)};
+		if (local && played != NONE && now >= playedAt) {
+			// in Schleife; leicht versetzt, damit nicht alle exakt gleich zappeln
+			return loop(played, Math.max(0L, now - playedAt - slot * 120L));
 		}
 		if (!local) {
 			// Geste, die ein anderer Loothub-Spieler gerade im Emote-Rad gewählt hat
 			float[] r = EmoteShare.remote(Cosmetics.owner(playerState));
 			if (r != null) {
-				return new float[]{r[0], Math.max(0F, Math.min(1F, r[1] - slot * 0.03F))};
+				float q = r[1] - slot * 0.03F;
+				return new float[]{r[0], q < 0F ? q + 1F : q, r.length > 2 ? r[2] : 0F};
 			}
 		}
 		if (gestures && local && now >= cheerAt && now - cheerAt < CHEER_MS) {
@@ -276,6 +297,16 @@ public final class Emotes {
 
 	public static float[] of(Object miniState) {
 		return STATES.get(miniState);
+	}
+
+	/** Geste in Endlosschleife: {Art, Fortschritt im Durchgang, 1 = schon voll eingeblendet}. */
+	static float[] loop(int type, long elapsed) {
+		return new float[]{type, (elapsed % PLAY_MS) / (float) PLAY_MS, elapsed > PLAY_MS / 2 ? 1F : 0F};
+	}
+
+	/** Stärke einer Geste: einmal weich einblenden, in der Schleife dann voll bleiben (kein Absacken je Durchgang). */
+	public static float strength(float[] e) {
+		return e.length > 2 && e[2] > 0F ? 1F : envelope(e[1]);
 	}
 
 	/** Weiches Ein- und Ausblenden über den Verlauf (0 → 1 → 0). */
