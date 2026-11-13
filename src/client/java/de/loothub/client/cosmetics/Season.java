@@ -21,7 +21,7 @@ import de.loothub.Loothub;
 import de.loothub.client.jobs.WidgetConfig;
 
 /**
- * Jahreszeiten für die Mini-Mes: vom 1. Dezember bis zum 6. Januar tragen sie Zipfelmützen (Würfel-Stil wie
+ * Jahreszeiten für die Mini-Mes: vom 5. bis zum 27. Dezember tragen sie Zipfelmützen (Würfel-Stil wie
  * Minecraft), an Silvester (31.12. ab 18 Uhr bis 1.1. um 3 Uhr) steigen über Spielern mit Mini-Mes kleine
  * Feuerwerks-Funken auf. Abschaltbar im Cosmetics-Menü. Eigenes Design.
  */
@@ -42,7 +42,7 @@ public final class Season {
 		}
 		checkedAt = now;
 		LocalDateTime d = LocalDateTime.now();
-		winter = d.getMonth() == Month.DECEMBER || (d.getMonth() == Month.JANUARY && d.getDayOfMonth() <= 6);
+		winter = d.getMonth() == Month.DECEMBER && d.getDayOfMonth() >= 5 && d.getDayOfMonth() <= 27;
 		newYear = (d.getMonth() == Month.DECEMBER && d.getDayOfMonth() == 31 && d.getHour() >= 18)
 				|| (d.getMonth() == Month.JANUARY && d.getDayOfMonth() == 1 && d.getHour() < 3);
 	}

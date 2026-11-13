@@ -373,24 +373,61 @@ public final class InvTools {
 		queue(menu, clicks);
 	}
 
-	/** Kiste ins Hauptinventar (Shift-Klick); {@code matching}: nur Items, die schon im Inventar liegen. */
+	/**
+	 * Kiste ins Hauptinventar; {@code matching}: nur Items, die schon im Inventar liegen. Anders als der Shift-Klick
+	 * von Minecraft bleibt die Schnellleiste frei: erst auf vorhandene Stapel im Hauptinventar legen, dann in freie
+	 * Plätze dort. Ist das Hauptinventar voll, bleibt der Rest in der Kiste.
+	 */
 	private static void take(AbstractContainerMenu menu, boolean matching) {
+		Minecraft mc = Minecraft.getInstance();
+		if (mc.player == null || !QUEUE.isEmpty() || !mc.player.containerMenu.getCarried().isEmpty()) {
+			return;
+		}
+		List<Integer> chest = containerSlots(menu), main = playerMainSlots(menu);
+		List<Integer> all = new ArrayList<>(chest);
+		all.addAll(main);
+		Sim sim = new Sim(menu, all);
+		int n = chest.size();
 		List<ItemStack> mine = new ArrayList<>();
-		for (int s : playerMainSlots(menu)) {
-			ItemStack st = menu.slots.get(s).getItem();
-			if (!st.isEmpty()) {
-				mine.add(st);
+		for (int m = n; m < all.size(); m++) {
+			if (!sim.at(m).isEmpty()) {
+				mine.add(sim.at(m).copy());
 			}
 		}
-		List<int[]> clicks = new ArrayList<>();
-		for (int s : containerSlots(menu)) {
-			ItemStack st = menu.slots.get(s).getItem();
+		for (int c = 0; c < n; c++) {
+			ItemStack st = sim.at(c);
 			if (st.isEmpty() || matching && mine.stream().noneMatch(x -> same(x, st))) {
 				continue;
 			}
-			clicks.add(new int[]{s, 0, ClickType.QUICK_MOVE.ordinal()});
+			// passt überhaupt etwas hinein?
+			boolean room = false;
+			for (int m = n; m < all.size() && !room; m++) {
+				ItemStack t = sim.at(m);
+				room = t.isEmpty() || same(t, st) && t.getCount() < t.getMaxStackSize();
+			}
+			if (!room) {
+				continue;
+			}
+			sim.click(c); // aufnehmen
+			for (int m = n; m < all.size() && !sim.carried.isEmpty(); m++) { // erst auffüllen
+				ItemStack t = sim.at(m);
+				if (!t.isEmpty() && same(t, sim.carried) && t.getCount() < t.getMaxStackSize()) {
+					sim.click(m);
+				}
+			}
+			for (int m = n; m < all.size() && !sim.carried.isEmpty(); m++) { // dann freie Plätze
+				if (sim.at(m).isEmpty()) {
+					sim.click(m);
+				}
+			}
+			if (!sim.carried.isEmpty()) {
+				sim.click(c); // Rest zurück in die Kiste
+			}
 		}
-		queue(menu, clicks);
+		if (!sim.carried.isEmpty()) {
+			return; // sollte nie passieren – dann lieber gar nicht klicken
+		}
+		queue(menu, sim.clicks);
 	}
 
 	// ---------------------------------------------------------------- Ausführen
