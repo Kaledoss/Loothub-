@@ -484,7 +484,7 @@
 	"loothub.settings.chat_filter": "Chat-Filter",
 	"loothub.settings.chat_filter.tooltip": "Blendet Nachrichten mit diesen Wörtern in jedem Chat aus – auch im normalen Minecraft-Chat.",
 	"loothub.settings.timers": "Eigene Timer",
-	"loothub.settings.timers.tooltip": "Countdowns und tägliche Erinnerungen mit Anzeige und Ton. Anlegen im Menü unter „Alltag“.",
+	"loothub.settings.timers.tooltip": "Countdowns und tägliche Erinnerungen mit Anzeige und Ton. Anlegen im Menü unter „Timer“. Gemerkte Auktionen bekommen dort automatisch einen eigenen Timer.",
 	"loothub.settings.compressor_icon": "Kompressor-Symbol",
 	"loothub.settings.compressor_icon.tooltip": "Zeigt am Kompressor im Inventar und in der Schnellleiste klein an, was er komprimiert. Einmal das Menü des Kompressors öffnen, dann merkt sich Loothub die Ziele. Mehrere wechseln sich ab.",
 	"loothub.settings.durability_numbers": "Haltbarkeit als Zahl",
@@ -792,5 +792,10 @@
 	"loothub.settings.inv.sub.menus": "Menüs",
 	"loothub.settings.inv.sub.tools": "Sortieren & Werkzeug",
 	"loothub.settings.inv.sub.display": "Anzeige",
-	"loothub.settings.inv.sub.quick": "Schnellzugriff"
+	"loothub.settings.inv.sub.quick": "Schnellzugriff",
+	"loothub.alltag.shown.tip": "In der Anzeige ein- oder ausblenden (höchstens %s gleichzeitig)",
+	"loothub.alltag.shown.limit": "Höchstens %s Timer gleichzeitig eingeblendet – erst einen anderen ausblenden",
+	"loothub.alltag.shown.count": "Eingeblendet: %s/%s",
+	"loothub.alltag.info.auction": "Auktion (Merkliste)",
+	"loothub.alltag.auction.ended": "beendet"
 }

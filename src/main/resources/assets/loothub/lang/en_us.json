@@ -484,7 +484,7 @@
 	"loothub.settings.chat_filter": "Chat filter",
 	"loothub.settings.chat_filter.tooltip": "Hides messages with these words in every chat – also the normal Minecraft chat.",
 	"loothub.settings.timers": "Custom timers",
-	"loothub.settings.timers.tooltip": "Countdowns and daily reminders with display and sound. Create them in the menu under “Daily”.",
+	"loothub.settings.timers.tooltip": "Countdowns and daily reminders with display and sound. Create them in the menu under “Timer”. Watched auctions automatically get their own timer there.",
 	"loothub.settings.compressor_icon": "Compressor icon",
 	"loothub.settings.compressor_icon.tooltip": "Shows a small icon on the compressor in your inventory and hotbar of what it compresses. Open the compressor menu once and Loothub remembers its targets. Several alternate.",
 	"loothub.settings.durability_numbers": "Durability as number",
@@ -792,5 +792,10 @@
 	"loothub.settings.inv.sub.menus": "Menus",
 	"loothub.settings.inv.sub.tools": "Sorting & tools",
 	"loothub.settings.inv.sub.display": "Display",
-	"loothub.settings.inv.sub.quick": "Quick access"
+	"loothub.settings.inv.sub.quick": "Quick access",
+	"loothub.alltag.shown.tip": "Show or hide in the HUD (at most %s at once)",
+	"loothub.alltag.shown.limit": "At most %s timers shown at once – hide another one first",
+	"loothub.alltag.shown.count": "Shown: %s/%s",
+	"loothub.alltag.info.auction": "Auction (watchlist)",
+	"loothub.alltag.auction.ended": "ended"
 }

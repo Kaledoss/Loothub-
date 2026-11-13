@@ -39,10 +39,44 @@ public final class Timers {
 		public boolean enabled = true;
 		/** Nächster Ablauf (Epoch-ms), 0 = nicht gestartet. */
 		public long nextAt = 0;
+		/** In der Anzeige (HUD) eingeblendet? Höchstens {@link #MAX_SHOWN} gleichzeitig. */
+		public boolean shown = true;
+		/** Gemerkte Auktion (Schlüssel aus {@link AuctionWatch}), sonst null. Läuft von selbst mit der Merkliste. */
+		public String auction;
+		/** Auktion: nur grob bekannt (der Server nannte Stunden oder Tage) – Ende frühestens dann. */
+		public boolean approx;
+		public String seller = "";
+		public String price = "";
 
 		public boolean daily() {
 			return "daily".equals(mode);
 		}
+
+		public boolean isAuction() {
+			return auction != null;
+		}
+	}
+
+	/** So viele Timer dürfen gleichzeitig in der Anzeige stehen. */
+	public static final int MAX_SHOWN = 5;
+
+	public static int shownCount() {
+		int n = 0;
+		for (Timer t : list()) {
+			if (t.shown) {
+				n++;
+			}
+		}
+		return n;
+	}
+
+	/** Einblenden nur, solange noch Platz ist. @return ob der Timer jetzt eingeblendet ist */
+	public static boolean setShown(Timer t, boolean on) {
+		if (on && !t.shown && shownCount() >= MAX_SHOWN) {
+			return false;
+		}
+		t.shown = on;
+		return t.shown;
 	}
 
 	private static long lastCheck;
@@ -103,8 +137,8 @@ public final class Timers {
 		}
 		boolean changed = false;
 		for (Timer t : c.timers) {
-			if (!t.enabled) {
-				continue;
+			if (!t.enabled || t.isAuction()) {
+				continue; // Auktionen meldet der Auktions-Alarm
 			}
 			if (t.nextAt == 0) {
 				t.nextAt = next(t, now);
@@ -150,7 +184,11 @@ public final class Timers {
 	/** Restzeit als „1:02:03“ bzw. „4:05“. */
 	public static String format(long ms) {
 		long s = Math.max(0, (ms + 999) / 1000);
-		long h = s / 3600, m = s / 60 % 60, sec = s % 60;
+		long d = s / 86400, h = s / 3600 % 24, m = s / 60 % 60, sec = s % 60;
+		if (d > 0) {
+			return String.format("%d T %d:%02d:%02d", d, h, m, sec);
+		}
+		h = s / 3600;
 		return h > 0 ? String.format("%d:%02d:%02d", h, m, sec) : String.format("%d:%02d", m, sec);
 	}
 
@@ -160,7 +198,17 @@ public final class Timers {
 		List<String> out = new ArrayList<>();
 		long now = System.currentTimeMillis();
 		for (Timer t : list()) {
-			if (t.enabled && t.nextAt > 0) {
+			if (!t.shown || !t.enabled || t.nextAt <= 0) {
+				continue;
+			}
+			if (t.isAuction()) {
+				long left = t.nextAt - now;
+				if (left < -60_000L) {
+					continue; // beendet – nicht länger in der Anzeige
+				}
+				String name = t.name.length() > 22 ? t.name.substring(0, 21) + "…" : t.name;
+				out.add(name + "  " + (left <= 0 ? "beendet" : (t.approx ? "≥ " : "") + format(left)));
+			} else {
 				out.add(t.name + "  " + format(t.nextAt - now));
 			}
 		}

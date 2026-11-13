@@ -101,11 +101,7 @@ public final class AuctionWatch {
 			if (low.contains("hinzugefügt")) {
 				observe(lastClicked);
 			} else if (low.contains("entfernt")) {
-				Watched w = find(key(lastClicked));
-				if (w != null) {
-					all().remove(w);
-					save();
-				}
+				forget(key(lastClicked));
 			}
 		});
 		ClientTickEvents.END_CLIENT_TICK.register(mc -> {
@@ -142,6 +138,63 @@ public final class AuctionWatch {
 
 	private static void save() {
 		de.loothub.client.AsyncSave.write(file(), GSON.toJson(all()));
+		syncTimers();
+	}
+
+	/** Auktion nicht mehr verfolgen (von der Merkliste entfernt oder im Timer-Menü gelöscht). */
+	public static void forget(String key) {
+		Watched w = find(key);
+		if (w != null) {
+			all().remove(w);
+			save();
+		}
+	}
+
+	/**
+	 * Jede gemerkte Auktion bekommt einen Timer im Timer-Menü (eingeblendet, solange noch Platz ist), Restzeit und
+	 * Name laufen mit; Timer zu nicht mehr gemerkten Auktionen verschwinden.
+	 */
+	static void syncTimers() {
+		List<Timers.Timer> timers = Timers.list();
+		boolean changed = false;
+		java.util.Set<String> keys = new java.util.HashSet<>();
+		for (Watched w : all()) {
+			keys.add(w.key);
+			Timers.Timer t = null;
+			for (Timers.Timer x : timers) {
+				if (w.key.equals(x.auction)) {
+					t = x;
+					break;
+				}
+			}
+			if (t == null) {
+				t = new Timers.Timer();
+				t.auction = w.key;
+				t.mode = "auction";
+				t.enabled = true;
+				t.shown = Timers.shownCount() < Timers.MAX_SHOWN;
+				timers.add(t);
+				changed = true;
+			}
+			String name = ChatFormatting.stripFormatting(w.name);
+			boolean approx = w.precision >= 3_600_000L;
+			// kleine Schwankungen beim Mitlesen nicht jedes Mal speichern
+			if (Math.abs(t.nextAt - w.endAt) > 5_000L || t.approx != approx || !java.util.Objects.equals(t.name, name)
+					|| !java.util.Objects.equals(t.seller, w.seller) || !java.util.Objects.equals(t.price, w.price)) {
+				t.nextAt = w.endAt;
+				t.approx = approx;
+				t.name = name;
+				t.seller = w.seller;
+				t.price = w.price;
+				changed = true;
+			}
+		}
+		if (timers.removeIf(t -> t.auction != null && !keys.contains(t.auction))) {
+			changed = true;
+		}
+		if (changed) {
+			WidgetConfig.get().save();
+		}
 	}
 
 	private static Watched find(String key) {
@@ -260,7 +313,18 @@ public final class AuctionWatch {
 		return Math.max(1, WidgetConfig.get().auctionAlarmMinutes) * 60_000L;
 	}
 
+	private static boolean synced;
+
 	private static void check(Minecraft mc) {
+		if (!synced) {
+			synced = true;
+			syncTimers(); // ältere Merklisten-Einträge bekommen ihren Timer
+		}
+		// längst vorbei → vergessen (auch ohne Alarm, damit der Timer verschwindet)
+		long cut = System.currentTimeMillis() - 6 * 3_600_000L;
+		if (all().removeIf(w -> w.endAt < cut)) {
+			save();
+		}
 		if (!WidgetConfig.get().auctionAlarm || all().isEmpty()) {
 			return;
 		}
@@ -287,10 +351,6 @@ public final class AuctionWatch {
 									? " – Restzeit war nur in Tagen bekannt, Merkliste öffnen für die genaue Zeit" : "")
 									.withStyle(ChatFormatting.DARK_GRAY)), false);
 				}
-			}
-			if (left < -6 * 3_600_000L) {
-				all().remove(w); // längst vorbei
-				changed = true;
 			}
 		}
 		if (changed) {

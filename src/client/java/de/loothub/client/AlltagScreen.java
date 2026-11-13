@@ -15,6 +15,7 @@ import net.minecraft.world.item.ItemStack;
 import de.loothub.client.jobs.JobHistory;
 import de.loothub.client.jobs.JobHistoryScreen;
 import de.loothub.client.jobs.WidgetConfig;
+import de.loothub.client.quick.AuctionWatch;
 import de.loothub.client.quick.Timers;
 
 /**
@@ -36,6 +37,8 @@ public class AlltagScreen extends LoothubScreen {
 	private boolean soundOpen;
 	private Button soundButton;
 	private int listTop;
+	/** Hinweis „höchstens 5 eingeblendet“ bis zu diesem Zeitpunkt zeigen. */
+	private long limitUntil;
 	private int scroll;
 
 	private record JobRow(String job, double money, double xp, long ms) {
@@ -137,6 +140,26 @@ public class AlltagScreen extends LoothubScreen {
 		for (int i = 0; i < visible && i + scroll < list.size(); i++) {
 			Timers.Timer t = list.get(i + scroll);
 			int ry = listTop + i * ROW_H;
+			// Haken: in der Anzeige ein-/ausblenden (höchstens 5 gleichzeitig)
+			addRenderableWidget(Button.builder(Component.literal(t.shown ? "✔" : ""), b -> {
+				if (!Timers.setShown(t, !t.shown)) {
+					limitUntil = System.currentTimeMillis() + 3_000L;
+					return;
+				}
+				WidgetConfig.get().save();
+				b.setMessage(Component.literal(t.shown ? "✔" : ""));
+			}).bounds(cl + 5, ry + 2, 16, 16)
+					.tooltip(net.minecraft.client.gui.components.Tooltip.create(Component.translatable("loothub.alltag.shown.tip",
+							Timers.MAX_SHOWN))).build());
+			if (t.isAuction()) {
+				addRenderableWidget(Button.builder(Component.literal("✕"), b -> {
+					AuctionWatch.forget(t.auction);
+					Timers.list().remove(t);
+					WidgetConfig.get().save();
+					rebuildWidgets();
+				}).bounds(cr - 20, ry + 2, 18, 16).build());
+				continue;
+			}
 			addRenderableWidget(Button.builder(Component.translatable(t.enabled ? "loothub.alltag.stop" : "loothub.alltag.start"), b -> {
 				if (t.enabled) {
 					t.enabled = false;
@@ -248,13 +271,33 @@ public class AlltagScreen extends LoothubScreen {
 			Timers.Timer t = list.get(i + scroll);
 			int ry = listTop + i * ROW_H;
 			g.fill(cl, ry, cr, ry + ROW_H - 2, 0x18FFFFFF);
-			g.fill(cl, ry, cl + 2, ry + ROW_H - 2, t.enabled ? GREEN : FAINT);
-			g.drawString(font, t.name, cl + 8, ry + 2, TEXT, false);
+			g.fill(cl, ry, cl + 2, ry + ROW_H - 2, t.isAuction() ? GOLD : t.enabled ? GREEN : FAINT);
+			int nx = cl + 26;
+			String title = font.plainSubstrByWidth(t.name, Math.max(40, cr - 150 - nx));
+			g.drawString(font, title, nx, ry + 2, TEXT, false);
+			if (t.isAuction()) {
+				String info = Component.translatable("loothub.alltag.info.auction").getString()
+						+ (t.seller == null || t.seller.isEmpty() ? "" : " · " + t.seller)
+						+ (t.price == null || t.price.isEmpty() ? "" : " · " + t.price);
+				g.drawString(font, font.plainSubstrByWidth(info, Math.max(40, cr - 150 - nx)), nx, ry + 11, FAINT, false);
+				long l = t.nextAt - now;
+				String left = l <= 0 ? Component.translatable("loothub.alltag.auction.ended").getString()
+						: (t.approx ? "≥ " : "") + Timers.format(l);
+				g.drawString(font, left, cr - 28 - font.width(left), ry + 6, l <= 0 ? FAINT : GOLD, false);
+				continue;
+			}
 			String info = t.daily() ? Component.translatable("loothub.alltag.info.daily", t.time).getString()
 					: Component.translatable(t.repeat ? "loothub.alltag.info.repeat" : "loothub.alltag.info.once", t.minutes).getString();
-			g.drawString(font, info, cl + 8, ry + 11, FAINT, false);
+			g.drawString(font, info, nx, ry + 11, FAINT, false);
 			String left = t.enabled && t.nextAt > 0 ? Timers.format(t.nextAt - now) : "–";
 			g.drawString(font, left, cr - 90 - font.width(left), ry + 6, t.enabled ? GOLD : FAINT, false);
+		}
+		if (System.currentTimeMillis() < limitUntil) {
+			Component m = Component.translatable("loothub.alltag.shown.limit", Timers.MAX_SHOWN);
+			g.drawString(font, m, cr - font.width(m), listTop - 11, 0xFFFF6B6B, false);
+		} else {
+			Component m = Component.translatable("loothub.alltag.shown.count", Timers.shownCount(), Timers.MAX_SHOWN);
+			g.drawString(font, m, cr - font.width(m), listTop - 11, FAINT, false);
 		}
 		if (soundOpen && soundButton != null) {
 			g.nextStratum();
@@ -339,8 +382,9 @@ public class AlltagScreen extends LoothubScreen {
 		// Läuft ein Timer ab, während die Seite offen ist, die Knöpfe (Start/Stopp) neu beschriften
 		int state = 0;
 		for (Timers.Timer t : Timers.list()) {
-			state = state * 31 + (t.enabled ? 1 : 0);
+			state = state * 31 + (t.enabled ? 1 : 0) + (t.shown ? 2 : 0) + (t.auction != null ? 4 : 0);
 		}
+		state = state * 31 + Timers.list().size();
 		if (!jobsTab && lastState != -1 && state != lastState) {
 			rebuildWidgets();
 		}
