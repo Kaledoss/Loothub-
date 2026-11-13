@@ -82,7 +82,8 @@ public final class InvTools {
 				}
 				if (bound(sortKey) && sortKey.matches(event) || bound(sortMouseKey) && sortMouseKey.matches(event)) {
 					sortHovered(cs);
-				} else if (bound(moveKey) && moveKey.matches(event) && WidgetConfig.get().invMove && realContainer(cs)) {
+				} else if (bound(moveKey) && moveKey.matches(event) && WidgetConfig.get().invMove
+						&& (realContainer(cs) || sellMenu(cs))) {
 					move(cs, Minecraft.getInstance().hasShiftDown());
 				}
 			});
@@ -110,6 +111,18 @@ public final class InvTools {
 			return false;
 		}
 		return screen.getTitle().getContents() instanceof TranslatableContents t && t.getKey().startsWith("container.");
+	}
+
+	/**
+	 * Verkaufsmenü des Marktes (/sell): Hier darf nur aus dem Inventar hineingeschoben werden – per Shift-Klick, den der
+	 * Server selbst ausführt. Herausnehmen und Sortieren bleiben aus, weil dort auch Menü-Knöpfe liegen.
+	 */
+	private static boolean sellMenu(AbstractContainerScreen<?> screen) {
+		if (!(screen.getMenu() instanceof ChestMenu) || realContainer(screen)) {
+			return false;
+		}
+		String title = screen.getTitle().getString().toLowerCase(java.util.Locale.ROOT);
+		return title.contains("verkauf") || title.contains("sell") || title.contains("markt");
 	}
 
 	/** Slots der Kiste (ohne Spielerinventar). */
@@ -149,6 +162,13 @@ public final class InvTools {
 				Screens.getButtons(screen).add(small(left + w - 14, top + 70, "⇅", "loothub.inv.sort_inventory",
 						() -> sort(playerMainSlots(menu))));
 			}
+			return;
+		}
+		if (!real && sellMenu(screen) && c.invMove) {
+			int rows = (containerSlots(menu).size() + 8) / 9;
+			int y = top + 17 + rows * 18 + 1;
+			Screens.getButtons(screen).add(small(left + w - 14, y, "⇧", "loothub.inv.store_all", () -> store(menu, false)));
+			Screens.getButtons(screen).add(small(left + w - 26, y, "≡", "loothub.inv.store_matching", () -> store(menu, true)));
 			return;
 		}
 		if (!real) {
@@ -212,7 +232,7 @@ public final class InvTools {
 			sortHovered(screen);
 			return true;
 		}
-		if (bound(moveKey) && moveKey.matchesMouse(e) && c.invMove && realContainer(screen)) {
+		if (bound(moveKey) && moveKey.matchesMouse(e) && c.invMove && (realContainer(screen) || sellMenu(screen))) {
 			move(screen, Minecraft.getInstance().hasShiftDown());
 			return true;
 		}
@@ -225,6 +245,12 @@ public final class InvTools {
 	 */
 	private static void move(AbstractContainerScreen<?> screen, boolean all) {
 		AbstractContainerMenu menu = screen.getMenu();
+		if (sellMenu(screen)) {
+			if (!overContainer(screen)) {
+				store(menu, !all); // nur hinein – nie Menü-Knöpfe herausnehmen
+			}
+			return;
+		}
 		if (overContainer(screen)) {
 			take(menu, !all);
 		} else {
