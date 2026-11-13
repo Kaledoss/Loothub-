@@ -194,36 +194,52 @@ public final class Timers {
 
 	// ------------------------------------------------------------------ HUD
 
-	private static List<String> lines(boolean preview) {
-		List<String> out = new ArrayList<>();
+	/** Eine Zeile der Anzeige: Text, Farbe, Restzeit (zum Sortieren). */
+	private record Line(String text, int color, long left) {
+	}
+
+	/** Farbe nach Restzeit: letzte Minute rot (blinkt), letzte 10 Minuten gelb, sonst weiß. */
+	private static int color(long left) {
+		if (left <= 60_000L) {
+			return (System.currentTimeMillis() / 400L) % 2 == 0 ? 0xFFFF5555 : 0xFFFF9090;
+		}
+		return left <= 600_000L ? 0xFFFFD84A : 0xFFFFFFFF;
+	}
+
+	/** Eingeblendete Timer, der nächste zuerst. */
+	private static List<Line> lines(boolean preview) {
+		List<Line> out = new ArrayList<>();
 		long now = System.currentTimeMillis();
 		for (Timer t : list()) {
 			if (!t.shown || !t.enabled || t.nextAt <= 0) {
 				continue;
 			}
+			long left = t.nextAt - now;
 			if (t.isAuction()) {
-				long left = t.nextAt - now;
 				if (left < -60_000L) {
 					continue; // beendet – nicht länger in der Anzeige
 				}
 				String name = t.name.length() > 22 ? t.name.substring(0, 21) + "…" : t.name;
-				out.add(name + "  " + (left <= 0 ? "beendet" : (t.approx ? "≥ " : "") + format(left)));
+				out.add(new Line(name + "  " + (left <= 0 ? "beendet" : (t.approx ? "≥ " : "") + format(left)),
+						left <= 0 ? 0xFF9A9A9A : color(left), left));
 			} else {
-				out.add(t.name + "  " + format(t.nextAt - now));
+				out.add(new Line(t.name + "  " + format(left), color(left), left));
 			}
 		}
+		out.sort(java.util.Comparator.comparingLong(Line::left));
 		if (out.isEmpty() && preview) {
-			out.add("Tageswechsel  3:12:45");
-			out.add("Farm  12:30");
+			out.add(new Line("Farm  0:45", 0xFFFF5555, 0));
+			out.add(new Line("Auktion  8:30", 0xFFFFD84A, 0));
+			out.add(new Line("Tageswechsel  3:12:45", 0xFFFFFFFF, 0));
 		}
 		return out;
 	}
 
-	private static int[] box(List<String> lines, int sw, int sh) {
+	private static int[] box(List<Line> lines, int sw, int sh) {
 		Font f = Minecraft.getInstance().font;
 		int w = 0;
-		for (String l : lines) {
-			w = Math.max(w, f.width(l) + 14);
+		for (Line l : lines) {
+			w = Math.max(w, f.width(l.text()) + 14);
 		}
 		int h = lines.size() * 10 + 4;
 		WidgetConfig c = WidgetConfig.get();
@@ -244,7 +260,7 @@ public final class Timers {
 		draw(g, lines(true), sw, sh);
 	}
 
-	private static void draw(GuiGraphics g, List<String> lines, int sw, int sh) {
+	private static void draw(GuiGraphics g, List<Line> lines, int sw, int sh) {
 		if (lines.isEmpty()) {
 			return;
 		}
@@ -253,8 +269,9 @@ public final class Timers {
 		g.fill(b[0], b[1], b[0] + b[2], b[1] + b[3], 0x90000000);
 		g.fill(b[0], b[1], b[0] + 1, b[1] + b[3], 0xFFE23B3B);
 		for (int i = 0; i < lines.size(); i++) {
-			g.drawString(f, "⏰", b[0] + 3, b[1] + 3 + i * 10, 0xFFF2C14E, false);
-			g.drawString(f, lines.get(i), b[0] + 12, b[1] + 3 + i * 10, 0xFFFFFFFF, true);
+			Line l = lines.get(i);
+			g.drawString(f, "⏰", b[0] + 3, b[1] + 3 + i * 10, l.color() == 0xFFFFFFFF ? 0xFFF2C14E : l.color(), false);
+			g.drawString(f, l.text(), b[0] + 12, b[1] + 3 + i * 10, l.color(), true);
 		}
 	}
 
