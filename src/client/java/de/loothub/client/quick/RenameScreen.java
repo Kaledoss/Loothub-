@@ -81,7 +81,7 @@ public class RenameScreen extends Screen {
 		int x = panelX() + 10;
 		int y = panelY() + 50;
 		box = new EditBox(font, x, y, w, 18, Component.translatable("loothub.rename.input"));
-		box.setMaxLength(command.equals("sign") ? 120 : 60);
+		box.setMaxLength(maxLength());
 		box.setHint(Component.translatable("loothub.rename.hint").withStyle(net.minecraft.ChatFormatting.DARK_GRAY));
 		addRenderableWidget(box);
 		setFocused(box);
@@ -106,8 +106,31 @@ public class RenameScreen extends Screen {
 	}
 
 	private void insert(String s) {
-		box.insertText(s);
+		// nur ganz einfügen – sonst bliebe bei vollem Feld ein einzelnes „&“ stehen
+		int free = maxLength() - box.getValue().length() + box.getHighlighted().length();
+		if (s.length() <= free) {
+			box.insertText(s);
+		}
+		focusBox();
+	}
+
+	private int maxLength() {
+		return command.equals("sign") ? 120 : 60;
+	}
+
+	/** Nach jedem Klick (Farbe, Formatierung) direkt weiterschreiben können, ohne ins Feld zu klicken. */
+	private void focusBox() {
 		setFocused(box);
+		box.setFocused(true);
+	}
+
+	@Override
+	public boolean mouseClicked(net.minecraft.client.input.MouseButtonEvent event, boolean doubleClick) {
+		boolean handled = super.mouseClicked(event, doubleClick);
+		if (box != null && getFocused() != box) {
+			focusBox(); // ein Knopf hätte sonst den Fokus behalten
+		}
+		return handled;
 	}
 
 	private void send() {
@@ -166,6 +189,10 @@ public class RenameScreen extends Screen {
 		Pulse.outline(g, px, py, pw, ph);
 		g.fill(px + 4, py + 3, px + pw - 4, py + 4, LoothubScreen.RED);
 		g.drawString(font, getTitle(), px + 10, py + 10, LoothubScreen.RED, false);
+		// Zeichenzähler: rot, sobald das Feld voll ist
+		String count = box.getValue().length() + "/" + maxLength();
+		g.drawString(font, count, px + pw - 10 - font.width(count), py + 10,
+				box.getValue().length() >= maxLength() ? 0xFFFF5555 : 0xFF8A8A8A, false);
 		// Item + kurze Vorschau des Namens
 		ItemStack st = held();
 		g.fill(px + 10, py + 24, px + pw - 10, py + 44, de.loothub.client.Theme.bg(0xFF24161A));
