@@ -105,6 +105,10 @@ public final class WidgetConfig {
 	public String eyeColor = "";
 	public String eyeLast = "";
 	public boolean crown = false;
+	/** Rüstung nur in der Darstellung ausblenden (Skin sichtbar); die Rüstung bleibt angezogen und schützt weiter. */
+	public boolean hideHelmet = false, hideChest = false, hideLegs = false, hideBoots = false, hideElytra = false;
+	/** Rüstung auch bei anderen Spielern ausblenden (sonst nur bei mir). */
+	public boolean hideArmorOthers = false;
 	/** Fußspuren: "" / "sparks" / "flames". */
 	public String footsteps = "";
 	public boolean flyTrail = false;

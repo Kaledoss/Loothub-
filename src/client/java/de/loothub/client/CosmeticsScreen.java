@@ -263,6 +263,20 @@ public class CosmeticsScreen extends LoothubScreen {
 				// Krone
 				toggle(lx, y + 20, lw, () -> c.crown, v -> c.crown = v);
 				sections.add(new Section(y, 42, "loothub.cosmetics.crown", "loothub.cosmetics.crown.desc"));
+				y += 42 + GAP;
+				// Rüstung ausblenden: je Teil ein Knopf (✔ sichtbar, ✕ ausgeblendet)
+				int pw = Math.max(44, Math.min(70, (cr - 8 - descX - 4 * 4) / 5)), px = descX;
+				px = piece(px, y + 30, pw, "loothub.cosmetics.armor.helmet", () -> c.hideHelmet, v -> c.hideHelmet = v);
+				px = piece(px, y + 30, pw, "loothub.cosmetics.armor.chest", () -> c.hideChest, v -> c.hideChest = v);
+				px = piece(px, y + 30, pw, "loothub.cosmetics.armor.legs", () -> c.hideLegs, v -> c.hideLegs = v);
+				px = piece(px, y + 30, pw, "loothub.cosmetics.armor.boots", () -> c.hideBoots, v -> c.hideBoots = v);
+				piece(px, y + 30, pw, "loothub.cosmetics.armor.elytra", () -> c.hideElytra, v -> c.hideElytra = v);
+				sections.add(new Section(y, 54, "loothub.cosmetics.armor", "loothub.cosmetics.armor.desc"));
+				y += 54 + GAP;
+				dropdown(descX, y + 30, ddWidth() + 40, Component.translatable("loothub.cosmetics.armor.who.short").getString(),
+						ARMOR_WHO, "loothub.cosmetics.armor.who.", () -> c.hideArmorOthers ? "all" : "",
+						v -> c.hideArmorOthers = "all".equals(v));
+				sections.add(new Section(y, 54, "loothub.cosmetics.armor.who", "loothub.cosmetics.armor.who.desc"));
 			}
 			case EFFECTS -> {
 				dropdown(descX, y + 30, ddWidth(), Component.translatable("loothub.cosmetics.footsteps.label").getString(),
@@ -298,6 +312,18 @@ public class CosmeticsScreen extends LoothubScreen {
 	}
 
 	// ------------------------------------------------------------------ Bausteine
+
+	/** Knopf für ein Rüstungsteil: grün ✔ = sichtbar, rot ✕ = ausgeblendet. @return x für den nächsten Knopf */
+	private int piece(int x, int y, int w, String key, Supplier<Boolean> hidden, Consumer<Boolean> set) {
+		java.util.function.Function<Boolean, Component> label = h -> Component.literal(h ? "✕ " : "✔ ")
+				.append(Component.translatable(key)).withStyle(h ? ChatFormatting.RED : ChatFormatting.GREEN);
+		addRenderableWidget(Button.builder(label.apply(hidden.get()), b -> {
+			set.accept(!hidden.get());
+			b.setMessage(label.apply(hidden.get()));
+			WidgetConfig.get().save();
+		}).bounds(x, y, w, 16).build());
+		return x + w + 4;
+	}
 
 	private void toggle(int x, int y, int w, Supplier<Boolean> get, Consumer<Boolean> set) {
 		addRenderableWidget(Button.builder(onOff(get.get()), b -> {
@@ -391,6 +417,7 @@ public class CosmeticsScreen extends LoothubScreen {
 
 	private static final String[] WING_OPTIONS = {"", "dragon", "devil", "angel", "drake"};
 	private static final String[] PET_OPTIONS = {"", "slime", "allay", "bee", "vex", "wolf", "penguin", "dragon", "panda", "zombie", "serpent"};
+	private static final String[] ARMOR_WHO = {"", "all"};
 	private static final String[] RANGE_OPTIONS = {"", "8", "16", "32", "64"};
 	private static final String[] MAX_OPTIONS = {"", "0", "1", "3", "5", "10"};
 	private static final String[] TRAIT_OPTIONS = {"", "playful", "shy", "brave", "lazy", "curious"};

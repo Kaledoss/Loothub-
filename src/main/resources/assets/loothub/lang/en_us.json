@@ -784,5 +784,17 @@
 	"loothub.auction.notice": "⏰ Auction ends %s",
 	"loothub.auction.chat": "Watched auction ends %s: ",
 	"loothub.auction.rough": " – the time left was only known in days; open the watchlist for the exact time",
-	"loothub.guard.layer_off": "The “%s” display ran into an error and is off until restart. The game keeps running normally."
+	"loothub.guard.layer_off": "The “%s” display ran into an error and is off until restart. The game keeps running normally.",
+	"loothub.cosmetics.armor": "Hide armor",
+	"loothub.cosmetics.armor.desc": "Hide single pieces on screen only so your skin shows. The armor stays equipped and keeps protecting you. ✔ = shown, ✕ = hidden.",
+	"loothub.cosmetics.armor.helmet": "Helmet",
+	"loothub.cosmetics.armor.chest": "Chest",
+	"loothub.cosmetics.armor.legs": "Legs",
+	"loothub.cosmetics.armor.boots": "Boots",
+	"loothub.cosmetics.armor.elytra": "Elytra",
+	"loothub.cosmetics.armor.who": "Hide armor for",
+	"loothub.cosmetics.armor.who.desc": "Only for yourself or also for all other players on your screen. Others still see your armor normally.",
+	"loothub.cosmetics.armor.who.short": "Applies to",
+	"loothub.cosmetics.armor.who.off": "Only me",
+	"loothub.cosmetics.armor.who.all": "Other players too"
 }

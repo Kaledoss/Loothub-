@@ -784,5 +784,17 @@
 	"loothub.auction.notice": "⏰ Auktion endet %s",
 	"loothub.auction.chat": "Gemerkte Auktion endet %s: ",
 	"loothub.auction.rough": " – die Restzeit war nur in Tagen bekannt; öffne die Merkliste für die genaue Zeit",
-	"loothub.guard.layer_off": "Die Darstellung „%s“ hatte einen Fehler und ist bis zum Neustart aus. Das Spiel läuft normal weiter."
+	"loothub.guard.layer_off": "Die Darstellung „%s“ hatte einen Fehler und ist bis zum Neustart aus. Das Spiel läuft normal weiter.",
+	"loothub.cosmetics.armor": "Rüstung ausblenden",
+	"loothub.cosmetics.armor.desc": "Einzelne Teile nur in der Anzeige ausblenden, damit der Skin zu sehen ist. Die Rüstung bleibt angezogen und schützt weiter. ✔ = sichtbar, ✕ = ausgeblendet.",
+	"loothub.cosmetics.armor.helmet": "Helm",
+	"loothub.cosmetics.armor.chest": "Brust",
+	"loothub.cosmetics.armor.legs": "Hose",
+	"loothub.cosmetics.armor.boots": "Schuhe",
+	"loothub.cosmetics.armor.elytra": "Elytra",
+	"loothub.cosmetics.armor.who": "Rüstung ausblenden bei",
+	"loothub.cosmetics.armor.who.desc": "Nur bei dir selbst oder auch bei allen anderen Spielern auf deinem Bildschirm. Andere sehen deine Rüstung weiterhin normal.",
+	"loothub.cosmetics.armor.who.short": "Gilt für",
+	"loothub.cosmetics.armor.who.off": "Nur mich",
+	"loothub.cosmetics.armor.who.all": "Auch andere Spieler"
 }

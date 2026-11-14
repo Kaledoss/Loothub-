@@ -44,6 +44,7 @@ public abstract class AvatarLayersMixin {
 		} else {
 			de.loothub.client.cosmetics.FirstPerson.unmark(state);
 		}
+		de.loothub.client.cosmetics.ArmorHide.apply(entity, state); // Rüstung nur in der Darstellung ausblenden
 		if (de.loothub.client.cosmetics.CosmeticsPreviewScreen.rendering() && entity == mc.player) {
 			de.loothub.client.cosmetics.CosmeticsPreviewScreen.mark(state);
 		}
