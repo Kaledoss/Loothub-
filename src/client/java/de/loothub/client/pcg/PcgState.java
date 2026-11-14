@@ -60,10 +60,6 @@ public final class PcgState {
 	/** Letzte Nachrichten des Bots (zur Fehlersuche in den Einstellungen). */
 	private static final java.util.Deque<String> LAST = new java.util.ArrayDeque<>();
 
-	public static synchronized java.util.List<String> lastBotMessages() {
-		return new java.util.ArrayList<>(LAST);
-	}
-
 	static void onChat(String sender, String text) {
 		if (!BOT.equalsIgnoreCase(sender)) {
 			return;

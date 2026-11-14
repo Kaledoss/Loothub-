@@ -216,32 +216,4 @@ public final class ConnectedTextures {
 		return view.getBlockState(probe).getBlock() != block;
 	}
 
-	/** Liegt das Viereck auf der Blockgrenze und deckt die ganze Seite ab? */
-	private static boolean fullFace(QuadView q, Direction face) {
-		int a1, a2;
-		switch (face.getAxis()) {
-			case X -> {
-				a1 = 1;
-				a2 = 2;
-			}
-			case Y -> {
-				a1 = 0;
-				a2 = 2;
-			}
-			default -> {
-				a1 = 0;
-				a2 = 1;
-			}
-		}
-		float min1 = 1, max1 = 0, min2 = 1, max2 = 0;
-		for (int i = 0; i < 4; i++) {
-			float v1 = q.posByIndex(i, a1);
-			float v2 = q.posByIndex(i, a2);
-			min1 = Math.min(min1, v1);
-			max1 = Math.max(max1, v1);
-			min2 = Math.min(min2, v2);
-			max2 = Math.max(max2, v2);
-		}
-		return min1 < EPS && max1 > 1 - EPS && min2 < EPS && max2 > 1 - EPS;
-	}
 }

@@ -185,8 +185,4 @@ public final class DataBackup {
 		Files.deleteIfExists(dir);
 	}
 
-	/** Für die Einstellungen: Ordner der Sicherungen. */
-	public static Path folder() {
-		return backupRoot();
-	}
 }

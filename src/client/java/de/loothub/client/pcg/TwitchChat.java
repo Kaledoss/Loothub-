@@ -106,14 +106,6 @@ public final class TwitchChat {
 		t.start();
 	}
 
-	/** Verbindung neu aufbauen, z. B. nachdem die Token-Datei geändert wurde. */
-	public static synchronized void reconnect() {
-		String ch = channel;
-		String us = user;
-		stop();
-		ensure(true, ch, us);
-	}
-
 	public static synchronized void stop() {
 		Thread t = thread;
 		thread = null;

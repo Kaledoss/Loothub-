@@ -51,11 +51,6 @@ public final class ChatLog {
 		return new ArrayList<>(ALL);
 	}
 
-	public static synchronized List<Entry> pms() {
-		unreadPms = 0;
-		return new ArrayList<>(PMS);
-	}
-
 	public static synchronized int unreadPms() {
 		return unreadPms;
 	}

@@ -814,11 +814,6 @@ public class MarketScreen extends LoothubScreen {
 		}
 	}
 
-	private static void marker(GuiGraphics g, int x, int y, int color) {
-		g.fill(x - 3, y - 3, x + 3, y + 3, 0xFF000000);
-		g.fill(x - 2, y - 2, x + 2, y + 2, color);
-	}
-
 	private void centered(GuiGraphics g, Component text, int centerX, int y, int color) {
 		g.drawString(font, text, centerX - font.width(text) / 2, y, color, false);
 	}
@@ -871,7 +866,6 @@ public class MarketScreen extends LoothubScreen {
 		return super.mouseScrolled(mx, my, horizontal, vertical);
 	}
 
-
 	@Override
 	public boolean isPauseScreen() {
 		return false;
@@ -889,20 +883,6 @@ public class MarketScreen extends LoothubScreen {
 
 	private void clampScroll() {
 		scroll = Mth.clamp(scroll, 0, Math.max(0, contentHeight() - listH));
-	}
-
-	/** Länge der ersten Zeile beim Umbrechen nach Wörtern. */
-	private int firstLineLength(String s, int maxWidth) {
-		String[] words = s.split(" ");
-		StringBuilder line = new StringBuilder();
-		for (String w : words) {
-			String next = line.isEmpty() ? w : line + " " + w;
-			if (font.width(next) > maxWidth && !line.isEmpty()) {
-				break;
-			}
-			line = new StringBuilder(next);
-		}
-		return line.length();
 	}
 
 	private String ellipsize(String s, int maxWidth) {

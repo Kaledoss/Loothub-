@@ -55,17 +55,6 @@ public final class JobHistory {
 			return jobs.stream().mapToDouble(j -> j.money).sum();
 		}
 
-		/** Der Job mit dem meisten Geld (bei Gleichstand: meiste XP). */
-		public JobEntry mainJob() {
-			JobEntry best = null;
-			for (JobEntry j : jobs) {
-				if (best == null || j.money > best.money || (j.money == best.money && j.xp > best.xp)) {
-					best = j;
-				}
-			}
-			return best;
-		}
-
 		public JobEntry job(String name) {
 			for (JobEntry j : jobs) {
 				if (j.job.equals(name)) {

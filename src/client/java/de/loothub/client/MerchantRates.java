@@ -102,11 +102,6 @@ public final class MerchantRates {
 		return r.itemId() + "|" + (r.name() == null ? "" : r.name()) + "|" + r.target();
 	}
 
-	/** Ist das Item heute neu dazugekommen (gestern nicht im Angebot)? */
-	public static boolean isNewToday(Rate r) {
-		return newToday.contains(key(r));
-	}
-
 	private static java.nio.file.Path daysFile() {
 		return net.fabricmc.loader.api.FabricLoader.getInstance().getConfigDir().resolve("loothub-merchant-days.json");
 	}

@@ -97,12 +97,4 @@ public final class OtherAfk {
 		return t == null ? AfkView.ARMS_UP : t.style;
 	}
 
-	/** Steht dieser (andere) Spieler seit 5 Minuten völlig still? */
-	public static boolean isAfk(LivingEntity e) {
-		if (!(e instanceof Player) || !WidgetConfig.get().afkView) {
-			return false;
-		}
-		Track t = TRACKS.get(e.getUUID());
-		return t != null && System.currentTimeMillis() - t.still >= AfkView.AFK_AFTER_MS;
-	}
 }

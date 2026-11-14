@@ -250,11 +250,6 @@ public final class Motion {
 		return get(state, 2);
 	}
 
-	/** Aura-Stufe 0..3 (steigt beim Sprinten/Fliegen). */
-	public static float charge(Object state) {
-		return get(state, 4);
-	}
-
 	/** Sekunden ohne Bewegung. */
 	public static float idle(Object state) {
 		return get(state, 5);
