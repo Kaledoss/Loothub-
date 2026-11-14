@@ -29,6 +29,18 @@ public final class EyesLayer extends RenderLayer<AvatarRenderState, PlayerModel>
 	@Override
 	public void submit(PoseStack poseStack, SubmitNodeCollector collector, int light, AvatarRenderState state,
 			float yRot, float xRot) {
+		if (LayerGuard.off("Augen")) {
+			return;
+		}
+		try {
+			draw(poseStack, collector, light, state, yRot, xRot);
+		} catch (RuntimeException | LinkageError e) {
+			LayerGuard.fail("Augen", e); // nur diese Ebene abschalten, nicht das Spiel abstürzen lassen
+		}
+	}
+
+	private void draw(PoseStack poseStack, SubmitNodeCollector collector, int light, AvatarRenderState state,
+			float yRot, float xRot) {
 		String color = Cosmetics.raw(state, Cosmetics.EYES);
 		if (color == null || state.isInvisible) {
 			return;

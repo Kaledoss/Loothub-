@@ -26,6 +26,18 @@ public final class RiseTrailLayer extends RenderLayer<AvatarRenderState, PlayerM
 	@Override
 	public void submit(PoseStack poseStack, SubmitNodeCollector collector, int light, AvatarRenderState state,
 			float yRot, float xRot) {
+		if (LayerGuard.off("Aufstiegsspur")) {
+			return;
+		}
+		try {
+			draw(poseStack, collector, light, state, yRot, xRot);
+		} catch (RuntimeException | LinkageError e) {
+			LayerGuard.fail("Aufstiegsspur", e); // nur diese Ebene abschalten, nicht das Spiel abstürzen lassen
+		}
+	}
+
+	private void draw(PoseStack poseStack, SubmitNodeCollector collector, int light, AvatarRenderState state,
+			float yRot, float xRot) {
 		if (state.isInvisible || !Cosmetics.has(state, Cosmetics.RISE_TRAIL)) {
 			return;
 		}

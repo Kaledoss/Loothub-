@@ -76,6 +76,18 @@ public final class PetsLayer extends RenderLayer<AvatarRenderState, PlayerModel>
 	@Override
 	public void submit(PoseStack poseStack, SubmitNodeCollector collector, int light, AvatarRenderState state,
 			float yRot, float xRot) {
+		if (LayerGuard.off("Haustiere")) {
+			return;
+		}
+		try {
+			draw(poseStack, collector, light, state, yRot, xRot);
+		} catch (RuntimeException | LinkageError e) {
+			LayerGuard.fail("Haustiere", e); // nur diese Ebene abschalten, nicht das Spiel abstürzen lassen
+		}
+	}
+
+	private void draw(PoseStack poseStack, SubmitNodeCollector collector, int light, AvatarRenderState state,
+			float yRot, float xRot) {
 		if ((state.isInvisible && !FirstPerson.is(state)) || !Cosmetics.has(state, Cosmetics.PETS)) {
 			return;
 		}

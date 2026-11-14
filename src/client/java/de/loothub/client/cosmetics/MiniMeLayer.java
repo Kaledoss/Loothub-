@@ -344,6 +344,18 @@ public final class MiniMeLayer extends RenderLayer<AvatarRenderState, PlayerMode
 	@Override
 	public void submit(PoseStack poseStack, SubmitNodeCollector collector, int light, AvatarRenderState state,
 			float yRot, float xRot) {
+		if (LayerGuard.off("Mini-Mes")) {
+			return;
+		}
+		try {
+			draw(poseStack, collector, light, state, yRot, xRot);
+		} catch (RuntimeException | LinkageError e) {
+			LayerGuard.fail("Mini-Mes", e); // nur diese Ebene abschalten, nicht das Spiel abstürzen lassen
+		}
+	}
+
+	private void draw(PoseStack poseStack, SubmitNodeCollector collector, int light, AvatarRenderState state,
+			float yRot, float xRot) {
 		boolean firstPerson = FirstPerson.is(state);
 		if ((state.isInvisible && !firstPerson) || !Cosmetics.has(state, Cosmetics.MINI_ME) || state.skin == null) {
 			return;
