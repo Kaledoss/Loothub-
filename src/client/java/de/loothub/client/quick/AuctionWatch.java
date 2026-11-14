@@ -281,10 +281,17 @@ public final class AuctionWatch {
 			all().add(w);
 		} else {
 			// genauere Angabe übernimmt; die Untergrenze kann nur später werden
+			long oldEnd = w.endAt, oldPrecision = w.precision;
+			boolean oldWarned = w.warned;
 			w.endAt = Math.max(w.endAt, earliest);
 			w.precision = Math.min(w.precision, left[1]);
 			if (w.endAt - now > alarmMs()) {
 				w.warned = false;
+			}
+			// nur speichern, wenn sich wirklich etwas geändert hat (beim Mitlesen wandert die Untergrenze sekündlich
+			// ein wenig – das allein ist keinen Schreibvorgang wert)
+			if (w.endAt - oldEnd <= 30_000L && w.precision == oldPrecision && w.warned == oldWarned) {
+				return;
 			}
 		}
 		save();
