@@ -39,6 +39,7 @@ public abstract class AvatarLayersMixin {
 			CallbackInfo ci) {
 		net.minecraft.client.Minecraft mc = net.minecraft.client.Minecraft.getInstance();
 		if (entity == mc.player && !de.loothub.client.cosmetics.CosmeticsPreviewScreen.rendering()
+				&& !de.loothub.client.cosmetics.FirstPerson.gui // Spielerfigur im Inventar immer zeigen
 				&& de.loothub.client.cosmetics.FirstPerson.active()) {
 			de.loothub.client.cosmetics.FirstPerson.strip(state);
 		} else {

@@ -16,6 +16,9 @@ import de.loothub.client.jobs.WidgetConfig;
  * (fliegend, krabbelnd). Die Mini-Mes auf den Schultern bleiben weg, die säßen direkt vor der Kamera.
  */
 public final class FirstPerson {
+	/** Gerade wird die Spielerfigur im Inventar gezeichnet (dort nie unsichtbar machen). */
+	public static boolean gui;
+
 	private static final Set<Object> MARKED = Collections.newSetFromMap(new WeakHashMap<>());
 
 	private FirstPerson() {
