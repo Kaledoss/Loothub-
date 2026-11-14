@@ -115,7 +115,8 @@ public class RenameScreen extends Screen {
 	}
 
 	private int maxLength() {
-		return command.equals("sign") ? 120 : 60;
+		// Signieren: so lang, wie ein Befehl sein darf (256 Zeichen inkl. „sign “); Farbcodes zählen mit
+		return command.equals("sign") ? 250 : 60;
 	}
 
 	/** Nach jedem Klick (Farbe, Formatierung) direkt weiterschreiben können, ohne ins Feld zu klicken. */
