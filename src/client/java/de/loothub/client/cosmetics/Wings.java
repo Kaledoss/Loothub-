@@ -59,13 +59,18 @@ public final class Wings {
 			String inner, String outer) {
 		boolean in = inner != null && !inner.isBlank(), out = outer != null && !outer.isBlank();
 		if (!in && !out) {
-			draw(poseStack, collector, tex(style, ""), 0xFFFFFFFF, pose, light);
+			draw(poseStack, collector, tex(style, ""), 0xFFFFFFFF, pose, light, drop(style));
 			return;
 		}
 		draw(poseStack, collector, tex(style, in ? "_in_gray" : "_in"), in ? 0xFF000000 | AuraTextures.parse(inner) : 0xFFFFFFFF,
-				pose, light);
+				pose, light, drop(style));
 		draw(poseStack, collector, tex(style, out ? "_out_gray" : "_out"), out ? 0xFF000000 | AuraTextures.parse(outer) : 0xFFFFFFFF,
-				pose, light);
+				pose, light, drop(style));
+	}
+
+	/** Wie weit ein Stil tiefer am Rücken sitzt (Blöcke): Knochenschwingen ragen sonst zu weit über den Kopf. */
+	private static float drop(String style) {
+		return "drake".equals(style) ? 0.22F : 0.0F;
 	}
 
 	private static Identifier tex(String style, String part) {
@@ -81,7 +86,8 @@ public final class Wings {
 	 * gewölbt und weich statt wie ein flaches Brett. Hinter den Schwungfedern liegt eine zweite, leicht versetzte
 	 * Federlage für Tiefe.
 	 */
-	private static void draw(PoseStack poseStack, SubmitNodeCollector collector, Identifier texture, int argb, Pose wp, int light) {
+	private static void draw(PoseStack poseStack, SubmitNodeCollector collector, Identifier texture, int argb, Pose wp, int light,
+			float drop) {
 		float open = Mth.clamp(wp.open(), 0.0F, 1.2F);
 		int dark = shade(argb, 0.68F);
 		int back = shade(argb, 0.82F);
@@ -93,7 +99,7 @@ public final class Wings {
 			float angle = 62.0F + (12.0F - 62.0F) * wp.open() + flap0 * 14.0F + s * Mth.clamp(wp.turn(), -40.0F, 40.0F) * 0.25F;
 			poseStack.mulPose(Axis.YP.rotationDegrees(-s * angle));
 			poseStack.mulPose(Axis.ZP.rotationDegrees(-s * (4.0F + 8.0F * Mth.clamp(open, 0.0F, 1.0F))));
-			float top = 0.2F - 0.7F * HEIGHT, bottom = top + HEIGHT;
+			float top = 0.2F - 0.7F * HEIGHT + drop, bottom = top + HEIGHT;
 			float u0 = 0.0F;
 			for (int i = 0; i < SEG.length; i++) {
 				float segW = SEG[i] * HEIGHT * ASPECT;
