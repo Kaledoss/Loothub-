@@ -27,7 +27,8 @@ public final class StatsTracker {
 	/** So lange nach dem letzten Treffer zählt ein Mob-Tod als eigener Kill. */
 	private static final long KILL_WINDOW_MS = 5_000;
 
-	private record Target(EntityType<?> type, float lastHealth, long lastHit) {
+	/** {@code name}: Name eines Server-Mobs (eigener Name), sonst null → Zählung nach Mob-Art. */
+	private record Target(EntityType<?> type, String name, float lastHealth, long lastHit) {
 	}
 
 	private static final Map<Integer, Target> TARGETS = new HashMap<>();
@@ -200,9 +201,72 @@ public final class StatsTracker {
 		if (tracking(mc)) {
 			toolStat("tool_hits.", mc.player.getMainHandItem());
 		}
-		if (entity instanceof LivingEntity living && tracking(mc)) {
-			TARGETS.put(entity.getId(), new Target(entity.getType(), living.getHealth(), System.currentTimeMillis()));
+		LivingEntity living = livingOf(entity);
+		if (living != null && tracking(mc)) {
+			TARGETS.put(living.getId(), new Target(living.getType(), customName(living), living.getHealth(),
+					System.currentTimeMillis()));
 		}
+	}
+
+	/**
+	 * Eigene Server-Mobs bestehen oft aus mehreren Teilen (unsichtbare Trefferfläche, Namensschild, Modell), die
+	 * aufeinander reiten. Getroffen wird dann manchmal ein Teil, das kein Lebewesen ist – das zugehörige Lebewesen
+	 * suchen.
+	 */
+	private static LivingEntity livingOf(Entity entity) {
+		if (entity instanceof LivingEntity l && !(entity instanceof net.minecraft.world.entity.decoration.ArmorStand)) {
+			return l;
+		}
+		for (Entity v = entity.getVehicle(); v != null; v = v.getVehicle()) {
+			if (v instanceof LivingEntity l && !(v instanceof net.minecraft.world.entity.decoration.ArmorStand)) {
+				return l;
+			}
+		}
+		for (Entity p : entity.getPassengers()) {
+			if (p instanceof LivingEntity l && !(p instanceof net.minecraft.world.entity.decoration.ArmorStand)) {
+				return l;
+			}
+		}
+		return entity instanceof LivingEntity l ? l : null;
+	}
+
+	/**
+	 * Name eines Server-Mobs: eigener Name des Mobs oder seines Namensschilds (Mitfahrer/Reittier). Zahlen, Lebensanzeige
+	 * und Klammern fliegen raus, damit „Waldgeist [Lv. 3] ❤ 40/40“ immer als „Waldgeist“ zählt.
+	 */
+	private static String customName(LivingEntity living) {
+		net.minecraft.network.chat.Component name = living.getCustomName();
+		if (name == null) {
+			for (Entity p : living.getPassengers()) {
+				name = p.getCustomName();
+				if (name != null) {
+					break;
+				}
+			}
+		}
+		if (name == null && living.getVehicle() != null) {
+			name = living.getVehicle().getCustomName();
+		}
+		if (name == null) {
+			return null;
+		}
+		String n = net.minecraft.ChatFormatting.stripFormatting(name.getString());
+		if (n == null) {
+			return null;
+		}
+		n = n.split("\\R", 2)[0] // nur die erste Zeile
+				.replaceAll("[\\[(<{][^\\])>}]*[\\])>}]", " ") // [Lv. 3], (Boss) …
+				.replaceAll("[❤♥✦★☆%/|:+\\-]", " ")
+				.replaceAll("\\d+([.,]\\d+)?", " ")
+				.replaceAll("\\s+", " ").strip();
+		if (n.length() < 2) {
+			return null;
+		}
+		return n.length() > 40 ? n.substring(0, 40).strip() : n;
+	}
+
+	private static String killKey(Target t) {
+		return t.name() != null ? "killed.~" + t.name() : "killed." + BuiltInRegistries.ENTITY_TYPE.getKey(t.type());
 	}
 
 	// ------------------------------------------------------------------ Jeder Tick
@@ -433,6 +497,11 @@ public final class StatsTracker {
 			Target t = e.getValue();
 			Entity entity = mc.level.getEntity(e.getKey());
 			if (!(entity instanceof LivingEntity living)) {
+				// Server-Mobs verschwinden beim Tod oft sofort, ohne Sterbe-Animation: verschwindet ein Mob direkt nach
+				// einem Treffer, zählt das als Kill
+				if (now - t.lastHit() < 1_500L) {
+					StatsStore.add(killKey(t), 1);
+				}
 				it.remove();
 				continue;
 			}
@@ -441,12 +510,13 @@ public final class StatsTracker {
 				StatsStore.add("general.damage_dealt", Math.round((t.lastHealth() - health) * 10));
 			}
 			if (living.isDeadOrDying()) {
-				StatsStore.add("killed." + BuiltInRegistries.ENTITY_TYPE.getKey(t.type()), 1);
+				StatsStore.add(killKey(t), 1);
 				it.remove();
 			} else if (now - t.lastHit() > KILL_WINDOW_MS) {
 				it.remove();
 			} else {
-				e.setValue(new Target(t.type(), health, t.lastHit()));
+				String n = customName(living);
+				e.setValue(new Target(t.type(), n != null ? n : t.name(), health, t.lastHit()));
 			}
 		}
 	}

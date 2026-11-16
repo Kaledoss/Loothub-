@@ -694,6 +694,9 @@ public class StatsScreen extends LoothubScreen {
 	}
 
 	private static String name(String id, Kind kind) {
+		if (id.startsWith("~")) {
+			return id.substring(1); // Server-Mob mit eigenem Namen
+		}
 		return NAMES.computeIfAbsent(kind + ":" + id, k -> {
 			Identifier identifier = Identifier.tryParse(id);
 			if (identifier != null) {
