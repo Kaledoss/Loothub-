@@ -65,6 +65,9 @@ public class StatsScreen extends LoothubScreen {
 	// Bleibt zwischen zwei Öffnungen erhalten
 	private static Category category = Category.GENERAL;
 	private static Range range = Range.TOTAL;
+	/** Bei „Heute“: so viele Tage zurückgeblättert (0 = heute). */
+	private static int dayBack;
+	private Button prevDay, nextDay;
 	private static String search = "";
 	private static int sortColumn = 1; // 0 = Name, 1.. = Wertespalten
 	private static boolean sortDesc = true;
@@ -119,10 +122,15 @@ public class StatsScreen extends LoothubScreen {
 		rangeButtons.clear();
 		int rw = Mth.clamp((cw / 2 - 8) / 3, 46, 70);
 		x = cr - 3 * rw - 8;
+		// Tage zurück- und vorblättern (wie im Jobverlauf) – links neben „Heute“
+		prevDay = addRenderableWidget(Button.builder(Component.literal("‹"), b -> shiftDay(1))
+				.bounds(x - 2 * 16 - 6, y, 16, 16).build());
+		nextDay = addRenderableWidget(Button.builder(Component.literal("›"), b -> shiftDay(-1))
+				.bounds(x - 16 - 2, y, 16, 16).build());
 		for (Range r : Range.values()) {
-			rangeButtons.add(addRenderableWidget(Button.builder(Component.translatable(
-					"loothub.stats.range." + r.name().toLowerCase(Locale.ROOT)), b -> {
+			rangeButtons.add(addRenderableWidget(Button.builder(rangeLabel(r), b -> {
 				range = r;
+				dayBack = 0;
 				updateToggleButtons();
 				seenVersion = -1;
 				refresh();
@@ -165,8 +173,44 @@ public class StatsScreen extends LoothubScreen {
 		}
 		Range[] ranges = Range.values();
 		for (int i = 0; i < rangeButtons.size(); i++) {
-			rangeButtons.get(i).active = ranges[i] != range;
+			// „Heute“ bleibt anklickbar, solange ein früherer Tag gezeigt wird (zurück zu heute)
+			rangeButtons.get(i).active = ranges[i] != range || ranges[i] == Range.TODAY && dayBack > 0;
+			rangeButtons.get(i).setMessage(rangeLabel(ranges[i]));
 		}
+		if (prevDay != null) {
+			java.time.LocalDate first = StatsStore.firstDay();
+			prevDay.active = first != null && shownDay().isAfter(first);
+			nextDay.active = range == Range.TODAY && dayBack > 0;
+		}
+	}
+
+	/** Gezeigter Tag bei „Heute“. */
+	private static java.time.LocalDate shownDay() {
+		return java.time.LocalDate.now().minusDays(range == Range.TODAY ? dayBack : 0);
+	}
+
+	/** „Heute“ bzw. beim Zurückblättern das Datum (z. B. „Fr 14.11.“). */
+	private static Component rangeLabel(Range r) {
+		if (r == Range.TODAY && range == Range.TODAY && dayBack > 0) {
+			java.time.LocalDate d = shownDay();
+			String wd = d.getDayOfWeek().getDisplayName(java.time.format.TextStyle.SHORT,
+					net.minecraft.client.Minecraft.getInstance().getLanguageManager().getSelected().startsWith("de")
+							? Locale.GERMAN : Locale.ENGLISH).replace(".", "");
+			return Component.literal(wd + " " + d.format(java.time.format.DateTimeFormatter.ofPattern("dd.MM.")));
+		}
+		return Component.translatable("loothub.stats.range." + r.name().toLowerCase(Locale.ROOT));
+	}
+
+	private void shiftDay(int delta) {
+		if (range != Range.TODAY) {
+			range = Range.TODAY;
+			dayBack = 0;
+		}
+		dayBack = Math.max(0, dayBack + delta);
+		scroll = 0;
+		updateToggleButtons();
+		seenVersion = -1;
+		refresh();
 	}
 
 	@Override
@@ -191,7 +235,7 @@ public class StatsScreen extends LoothubScreen {
 			return;
 		}
 		seenVersion = v;
-		sums = StatsStore.sum(range);
+		sums = range == Range.TODAY ? StatsStore.sumDay(shownDay()) : StatsStore.sum(range);
 		rows = switch (category) {
 			case GENERAL -> List.of();
 			case BLOCKS -> buildRows(new String[]{"mined.", "placed.", "picked."}, Kind.BLOCK);
@@ -419,7 +463,11 @@ public class StatsScreen extends LoothubScreen {
 	private void renderSince(GuiGraphics g) {
 		java.time.LocalDate since = StatsStore.since(range);
 		Component text;
-		if (since == null) {
+		if (range == Range.TODAY && dayBack > 0) {
+			// früherer Tag: nur dieser eine Tag
+			text = Component.translatable("loothub.stats.day",
+					shownDay().format(java.time.format.DateTimeFormatter.ofPattern("dd.MM.yyyy")));
+		} else if (since == null) {
 			text = Component.translatable("loothub.stats.since.none");
 		} else {
 			long days = java.time.temporal.ChronoUnit.DAYS.between(since, java.time.LocalDate.now()) + 1;

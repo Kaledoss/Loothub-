@@ -83,6 +83,13 @@ public final class StatsStore {
 		return out;
 	}
 
+	/** Zähler eines einzelnen Tages (zum Zurückblättern). */
+	public static synchronized Map<String, Long> sumDay(LocalDate day) {
+		ensureLoaded();
+		Map<String, Long> d = days.get(day.toString());
+		return d == null ? new HashMap<>() : new HashMap<>(d);
+	}
+
 	/** Erster Tag mit gezählten Werten, oder null, wenn noch nichts gezählt wurde. */
 	public static synchronized LocalDate firstDay() {
 		ensureLoaded();

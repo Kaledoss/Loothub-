@@ -797,5 +797,6 @@
 	"loothub.cosmetics.armor.who.short": "Applies to",
 	"loothub.cosmetics.armor.who.off": "Only me",
 	"loothub.cosmetics.armor.who.all": "Other players too",
-	"loothub.cosmetics.pets.type.red_panda": "Red panda"
+	"loothub.cosmetics.pets.type.red_panda": "Red panda",
+	"loothub.stats.day": "Showing day: %s"
 }

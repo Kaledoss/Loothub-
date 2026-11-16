@@ -797,5 +797,6 @@
 	"loothub.cosmetics.armor.who.short": "Gilt für",
 	"loothub.cosmetics.armor.who.off": "Nur mich",
 	"loothub.cosmetics.armor.who.all": "Auch andere Spieler",
-	"loothub.cosmetics.pets.type.red_panda": "Roter Panda"
+	"loothub.cosmetics.pets.type.red_panda": "Roter Panda",
+	"loothub.stats.day": "Gezeigter Tag: %s"
 }
