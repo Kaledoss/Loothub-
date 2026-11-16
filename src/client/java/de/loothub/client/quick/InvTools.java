@@ -85,7 +85,7 @@ public final class InvTools {
 				if (bound(sortKey) && sortKey.matches(event) || bound(sortMouseKey) && sortMouseKey.matches(event)) {
 					sortHovered(cs);
 				} else if (bound(moveKey) && moveKey.matches(event) && WidgetConfig.get().invMove
-						&& (realContainer(cs) || sellMenu(cs))) {
+						&& (storage(cs) || sellMenu(cs))) {
 					move(cs, Minecraft.getInstance().hasShiftDown());
 				}
 			});
@@ -151,10 +151,30 @@ public final class InvTools {
 		return title.contains("verkauf") || title.contains("sell") || title.contains("markt");
 	}
 
-	/** Slots der Kiste (ohne Spielerinventar). */
+	/**
+	 * Tresor (/tresor): 6 Reihen, die oberen 5 sind Lagerplätze, die unterste ist das Menü (Blättern, Seite, „Alle
+	 * Items …“). Wird wie eine Kiste behandelt, aber nur mit den 45 Lagerplätzen.
+	 */
+	private static final int TRESOR_SLOTS = 45;
+
+	static boolean tresor(AbstractContainerScreen<?> screen) {
+		return screen.getMenu() instanceof ChestMenu chest && chest.getRowCount() == 6
+				&& screen.getTitle().getString().toLowerCase(java.util.Locale.ROOT).contains("tresor");
+	}
+
+	/** Echte Kiste oder Tresor – hier dürfen Sortieren und Verschieben arbeiten. */
+	private static boolean storage(AbstractContainerScreen<?> screen) {
+		return realContainer(screen) || tresor(screen);
+	}
+
+	/** Slots der Kiste (ohne Spielerinventar); im Tresor nur die Lagerplätze, nie die Menü-Reihe. */
 	private static List<Integer> containerSlots(AbstractContainerMenu menu) {
+		int limit = Integer.MAX_VALUE;
+		if (Minecraft.getInstance().screen instanceof AbstractContainerScreen<?> cs && cs.getMenu() == menu && tresor(cs)) {
+			limit = TRESOR_SLOTS;
+		}
 		List<Integer> out = new ArrayList<>();
-		for (int i = 0; i < menu.slots.size(); i++) {
+		for (int i = 0; i < menu.slots.size() && out.size() < limit; i++) {
 			if (!(menu.slots.get(i).container instanceof Inventory)) {
 				out.add(i);
 			}
@@ -181,7 +201,7 @@ public final class InvTools {
 		AbstractContainerScreenAccessor acc = (AbstractContainerScreenAccessor) screen;
 		int left = acc.loothub$leftPos(), top = acc.loothub$topPos(), w = acc.loothub$imageWidth();
 		AbstractContainerMenu menu = screen.getMenu();
-		boolean real = realContainer(screen);
+		boolean real = storage(screen);
 		if (screen instanceof InventoryScreen) {
 			if (c.invSort) {
 				// rechts über dem Hauptinventar
@@ -200,7 +220,8 @@ public final class InvTools {
 		if (!real) {
 			return;
 		}
-		int containerRows = (containerSlots(menu).size() + 8) / 9;
+		// ganze Höhe des Menüs (im Tresor inkl. Menü-Reihe), damit die Knöpfe über dem Inventar sitzen
+		int containerRows = menu instanceof ChestMenu chest ? chest.getRowCount() : (containerSlots(menu).size() + 8) / 9;
 		int invY = top + 17 + containerRows * 18 + 1; // Höhe der Beschriftung „Inventar“
 		int x = left + w - 14;
 		if (c.invSort) {
@@ -235,7 +256,7 @@ public final class InvTools {
 			return;
 		}
 		AbstractContainerMenu menu = screen.getMenu();
-		boolean real = realContainer(screen);
+		boolean real = storage(screen);
 		if (overContainer(screen) && real) {
 			sort(containerSlots(menu));
 		} else if (screen instanceof InventoryScreen || real) {
@@ -258,7 +279,7 @@ public final class InvTools {
 			sortHovered(screen);
 			return true;
 		}
-		if (bound(moveKey) && moveKey.matchesMouse(e) && c.invMove && (realContainer(screen) || sellMenu(screen))) {
+		if (bound(moveKey) && moveKey.matchesMouse(e) && c.invMove && (storage(screen) || sellMenu(screen))) {
 			move(screen, Minecraft.getInstance().hasShiftDown());
 			return true;
 		}
