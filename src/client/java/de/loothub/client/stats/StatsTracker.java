@@ -363,9 +363,15 @@ public final class StatsTracker {
 			areaCenter = center;
 		}
 		int r = areaRadius(mc.player.getMainHandItem());
-		for (int x = -r; x <= r; x++) {
-			for (int y = -r; y <= r; y++) {
-				for (int z = -r; z <= r; z++) {
+		// Bohrer bauen eine Fläche quer zur angeklickten Seite ab (3×3 bzw. 5×5), nicht in die Tiefe
+		net.minecraft.core.Direction.Axis axis = mc.hitResult instanceof net.minecraft.world.phys.BlockHitResult bhr
+				&& bhr.getBlockPos().equals(center) ? bhr.getDirection().getAxis() : null;
+		int rx = axis == net.minecraft.core.Direction.Axis.X ? 0 : r;
+		int ry = axis == net.minecraft.core.Direction.Axis.Y ? 0 : r;
+		int rz = axis == net.minecraft.core.Direction.Axis.Z ? 0 : r;
+		for (int x = -rx; x <= rx; x++) {
+			for (int y = -ry; y <= ry; y++) {
+				for (int z = -rz; z <= rz; z++) {
 					if (x == 0 && y == 0 && z == 0) {
 						continue;
 					}
@@ -382,11 +388,13 @@ public final class StatsTracker {
 	}
 
 	/**
-	 * Reichweite um den anvisierten Block: immer 5×5×5 (2 Blöcke) – so passen alle Bohrer-Stufen, egal wie sie heißen.
-	 * Gezählt wird ohnehin nur, was kurz nach dem Hauptblock wirklich verschwindet.
+	 * Reichweite um den anvisierten Block: Bohrer V3 baut 5×5 ab (2 Blöcke), Bohrer, Bohrer V2 und Tunnelgräberschaufel
+	 * 3×3 (1 Block). Unbekannte Spezial-Werkzeuge: 3×3.
 	 */
 	private static int areaRadius(ItemStack tool) {
-		return 2;
+		var name = tool.get(net.minecraft.core.component.DataComponents.CUSTOM_NAME);
+		String n = name == null ? "" : net.minecraft.ChatFormatting.stripFormatting(name.getString()).toLowerCase(java.util.Locale.ROOT);
+		return n.contains("bohrer") && n.contains("v3") ? 2 : 1;
 	}
 
 	private static void startAreaCheck(net.minecraft.core.BlockPos center, long now) {
