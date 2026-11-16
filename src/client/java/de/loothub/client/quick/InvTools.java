@@ -58,6 +58,8 @@ public final class InvTools {
 	private static int lastSelected = -1;
 	private static ItemStack lastHand = ItemStack.EMPTY;
 	private static int refillDelay;
+	/** Schnellleiste im letzten Tick – für Plätze, die ein Werkzeug leert (z. B. Pflanz-Werkzeug nimmt Samen). */
+	private static final ItemStack[] LAST_BAR = new ItemStack[9];
 	private static long toolWarnedAt;
 
 	private InvTools() {
@@ -549,6 +551,22 @@ public final class InvTools {
 				}
 				return;
 			}
+			// 1b) ein anderer Schnellleisten-Platz ist leer geworden, ohne dass man ihn in der Hand hatte – etwa weil ein
+			// Werkzeug Samen aus der Schnellleiste zum Pflanzen nimmt → aus dem Hauptinventar nachlegen
+			if (mc.screen == null) {
+				for (int i = 0; i < 9; i++) {
+					ItemStack was = LAST_BAR[i];
+					if (i == sel || was == null || was.isEmpty() || was.getCount() > 16 || !inv.getItem(i).isEmpty()) {
+						continue;
+					}
+					int from = find(inv, was, i, false);
+					LAST_BAR[i] = ItemStack.EMPTY;
+					if (from >= 9) { // nur aus dem Hauptinventar, nie einen anderen Schnellleisten-Platz plündern
+						swapIntoHand(mc, from, i);
+						return;
+					}
+				}
+			}
 			// 2) Werkzeug fast kaputt → gleiches Werkzeug mit mehr Haltbarkeit nehmen, sonst weglegen
 			if (c.toolSaver && hand.isDamageableItem() && hand.getMaxDamage() - hand.getDamageValue() <= TOOL_SAFE
 					&& System.currentTimeMillis() - toolWarnedAt > 1500L) {
@@ -566,6 +584,11 @@ public final class InvTools {
 		refillDelay = 0;
 		lastSelected = sel;
 		lastHand = hand.copy();
+		for (int i = 0; i < 9; i++) {
+			ItemStack now = inv.getItem(i);
+			// im Inventar verschoben (Fenster offen) zählt nicht als „aufgebraucht“
+			LAST_BAR[i] = mc.screen == null ? now.copy() : ItemStack.EMPTY;
+		}
 	}
 
 	/** Inventar-Index eines passenden Stapels (Hauptinventar zuerst, dann Schnellleiste), oder -1. */
