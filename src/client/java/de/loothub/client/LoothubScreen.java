@@ -68,7 +68,7 @@ public abstract class LoothubScreen extends Screen {
 			de.loothub.client.jobs.WidgetConfig c = de.loothub.client.jobs.WidgetConfig.get();
 			return switch (this) {
 				case STREAMER -> c.streamerMode;
-				case POKEDEX -> c.pokedexPage;
+				case POKEDEX -> c.pokedexPage || c.pcgEnabled; // bei PCG an: dort stehen Kanal, Name und Token
 				default -> true;
 			};
 		}

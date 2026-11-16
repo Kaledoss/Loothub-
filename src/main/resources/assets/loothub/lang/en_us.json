@@ -170,7 +170,7 @@
 	"loothub.stats.col.tool_used": "Used",
 	"loothub.stats.general.tool_uses": "Tool uses",
 	"loothub.settings.pcg": "Pokémon Community Game",
-	"loothub.settings.pcg.tooltip": "Reads the Twitch chat and shows the wild Pokémon with its catch time at the top right. Above the inventory there are buttons to throw and buy balls (sending only with a token).",
+	"loothub.settings.pcg.tooltip": "Reads the Twitch chat and shows the wild Pokémon with its catch time at the top right. Above the inventory there are buttons to throw and buy balls (sending only with a token). Set channel, Twitch name and token at the top of the Pokédex.",
 	"loothub.settings.pcg.channel": "Twitch channel",
 	"loothub.settings.pcg.user": "Your Twitch name",
 	"loothub.settings.pcg.token": "Open token file",
@@ -798,5 +798,6 @@
 	"loothub.cosmetics.armor.who.off": "Only me",
 	"loothub.cosmetics.armor.who.all": "Other players too",
 	"loothub.cosmetics.pets.type.red_panda": "Red panda",
-	"loothub.stats.day": "Showing day: %s"
+	"loothub.stats.day": "Showing day: %s",
+	"loothub.pokedex.pcg_off": "Off – turn on in Settings › Extras"
 }

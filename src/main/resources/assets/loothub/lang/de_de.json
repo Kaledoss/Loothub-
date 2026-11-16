@@ -170,7 +170,7 @@
 	"loothub.stats.col.tool_used": "Benutzt",
 	"loothub.stats.general.tool_uses": "Werkzeug-Einsätze",
 	"loothub.settings.pcg": "Pokémon Community Game",
-	"loothub.settings.pcg.tooltip": "Liest den Twitch-Chat mit und zeigt oben rechts das wilde Pokémon samt Fangzeit. Über dem Inventar gibt es Knöpfe zum Werfen und Kaufen von Bällen (Senden nur mit Token).",
+	"loothub.settings.pcg.tooltip": "Liest den Twitch-Chat mit und zeigt oben rechts das wilde Pokémon samt Fangzeit. Über dem Inventar gibt es Knöpfe zum Werfen und Kaufen von Bällen (Senden nur mit Token). Kanal, Twitch-Name und Token stellst du oben im Pokédex ein.",
 	"loothub.settings.pcg.channel": "Twitch-Kanal",
 	"loothub.settings.pcg.user": "Dein Twitch-Name",
 	"loothub.settings.pcg.token": "Token-Datei öffnen",
@@ -798,5 +798,6 @@
 	"loothub.cosmetics.armor.who.off": "Nur mich",
 	"loothub.cosmetics.armor.who.all": "Auch andere Spieler",
 	"loothub.cosmetics.pets.type.red_panda": "Roter Panda",
-	"loothub.stats.day": "Gezeigter Tag: %s"
+	"loothub.stats.day": "Gezeigter Tag: %s",
+	"loothub.pokedex.pcg_off": "Aus – einschalten unter Einstellungen › Extras"
 }

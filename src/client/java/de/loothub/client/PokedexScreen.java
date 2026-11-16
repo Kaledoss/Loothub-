@@ -12,6 +12,7 @@ import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.EditBox;
 import net.minecraft.network.chat.Component;
 
+import de.loothub.client.jobs.WidgetConfig;
 import de.loothub.client.pcg.Pokedex;
 import de.loothub.client.pcg.PokedexData;
 
@@ -29,6 +30,8 @@ public class PokedexScreen extends LoothubScreen {
 	private static String search = "";
 	private int scroll;
 	private int listTop;
+	/** Kopfleiste mit den Twitch-Einstellungen (Kanal, Name, Token, Verbinden, Anzeige). */
+	private int headTop, headBottom, fieldW;
 	private List<Row> rows = List.of();
 	private int seenDataSize = -1;
 	private int seenCaught = -1;
@@ -40,7 +43,46 @@ public class PokedexScreen extends LoothubScreen {
 	@Override
 	protected void initPage() {
 		PokedexData.ensureLoaded();
-		EditBox box = new EditBox(font, cl, ct, Math.min(260, cw), 16, Component.translatable("loothub.screen.search"));
+		// ---- Kopfleiste: Pokémon Community Game (der An/Aus-Schalter bleibt in den Einstellungen unter Extras)
+		WidgetConfig c = WidgetConfig.get();
+		headTop = ct;
+		fieldW = (cw - 16) / 2;
+		int fx = cl + 6, fy = headTop + 16;
+		EditBox channel = new EditBox(font, fx, fy, fieldW, 16, Component.translatable("loothub.settings.pcg.channel"));
+		channel.setMaxLength(40);
+		channel.setValue(c.pcgChannel == null ? "" : c.pcgChannel);
+		channel.setResponder(t -> c.pcgChannel = t.strip());
+		addRenderableWidget(channel);
+		EditBox user = new EditBox(font, fx + fieldW + 4, fy, fieldW, 16, Component.translatable("loothub.settings.pcg.user"));
+		user.setMaxLength(40);
+		user.setValue(c.pcgUser == null ? "" : c.pcgUser);
+		user.setResponder(t -> c.pcgUser = t.strip());
+		addRenderableWidget(user);
+		int bw = (2 * fieldW + 4 - 8) / 3, by = fy + 20;
+		addRenderableWidget(net.minecraft.client.gui.components.Button.builder(
+				Component.translatable("loothub.settings.pcg.token"), b -> {
+					java.nio.file.Path file = de.loothub.client.pcg.TwitchChat.tokenFile();
+					try {
+						if (!java.nio.file.Files.exists(file)) {
+							java.nio.file.Files.writeString(file, "");
+						}
+					} catch (java.io.IOException ignored) {
+						// Ordner wird trotzdem geöffnet
+					}
+					SettingsScreen.openFolder(file.getParent());
+				}).bounds(fx, by, bw, 16).build());
+		addRenderableWidget(net.minecraft.client.gui.components.Button.builder(
+				Component.translatable("loothub.settings.pcg.connect"), b -> {
+					WidgetConfig.get().save();
+					de.loothub.client.pcg.TwitchChat.stop();
+					de.loothub.client.pcg.TwitchChat.ensure(c.pcgEnabled, c.pcgChannel, c.pcgUser);
+				}).bounds(fx + bw + 4, by, bw, 16).build());
+		addRenderableWidget(net.minecraft.client.gui.components.Button.builder(
+				Component.translatable("loothub.settings.pcg.move"),
+				b -> minecraft.setScreen(new de.loothub.client.pcg.PcgOverlayEditScreen(this))).bounds(fx + 2 * (bw + 4), by, bw, 16).build());
+		headBottom = by + 22;
+
+		EditBox box = new EditBox(font, cl, headBottom + 6, Math.min(260, cw), 16, Component.translatable("loothub.screen.search"));
 		box.setHint(Component.translatable("loothub.pokedex.search").withStyle(ChatFormatting.DARK_GRAY));
 		box.setValue(search);
 		box.setResponder(t -> {
@@ -49,7 +91,7 @@ public class PokedexScreen extends LoothubScreen {
 			refresh();
 		});
 		addRenderableWidget(box);
-		listTop = ct + 22;
+		listTop = headBottom + 28;
 		refresh();
 	}
 
@@ -95,6 +137,16 @@ public class PokedexScreen extends LoothubScreen {
 	@Override
 	public void render(GuiGraphics g, int mouseX, int mouseY, float delta) {
 		super.render(g, mouseX, mouseY, delta);
+		// Kopfleiste: Rahmen, Beschriftungen, Verbindungsstatus
+		g.fill(cl, headTop, cr, headBottom, 0x18FFFFFF);
+		g.fill(cl, headBottom, cr, headBottom + 1, 0x40E23B3B);
+		g.drawString(font, Component.translatable("loothub.settings.pcg.channel"), cl + 6, headTop + 5, MUTED, false);
+		g.drawString(font, Component.translatable("loothub.settings.pcg.user"), cl + 6 + fieldW + 4, headTop + 5, MUTED, false);
+		WidgetConfig cfg = WidgetConfig.get();
+		Component status = cfg.pcgEnabled ? Component.translatable("loothub.settings.pcg.status."
+				+ de.loothub.client.pcg.TwitchChat.status().name().toLowerCase(Locale.ROOT))
+				: Component.translatable("loothub.pokedex.pcg_off");
+		g.drawString(font, status, cr - 6 - font.width(status), headTop + 5, cfg.pcgEnabled ? GREEN : FAINT, false);
 		if (rows.isEmpty()) {
 			Component msg = Component.translatable(search.isBlank() ? "loothub.pokedex.empty" : "loothub.screen.no_results");
 			g.drawString(font, msg, cl + (cw - font.width(msg)) / 2, listTop + 20, FAINT, false);
@@ -120,6 +172,15 @@ public class PokedexScreen extends LoothubScreen {
 			g.drawString(font, when, cr - 6 - font.width(when), y + 4, FAINT, false);
 		}
 		g.disableScissor();
+	}
+
+	@Override
+	public void removed() {
+		super.removed();
+		// Eingaben übernehmen und (falls an) mit dem neuen Kanal verbinden
+		WidgetConfig.get().save();
+		WidgetConfig c = WidgetConfig.get();
+		de.loothub.client.pcg.TwitchChat.ensure(c.pcgEnabled, c.pcgChannel, c.pcgUser);
 	}
 
 	@Override

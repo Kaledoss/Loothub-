@@ -60,13 +60,10 @@ public class SettingsScreen extends LoothubScreen {
 	private int contentH;
 	private boolean needsRebuild;
 	private int rowsLabelY;
-	private int pcgLabelY;
 	/** Position der kleinen Farbfelder auf den drei Farbknöpfen. */
 	private final int[][] colorSwatches = new int[3][];
 	private int[] invHudSwatch;
 	private int musicCardY;
-	private int pcgFieldX;
-	private int pcgFieldW;
 	private Button resetButton;
 	private long resetFeedbackUntil;
 	private int versionY;
@@ -794,52 +791,14 @@ public class SettingsScreen extends LoothubScreen {
 				buttons.add(addRenderableWidget(Button.builder(Component.translatable("loothub.settings.job_widget.move"),
 								b -> minecraft.setScreen(new de.loothub.client.music.MusicEditScreen(this)))
 						.bounds(cl + labelW + 12, musicCardY + 48, Math.min(160, cr - 20 - cl - labelW), 16).build()));
-				// Pokémon Community Game (Twitch): Schalter, Kanal, Twitch-Name, Token-Datei
-				int pcgY = y;
-				y = card(pcgY, 120, "loothub.settings.pcg", "loothub.settings.pcg.tooltip",
+				// Pokémon Community Game (Twitch): nur der Schalter – Kanal, Name, Token & Co. stehen oben im Pokédex
+				y = card(y, 40, "loothub.settings.pcg", "loothub.settings.pcg.tooltip",
 						() -> c.pcgEnabled, v -> {
 							c.pcgEnabled = v;
 							de.loothub.client.pcg.TwitchChat.ensure(v, c.pcgChannel, c.pcgUser);
 						});
-				int fieldW = (cr - 8 - descX - 4) / 2;
-				pcgLabelY = pcgY + 36;
-				net.minecraft.client.gui.components.EditBox channelBox = new net.minecraft.client.gui.components.EditBox(
-						font, descX, pcgY + 46, fieldW, 16, Component.translatable("loothub.settings.pcg.channel"));
-				channelBox.setMaxLength(40);
-				channelBox.setValue(c.pcgChannel == null ? "" : c.pcgChannel);
-				channelBox.setResponder(t -> c.pcgChannel = t.strip());
-				buttons.add(addRenderableWidget(channelBox));
-				net.minecraft.client.gui.components.EditBox userBox = new net.minecraft.client.gui.components.EditBox(
-						font, descX + fieldW + 4, pcgY + 46, fieldW, 16, Component.translatable("loothub.settings.pcg.user"));
-				userBox.setMaxLength(40);
-				userBox.setValue(c.pcgUser == null ? "" : c.pcgUser);
-				userBox.setResponder(t -> c.pcgUser = t.strip());
-				buttons.add(addRenderableWidget(userBox));
-				buttons.add(addRenderableWidget(Button.builder(Component.translatable("loothub.settings.pcg.token"), b -> {
-							java.nio.file.Path file = de.loothub.client.pcg.TwitchChat.tokenFile();
-							try {
-								if (!java.nio.file.Files.exists(file)) {
-									java.nio.file.Files.writeString(file, "");
-								}
-							} catch (java.io.IOException ignored) {
-								// Ordner wird trotzdem geöffnet
-							}
-							openFolder(file.getParent());
-						})
-						.bounds(descX, pcgY + 70, fieldW, 16).build()));
-				buttons.add(addRenderableWidget(Button.builder(Component.translatable("loothub.settings.pcg.connect"), b -> {
-							WidgetConfig.get().save();
-							de.loothub.client.pcg.TwitchChat.stop();
-							de.loothub.client.pcg.TwitchChat.ensure(c.pcgEnabled, c.pcgChannel, c.pcgUser);
-						})
-						.bounds(descX + fieldW + 4, pcgY + 70, fieldW, 16).build()));
-				buttons.add(addRenderableWidget(Button.builder(Component.translatable("loothub.settings.pcg.move"),
-								b -> minecraft.setScreen(new de.loothub.client.pcg.PcgOverlayEditScreen(this)))
-						.bounds(descX, pcgY + 92, fieldW, 16).build()));
-				pcgFieldX = descX;
 				y = card(y, 40, "loothub.settings.pcg_sound", "loothub.settings.pcg_sound.tooltip",
 						() -> c.pcgSound, v -> c.pcgSound = v);
-				pcgFieldW = fieldW;
 				y = card(y, 40, "loothub.settings.pokedex_page", "loothub.settings.pokedex_page.tooltip",
 						() -> c.pokedexPage, v -> c.pokedexPage = v);
 				y = card(y, 40, "loothub.settings.streamer", "loothub.settings.streamer.tooltip",
@@ -870,7 +829,7 @@ public class SettingsScreen extends LoothubScreen {
 	}
 
 	/** Ordner im Datei-Explorer öffnen (Windows, macOS, Linux). */
-	private static void openFolder(java.nio.file.Path dir) {
+	static void openFolder(java.nio.file.Path dir) {
 		String os = System.getProperty("os.name", "").toLowerCase(java.util.Locale.ROOT);
 		String path = dir.toAbsolutePath().toString();
 		String[] cmd = os.contains("win") ? new String[]{"explorer", path}
@@ -981,7 +940,6 @@ public class SettingsScreen extends LoothubScreen {
 		}
 		rowsLabelY = shift.applyAsInt(rowsLabelY);
 		musicCardY = shift.applyAsInt(musicCardY);
-		pcgLabelY = shift.applyAsInt(pcgLabelY);
 		versionY = -100000;
 		int total = 0;
 		for (int[] g : gone) {
@@ -1193,12 +1151,6 @@ public class SettingsScreen extends LoothubScreen {
 		}
 		g.drawString(font, musicStatus, cl + 8 + (labelW - font.width(musicStatus)) / 2, musicCardY + 35, FAINT, false);
 
-		// Pokémon Community Game: Feldbeschriftungen und Status
-		g.drawString(font, Component.translatable("loothub.settings.pcg.channel"), pcgFieldX, pcgLabelY, MUTED, false);
-		g.drawString(font, Component.translatable("loothub.settings.pcg.user"), pcgFieldX + pcgFieldW + 4, pcgLabelY, MUTED, false);
-		Component pcgStatus = Component.translatable("loothub.settings.pcg.status."
-				+ de.loothub.client.pcg.TwitchChat.status().name().toLowerCase(java.util.Locale.ROOT));
-		g.drawString(font, pcgStatus, cl + 8 + (labelW - font.width(pcgStatus)) / 2, pcgLabelY + 14, FAINT, false);
 		}
 		g.disableScissor();
 
