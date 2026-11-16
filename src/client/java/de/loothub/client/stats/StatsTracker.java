@@ -111,7 +111,8 @@ public final class StatsTracker {
 
 	/** Werkzeuge = alles, was sich abnutzt (Spitzhacken, Äxte, Schwerter, Bögen, Angeln, Scheren …). */
 	public static boolean isTool(ItemStack stack) {
-		return !stack.isEmpty() && stack.isDamageableItem();
+		// auch unzerstörbare Server-Werkzeuge (Bohrer & Co.) – die haben keine Haltbarkeit, aber eine Werkzeug-Eigenschaft
+		return !stack.isEmpty() && (stack.isDamageableItem() || stack.has(net.minecraft.core.component.DataComponents.TOOL));
 	}
 
 	private static void toolStat(String prefix, ItemStack stack) {
@@ -335,13 +336,20 @@ public final class StatsTracker {
 	// Sand oder Wasser nicht mitgezählt werden.
 	private static final java.util.Map<net.minecraft.core.BlockPos, BlockState> AREA = new java.util.HashMap<>();
 	private static net.minecraft.core.BlockPos areaCenter;
-	private static java.util.Map<net.minecraft.core.BlockPos, BlockState> pendingArea = java.util.Map.of();
-	private static long pendingUntil;
+	/** Blöcke um gerade abgebaute Hauptblöcke, die noch verschwinden dürfen – je mit eigener Frist. */
+	private static final java.util.Map<net.minecraft.core.BlockPos, BlockState> pendingArea = new java.util.HashMap<>();
+	private static final java.util.Map<net.minecraft.core.BlockPos, Long> pendingUntil = new java.util.HashMap<>();
 	private static final java.util.Map<net.minecraft.core.BlockPos, Long> COUNTED = new java.util.HashMap<>();
 
 	private static boolean isSpecialTool(ItemStack stack) {
-		return isTool(stack) && (stack.get(net.minecraft.core.component.DataComponents.CUSTOM_NAME) != null
-				|| stack.get(net.minecraft.core.component.DataComponents.CUSTOM_MODEL_DATA) != null);
+		if (!isTool(stack)) {
+			return false;
+		}
+		return stack.get(net.minecraft.core.component.DataComponents.CUSTOM_NAME) != null
+				|| stack.get(net.minecraft.core.component.DataComponents.CUSTOM_MODEL_DATA) != null
+				// eigenes Modell (neuere Server setzen das Item-Modell statt Modell-Daten)
+				|| !java.util.Objects.equals(stack.get(net.minecraft.core.component.DataComponents.ITEM_MODEL),
+						stack.getItem().components().get(net.minecraft.core.component.DataComponents.ITEM_MODEL));
 	}
 
 	private static void snapshotArea(Minecraft mc, net.minecraft.core.BlockPos center) {
@@ -373,17 +381,29 @@ public final class StatsTracker {
 		}
 	}
 
-	/** Reichweite um den anvisierten Block: Bohrer V3 baut 5×5 ab (2 Blöcke), alles andere (z. B. Bohrer V2) 3×3. */
+	/**
+	 * Reichweite um den anvisierten Block: immer 5×5×5 (2 Blöcke) – so passen alle Bohrer-Stufen, egal wie sie heißen.
+	 * Gezählt wird ohnehin nur, was kurz nach dem Hauptblock wirklich verschwindet.
+	 */
 	private static int areaRadius(ItemStack tool) {
-		var name = tool.get(net.minecraft.core.component.DataComponents.CUSTOM_NAME);
-		String n = name == null ? "" : name.getString().toLowerCase(java.util.Locale.ROOT);
-		return n.contains("bohrer") && n.contains("v3") ? 2 : 1;
+		return 2;
 	}
 
 	private static void startAreaCheck(net.minecraft.core.BlockPos center, long now) {
+		Minecraft mc = Minecraft.getInstance();
+		if (!center.equals(areaCenter) && mc.player != null && mc.level != null) {
+			// sofort abgebaut (Bohrer baut ohne Wartezeit ab): Umgebung jetzt merken – die Nachbarn baut der Server
+			// erst gleich danach ab, sie stehen also noch
+			snapshotArea(mc, center);
+		}
 		if (center.equals(areaCenter) && !AREA.isEmpty()) {
-			pendingArea = new java.util.HashMap<>(AREA);
-			pendingUntil = now + 700;
+			// zu den noch offenen dazunehmen, nicht ersetzen – beim schnellen Bohren überlappen sich die Bereiche
+			for (var e : AREA.entrySet()) {
+				if (!recentlyCounted(e.getKey(), now)) {
+					pendingArea.put(e.getKey(), e.getValue());
+					pendingUntil.put(e.getKey(), now + 1500L); // Server kann bei Last etwas nachhängen
+				}
+			}
 		}
 		AREA.clear();
 		areaCenter = null;
@@ -403,10 +423,11 @@ public final class StatsTracker {
 					onBlockBroken(e.getValue());
 				}
 				it.remove();
+				pendingUntil.remove(e.getKey());
+			} else if (now > pendingUntil.getOrDefault(e.getKey(), 0L)) {
+				it.remove();
+				pendingUntil.remove(e.getKey());
 			}
-		}
-		if (now > pendingUntil) {
-			pendingArea = java.util.Map.of();
 		}
 	}
 
