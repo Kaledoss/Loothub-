@@ -57,6 +57,80 @@ public final class Followers {
 	}
 
 	/** Weltpunkt → Ebenen-Raum des Spielers (aufrecht; für Ziele wie andere Tiere). */
+	/** Halbe Breite und Höhe eines Begleiters (Mini-Me ≈ 0,3 × 0,65 Blöcke). */
+	private static final double HALF_W = 0.16, HEIGHT = 0.62;
+
+	/**
+	 * Wände und Böden schieben den Begleiter weg: Steckt er in einem Block, wird er zuerst auf die Oberkante gehoben
+	 * (Boden, Stufe), sonst schrittweise zum Spieler hin geschoben (Wand) – dort ist ja Platz.
+	 */
+	private static void unstuck(AvatarRenderState s, F f, double px, double py, double pz) {
+		var level = net.minecraft.client.Minecraft.getInstance().level;
+		if (level == null || !blocked(level, s.x + f.ox, s.y + f.oy, s.z + f.oz)) {
+			return;
+		}
+		// erst versuchen, nur die Bewegung in die Wand zurückzunehmen (bleibt an der Wand stehen, ohne Zittern)
+		if (!blocked(level, s.x + px, s.y + f.oy, s.z + f.oz)) {
+			f.ox = px;
+			f.vx = 0.0;
+			return;
+		}
+		if (!blocked(level, s.x + f.ox, s.y + f.oy, s.z + pz)) {
+			f.oz = pz;
+			f.vz = 0.0;
+			return;
+		}
+		if (!blocked(level, s.x + px, s.y + py, s.z + pz)) {
+			f.ox = px;
+			f.oy = py;
+			f.oz = pz;
+			f.vx = f.vy = f.vz = 0.0;
+			return;
+		}
+		// Boden/Stufe: knapp darüber frei?
+		for (double up = 0.1; up <= 0.6; up += 0.1) {
+			if (!blocked(level, s.x + f.ox, s.y + f.oy + up, s.z + f.oz)) {
+				f.oy += up;
+				f.vy = Math.max(0.0, f.vy);
+				return;
+			}
+		}
+		// Wand: zum Spieler hin, bis frei
+		for (int i = 1; i <= 8; i++) {
+			double k = 1.0 - i / 8.0;
+			if (!blocked(level, s.x + f.ox * k, s.y + f.oy * k, s.z + f.oz * k)) {
+				f.ox *= k;
+				f.oy *= k;
+				f.oz *= k;
+				f.vx = f.vy = f.vz = 0.0;
+				return;
+			}
+		}
+	}
+
+	/** Steckt ein Begleiter mit den Füßen bei (x, y, z) in einem festen Block? */
+	private static boolean blocked(net.minecraft.world.level.Level level, double x, double y, double z) {
+		double x0 = x - HALF_W, x1 = x + HALF_W, y0 = y + 0.02, y1 = y + HEIGHT, z0 = z - HALF_W, z1 = z + HALF_W;
+		for (int bx = Mth.floor(x0); bx <= Mth.floor(x1); bx++) {
+			for (int by = Mth.floor(y0); by <= Mth.floor(y1); by++) {
+				for (int bz = Mth.floor(z0); bz <= Mth.floor(z1); bz++) {
+					net.minecraft.core.BlockPos pos = new net.minecraft.core.BlockPos(bx, by, bz);
+					var shape = level.getBlockState(pos).getCollisionShape(level, pos);
+					if (shape.isEmpty()) {
+						continue;
+					}
+					for (var box : shape.toAabbs()) {
+						if (box.maxX + bx > x0 && box.minX + bx < x1 && box.maxY + by > y0 && box.minY + by < y1
+								&& box.maxZ + bz > z0 && box.minZ + bz < z1) {
+							return true;
+						}
+					}
+				}
+			}
+		}
+		return false;
+	}
+
 	public static float[] worldToLayer(AvatarRenderState s, double wx, double wy, double wz) {
 		double theta = Math.toRadians(180.0F - s.bodyRot);
 		double c = Math.cos(theta), sn = Math.sin(theta);
@@ -158,9 +232,11 @@ public final class Followers {
 				f.vx += (hd < 1.0e-3 ? 0.01 : f.ox) * k * dt;
 				f.vz += (hd < 1.0e-3 ? 0.0 : f.oz) * k * dt;
 			}
+			double px = f.ox, py = f.oy, pz = f.oz;
 			f.ox += f.vx * dt;
 			f.oy += f.vy * dt;
 			f.oz += f.vz * dt;
+			unstuck(s, f, px, py, pz);
 			// Blickrichtung: bewegt er sich selbst (Aufholen, Herumschweben), in diese Richtung – sonst wie der Spieler
 			double own = Math.sqrt(f.vx * f.vx + f.vz * f.vz);
 			float want = own > 1.0 ? (float) Math.toDegrees(Math.atan2(-f.vx, f.vz)) : s.bodyRot;
