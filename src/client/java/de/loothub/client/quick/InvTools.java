@@ -105,12 +105,36 @@ public final class InvTools {
 	// ---------------------------------------------------------------- Bereiche
 
 	/** Ist das eine echte Kiste (kein Server-Menü)? Erkennbar am unveränderten Minecraft-Titel. */
-	private static boolean realContainer(AbstractContainerScreen<?> screen) {
+	static boolean realContainer(AbstractContainerScreen<?> screen) {
 		AbstractContainerMenu menu = screen.getMenu();
 		if (!(menu instanceof ChestMenu) && !(menu instanceof ShulkerBoxMenu)) {
 			return false;
 		}
-		return screen.getTitle().getContents() instanceof TranslatableContents t && t.getKey().startsWith("container.");
+		if (screen.getTitle().getContents() instanceof TranslatableContents t && t.getKey().startsWith("container.")) {
+			return true;
+		}
+		// umbenannte Kisten und Shulkerkisten tragen ihren eigenen Namen als Titel. Server-Menüs erkennt man am „»“.
+		if (screen.getTitle().getString().contains("»")) {
+			return false;
+		}
+		if (menu instanceof ShulkerBoxMenu) {
+			return true; // auch aus dem Inventar geöffnete, benannte Shulkerkisten
+		}
+		return lookingAtContainer();
+	}
+
+	/** Schaut der Spieler gerade auf eine echte Kiste, ein Fass, eine Shulker- oder Endertruhe? */
+	private static boolean lookingAtContainer() {
+		Minecraft mc = Minecraft.getInstance();
+		if (mc.level == null || !(mc.hitResult instanceof net.minecraft.world.phys.BlockHitResult hit)
+				|| hit.getType() != net.minecraft.world.phys.HitResult.Type.BLOCK) {
+			return false;
+		}
+		var block = mc.level.getBlockState(hit.getBlockPos()).getBlock();
+		return block instanceof net.minecraft.world.level.block.ChestBlock
+				|| block instanceof net.minecraft.world.level.block.BarrelBlock
+				|| block instanceof net.minecraft.world.level.block.ShulkerBoxBlock
+				|| block instanceof net.minecraft.world.level.block.EnderChestBlock;
 	}
 
 	/**

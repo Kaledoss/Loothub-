@@ -48,7 +48,7 @@ public final class ContainerValue {
 		if (screen instanceof ShulkerBoxScreen) {
 			return true; // Shulker-Kisten sind immer echt – auch umbenannte („Looterkings Bag“)
 		}
-		return screen.getTitle().getContents() instanceof TranslatableContents t && t.getKey().startsWith("container.");
+		return screen instanceof AbstractContainerScreen<?> acs && InvTools.realContainer(acs); // auch umbenannte Kisten
 	}
 
 	private static void render(AbstractContainerScreen<?> screen, GuiGraphics g) {
