@@ -278,4 +278,95 @@ final class PetModels {
 			}
 		}
 	}
+
+	/** Zustand für den Roten Panda: aufgerichtet (beim Spielen) und zusammengerollt (AFK). */
+	static final class RedPandaState extends LivingEntityRenderState {
+		float stand, curl;
+	}
+
+	/**
+	 * Roter Panda im Minecraft-Stil (Würfel, 64×64-Pixeltextur): rostroter Körper mit dunklem Bauch und Beinen, Kopf
+	 * mit weißer Schnauze, weißen Wangen und Augenbrauen, weiß umrandete Ohren, langer geringelter Schwanz.
+	 */
+	static final class RedPanda extends EntityModel<RedPandaState> {
+		private final ModelPart body, head, tail;
+		private final ModelPart[] legs = new ModelPart[4];
+
+		RedPanda() {
+			this(create().bakeRoot());
+		}
+
+		private RedPanda(ModelPart root) {
+			super(root);
+			body = root.getChild("body");
+			head = body.getChild("head");
+			tail = body.getChild("tail");
+			for (int i = 0; i < 4; i++) {
+				legs[i] = root.getChild("leg" + i);
+			}
+		}
+
+		static LayerDefinition create() {
+			MeshDefinition mesh = new MeshDefinition();
+			PartDefinition r = mesh.getRoot();
+			// Rumpf: 6 breit, 5 hoch, 10 lang; Drehpunkt über den Hinterbeinen (zum Aufrichten)
+			PartDefinition body = r.addOrReplaceChild("body", CubeListBuilder.create().texOffs(0, 0)
+					.addBox(-3F, -5F, -8F, 6F, 5F, 10F), PartPose.offset(0F, 20F, 3F));
+			// Kopf sitzt vorn auf Rückenhöhe (nicht hochgezogen)
+			PartDefinition head = body.addOrReplaceChild("head", CubeListBuilder.create().texOffs(0, 16)
+					.addBox(-4F, -4F, -5F, 8F, 6F, 5F), PartPose.offset(0F, -3F, -8F));
+			head.addOrReplaceChild("snout", CubeListBuilder.create().texOffs(28, 16).addBox(-1F, -1F, -7F, 2F, 3F, 2F),
+					PartPose.ZERO);
+			head.addOrReplaceChild("ear_l", CubeListBuilder.create().texOffs(40, 16).addBox(2F, -6F, -3F, 2F, 2F, 1F),
+					PartPose.ZERO);
+			head.addOrReplaceChild("ear_r", CubeListBuilder.create().texOffs(40, 20).addBox(-4F, -6F, -3F, 2F, 2F, 1F),
+					PartPose.ZERO);
+			// buschiger, geringelter Schwanz, leicht nach oben
+			body.addOrReplaceChild("tail", CubeListBuilder.create().texOffs(0, 40).addBox(-1.5F, -1.5F, 0F, 3F, 3F, 12F),
+					PartPose.offsetAndRotation(0F, -3.5F, 2F, 0.3F, 0F, 0F));
+			float[][] at = {{-2F, -3F}, {2F, -3F}, {-2F, 3F}, {2F, 3F}};
+			for (int i = 0; i < 4; i++) {
+				r.addOrReplaceChild("leg" + i, CubeListBuilder.create().texOffs(i * 8, 32).addBox(-1F, 0F, -1F, 2F, 4F, 2F),
+						PartPose.offset(at[i][0], 20F, at[i][1]));
+			}
+			return LayerDefinition.create(mesh, 64, 64);
+		}
+
+		@Override
+		public void setupAnim(RedPandaState s) {
+			super.setupAnim(s);
+			float t = s.ageInTicks;
+			float walk = Math.min(1F, s.walkAnimationSpeed);
+			float ph = s.walkAnimationPos * 1.4F;
+			float stand = s.stand, curl = s.curl;
+			// Laufen: diagonale Beinpaare im Gleichschritt
+			for (int i = 0; i < 4; i++) {
+				float sw = Mth.sin(ph + (i == 0 || i == 3 ? 0F : Mth.PI)) * 0.8F * walk;
+				legs[i].xRot = sw;
+				legs[i].visible = curl < 0.5F;
+			}
+			// Aufrichten (Spielen): Körper hoch, Vorderpfoten vorgestreckt, Kopf schaut nach vorn
+			body.xRot = -1.1F * stand;
+			// Vorderbeine wandern mit der Brust nach oben und strecken die Pfoten vor
+			legs[0].xRot += -1.6F * stand;
+			legs[1].xRot += -1.6F * stand;
+			legs[0].y = legs[1].y = 20F - 5.4F * stand;
+			legs[0].z = legs[1].z = -3F + 3.3F * stand;
+			head.xRot = 1.0F * stand + Mth.sin(t * 0.07F) * 0.06F;
+			head.yRot = Mth.sin(t * 0.031F) * 0.3F * (1F - walk) * (1F - curl);
+			// Schwanz pendelt
+			tail.yRot = Mth.sin(t * 0.09F) * 0.25F + Mth.sin(ph) * 0.2F * walk;
+			tail.xRot = 0.3F + 0.5F * stand;
+			// Zusammengerollt (AFK): flach am Boden, Kopf eingezogen, Schwanz um den Körper gelegt
+			if (curl > 0F) {
+				body.y = 20F + 4F * curl;
+				head.xRot = 0.5F * curl;
+				head.yRot = 0.6F * curl;
+				tail.yRot = 2.3F * curl;
+				tail.xRot = 0.3F * (1F - curl);
+			} else {
+				body.y = 20F;
+			}
+		}
+	}
 }

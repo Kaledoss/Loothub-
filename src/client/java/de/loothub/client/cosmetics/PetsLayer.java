@@ -46,6 +46,7 @@ public final class PetsLayer extends RenderLayer<AvatarRenderState, PlayerModel>
 	private static final Identifier DRAGON_TEX = Identifier.fromNamespaceAndPath("loothub", "textures/entity/mini_dragon.png");
 	private static final Identifier PANDA_TEX = Identifier.withDefaultNamespace("textures/entity/panda/panda.png");
 	private static final Identifier ZOMBIE_TEX = Identifier.withDefaultNamespace("textures/entity/zombie/zombie.png");
+	private static final Identifier RED_PANDA_TEX = Identifier.fromNamespaceAndPath("loothub", "textures/entity/red_panda.png");
 	private static final Identifier SERPENT_TEX = Identifier.fromNamespaceAndPath("loothub", "textures/entity/sky_serpent.png");
 
 	private final SlimeModel slimeInner;
@@ -57,6 +58,7 @@ public final class PetsLayer extends RenderLayer<AvatarRenderState, PlayerModel>
 	private final PetModels.Penguin penguin = new PetModels.Penguin();
 	private final PetModels.Dragon dragon = new PetModels.Dragon();
 	private final PetModels.Serpent serpent = new PetModels.Serpent();
+	private final PetModels.RedPanda redPanda = new PetModels.RedPanda();
 	private final PandaModel panda;
 	@SuppressWarnings("rawtypes")
 	private final ZombieModel zombie;
@@ -114,6 +116,7 @@ public final class PetsLayer extends RenderLayer<AvatarRenderState, PlayerModel>
 				case "dragon" -> 0.35F;
 				case "serpent" -> 0.35F;
 				case "panda" -> 0.55F;
+				case "red_panda" -> 0.6F;
 				case "zombie" -> 0.6F;
 				default -> 0.65F;
 			};
@@ -229,6 +232,14 @@ public final class PetsLayer extends RenderLayer<AvatarRenderState, PlayerModel>
 						s.rollTime = t;
 					}
 					submit(collector, poseStack, panda, s, PANDA_TEX);
+				}
+				case "red_panda" -> {
+					// Minecraft-Stil (Würfelmodell); beim Spielen richtet er sich auf, beim AFK rollt er sich zusammen
+					PetModels.RedPandaState s = base(new PetModels.RedPandaState(), t,
+							Math.min(1F, Math.max(state.walkAnimationSpeed * 1.5F, p[4] * 2.5F)));
+					s.stand = playing ? 1F : 0F;
+					s.curl = Mth.clamp((lie - 0.3F) / 0.4F, 0F, 1F);
+					submit(collector, poseStack, redPanda, s, RED_PANDA_TEX);
 				}
 				case "zombie" -> {
 					ZombieRenderState s = base(new ZombieRenderState(), t, Math.min(1F, Math.max(state.walkAnimationSpeed * 1.5F, p[4] * 2.5F)));
