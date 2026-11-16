@@ -264,6 +264,24 @@ public final class InvTools {
 		return ItemStack.isSameItemSameComponents(a, b);
 	}
 
+	/**
+	 * „Passt zu dem, was schon drin liegt?“ beim Verschieben: wie {@link #same}, aber Shulkerkisten, Bündel und andere
+	 * Behälter zählen schon bei gleicher Art – ihr Inhalt ist fast immer verschieden.
+	 */
+	private static boolean matches(ItemStack a, ItemStack b) {
+		if (a.getItem() != b.getItem()) {
+			return false;
+		}
+		if (a.has(net.minecraft.core.component.DataComponents.CONTAINER)
+				|| a.has(net.minecraft.core.component.DataComponents.BUNDLE_CONTENTS)
+				|| b.has(net.minecraft.core.component.DataComponents.CONTAINER)
+				|| b.getItem() instanceof net.minecraft.world.item.BlockItem bi
+						&& bi.getBlock() instanceof net.minecraft.world.level.block.ShulkerBoxBlock) {
+			return true;
+		}
+		return same(a, b);
+	}
+
 	/** Sortierschlüssel: nach Item-ID, dann Name (bei umbenannten / Server-Items), volle Stapel zuerst. */
 	private static final Comparator<ItemStack> ORDER = Comparator
 			.comparing((ItemStack s) -> BuiltInRegistries.ITEM.getKey(s.getItem()).toString())
@@ -391,7 +409,7 @@ public final class InvTools {
 		List<int[]> clicks = new ArrayList<>();
 		for (int s : playerMainSlots(menu)) {
 			ItemStack st = menu.slots.get(s).getItem();
-			if (st.isEmpty() || matching && inside.stream().noneMatch(x -> same(x, st))) {
+			if (st.isEmpty() || matching && inside.stream().noneMatch(x -> matches(x, st))) {
 				continue;
 			}
 			clicks.add(new int[]{s, 0, ClickType.QUICK_MOVE.ordinal()});
@@ -422,7 +440,7 @@ public final class InvTools {
 		}
 		for (int c = 0; c < n; c++) {
 			ItemStack st = sim.at(c);
-			if (st.isEmpty() || matching && mine.stream().noneMatch(x -> same(x, st))) {
+			if (st.isEmpty() || matching && mine.stream().noneMatch(x -> matches(x, st))) {
 				continue;
 			}
 			// passt überhaupt etwas hinein?
