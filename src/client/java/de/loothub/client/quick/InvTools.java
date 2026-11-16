@@ -548,6 +548,83 @@ public final class InvTools {
 			}
 		}
 		refill(mc);
+		stonecutter(mc);
+	}
+
+	// ---------------------------------------------------------------- Steinsäge nachfüllen
+
+	private static ItemStack cutterInput = ItemStack.EMPTY;
+	private static int cutterRecipe = -1, cutterReselect = -1, cutterInvCount;
+
+	/**
+	 * Steinsäge: Ist das Eingabefeld durch das Sägen leer geworden, rutscht der nächste gleiche Stapel aus dem Inventar
+	 * nach und das gewählte Rezept wird wieder ausgewählt – man kann einfach weiter herausnehmen. Hat man den Stapel
+	 * selbst herausgenommen (er liegt dann wieder im Inventar oder an der Maus), passiert nichts.
+	 */
+	private static void stonecutter(Minecraft mc) {
+		if (!(mc.screen instanceof net.minecraft.client.gui.screens.inventory.StonecutterScreen cs)
+				|| !WidgetConfig.get().autoRefill) {
+			cutterInput = ItemStack.EMPTY;
+			cutterRecipe = cutterReselect = -1;
+			return;
+		}
+		var menu = cs.getMenu();
+		ItemStack input = menu.getSlot(0).getItem();
+		if (!input.isEmpty()) {
+			// nach dem Nachfüllen das alte Rezept wieder anklicken
+			if (cutterReselect >= 0 && menu.getSelectedRecipeIndex() != cutterReselect
+					&& cutterReselect < menu.getNumberOfVisibleRecipes()) {
+				menu.clickMenuButton(mc.player, cutterReselect);
+				mc.gameMode.handleInventoryButtonClick(menu.containerId, cutterReselect);
+				cutterReselect = -1;
+				return;
+			}
+			if (menu.getSelectedRecipeIndex() == cutterReselect) {
+				cutterReselect = -1;
+			}
+			cutterInput = input.copy();
+			cutterRecipe = menu.getSelectedRecipeIndex();
+			cutterInvCount = countInPlayer(menu, input);
+			return;
+		}
+		if (cutterInput.isEmpty() || cutterRecipe < 0 || !QUEUE.isEmpty() || !menu.getCarried().isEmpty()) {
+			cutterInput = ItemStack.EMPTY; // an der Maus = selbst herausgenommen
+			return;
+		}
+		int now = countInPlayer(menu, cutterInput);
+		if (now >= cutterInvCount + cutterInput.getCount()) {
+			cutterInput = ItemStack.EMPTY; // selbst ins Inventar geschoben
+			return;
+		}
+		// nächsten gleichen Stapel aus dem Inventar (Hauptinventar zuerst) ins Eingabefeld legen
+		int from = -1;
+		for (int i = 2; i < menu.slots.size(); i++) {
+			ItemStack st = menu.getSlot(i).getItem();
+			if (!st.isEmpty() && same(st, cutterInput) && (from < 0 || i < 29 && from >= 29)) {
+				from = i;
+				if (i < 29) {
+					break;
+				}
+			}
+		}
+		cutterInput = ItemStack.EMPTY;
+		if (from < 0) {
+			return;
+		}
+		mc.gameMode.handleInventoryMouseClick(menu.containerId, from, 0, ClickType.PICKUP, mc.player);
+		mc.gameMode.handleInventoryMouseClick(menu.containerId, 0, 0, ClickType.PICKUP, mc.player);
+		cutterReselect = cutterRecipe;
+	}
+
+	private static int countInPlayer(AbstractContainerMenu menu, ItemStack like) {
+		int n = 0;
+		for (int i = 2; i < menu.slots.size(); i++) {
+			ItemStack st = menu.getSlot(i).getItem();
+			if (same(st, like)) {
+				n += st.getCount();
+			}
+		}
+		return n;
 	}
 
 	// ---------------------------------------------------------------- Auto-Refill

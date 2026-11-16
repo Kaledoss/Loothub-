@@ -678,7 +678,7 @@
 	"loothub.settings.inv_move": "Moving",
 	"loothub.settings.inv_move.tooltip": "Press your key in a chest: moves every item that already exists on the other side; with Shift everything. Over the inventory in, over the chest out. Set the key under Options › Controls › Loothub+.",
 	"loothub.settings.auto_refill": "Auto refill",
-	"loothub.settings.auto_refill.tooltip": "When the stack in your hand runs out, the next matching stack from your inventory is put in automatically. This also works for other hotbar slots emptied by a tool (e.g. seeds used by a planting tool).",
+	"loothub.settings.auto_refill.tooltip": "When the stack in your hand runs out, the next matching stack from your inventory is put in automatically. This also works for other hotbar slots emptied by a tool (e.g. seeds used by a planting tool). In the stonecutter, the next stack slides into the input slot and the recipe stays selected.",
 	"loothub.settings.tool_saver": "Tool saver",
 	"loothub.settings.tool_saver.tooltip": "Right before a tool breaks it is swapped for an equal one with more durability – or put into your inventory if there is none.",
 	"loothub.settings.section.jobs": "Jobs",

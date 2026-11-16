@@ -678,7 +678,7 @@
 	"loothub.settings.inv_move": "Verschieben",
 	"loothub.settings.inv_move.tooltip": "Mit der eigenen Taste in einer Kiste: verschiebt alle Items, die auf der anderen Seite schon liegen; mit Shift alles. Über dem Inventar hinein, über der Kiste heraus. Taste unter Optionen › Steuerung › Loothub+ festlegen.",
 	"loothub.settings.auto_refill": "Auto-Refill",
-	"loothub.settings.auto_refill.tooltip": "Ist der Stapel in der Hand aufgebraucht, wird automatisch der nächste gleiche Stapel aus dem Inventar nachgelegt. Das gilt auch für andere Plätze der Schnellleiste, die ein Werkzeug leert (z. B. Samen beim Pflanz-Werkzeug).",
+	"loothub.settings.auto_refill.tooltip": "Ist der Stapel in der Hand aufgebraucht, wird automatisch der nächste gleiche Stapel aus dem Inventar nachgelegt. Das gilt auch für andere Plätze der Schnellleiste, die ein Werkzeug leert (z. B. Samen beim Pflanz-Werkzeug). In der Steinsäge rutscht der nächste Stapel ins Eingabefeld nach, und das Rezept bleibt ausgewählt.",
 	"loothub.settings.tool_saver": "Werkzeugschutz",
 	"loothub.settings.tool_saver.tooltip": "Kurz bevor ein Werkzeug bricht, wird es gegen ein gleiches mit mehr Haltbarkeit getauscht – oder ins Inventar gelegt, wenn es keins gibt.",
 	"loothub.settings.section.jobs": "Jobs",
