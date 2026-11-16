@@ -87,7 +87,7 @@ anvil = img
 anvil.save(os.path.join(outdir, "anvil.png"))
 
 # Namensfeld-Sprites (110x16)
-sprite_dir = os.path.join(outdir, "..", "..", "sprites", "container", "anvil")
+sprite_dir = os.path.join(outdir, "..", "sprites", "container", "anvil")
 os.makedirs(sprite_dir, exist_ok=True)
 for name, edge in (("text_field", RED), ("text_field_disabled", SLOT_LIGHT)):
     f = Image.new("RGBA", (110, 16), SLOT_DARK)
