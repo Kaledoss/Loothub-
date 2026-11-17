@@ -44,6 +44,7 @@ public final class PetsLayer extends RenderLayer<AvatarRenderState, PlayerModel>
 	private static final Identifier WOLF_TEX = Identifier.withDefaultNamespace("textures/entity/wolf/wolf_tame.png");
 	private static final Identifier PENGUIN_TEX = Identifier.fromNamespaceAndPath("loothub", "textures/entity/penguin.png");
 	private static final Identifier DRAGON_TEX = Identifier.fromNamespaceAndPath("loothub", "textures/entity/mini_dragon.png");
+	private static final Identifier DONKEY_TEX = Identifier.withDefaultNamespace("textures/entity/horse/donkey.png");
 	private static final Identifier PANDA_TEX = Identifier.withDefaultNamespace("textures/entity/panda/panda.png");
 	private static final Identifier ZOMBIE_TEX = Identifier.withDefaultNamespace("textures/entity/zombie/zombie.png");
 	private static final Identifier RED_PANDA_TEX = Identifier.fromNamespaceAndPath("loothub", "textures/entity/red_panda.png");
@@ -60,6 +61,7 @@ public final class PetsLayer extends RenderLayer<AvatarRenderState, PlayerModel>
 	private final PetModels.Serpent serpent = new PetModels.Serpent();
 	private final PetModels.RedPanda redPanda = new PetModels.RedPanda();
 	private final PandaModel panda;
+	private final net.minecraft.client.model.animal.equine.DonkeyModel donkey;
 	@SuppressWarnings("rawtypes")
 	private final ZombieModel zombie;
 
@@ -72,6 +74,7 @@ public final class PetsLayer extends RenderLayer<AvatarRenderState, PlayerModel>
 		vex = new VexModel(models.bakeLayer(ModelLayers.VEX));
 		wolf = new WolfModel(models.bakeLayer(ModelLayers.WOLF));
 		panda = new PandaModel(models.bakeLayer(ModelLayers.PANDA_BABY));
+		donkey = new net.minecraft.client.model.animal.equine.DonkeyModel(models.bakeLayer(ModelLayers.DONKEY_BABY));
 		zombie = new ZombieModel(models.bakeLayer(ModelLayers.ZOMBIE_BABY));
 	}
 
@@ -117,6 +120,7 @@ public final class PetsLayer extends RenderLayer<AvatarRenderState, PlayerModel>
 				case "serpent" -> 0.35F;
 				case "panda" -> 0.55F;
 				case "red_panda" -> 0.6F;
+				case "donkey" -> 0.6F;
 				case "zombie" -> 0.6F;
 				default -> 0.65F;
 			};
@@ -232,6 +236,17 @@ public final class PetsLayer extends RenderLayer<AvatarRenderState, PlayerModel>
 						s.rollTime = t;
 					}
 					submit(collector, poseStack, panda, s, PANDA_TEX);
+				}
+				case "donkey" -> {
+					// Eselfohlen (Minecraft-Modell): steigt beim Spielen auf die Hinterbeine, grast beim AFK
+					net.minecraft.client.renderer.entity.state.DonkeyRenderState s = base(
+							new net.minecraft.client.renderer.entity.state.DonkeyRenderState(), t,
+							Math.min(1F, Math.max(state.walkAnimationSpeed * 1.5F, p[4] * 2.5F)));
+					s.isBaby = true;
+					s.animateTail = true;
+					s.standAnimation = playing ? 1F : 0F;
+					s.eatAnimation = Mth.clamp((lie - 0.3F) / 0.4F, 0F, 1F);
+					submit(collector, poseStack, donkey, s, DONKEY_TEX);
 				}
 				case "red_panda" -> {
 					// Minecraft-Stil (Würfelmodell); beim Spielen richtet er sich auf, beim AFK rollt er sich zusammen

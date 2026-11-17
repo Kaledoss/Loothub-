@@ -18,7 +18,8 @@ public final class Play {
 	}
 
 	public static boolean walker(String type) {
-		return "wolf".equals(type) || "penguin".equals(type) || "panda".equals(type) || "zombie".equals(type) || "red_panda".equals(type);
+		return "wolf".equals(type) || "penguin".equals(type) || "panda".equals(type) || "zombie".equals(type) || "red_panda".equals(type)
+				|| "donkey".equals(type);
 	}
 
 	/** Welches Mini-Me gejagt wird (erstes krabbelndes), oder -1. */
