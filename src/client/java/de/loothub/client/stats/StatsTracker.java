@@ -211,6 +211,9 @@ public final class StatsTracker {
 			toolStat("tool_hits.", mc.player.getMainHandItem());
 		}
 		LivingEntity living = livingOf(entity);
+		if (living != null && tracking(mc) && !TARGETS.containsKey(living.getId())) {
+			describe(entity, living);
+		}
 		if (living != null && tracking(mc)) {
 			TARGETS.put(living.getId(), new Target(living.getType(), customName(living), living.getHealth(),
 					System.currentTimeMillis()));
@@ -254,6 +257,53 @@ public final class StatsTracker {
 			return near;
 		}
 		return entity instanceof LivingEntity l ? l : null;
+	}
+
+	/**
+	 * Hilfe zum Nachbessern: Was die Mod beim ersten Treffer auf einen Mob sieht (getroffenes Teil, Mob, Mitfahrer und
+	 * Teile in der Nähe samt Namen und Item-Modellen) – steht im Log unter „[Loothub-Mobinfo]“.
+	 */
+	private static void describe(Entity hit, LivingEntity living) {
+		StringBuilder b = new StringBuilder("[Loothub-Mobinfo] getroffen: ").append(part(hit))
+				.append(" | Mob: ").append(part(living)).append(" | gezählt als: ")
+				.append(customName(living) != null ? customName(living) : BuiltInRegistries.ENTITY_TYPE.getKey(living.getType()));
+		for (Entity e : living.level().getEntities(living, living.getBoundingBox().inflate(2.0, 1.0, 2.0).expandTowards(0, 2.5, 0))) {
+			if (!(e instanceof net.minecraft.world.entity.player.Player)) {
+				b.append("\n    daneben: ").append(part(e));
+			}
+		}
+		de.loothub.Loothub.LOGGER.info(b.toString());
+	}
+
+	private static String part(Entity e) {
+		StringBuilder b = new StringBuilder(BuiltInRegistries.ENTITY_TYPE.getKey(e.getType()).toString());
+		if (e.isInvisible()) {
+			b.append(" (unsichtbar)");
+		}
+		if (e.getCustomName() != null) {
+			b.append(" Name=\"").append(e.getCustomName().getString()).append('"');
+		}
+		if (e instanceof net.minecraft.world.entity.Display.TextDisplay td) {
+			b.append(" Text=\"").append(((de.loothub.client.mixin.TextDisplayAccessor) td).loothub$getText().getString().replace('\n', ' ')).append('"');
+		}
+		ItemStack stack = e instanceof net.minecraft.world.entity.Display.ItemDisplay idp
+				? ((de.loothub.client.mixin.ItemDisplayAccessor) idp).loothub$getItemStack()
+				: e instanceof LivingEntity le ? le.getItemBySlot(net.minecraft.world.entity.EquipmentSlot.HEAD) : ItemStack.EMPTY;
+		if (!stack.isEmpty()) {
+			b.append(" Item=").append(BuiltInRegistries.ITEM.getKey(stack.getItem()));
+			var model = stack.get(net.minecraft.core.component.DataComponents.ITEM_MODEL);
+			if (model != null) {
+				b.append(" Modell=").append(model);
+			}
+			var cmd = stack.get(net.minecraft.core.component.DataComponents.CUSTOM_MODEL_DATA);
+			if (cmd != null) {
+				b.append(" ModellDaten=").append(cmd);
+			}
+		}
+		if (e.getVehicle() != null) {
+			b.append(" reitet auf ").append(BuiltInRegistries.ENTITY_TYPE.getKey(e.getVehicle().getType()));
+		}
+		return b.toString();
 	}
 
 	/**
