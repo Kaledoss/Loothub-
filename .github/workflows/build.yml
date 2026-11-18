@@ -59,10 +59,29 @@ jobs:
           git push origin HEAD:main
       - name: Gradle-Wrapper ausführbar machen
         run: chmod +x ./gradlew
+      - name: Version bestimmen
+        id: ver
+        env:
+          GH_TOKEN: ${{ github.token }}
+        # Offizielle Versionen zählen lückenlos weiter: letzte veröffentlichte Version + 1 (1.0.74 → 1.0.75).
+        # Testversionen (Zweig „test“) zählen getrennt: 1.0.75-test.1, 1.0.75-test.2 … – sie verbrauchen keine
+        # offizielle Nummer, und die Update-Funktion stuft sie unter der fertigen 1.0.75 ein.
+        run: |
+          LAST=$(gh api "repos/${{ github.repository }}/releases/tags/latest" -q .name 2>/dev/null | grep -oE '[0-9]+\.[0-9]+\.[0-9]+' | head -1 || true)
+          [ -n "$LAST" ] || LAST="1.0.${{ github.run_number }}"
+          NEXT="${LAST%.*}.$(( ${LAST##*.} + 1 ))"
+          if [ "${{ github.ref }}" = "refs/heads/main" ]; then
+            VERSION="$NEXT"
+          elif [ "${{ github.ref }}" = "refs/heads/test" ]; then
+            PREV=$(gh api "repos/${{ github.repository }}/releases/tags/test-build" -q .name 2>/dev/null | grep -oE "$NEXT-test\.[0-9]+" | grep -oE '[0-9]+$' || true)
+            VERSION="$NEXT-test.$(( ${PREV:-0} + 1 ))"
+          else
+            VERSION="$NEXT-dev.${{ github.run_number }}"
+          fi
+          echo "Version: $VERSION"
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
       - name: Bauen
-        # Jede Version bekommt die Laufnummer als dritte Stelle (1.0.3, 1.0.4 …) –
-        # daran erkennt die Update-Funktion im Spiel, dass es etwas Neues gibt.
-        run: ./gradlew build --stacktrace -Pversion=1.0.${{ github.run_number }}
+        run: ./gradlew build --stacktrace -Pversion=${{ steps.ver.outputs.version }}
       - name: Mod-Datei bereitstellen (ohne -sources)
         run: |
           mkdir -p dist
@@ -80,7 +99,7 @@ jobs:
         run: |
           gh release delete test-build --yes --cleanup-tag || true
           gh release create test-build dist/*.jar --prerelease \
-            --title "Testversion 1.0.${{ github.run_number }}" \
+            --title "Testversion ${{ steps.ver.outputs.version }}" \
             --notes "Nur zum Testen – nicht über die Update-Funktion verteilt." \
             --target "$GITHUB_SHA"
       - name: Release "Neueste Version" aktualisieren
@@ -102,6 +121,6 @@ jobs:
           printf '\nFür Minecraft 1.21.11 (Fabric). Benötigt Fabric API 0.141.6+1.21.11.\n' >> notes.md
           gh release delete latest --yes --cleanup-tag || true
           gh release create latest dist/*.jar \
-            --title "Loothub+ 1.0.${{ github.run_number }}" \
+            --title "Loothub+ ${{ steps.ver.outputs.version }}" \
             --notes-file notes.md \
             --target "$GITHUB_SHA"

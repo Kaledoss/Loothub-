@@ -35,7 +35,7 @@ import de.loothub.Loothub;
  */
 public final class Updater {
 	private static final String RELEASE_API = "https://api.github.com/repos/Kaledoss/Loothub-/releases/tags/latest";
-	private static final Pattern ASSET = Pattern.compile("^" + Loothub.MOD_ID + "-(\\d+(?:\\.\\d+)*)\\.jar$");
+	private static final Pattern ASSET = Pattern.compile("^" + Loothub.MOD_ID + "-(\\d+(?:\\.\\d+)*(?:-[A-Za-z]+\\.\\d+)?)\\.jar$");
 
 	public enum State {
 		IDLE, CHECKING, UP_TO_DATE, AVAILABLE, DOWNLOADING, INSTALLED, ERROR
@@ -301,8 +301,24 @@ public final class Updater {
 		}
 	}
 
-	/** Vergleicht Versionen wie 1.0.12 und 1.0.9 Zahl für Zahl. */
+	/**
+	 * Vergleicht Versionen wie 1.0.12 und 1.0.9 Zahl für Zahl. Testversionen („1.0.75-test.2“) liegen unter der fertigen
+	 * Version gleicher Nummer (1.0.75) – wer eine Testversion hat, bekommt das offizielle Update also angeboten.
+	 */
 	static int compare(String a, String b) {
+		int ia = a.indexOf('-'), ib = b.indexOf('-');
+		String ra = ia < 0 ? a : a.substring(0, ia), rb = ib < 0 ? b : b.substring(0, ib);
+		int c = compareNumbers(ra, rb);
+		if (c != 0) {
+			return c;
+		}
+		if (ia < 0 || ib < 0) {
+			return ia < 0 && ib < 0 ? 0 : ia < 0 ? 1 : -1; // ohne Zusatz = fertige Version = neuer
+		}
+		return compareNumbers(a.substring(ia + 1), b.substring(ib + 1));
+	}
+
+	private static int compareNumbers(String a, String b) {
 		String[] pa = a.split("[.+-]");
 		String[] pb = b.split("[.+-]");
 		for (int i = 0; i < Math.max(pa.length, pb.length); i++) {
