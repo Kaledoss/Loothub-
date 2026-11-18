@@ -60,8 +60,25 @@ final class LitematicaBridge {
 	static List<Plan> plans(Map<String, Plan> previous) {
 		List<Plan> out = new ArrayList<>();
 		for (SchematicPlacement p : DataManager.getSchematicPlacementManager().getAllSchematicsPlacements()) {
-			Box box = p.getEclosingBox();
-			if (box == null || box.getPos1() == null || box.getPos2() == null) {
+			// Rahmen selbst aus den Teilbereichen bilden: Litematicas eigener Rahmen existiert nur, wenn er angezeigt wird
+			int[] b = null;
+			for (Box box : p.getSubRegionBoxes(RequiredEnabled.ANY).values()) {
+				BlockPos a = box.getPos1(), c = box.getPos2();
+				if (a == null || c == null) {
+					continue;
+				}
+				int[] r = {Math.min(a.getX(), c.getX()), Math.min(a.getY(), c.getY()), Math.min(a.getZ(), c.getZ()),
+						Math.max(a.getX(), c.getX()), Math.max(a.getY(), c.getY()), Math.max(a.getZ(), c.getZ())};
+				if (b == null) {
+					b = r;
+				} else {
+					for (int i = 0; i < 3; i++) {
+						b[i] = Math.min(b[i], r[i]);
+						b[i + 3] = Math.max(b[i + 3], r[i + 3]);
+					}
+				}
+			}
+			if (b == null) {
 				continue;
 			}
 			String id = p.getHashId().toString();
@@ -74,9 +91,7 @@ final class LitematicaBridge {
 			Path file = p.getSchematicFile();
 			plan.file = file == null ? "" : file.getFileName().toString();
 			plan.enabled = p.isEnabled();
-			BlockPos a = box.getPos1(), b = box.getPos2();
-			plan.setBox(Math.min(a.getX(), b.getX()), Math.min(a.getY(), b.getY()), Math.min(a.getZ(), b.getZ()),
-					Math.max(a.getX(), b.getX()), Math.max(a.getY(), b.getY()), Math.max(a.getZ(), b.getZ()));
+			plan.setBox(b[0], b[1], b[2], b[3], b[4], b[5]);
 			plan.totals = totals(p.getSchematic());
 			plan.missing = plan.countRequested ? missing(p) : null;
 			out.add(plan);
