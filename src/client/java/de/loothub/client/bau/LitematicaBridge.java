@@ -231,10 +231,93 @@ final class LitematicaBridge {
 
 	// ------------------------------------------------------------------ Easy Place: fehlt der Block im Inventar?
 
-	/** Easy Place an – oder der Litematica-Printer installiert (der setzt ebenfalls aus dem Inventar)? */
 	static boolean easyPlaceOn() {
-		return Configs.Generic.EASY_PLACE_MODE.getBooleanValue()
-				|| net.fabricmc.loader.api.FabricLoader.getInstance().isModLoaded("litematica_printer");
+		return Configs.Generic.EASY_PLACE_MODE.getBooleanValue();
+	}
+
+	// ------------------------------------------------------------------ Litematica-Printer (über Reflexion, optional)
+
+	private static final String PRINTER = "me.aleksilassila.litematica.printer.config.";
+	private static Object printMode, printKey, printRange;
+	private static boolean printerLooked;
+
+	private static void lookupPrinter() {
+		if (printerLooked) {
+			return;
+		}
+		printerLooked = true;
+		if (!net.fabricmc.loader.api.FabricLoader.getInstance().isModLoaded("litematica_printer")) {
+			return;
+		}
+		try {
+			Class<?> c = Class.forName(PRINTER + "Configs");
+			printMode = c.getField("PRINT_MODE").get(null);
+			try {
+				printRange = c.getField("PRINTING_RANGE").get(null);
+			} catch (ReflectiveOperationException ignored) {
+				// ältere/andere Fassung ohne Reichweite
+			}
+			printKey = Class.forName(PRINTER + "Hotkeys").getField("PRINT").get(null);
+		} catch (ReflectiveOperationException | LinkageError e) {
+			Loothub.LOGGER.info("Litematica-Printer nicht erkannt – Fehlt-Warnung nur für Easy Place");
+		}
+	}
+
+	/** Druckt der Printer gerade (Druckmodus an oder Druck-Taste gehalten)? */
+	static boolean printerActive() {
+		lookupPrinter();
+		if (printMode instanceof fi.dy.masa.malilib.config.options.ConfigBoolean b && b.getBooleanValue()) {
+			return true;
+		}
+		return printKey instanceof fi.dy.masa.malilib.config.options.ConfigHotkey k && k.getKeybind().isKeybindHeld();
+	}
+
+	/** Reichweite des Printers (Blöcke). */
+	static double printerRange() {
+		lookupPrinter();
+		return printRange instanceof fi.dy.masa.malilib.config.options.ConfigDouble d ? d.getDoubleValue() : 5.0;
+	}
+
+	/**
+	 * Blöcke in Reichweite, die laut Schematic fehlen (an der Stelle ist noch Luft o. Ä.) – die dafür nötigen Items,
+	 * jeweils einmal. Der Printer überspringt solche Blöcke still, wenn das Item nicht im Inventar ist.
+	 */
+	static List<ItemStack> neededAround(Minecraft mc, double range) {
+		List<ItemStack> out = new ArrayList<>();
+		Level world = SchematicWorldHandler.getSchematicWorld();
+		if (world == null || mc.level == null || mc.player == null) {
+			return out;
+		}
+		java.util.Set<net.minecraft.world.item.Item> seen = new java.util.HashSet<>();
+		BlockPos center = mc.player.blockPosition();
+		int r = (int) Math.ceil(range);
+		double r2 = range * range;
+		BlockPos.MutableBlockPos pos = new BlockPos.MutableBlockPos();
+		var eye = mc.player.getEyePosition();
+		for (int dx = -r; dx <= r; dx++) {
+			for (int dy = -r; dy <= r; dy++) {
+				for (int dz = -r; dz <= r; dz++) {
+					pos.set(center.getX() + dx, center.getY() + 1 + dy, center.getZ() + dz);
+					if (eye.distanceToSqr(pos.getX() + 0.5, pos.getY() + 0.5, pos.getZ() + 0.5) > r2
+							|| !world.hasChunk(pos.getX() >> 4, pos.getZ() >> 4)) {
+						continue;
+					}
+					BlockState want = world.getBlockState(pos);
+					if (want.isAir() || want.getBlock() instanceof net.minecraft.world.level.block.LiquidBlock) {
+						continue; // Wasser/Lava setzt der Printer nicht aus Blöcken
+					}
+					BlockState have = mc.level.getBlockState(pos);
+					if (have == want || !have.canBeReplaced()) {
+						continue;
+					}
+					ItemStack stack = MaterialCache.getInstance().getRequiredBuildItemForState(want, world, pos);
+					if (stack != null && !stack.isEmpty() && seen.add(stack.getItem())) {
+						out.add(stack);
+					}
+				}
+			}
+		}
+		return out;
 	}
 
 	/** Block, auf den der Spieler in der Schematic zielt und der noch nicht steht – das dafür nötige Item, sonst leer. */

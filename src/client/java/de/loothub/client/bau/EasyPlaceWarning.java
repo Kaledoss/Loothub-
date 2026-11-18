@@ -11,12 +11,15 @@ import de.loothub.client.Sounds;
 import de.loothub.client.jobs.WidgetConfig;
 
 /**
- * Easy Place (Litematica) findet den Block, auf den man zielt, nicht im Inventar: deutlich anzeigen, welcher Block
+ * Easy Place (Litematica) bzw. der Litematica-Printer findet einen Block nicht im Inventar: deutlich anzeigen, welcher
  * fehlt – statt dass einfach nichts passiert. Nur Anzeige; gesetzt oder verschoben wird nichts.
  */
 final class EasyPlaceWarning {
 	private static final long SHOW_MS = 3_000L;
 	private static ItemStack missing = ItemStack.EMPTY;
+	/** Weitere fehlende Blöcke (Printer: mehrere in Reichweite). */
+	private static int more;
+	private static int printerScanIn;
 	private static long until;
 	private static String lastSoundFor = "";
 	private static long lastSoundAt;
@@ -25,21 +28,47 @@ final class EasyPlaceWarning {
 	}
 
 	static void tick(Minecraft mc) {
-		if (!WidgetConfig.get().buildWarn || mc.screen != null || !mc.options.keyUse.isDown()
-				|| !LitematicaBridge.easyPlaceOn()) {
+		if (!WidgetConfig.get().buildWarn || mc.screen != null) {
+			return;
+		}
+		// Printer: alle paar Ticks die Reichweite absuchen, was gebraucht wird, aber nicht im Inventar ist
+		if (LitematicaBridge.printerActive()) {
+			if (--printerScanIn > 0) {
+				return;
+			}
+			printerScanIn = 10;
+			java.util.Map<String, Long> inv = Build.inventory();
+			java.util.List<ItemStack> lacking = new java.util.ArrayList<>();
+			for (ItemStack s : LitematicaBridge.neededAround(mc, LitematicaBridge.printerRange())) {
+				Long have = inv.get(Build.id(s.getItem()));
+				if (have == null || have <= 0) {
+					lacking.add(s);
+				}
+			}
+			if (!lacking.isEmpty()) {
+				show(lacking.get(0), lacking.size() - 1);
+			}
+			return;
+		}
+		if (!mc.options.keyUse.isDown() || !LitematicaBridge.easyPlaceOn()) {
 			return;
 		}
 		ItemStack need = LitematicaBridge.targetedNeeded(mc);
 		if (need.isEmpty()) {
 			return;
 		}
-		String id = Build.id(need.getItem());
-		Long have = Build.inventory().get(id);
+		Long have = Build.inventory().get(Build.id(need.getItem()));
 		if (have != null && have > 0) {
 			return;
 		}
+		show(need, 0);
+	}
+
+	private static void show(ItemStack need, int others) {
+		String id = Build.id(need.getItem());
 		long now = System.currentTimeMillis();
 		missing = need.copyWithCount(1);
+		more = others;
 		until = now + SHOW_MS;
 		// Ton nur einmal je Block alle paar Sekunden, nicht bei jedem Tick mit gedrückter Taste
 		if (!id.equals(lastSoundFor) || now - lastSoundAt > 5_000L) {
@@ -55,7 +84,9 @@ final class EasyPlaceWarning {
 		if (missing.isEmpty() || System.currentTimeMillis() > until || mc.options.hideGui) {
 			return;
 		}
-		Component text = Component.translatable("loothub.build.warn.missing", missing.getHoverName());
+		Component text = more > 0
+				? Component.translatable("loothub.build.warn.missing_more", missing.getHoverName(), more)
+				: Component.translatable("loothub.build.warn.missing", missing.getHoverName());
 		int w = mc.font.width(text) + 30;
 		int x = (g.guiWidth() - w) / 2;
 		int y = g.guiHeight() - 82;

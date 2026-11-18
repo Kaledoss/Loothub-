@@ -857,5 +857,6 @@
 	"loothub.build.hud.eta": "noch ca. %s",
 	"loothub.build.hud.done": "fertig!",
 	"loothub.build.hud.wrong": "%s falsch",
+	"loothub.build.warn.missing_more": "Fehlt im Inventar: %s (und %s weitere)",
 	"loothub.build.warn.missing": "Fehlt im Inventar: %s"
 }
