@@ -151,6 +151,11 @@ public class LoothubClient implements ClientModInitializer {
 		HudElementRegistry.attachElementBefore(VanillaHudElements.CHAT,
 				Identifier.fromNamespaceAndPath(Loothub.MOD_ID, "music"), de.loothub.client.music.MusicWidget::renderHud);
 		de.loothub.client.music.MusicWidget.register();
+		// Bau-Funktionen (nur mit Litematica): Fortschritt, Lager-Fässer, Easy-Place-Warnung, gemeinsam bauen
+		if (de.loothub.client.bau.Build.present()) {
+			de.loothub.client.bau.Build.register();
+			de.loothub.client.bau.BuildHud.register();
+		}
 
 		// Streamer-Modus: offene Kanalbelohnungen im HUD, Twitch-Chat und Belohnungen im Hintergrund
 		HudElementRegistry.attachElementBefore(VanillaHudElements.CHAT,

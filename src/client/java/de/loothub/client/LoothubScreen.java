@@ -51,6 +51,7 @@ public abstract class LoothubScreen extends Screen {
 		ITEMDEX("loothub.tab.itemdex", Items.NETHER_STAR),
 		COSMETICS("loothub.tab.cosmetics", Items.ARMOR_STAND),
 		ALLTAG("loothub.tab.alltag", Items.CLOCK),
+		BUILD("loothub.tab.build", Items.BRICKS),
 		STREAMER("loothub.tab.streamer", Items.AMETHYST_CLUSTER),
 		CHANGELOG("loothub.tab.changelog", Items.BOOK),
 		SETTINGS("loothub.tab.settings", Items.COMPARATOR);
@@ -69,6 +70,7 @@ public abstract class LoothubScreen extends Screen {
 			return switch (this) {
 				case STREAMER -> c.streamerMode;
 				case POKEDEX -> c.pokedexPage;
+				case BUILD -> de.loothub.client.bau.Build.present(); // nur mit Litematica
 				default -> true;
 			};
 		}
@@ -98,6 +100,7 @@ public abstract class LoothubScreen extends Screen {
 			case ITEMDEX -> new ItemdexScreen();
 			case COSMETICS -> new CosmeticsScreen();
 			case ALLTAG -> new AlltagScreen();
+			case BUILD -> new de.loothub.client.bau.BuildScreen();
 			case STREAMER -> new de.loothub.client.streamer.StreamerScreen();
 			case CHANGELOG -> new ChangelogScreen();
 			case SETTINGS -> new SettingsScreen();

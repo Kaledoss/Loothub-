@@ -4,6 +4,12 @@
 // GET  /all      → alle Profile { "<uuid>": { set, values, skins, name, t } } (60 s zwischengespeichert)
 // POST /profile  → eigenes Profil setzen, unterschrieben mit dem von Mojang beglaubigten Profil-Schlüssel
 //                  (derselbe wie für Chat-Signaturen). Keine Rückfrage bei Mojang nötig, kein Zugangsschlüssel.
+// POST /share      → Schematic (Litematica) an einen anderen Loothub-Spieler teilen bzw. aktualisieren
+// POST /inbox      → mit mir geteilte Schematics (ohne Datei)
+// POST /share-get  → eine mit mir geteilte Schematic samt Datei holen
+// POST /share-drop → eine mit mir geteilte Schematic ablehnen/entfernen
+// POST /unshare    → Teilen mit einem Spieler beenden (nur der Absender)
+// Alle Bau-Anfragen sind wie /profile unterschrieben.
 
 const MAX_SET = 30;
 const MAX_VALUES = 30;
@@ -138,6 +144,151 @@ const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/
 /** Gesten werden nur kurz im Cache des Rechenzentrums gehalten (kein KV – das wäre zu langsam und begrenzt). */
 const EMOTE_TTL = 15;
 
+// ------------------------------------------------------------------ Gemeinsam bauen
+
+const SHARE_TTL = 60 * 24 * 60 * 60; // 60 Tage
+const MAX_FILE_B64 = 2_800_000; // ~2 MB Schematic
+const MAX_SETTINGS = 20_000;
+
+async function sha256Hex(text) {
+	const d = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(text));
+	return [...new Uint8Array(d)].map((b) => b.toString(16).padStart(2, "0")).join("");
+}
+
+/** Gemeinsame Prüfung der Bau-Anfragen: Felder, Zeit, Unterschrift. Gibt [body, null] oder [null, Antwort]. */
+async function signedBody(request, env, message) {
+	let body;
+	try {
+		body = await request.json();
+	} catch {
+		return [null, json({ error: "bad json" }, 400)];
+	}
+	const { uuid, ts, publicKey, expiresAt, keySignature, signature } = body || {};
+	if (typeof uuid !== "string" || !UUID_RE.test(uuid) || typeof ts !== "number" || typeof publicKey !== "string"
+		|| typeof expiresAt !== "number" || typeof keySignature !== "string" || typeof signature !== "string") {
+		return [null, json({ error: "bad request" }, 400)];
+	}
+	const now = Date.now();
+	if (Math.abs(now - ts) > 5 * 60_000 || expiresAt < now) {
+		return [null, json({ error: "stale" }, 400)];
+	}
+	const text = await message(body);
+	if (text === null) {
+		return [null, json({ error: "bad request" }, 400)];
+	}
+	const why = await verifySigned(env, uuid, publicKey, expiresAt, keySignature, signature, text);
+	if (why) {
+		return [null, json({ error: why }, why === "mojang keys unavailable" ? 503 : 403)];
+	}
+	return [body, null];
+}
+
+/** UUID eines Loothub-Spielers aus seinem Namen (nur wer Loothub+ nutzt, steht in „all“). */
+async function uuidOfName(env, name) {
+	const all = JSON.parse((await env.COSMETICS.get("all")) || "{}");
+	const lower = String(name).toLowerCase();
+	for (const [id, p] of Object.entries(all)) {
+		if (p && typeof p.name === "string" && p.name.toLowerCase() === lower) {
+			return id;
+		}
+	}
+	return null;
+}
+
+async function handleBuild(url, request, env) {
+	if (url.pathname === "/share") {
+		const [body, err] = await signedBody(request, env, async (b) => {
+			if (typeof b.to !== "string" || !NAME.test(b.to) || typeof b.id !== "string" || !UUID_RE.test(b.id)
+				|| typeof b.settings !== "string" || typeof b.file !== "string" || typeof b.name !== "string") {
+				return null;
+			}
+			return `loothub-share\n${b.uuid}\n${b.ts}\n${b.to.toLowerCase()}\n${b.id}\n${await sha256Hex(b.settings + "\n" + b.file)}`;
+		});
+		if (err) return err;
+		if (body.settings.length > MAX_SETTINGS || body.file.length > MAX_FILE_B64 || body.name.length > 100) {
+			return json({ error: "too large" }, 413);
+		}
+		const to = await uuidOfName(env, body.to);
+		if (!to) {
+			return json({ error: "not a loothub player" }, 404);
+		}
+		// Nur wer eine Schematic zuerst geteilt hat, darf sie ändern
+		const owner = await env.COSMETICS.get(`owner:${body.id}`);
+		if (owner && owner !== body.uuid) {
+			return json({ error: "not owner" }, 403);
+		}
+		if (body.file.length > 0) {
+			await env.COSMETICS.put(`file:${body.id}`, JSON.stringify({ file: body.file, fileName: String(body.fileName || "").slice(0, 80) }),
+				{ expirationTtl: SHARE_TTL });
+		} else if (!(await env.COSMETICS.get(`file:${body.id}`))) {
+			return json({ error: "file missing" }, 400);
+		}
+		await env.COSMETICS.put(`owner:${body.id}`, body.uuid, { expirationTtl: SHARE_TTL });
+		const me = typeof body.me === "string" && NAME.test(body.me) ? body.me : "?";
+		await env.COSMETICS.put(`share:${to}:${body.id}`, JSON.stringify({
+			id: body.id, from: body.uuid, fromName: me, name: body.name, rev: Date.now(), settings: body.settings,
+		}), { expirationTtl: SHARE_TTL });
+		return json({ ok: true });
+	}
+
+	if (url.pathname === "/inbox") {
+		const [body, err] = await signedBody(request, env, async (b) => `loothub-inbox\n${b.uuid}\n${b.ts}`);
+		if (err) return err;
+		const list = await env.COSMETICS.list({ prefix: `share:${body.uuid}:` });
+		const shares = [];
+		for (const k of list.keys.slice(0, 50)) {
+			const v = await env.COSMETICS.get(k.name);
+			if (v) {
+				try {
+					const s = JSON.parse(v);
+					shares.push({ id: s.id, fromName: s.fromName, name: s.name, rev: s.rev });
+				} catch {
+					// kaputter Eintrag
+				}
+			}
+		}
+		return json({ shares });
+	}
+
+	if (url.pathname === "/share-get") {
+		const [body, err] = await signedBody(request, env, async (b) =>
+			typeof b.id === "string" && UUID_RE.test(b.id) ? `loothub-share-get\n${b.uuid}\n${b.ts}\n${b.id}` : null);
+		if (err) return err;
+		const v = await env.COSMETICS.get(`share:${body.uuid}:${body.id}`);
+		const f = await env.COSMETICS.get(`file:${body.id}`);
+		if (!v || !f) {
+			return json({ error: "not found" }, 404);
+		}
+		const s = JSON.parse(v);
+		const file = JSON.parse(f);
+		return json({ settings: s.settings, file: file.file, fileName: file.fileName, rev: s.rev });
+	}
+
+	if (url.pathname === "/share-drop") {
+		const [body, err] = await signedBody(request, env, async (b) =>
+			typeof b.id === "string" && UUID_RE.test(b.id) ? `loothub-share-drop\n${b.uuid}\n${b.ts}\n${b.id}` : null);
+		if (err) return err;
+		await env.COSMETICS.delete(`share:${body.uuid}:${body.id}`);
+		return json({ ok: true });
+	}
+
+	if (url.pathname === "/unshare") {
+		const [body, err] = await signedBody(request, env, async (b) =>
+			typeof b.id === "string" && UUID_RE.test(b.id) && typeof b.to === "string" && NAME.test(b.to)
+				? `loothub-unshare\n${b.uuid}\n${b.ts}\n${b.id}\n${b.to.toLowerCase()}` : null);
+		if (err) return err;
+		const to = await uuidOfName(env, body.to);
+		if (to) {
+			const v = await env.COSMETICS.get(`share:${to}:${body.id}`);
+			if (v && JSON.parse(v).from === body.uuid) {
+				await env.COSMETICS.delete(`share:${to}:${body.id}`);
+			}
+		}
+		return json({ ok: true });
+	}
+	return null;
+}
+
 export default {
 	async fetch(request, env, ctx) {
 		const url = new URL(request.url);
@@ -255,6 +406,11 @@ export default {
 			return new Response(JSON.stringify(out), {
 				headers: { "content-type": "application/json; charset=utf-8", "cache-control": "no-store" },
 			});
+		}
+
+		if (request.method === "POST" && ["/share", "/inbox", "/share-get", "/share-drop", "/unshare"].includes(url.pathname)) {
+			const res = await handleBuild(url, request, env);
+			if (res) return res;
 		}
 
 		return new Response("Loothub Cosmetics", { status: 200 });

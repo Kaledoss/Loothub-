@@ -26,7 +26,8 @@ public final class Sounds {
 		FISH("fish"),
 		JOBS("jobs"),
 		PCG("pcg"),
-		PROTECT("protect");
+		PROTECT("protect"),
+		BUILD("build");
 
 		public final String id;
 

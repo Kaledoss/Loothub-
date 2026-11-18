@@ -205,6 +205,11 @@ public final class WidgetConfig {
 	public int toolProtectionPercent = 5;
 	/** Werkzeugarten, die NICHT geschützt werden (Schlüssel aus ToolProtection.KINDS). */
 	public java.util.List<String> toolProtectionOff = new java.util.ArrayList<>();
+	/** Bau (Litematica): Fortschritt im Bereich einer Schematic, Warnung wenn Easy Place einen Block nicht findet. */
+	public boolean buildHud = true;
+	public boolean buildWarn = true;
+	public double buildHudX = 0.5;
+	public double buildHudY = 0.1;
 	/** YouTube Music (Desktop-App, API Server): „Läuft gerade“ im HUD. */
 	public boolean musicEnabled = false;
 	public boolean musicLocked = false;
@@ -351,6 +356,8 @@ public final class WidgetConfig {
 		hideOffhandBackpack = false;
 		invHudEnabled = false;
 		musicEnabled = false;
+		buildHud = false;
+		buildWarn = false;
 		pcgEnabled = false;
 		streamerMode = false;
 		streamerChat = false;
