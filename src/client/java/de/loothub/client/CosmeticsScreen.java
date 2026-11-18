@@ -176,9 +176,11 @@ public class CosmeticsScreen extends LoothubScreen {
 					// Skin kam nicht (Mojang langsam/überlastet): sofort neu laden statt auf den nächsten Versuch zu warten
 					Button reload = Button.builder(Component.literal("↻"), btn -> {
 						String n = slot < c.miniMes.size() ? c.miniMes.get(slot) : null;
-						if (n != null && !n.isBlank()) {
-							SkinLookup.forget(n);
-							SkinLookup.state(n);
+						// höchstens alle 10 Sekunden je Name – sonst löst man Mojangs Anfrage-Limit (Fehler 429) selbst aus
+						long now = System.currentTimeMillis();
+						if (n != null && !n.isBlank() && now - reloadedAt[slot] > 10_000) {
+							reloadedAt[slot] = now;
+							SkinLookup.reload(n);
 						}
 					}).bounds(nx + 54, by, 16, 16).build();
 					reload.setTooltip(net.minecraft.client.gui.components.Tooltip.create(
@@ -389,6 +391,9 @@ public class CosmeticsScreen extends LoothubScreen {
 		swatches.add(new Swatch(x + w + 3, y + 3, get, () -> "#8A2BE2", false));
 		return x + w + 16;
 	}
+
+	/** Wann der Skin je Mini-Me-Platz zuletzt per ↻ neu geladen wurde. */
+	private static final long[] reloadedAt = new long[Cosmetics.MAX_MINI_MES];
 
 	private void resetButton(int x, int y, Runnable reset) {
 		Button b = Button.builder(Component.literal("↺"), btn -> {

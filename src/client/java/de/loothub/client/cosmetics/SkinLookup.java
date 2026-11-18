@@ -126,26 +126,27 @@ public final class SkinLookup {
 		Result loading = new Result(State.LOADING, null, attempts, 0);
 		CACHE.put(key, loading);
 		Minecraft mc = Minecraft.getInstance();
+		boolean force = FORCE.remove(key);
 		CompletableFuture.supplyAsync(() -> {
-			if (bedrock(name)) {
-				return bedrockProfile(name);
+			// gemerkter Skin (höchstens einen Tag alt): gar nicht erst bei Mojang fragen – schont das Anfrage-Limit
+			Saved saved = saved(key);
+			if (saved != null && !force && System.currentTimeMillis() - saved.at() < FRESH_MS) {
+				return saved.profile();
 			}
-			Optional<GameProfile> found = mc.services().profileResolver().fetchByName(name.strip());
-			if (found.isEmpty()) {
-				return null;
-			}
-			GameProfile profile = found.get();
-			if (!profile.properties().containsKey("textures")) {
-				var full = mc.services().sessionService().fetchProfile(profile.id(), true);
-				if (full != null && full.profile() != null) {
-					profile = full.profile();
+			try {
+				GameProfile fresh = lookup(name, mc);
+				if (fresh != null) {
+					remember(key, fresh);
+					return fresh;
 				}
+				// „nicht gefunden“ kann bei gedrosselten Anfragen auch nur ein Fehler sein: dann den gemerkten nehmen
+				return saved != null ? saved.profile() : null;
+			} catch (RuntimeException e) {
+				if (saved != null) {
+					return saved.profile(); // Mojang überlastet (z. B. Fehler 429): gemerkten Skin nehmen
+				}
+				throw e;
 			}
-			// Ohne Textur-Daten käme nur der Standard-Skin heraus – das wäre ein falscher Skin, lieber neu versuchen
-			if (!profile.properties().containsKey("textures")) {
-				throw new IllegalStateException("keine Textur-Daten");
-			}
-			return profile;
 		}).thenCompose(profile -> profile == null
 				? CompletableFuture.completedFuture(Optional.<PlayerSkin>empty())
 				: mc.getSkinManager().get(profile)).whenComplete((skin, t) -> {
@@ -160,6 +161,110 @@ public final class SkinLookup {
 					}
 				});
 		return loading;
+	}
+
+	/** Profil samt Skin-Daten bei Mojang (bzw. Geyser für Bedrock) nachschlagen; null = Name unbekannt. */
+	private static GameProfile lookup(String name, Minecraft mc) {
+		if (bedrock(name)) {
+			return bedrockProfile(name);
+		}
+		Optional<GameProfile> found = mc.services().profileResolver().fetchByName(name.strip());
+		if (found.isEmpty()) {
+			return null;
+		}
+		GameProfile profile = found.get();
+		if (!profile.properties().containsKey("textures")) {
+			var full = mc.services().sessionService().fetchProfile(profile.id(), true);
+			if (full != null && full.profile() != null) {
+				profile = full.profile();
+			}
+		}
+		// Ohne Textur-Daten käme nur der Standard-Skin heraus – das wäre ein falscher Skin, lieber neu versuchen
+		if (!profile.properties().containsKey("textures")) {
+			throw new IllegalStateException("keine Textur-Daten");
+		}
+		return profile;
+	}
+
+	// ------------------------------------------------------------------ gemerkte Skins (config/loothub-skins.json)
+
+	/** Gemerkte Skin-Daten eines Namens; at = wann zuletzt bei Mojang geholt. */
+	private record Saved(GameProfile profile, long at) {
+	}
+
+	private static final long FRESH_MS = 24L * 60 * 60 * 1000;
+	private static final java.util.Set<String> FORCE = ConcurrentHashMap.newKeySet();
+	private static JsonObject disk;
+
+	private static java.nio.file.Path diskFile() {
+		return net.fabricmc.loader.api.FabricLoader.getInstance().getConfigDir().resolve("loothub-skins.json");
+	}
+
+	private static synchronized JsonObject disk() {
+		if (disk == null) {
+			disk = new JsonObject();
+			try {
+				java.nio.file.Path p = diskFile();
+				if (java.nio.file.Files.exists(p)) {
+					var e = JsonParser.parseString(java.nio.file.Files.readString(p, java.nio.charset.StandardCharsets.UTF_8));
+					if (e.isJsonObject()) {
+						disk = e.getAsJsonObject();
+					}
+				}
+			} catch (java.io.IOException | RuntimeException e) {
+				de.loothub.Loothub.LOGGER.debug("Gemerkte Skins nicht lesbar", e);
+			}
+		}
+		return disk;
+	}
+
+	private static synchronized Saved saved(String key) {
+		try {
+			JsonObject o = disk().getAsJsonObject(key);
+			if (o == null) {
+				return null;
+			}
+			String sig = o.has("sig") && !o.get("sig").isJsonNull() ? o.get("sig").getAsString() : null;
+			PropertyMap props = new PropertyMap(ImmutableMultimap.of("textures",
+					new Property("textures", o.get("value").getAsString(), sig)));
+			GameProfile profile = new GameProfile(java.util.UUID.fromString(o.get("id").getAsString()),
+					o.get("name").getAsString(), props);
+			return new Saved(profile, o.get("at").getAsLong());
+		} catch (RuntimeException e) {
+			return null;
+		}
+	}
+
+	private static synchronized void remember(String key, GameProfile profile) {
+		Property tex = profile.properties().get("textures").stream().findFirst().orElse(null);
+		if (tex == null) {
+			return;
+		}
+		JsonObject o = new JsonObject();
+		o.addProperty("id", profile.id().toString());
+		o.addProperty("name", profile.name());
+		o.addProperty("value", tex.value());
+		if (tex.signature() != null) {
+			o.addProperty("sig", tex.signature());
+		}
+		o.addProperty("at", System.currentTimeMillis());
+		disk().add(key, o);
+		try {
+			java.nio.file.Files.writeString(diskFile(), disk().toString(), java.nio.charset.StandardCharsets.UTF_8);
+		} catch (java.io.IOException e) {
+			de.loothub.Loothub.LOGGER.debug("Gemerkte Skins nicht gespeichert", e);
+		}
+	}
+
+	/** Neu laden auf Knopfdruck: frisch bei Mojang fragen (klappt das nicht, bleibt der gemerkte Skin). */
+	public static void reload(String name) {
+		if (name == null || name.isBlank()) {
+			return;
+		}
+		String key = name.strip().toLowerCase(Locale.ROOT);
+		FORCE.add(key);
+		CACHE.remove(key);
+		request(name);
 	}
 
 	/** Erneut versuchen (z. B. nach Tippfehler korrigiert). */
