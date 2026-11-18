@@ -172,7 +172,8 @@ public final class StatsStore {
 		// „Server-Mob (Bat)“ war der Kasuar (unsichtbare Fledermaus als Träger, Name damals nicht lesbar)
 		Map<String, String> rename = Map.of("killed.~Fire", "killed.~Maulwurf",
 				"killed.~Server-Mob (Bat)", "killed.~Kasuar", "killed.~Server-Mob (Fledermaus)", "killed.~Kasuar", "killed.~Deer", "killed.~Rentier",
-				"killed.~Boar", "killed.~Eber", "killed.~Mole", "killed.~Maulwurf");
+				"killed.~Boar", "killed.~Eber", "killed.~Mole", "killed.~Maulwurf",
+				"killed.~Nocsy Pet Penguin", "killed.~Pinguin", "killed.~Rabbit Black", "killed.~Kaninchen (schwarz)");
 		for (Map<String, Long> v : days.values()) {
 			rename.forEach((from, to) -> {
 				Long n = v.remove(from);

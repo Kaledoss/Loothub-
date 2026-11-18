@@ -528,6 +528,8 @@ public class StatsScreen extends LoothubScreen {
 			g.drawString(font, e.value(), vx, y, e.value().equals("–") ? FAINT : GOLD, false);
 			if (!e.icon().isEmpty()) {
 				g.renderItem(e.icon(), vx - 19, y - 4);
+			} else if (e.serverMob()) {
+				serverIcon(g, vx - 19, y - 4);
 			}
 		}
 		Component note = Component.translatable("loothub.stats.note");
@@ -535,7 +537,10 @@ public class StatsScreen extends LoothubScreen {
 	}
 
 	/** Eine Zeile unter „Allgemein“; {@code icon} nur bei den Spitzenreitern. */
-	private record GeneralEntry(String label, String value, ItemStack icon) {
+	private record GeneralEntry(String label, String value, ItemStack icon, boolean serverMob) {
+		GeneralEntry(String label, String value, ItemStack icon) {
+			this(label, value, icon, false);
+		}
 	}
 
 	/** Passendes Symbol je Eintrag unter „Allgemein“. */
@@ -593,7 +598,7 @@ public class StatsScreen extends LoothubScreen {
 			return new GeneralEntry(label, "–", ItemStack.EMPTY);
 		}
 		String name = ellipsize(name(bestId, kind), 150);
-		return new GeneralEntry(label, name + " · " + Fmt.whole(best), icon(bestId, kind));
+		return new GeneralEntry(label, name + " · " + Fmt.whole(best), icon(bestId, kind), bestId.startsWith("~"));
 	}
 
 	private List<String> columnKeys() {
@@ -647,6 +652,8 @@ public class StatsScreen extends LoothubScreen {
 			}
 			if (!row.icon().isEmpty()) {
 				g.renderItem(row.icon(), tableX + 4, ry + 1);
+			} else if (row.id().startsWith("~")) {
+				serverIcon(g, tableX + 4, ry + 1); // Server-Mob/-Item ohne Minecraft-Symbol: Loothub-Logo
 			}
 			int nameMax = columnRight(0, cols.size()) - 90 - (tableX + 24);
 			g.drawString(font, ellipsize(row.name(), nameMax), tableX + 24, ry + 5, TEXT, false);
@@ -781,6 +788,14 @@ public class StatsScreen extends LoothubScreen {
 			}
 			return id;
 		});
+	}
+
+	private static final net.minecraft.resources.Identifier SERVER_ICON =
+			net.minecraft.resources.Identifier.fromNamespaceAndPath("loothub", "icon.png");
+
+	/** Loothub-Logo als Symbol für Server-Mobs und -Items (die haben kein Minecraft-Symbol). */
+	private static void serverIcon(GuiGraphics g, int x, int y) {
+		g.blit(net.minecraft.client.renderer.RenderPipelines.GUI_TEXTURED, SERVER_ICON, x, y, 0f, 0f, 16, 16, 128, 128, 128, 128);
 	}
 
 	private static ItemStack icon(String id, Kind kind) {

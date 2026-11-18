@@ -25,9 +25,9 @@ public final class StatsTracker {
 	/** Bewegungen über dieser Strecke pro Tick gelten als Teleport und zählen nicht. */
 	private static final double MAX_STEP = 10.0;
 	/** So lange nach dem letzten Treffer zählt ein Mob-Tod als eigener Kill. */
-	private static final long KILL_WINDOW_MS = 10_000;
+	private static final long KILL_WINDOW_MS = 20_000;
 	/** Verschwindet ein getroffener Mob so lange nach dem letzten Treffer (Sterbe-Animation von Server-Modellen), zählt es. */
-	private static final long VANISH_KILL_MS = 8_000;
+	private static final long VANISH_KILL_MS = 15_000;
 
 	/** {@code name}: Name eines Server-Mobs (eigener Name), sonst null → Zählung nach Mob-Art. */
 	private record Target(EntityType<?> type, String name, float lastHealth, long lastHit, double x, double y, double z) {
@@ -215,6 +215,8 @@ public final class StatsTracker {
 		LivingEntity living = livingOf(entity);
 		if (living != null && tracking(mc) && !TARGETS.containsKey(living.getId())) {
 			describe(entity, living);
+		} else if (living == null && tracking(mc)) {
+			de.loothub.Loothub.LOGGER.info("[Loothub-Mobinfo] getroffen, aber kein Mob gefunden: {}", part(entity));
 		}
 		if (living != null && tracking(mc)) {
 			TARGETS.put(living.getId(), new Target(living.getType(), customName(living), living.getHealth(),
@@ -244,8 +246,8 @@ public final class StatsTracker {
 		// lose Trefferfläche (Interaktions-Entity, Anzeige, Rüstungsständer), die an nichts hängt: das nächste Lebewesen
 		// direkt daneben ist der eigentliche Mob (z. B. Maulwurf = Kaninchen unter einer Trefferfläche)
 		LivingEntity near = null;
-		double best = 2.5 * 2.5;
-		for (Entity e : entity.level().getEntities(entity, entity.getBoundingBox().inflate(2.0))) {
+		double best = 4.0 * 4.0;
+		for (Entity e : entity.level().getEntities(entity, entity.getBoundingBox().inflate(3.5))) {
 			if (e instanceof LivingEntity l && !(e instanceof net.minecraft.world.entity.player.Player)
 					&& !(e instanceof net.minecraft.world.entity.decoration.ArmorStand) && l.isAlive()) {
 				double d = e.distanceToSqr(entity);
@@ -409,10 +411,62 @@ public final class StatsTracker {
 				.orElse(null);
 	}
 
-	/** Englische Modellnamen bekannter OPSUCHT-Mobs → deutscher Name (sonst wird der Modellname schön geschrieben). */
-	private static final java.util.Map<String, String> GERMAN = java.util.Map.of(
-			"mole", "Maulwurf", "cassowary", "Kasuar", "kasuar", "Kasuar", "deer", "Rentier", "reindeer", "Rentier",
-			"boar", "Eber");
+	/** Englische Tiernamen aus Modellnamen → deutsch (sonst wird der Modellname schön geschrieben). */
+	private static final java.util.Map<String, String> GERMAN = java.util.Map.ofEntries(
+			java.util.Map.entry("mole", "Maulwurf"), java.util.Map.entry("cassowary", "Kasuar"),
+			java.util.Map.entry("kasuar", "Kasuar"), java.util.Map.entry("deer", "Rentier"),
+			java.util.Map.entry("reindeer", "Rentier"), java.util.Map.entry("boar", "Eber"),
+			java.util.Map.entry("shark hammerhead", "Hammerhai"), java.util.Map.entry("hammerhead shark", "Hammerhai"),
+			java.util.Map.entry("hammerhead", "Hammerhai"), java.util.Map.entry("shark", "Hai"),
+			java.util.Map.entry("seahorse", "Seepferdchen"), java.util.Map.entry("sea horse", "Seepferdchen"),
+			java.util.Map.entry("penguin", "Pinguin"), java.util.Map.entry("rabbit", "Kaninchen"),
+			java.util.Map.entry("bunny", "Kaninchen"), java.util.Map.entry("hare", "Hase"),
+			java.util.Map.entry("crab", "Krabbe"), java.util.Map.entry("turtle", "Schildkröte"),
+			java.util.Map.entry("fox", "Fuchs"), java.util.Map.entry("wolf", "Wolf"), java.util.Map.entry("bear", "Bär"),
+			java.util.Map.entry("owl", "Eule"), java.util.Map.entry("duck", "Ente"), java.util.Map.entry("snake", "Schlange"),
+			java.util.Map.entry("monkey", "Affe"), java.util.Map.entry("elephant", "Elefant"),
+			java.util.Map.entry("giraffe", "Giraffe"), java.util.Map.entry("lion", "Löwe"), java.util.Map.entry("tiger", "Tiger"),
+			java.util.Map.entry("whale", "Wal"), java.util.Map.entry("dolphin", "Delfin"), java.util.Map.entry("jellyfish", "Qualle"),
+			java.util.Map.entry("octopus", "Oktopus"), java.util.Map.entry("squirrel", "Eichhörnchen"),
+			java.util.Map.entry("hedgehog", "Igel"), java.util.Map.entry("raccoon", "Waschbär"), java.util.Map.entry("moose", "Elch"),
+			java.util.Map.entry("butterfly", "Schmetterling"), java.util.Map.entry("scorpion", "Skorpion"),
+			java.util.Map.entry("spider", "Spinne"), java.util.Map.entry("crocodile", "Krokodil"),
+			java.util.Map.entry("ostrich", "Strauß"), java.util.Map.entry("kangaroo", "Känguru"));
+	private static final java.util.Map<String, String> COLORS = java.util.Map.of("black", "schwarz", "white", "weiß",
+			"brown", "braun", "gray", "grau", "grey", "grau", "red", "rot", "golden", "golden", "gold", "golden",
+			"blue", "blau", "green", "grün");
+
+	/**
+	 * Deutscher Name aus einem Modellnamen: Hersteller-Kürzel (nm_, nocsy_, pet_ …) weg, bekannte Tiere übersetzen, Farben
+	 * dahinter in Klammern („rabbit black“ → „Kaninchen (schwarz)“). null = unbekannt.
+	 */
+	private static String germanName(String words) {
+		String w = words.toLowerCase(java.util.Locale.ROOT)
+				.replaceAll("\\b(nm|nocsy|mm|me|pet|pets|custom|op|opsucht|mob|mobs)\\b", " ")
+				.replaceAll("\\s+", " ").strip();
+		java.util.List<String> colors = new java.util.ArrayList<>();
+		StringBuilder rest = new StringBuilder();
+		for (String part : w.split(" ")) {
+			if (COLORS.containsKey(part)) {
+				colors.add(COLORS.get(part));
+			} else if (!part.isEmpty()) {
+				rest.append(rest.length() > 0 ? " " : "").append(part);
+			}
+		}
+		String animal = GERMAN.get(rest.toString());
+		if (animal == null) {
+			// einzelnes bekanntes Wort im Namen (z. B. „baby shark“ → Hai)
+			for (String part : rest.toString().split(" ")) {
+				if (GERMAN.containsKey(part)) {
+					animal = GERMAN.get(part);
+				}
+			}
+		}
+		if (animal == null) {
+			return null;
+		}
+		return colors.isEmpty() ? animal : animal + " (" + String.join(", ", colors) + ")";
+	}
 
 	/** Eigenes Modell eines Items als lesbarer Name (eigener Item-Name hat Vorrang), sonst null. */
 	private static String itemModelName(ItemStack stack) {
@@ -444,9 +498,9 @@ public final class StatsTracker {
 		if (path.length() < 2) {
 			return null;
 		}
-		String known = GERMAN.get(path.toLowerCase(java.util.Locale.ROOT));
-		if (known != null) {
-			return known;
+		String german = germanName(path);
+		if (german != null) {
+			return german;
 		}
 		StringBuilder out = new StringBuilder();
 		for (String w : path.split(" ")) {
