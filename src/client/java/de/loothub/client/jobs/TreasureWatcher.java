@@ -50,6 +50,7 @@ public final class TreasureWatcher {
 		c.treasureXp = 0;
 		c.treasuresFound++;
 		c.treasureFoundAt = now;
+		de.loothub.client.stats.StatsStore.add("general.treasures", 1); // für die Statistik (Heute/7 Tage/Gesamt)
 		c.save();
 		Minecraft mc = Minecraft.getInstance();
 		if (mc.player != null && c.jobWidgetEnabled) {

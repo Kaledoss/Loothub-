@@ -501,6 +501,12 @@ public class StatsScreen extends LoothubScreen {
 		entries.add(entry("damage_dealt", hearts(get("general.damage_dealt"))));
 		entries.add(entry("damage_taken", hearts(get("general.damage_taken"))));
 		entries.add(entry("deaths", Fmt.whole(get("general.deaths"))));
+		// gefundene Jobschätze – bei „Gesamt“ auch die vor dem Zählen in der Statistik (Zähler des Job-Widgets)
+		long treasures = get("general.treasures");
+		if (range == Range.TOTAL) {
+			treasures = Math.max(treasures, de.loothub.client.jobs.WidgetConfig.get().treasuresFound);
+		}
+		entries.add(entry("treasures", Fmt.whole(treasures)));
 		// Spitzenreiter im gewählten Zeitraum
 		entries.add(top("top_mined", Kind.BLOCK, "mined."));
 		entries.add(top("top_placed", Kind.BLOCK, "placed."));
@@ -564,7 +570,8 @@ public class StatsScreen extends LoothubScreen {
 			Map.entry("tool_uses", new ItemStack(Items.ANVIL)),
 			Map.entry("damage_dealt", new ItemStack(Items.BLAZE_POWDER)),
 			Map.entry("damage_taken", new ItemStack(Items.SHIELD)),
-			Map.entry("deaths", new ItemStack(Items.SKELETON_SKULL)));
+			Map.entry("deaths", new ItemStack(Items.SKELETON_SKULL)),
+			Map.entry("treasures", new ItemStack(Items.CHEST)));
 
 	private GeneralEntry entry(String key, String value) {
 		return new GeneralEntry(Component.translatable("loothub.stats.general." + key).getString(), value,

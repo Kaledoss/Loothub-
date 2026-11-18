@@ -800,5 +800,6 @@
 	"loothub.cosmetics.pets.type.red_panda": "Red panda",
 	"loothub.stats.day": "Showing day: %s",
 	"loothub.pokedex.pcg_off": "Off – turn on in Settings › Extras",
-	"loothub.cosmetics.pets.type.donkey": "Donkey"
+	"loothub.cosmetics.pets.type.donkey": "Donkey",
+	"loothub.stats.general.treasures": "Job treasures found"
 }
