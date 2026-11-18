@@ -59,13 +59,18 @@ public final class Wings {
 			String inner, String outer) {
 		boolean in = inner != null && !inner.isBlank(), out = outer != null && !outer.isBlank();
 		if (!in && !out) {
-			draw(poseStack, collector, tex(style, ""), 0xFFFFFFFF, pose, light, drop(style));
+			draw(poseStack, collector, tex(style, ""), 0xFFFFFFFF, pose, light, drop(style), feathered(style));
 			return;
 		}
 		draw(poseStack, collector, tex(style, in ? "_in_gray" : "_in"), in ? 0xFF000000 | AuraTextures.parse(inner) : 0xFFFFFFFF,
-				pose, light, drop(style));
+				pose, light, drop(style), feathered(style));
 		draw(poseStack, collector, tex(style, out ? "_out_gray" : "_out"), out ? 0xFF000000 | AuraTextures.parse(outer) : 0xFFFFFFFF,
-				pose, light, drop(style));
+				pose, light, drop(style), feathered(style));
+	}
+
+	/** Nur Federflügel bekommen die zweite Federlage – bei Hautflügeln (Teufel, Drache, Knochen) sähe man sie als doppelten Rand. */
+	private static boolean feathered(String style) {
+		return "angel".equals(style);
 	}
 
 	/** Wie weit ein Stil tiefer am Rücken sitzt (Blöcke): Knochenschwingen ragen sonst zu weit über den Kopf. */
@@ -87,7 +92,7 @@ public final class Wings {
 	 * Federlage für Tiefe.
 	 */
 	private static void draw(PoseStack poseStack, SubmitNodeCollector collector, Identifier texture, int argb, Pose wp, int light,
-			float drop) {
+			float drop, boolean feathered) {
 		float open = Mth.clamp(wp.open(), 0.0F, 1.2F);
 		int dark = shade(argb, 0.68F);
 		int back = shade(argb, 0.82F);
@@ -117,7 +122,7 @@ public final class Wings {
 				collector.submitCustomGeometry(poseStack, RenderTypes.entityCutoutNoCull(texture), (pose, vc) -> {
 					quad(pose, vc, 0.0F, w, fu0, fu1, top, bottom, 0.0F, light, argb, 1.0F);
 					quad(pose, vc, 0.0F, w, fu0, fu1, top, bottom, -0.012F, light, dark, -1.0F);
-					if (tip) {
+					if (tip && feathered) {
 						// zweite Federlage: etwas tiefer und nach hinten versetzt, leicht gefächert
 						quad(pose, vc, -0.02F * Math.signum(w), w * 1.04F, fu0, fu1, top + 0.05F, bottom + 0.04F, 0.035F, light, back, 1.0F);
 					}
