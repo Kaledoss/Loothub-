@@ -39,21 +39,23 @@ public final class EasyPlaceWarning {
 			loggedPrinting = printing;
 			de.loothub.Loothub.LOGGER.info("[Loothub-Bau] Printer {}", printing ? "druckt" : "druckt nicht");
 		}
-		if (printing) {
+		// Printer an oder im Bereich einer Schematic: laufend die Reichweite absuchen – auch ohne Rechtsklick
+		if (printing || Build.here() != null) {
 			if (--printerScanIn > 0) {
 				return;
 			}
 			printerScanIn = 10;
+			double range = printing ? LitematicaBridge.printerRange() : mc.player.blockInteractionRange();
 			java.util.Map<String, Long> inv = Build.inventory();
 			java.util.List<ItemStack> lacking = new java.util.ArrayList<>();
-			for (ItemStack s : LitematicaBridge.neededAround(mc, LitematicaBridge.printerRange())) {
+			for (ItemStack s : LitematicaBridge.neededAround(mc, range)) {
 				Long have = inv.get(Build.id(s.getItem()));
 				if (have == null || have <= 0) {
 					lacking.add(s);
 				}
 			}
 			if (!lacking.isEmpty()) {
-				printer = true;
+				printer = printing;
 				show(lacking.get(0), lacking.size() - 1);
 			}
 			return;
@@ -85,8 +87,8 @@ public final class EasyPlaceWarning {
 		missing = need.copyWithCount(1);
 		more = others;
 		until = now + SHOW_MS;
-		// Ton nur einmal je Block alle paar Sekunden, nicht bei jedem Tick mit gedrückter Taste
-		if (!id.equals(lastSoundFor) || now - lastSoundAt > 5_000L) {
+		// Ton nur beim ersten Mal je Block und dann höchstens jede Minute (die Einblendung bleibt, solange er fehlt)
+		if (!id.equals(lastSoundFor) || now - lastSoundAt > 60_000L) {
 			lastSoundFor = id;
 			lastSoundAt = now;
 			Sounds.play(Sounds.Group.BUILD, SoundEvents.NOTE_BLOCK_BASS, 0.7F, 0.6F);

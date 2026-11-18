@@ -875,7 +875,7 @@
 	"loothub.build.preview.hint": "Mouse wheel: rotate · Shift + wheel: zoom · Drag: move · Right-drag: tilt",
 	"loothub.hud.build_warn": "Build: missing alert",
 	"loothub.build.warn.title": "%s missing",
-	"loothub.build.warn.sub": "Easy Place can't find the block in your inventory",
+	"loothub.build.warn.sub": "This block is missing from your inventory",
 	"loothub.build.warn.sub_printer": "The printer can't find the block in your inventory",
 	"loothub.build.warn.sub_more": "and %s more blocks in reach are missing from your inventory"
 }
