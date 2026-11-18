@@ -258,6 +258,8 @@ final class LitematicaBridge {
 				// ältere/andere Fassung ohne Reichweite
 			}
 			printKey = Class.forName(PRINTER + "Hotkeys").getField("PRINT").get(null);
+			Loothub.LOGGER.info("[Loothub-Bau] Litematica-Printer erkannt (Druckmodus: {}, Druck-Taste: {})",
+					printMode == null ? "?" : printMode.getClass().getSimpleName(), printKey == null ? "?" : printKey.getClass().getSimpleName());
 		} catch (ReflectiveOperationException | LinkageError e) {
 			Loothub.LOGGER.info("Litematica-Printer nicht erkannt – Fehlt-Warnung nur für Easy Place");
 		}

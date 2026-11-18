@@ -20,7 +20,8 @@ public final class EasyPlaceWarning {
 	/** Weitere fehlende Blöcke (Printer: mehrere in Reichweite). */
 	private static int more;
 	private static int printerScanIn;
-	private static boolean printer;
+	private static boolean printer, loggedPrinting;
+	private static String lastLogged = "";
 	private static long until;
 	private static String lastSoundFor = "";
 	private static long lastSoundAt;
@@ -33,7 +34,12 @@ public final class EasyPlaceWarning {
 			return;
 		}
 		// Printer: alle paar Ticks die Reichweite absuchen, was gebraucht wird, aber nicht im Inventar ist
-		if (LitematicaBridge.printerActive()) {
+		boolean printing = LitematicaBridge.printerActive();
+		if (printing != loggedPrinting) {
+			loggedPrinting = printing;
+			de.loothub.Loothub.LOGGER.info("[Loothub-Bau] Printer {}", printing ? "druckt" : "druckt nicht");
+		}
+		if (printing) {
 			if (--printerScanIn > 0) {
 				return;
 			}
@@ -52,7 +58,8 @@ public final class EasyPlaceWarning {
 			}
 			return;
 		}
-		if (!mc.options.keyUse.isDown() || !LitematicaBridge.easyPlaceOn()) {
+		// sonst: beim Rechtsklick auf einen fehlenden Schematic-Block (mit Easy Place, aber auch ohne)
+		if (!mc.options.keyUse.isDown()) {
 			return;
 		}
 		ItemStack need = LitematicaBridge.targetedNeeded(mc);
@@ -69,6 +76,11 @@ public final class EasyPlaceWarning {
 
 	private static void show(ItemStack need, int others) {
 		String id = Build.id(need.getItem());
+		if (!id.equals(lastLogged)) {
+			lastLogged = id;
+			de.loothub.Loothub.LOGGER.info("[Loothub-Bau] Fehlt im Inventar: {} (+{} weitere, {})", id, others,
+					printer ? "Printer" : "Rechtsklick");
+		}
 		long now = System.currentTimeMillis();
 		missing = need.copyWithCount(1);
 		more = others;
