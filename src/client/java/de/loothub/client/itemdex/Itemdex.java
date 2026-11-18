@@ -144,6 +144,7 @@ public final class Itemdex {
 		ClientReceiveMessageEvents.GAME.register((message, overlay) -> scanChat(message));
 		ClientReceiveMessageEvents.CHAT.register((message, signed, sender, params, time) -> scanChat(message));
 		ClientLifecycleEvents.CLIENT_STOPPING.register(c -> save(true));
+		prefetch(); // schon beim Spielstart im Hintergrund lesen
 	}
 
 	public static synchronized List<Entry> entries() {
@@ -559,6 +560,10 @@ public final class Itemdex {
 		if (seen != null && seen == stamp) {
 			return;
 		}
+		if (entries == null && !prefetchDone) {
+			prefetch(); // große Itemdex-Datei im Hintergrund lesen, statt das Spiel beim Betreten kurz einzufrieren
+			return;
+		}
 		CHECKED.put(s, stamp);
 		if (source == Source.CONTAINER && looksLikeButton(s)) {
 			return;
@@ -612,18 +617,47 @@ public final class Itemdex {
 		return FabricLoader.getInstance().getConfigDir().resolve("loothub-itemdex.json");
 	}
 
+	/** Vorab im Hintergrund gelesene Datei (ohne Sperre, damit das Spiel weiterläuft). */
+	private static volatile JsonElement prefetched;
+	private static volatile boolean prefetchStarted, prefetchDone;
+
+	private static void prefetch() {
+		if (prefetchStarted) {
+			return;
+		}
+		prefetchStarted = true;
+		Thread t = new Thread(() -> {
+			try {
+				Path p = file();
+				if (Files.exists(p)) {
+					try (Reader r = Files.newBufferedReader(p, StandardCharsets.UTF_8)) {
+						prefetched = JsonParser.parseReader(r);
+					}
+				}
+			} catch (IOException | RuntimeException ex) {
+				Loothub.LOGGER.warn("Itemdex konnte nicht vorab gelesen werden", ex);
+			} finally {
+				prefetchDone = true;
+			}
+		}, "Loothub-Itemdex");
+		t.setDaemon(true);
+		t.start();
+	}
+
 	private static synchronized void load() {
 		if (entries != null) {
 			return;
 		}
+		JsonElement pre = prefetched;
+		prefetched = null;
 		entries = new ArrayList<>();
 		byKey = new HashMap<>();
 		Path p = file();
-		if (!Files.exists(p)) {
+		if (pre == null && !Files.exists(p)) {
 			return;
 		}
-		try (Reader r = Files.newBufferedReader(p, StandardCharsets.UTF_8)) {
-			JsonElement root = JsonParser.parseReader(r);
+		try (Reader r = pre != null ? Reader.nullReader() : Files.newBufferedReader(p, StandardCharsets.UTF_8)) {
+			JsonElement root = pre != null ? pre : JsonParser.parseReader(r);
 			if (root == null || !root.isJsonArray()) {
 				return;
 			}

@@ -240,7 +240,7 @@ public class StatsScreen extends LoothubScreen {
 			case GENERAL -> List.of();
 			case BLOCKS -> buildRows(new String[]{"mined.", "placed.", "picked."}, Kind.BLOCK);
 			case PLANTS -> buildRows(new String[]{"mined.", "placed.", "picked."}, Kind.PLANT);
-			case FOOD -> buildRows(new String[]{"picked.", "eaten."}, Kind.ITEM);
+			case FOOD -> buildRows(new String[]{"mined.", "picked.", "eaten."}, Kind.ITEM);
 			case ITEMS -> buildRows(new String[]{"picked.", "used."}, Kind.ITEM);
 			case TOOLS -> buildRows(new String[]{"tool_mined.", "tool_hits.", "tool_used.", "picked."}, Kind.ITEM);
 			case MOBS -> buildRows(new String[]{"killed."}, Kind.MOB);
@@ -354,11 +354,11 @@ public class StatsScreen extends LoothubScreen {
 	 */
 	private boolean accepts(String prefix, String id, Kind kind) {
 		return switch (category) {
-			case BLOCKS -> !prefix.equals("picked.") || (isBlockItem(id) && !isFood(id));
-			case PLANTS -> isPlantId(id) && !isFood(id);
-			case FOOD -> isFood(id);
+			case BLOCKS -> !isFoodBlock(id) && (!prefix.equals("picked.") || (isBlockItem(id) && !isFood(id)));
+			case PLANTS -> isPlantId(id) && !isFood(id) && !isFoodBlock(id);
+			case FOOD -> isFoodBlock(id) || (!prefix.equals("mined.") && isFood(id));
 			case TOOLS -> !prefix.equals("picked.") || isTool(id);
-			case ITEMS -> !isTool(id) && !isFood(id) && !isPlantId(id) && !isBlockItem(id);
+			case ITEMS -> !isTool(id) && !isFood(id) && !isFoodBlock(id) && !isPlantId(id) && !isBlockItem(id);
 			default -> true;
 		};
 	}
@@ -409,6 +409,11 @@ public class StatsScreen extends LoothubScreen {
 			return new boolean[]{false, false, false, true}; // Rüstung, Elytren …
 		}
 		return new boolean[]{false, false, true, true};
+	}
+
+	/** Melonen und Kürbisse: eigentlich Blöcke, stehen aber unter „Nahrung“. */
+	private static boolean isFoodBlock(String id) {
+		return id.equals("minecraft:melon") || id.equals("minecraft:pumpkin") || id.equals("minecraft:carved_pumpkin");
 	}
 
 	/** Essbar (Apfel, Brot, gebratenes Fleisch, Chorusfrucht …)? */
@@ -612,7 +617,7 @@ public class StatsScreen extends LoothubScreen {
 		return switch (category) {
 			case BLOCKS -> List.of("loothub.stats.col.mined", "loothub.stats.col.placed", "loothub.stats.col.picked");
 			case PLANTS -> List.of("loothub.stats.col.harvested", "loothub.stats.col.planted", "loothub.stats.col.picked");
-			case FOOD -> List.of("loothub.stats.col.picked", "loothub.stats.col.eaten");
+			case FOOD -> List.of("loothub.stats.col.harvested", "loothub.stats.col.picked", "loothub.stats.col.eaten");
 			case ITEMS -> List.of("loothub.stats.col.picked", "loothub.stats.col.used");
 			case TOOLS -> List.of("loothub.stats.col.tool_mined", "loothub.stats.col.tool_hits", "loothub.stats.col.tool_used",
 					"loothub.stats.col.picked");

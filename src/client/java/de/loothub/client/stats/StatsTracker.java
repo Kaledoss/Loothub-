@@ -219,7 +219,7 @@ public final class StatsTracker {
 			// kein Lebewesen zu sehen (der Server schickt bei manchen Modell-Mobs nur Modell und Trefferfläche): dann ist
 			// das Modell selbst der Mob – beobachtet wird das Teil, auf dem die Trefferfläche sitzt
 			Entity root = entity.getRootVehicle();
-			String model = modelName(entity, 3.0);
+			String model = modelName(entity, Math.max(3.0, entity.getBbWidth() + 1.0)); // große Mobs (Elefant): weiter suchen
 			if (model != null) {
 				if (!TARGETS.containsKey(root.getId())) {
 					de.loothub.Loothub.LOGGER.info("[Loothub-Mobinfo] getroffen: {} | nur Modell, gezählt als: {}", part(entity), model);
@@ -264,8 +264,9 @@ public final class StatsTracker {
 		// lose Trefferfläche (Interaktions-Entity, Anzeige, Rüstungsständer), die an nichts hängt: das nächste Lebewesen
 		// direkt daneben ist der eigentliche Mob (z. B. Maulwurf = Kaninchen unter einer Trefferfläche)
 		LivingEntity near = null;
-		double best = 4.0 * 4.0;
-		for (Entity e : entity.level().getEntities(entity, entity.getBoundingBox().inflate(3.5))) {
+		double radius = Math.max(3.5, entity.getBbWidth() + 1.0); // große Trefferfläche (Elefant …): Träger kann weiter weg sein
+		double best = (radius + 0.5) * (radius + 0.5);
+		for (Entity e : entity.level().getEntities(entity, entity.getBoundingBox().inflate(radius))) {
 			if (e instanceof LivingEntity l && !(e instanceof net.minecraft.world.entity.player.Player)
 					&& !(e instanceof net.minecraft.world.entity.decoration.ArmorStand) && l.isAlive()) {
 				double d = e.distanceToSqr(entity);
@@ -352,6 +353,9 @@ public final class StatsTracker {
 			// kein Name zu lesen: Name des Modells nehmen (Item-Anzeige bzw. Kopf-Item eines Rüstungsständers mit eigenem
 			// Item-Modell, z. B. „opsucht:mobs/kasuar“ → „Kasuar“)
 			String model = modelName(living);
+			if (model == null) {
+				model = modelName(living, 4.5); // große Modelle (Elefant): Teile sitzen weiter vom Träger weg
+			}
 			if (model != null) {
 				return model;
 			}
@@ -409,7 +413,7 @@ public final class StatsTracker {
 		if (living.getVehicle() != null) {
 			parts.add(living.getVehicle());
 		}
-		parts.addAll(living.level().getEntities(living, living.getBoundingBox().inflate(reach, 0.5, reach).expandTowards(0.0, 2.5, 0.0)));
+		parts.addAll(living.level().getEntities(living, living.getBoundingBox().inflate(reach, 0.5, reach).expandTowards(0.0, 1.0 + reach, 0.0)));
 		// ein Modell besteht aus vielen Teilen (Kopf, Arme, Beine …) – der Name, der am häufigsten vorkommt, gewinnt;
 		// einzelne Effekte daneben (z. B. Feuer) fallen so heraus
 		java.util.Map<String, Integer> votes = new java.util.HashMap<>();
@@ -435,26 +439,205 @@ public final class StatsTracker {
 
 	/** Englische Tiernamen aus Modellnamen → deutsch (sonst wird der Modellname schön geschrieben). */
 	private static final java.util.Map<String, String> GERMAN = java.util.Map.ofEntries(
-			java.util.Map.entry("mole", "Maulwurf"), java.util.Map.entry("cassowary", "Kasuar"),
-			java.util.Map.entry("kasuar", "Kasuar"), java.util.Map.entry("deer", "Rentier"),
-			java.util.Map.entry("reindeer", "Rentier"), java.util.Map.entry("boar", "Eber"),
-			java.util.Map.entry("shark hammerhead", "Hammerhai"), java.util.Map.entry("hammerhead shark", "Hammerhai"),
-			java.util.Map.entry("hammerhead", "Hammerhai"), java.util.Map.entry("shark", "Hai"),
-			java.util.Map.entry("seahorse", "Seepferdchen"), java.util.Map.entry("sea horse", "Seepferdchen"),
-			java.util.Map.entry("penguin", "Pinguin"), java.util.Map.entry("rabbit", "Kaninchen"),
-			java.util.Map.entry("bunny", "Kaninchen"), java.util.Map.entry("hare", "Hase"),
-			java.util.Map.entry("crab", "Krabbe"), java.util.Map.entry("turtle", "Schildkröte"),
-			java.util.Map.entry("fox", "Fuchs"), java.util.Map.entry("wolf", "Wolf"), java.util.Map.entry("bear", "Bär"),
-			java.util.Map.entry("owl", "Eule"), java.util.Map.entry("eagle", "Adler"), java.util.Map.entry("hawk", "Falke"),
-			java.util.Map.entry("falcon", "Falke"), java.util.Map.entry("parrot", "Papagei"), java.util.Map.entry("seagull", "Möwe"), java.util.Map.entry("duck", "Ente"), java.util.Map.entry("snake", "Schlange"),
-			java.util.Map.entry("monkey", "Affe"), java.util.Map.entry("elephant", "Elefant"),
-			java.util.Map.entry("giraffe", "Giraffe"), java.util.Map.entry("lion", "Löwe"), java.util.Map.entry("tiger", "Tiger"),
-			java.util.Map.entry("whale", "Wal"), java.util.Map.entry("dolphin", "Delfin"), java.util.Map.entry("jellyfish", "Qualle"),
-			java.util.Map.entry("octopus", "Oktopus"), java.util.Map.entry("squirrel", "Eichhörnchen"),
-			java.util.Map.entry("hedgehog", "Igel"), java.util.Map.entry("raccoon", "Waschbär"), java.util.Map.entry("moose", "Elch"),
-			java.util.Map.entry("butterfly", "Schmetterling"), java.util.Map.entry("scorpion", "Skorpion"),
-			java.util.Map.entry("spider", "Spinne"), java.util.Map.entry("crocodile", "Krokodil"),
-			java.util.Map.entry("ostrich", "Strauß"), java.util.Map.entry("kangaroo", "Känguru"));
+			java.util.Map.entry("mole", "Maulwurf"),
+			java.util.Map.entry("cassowary", "Kasuar"),
+			java.util.Map.entry("kasuar", "Kasuar"),
+			java.util.Map.entry("deer", "Rentier"),
+			java.util.Map.entry("reindeer", "Rentier"),
+			java.util.Map.entry("stag", "Hirsch"),
+			java.util.Map.entry("roe deer", "Reh"),
+			java.util.Map.entry("boar", "Eber"),
+			java.util.Map.entry("wild boar", "Wildschwein"),
+			java.util.Map.entry("shark hammerhead", "Hammerhai"),
+			java.util.Map.entry("hammerhead shark", "Hammerhai"),
+			java.util.Map.entry("hammerhead", "Hammerhai"),
+			java.util.Map.entry("shark", "Hai"),
+			java.util.Map.entry("white shark", "Weißer Hai"),
+			java.util.Map.entry("great white shark", "Weißer Hai"),
+			java.util.Map.entry("seahorse", "Seepferdchen"),
+			java.util.Map.entry("sea horse", "Seepferdchen"),
+			java.util.Map.entry("penguin", "Pinguin"),
+			java.util.Map.entry("rabbit", "Kaninchen"),
+			java.util.Map.entry("bunny", "Kaninchen"),
+			java.util.Map.entry("hare", "Hase"),
+			java.util.Map.entry("crab", "Krabbe"),
+			java.util.Map.entry("lobster", "Hummer"),
+			java.util.Map.entry("shrimp", "Garnele"),
+			java.util.Map.entry("turtle", "Schildkröte"),
+			java.util.Map.entry("tortoise", "Schildkröte"),
+			java.util.Map.entry("sea turtle", "Meeresschildkröte"),
+			java.util.Map.entry("fox", "Fuchs"),
+			java.util.Map.entry("arctic fox", "Polarfuchs"),
+			java.util.Map.entry("wolf", "Wolf"),
+			java.util.Map.entry("bear", "Bär"),
+			java.util.Map.entry("polar bear", "Eisbär"),
+			java.util.Map.entry("brown bear", "Braunbär"),
+			java.util.Map.entry("grizzly", "Grizzlybär"),
+			java.util.Map.entry("panda", "Panda"),
+			java.util.Map.entry("red panda", "Roter Panda"),
+			java.util.Map.entry("owl", "Eule"),
+			java.util.Map.entry("eagle", "Adler"),
+			java.util.Map.entry("hawk", "Falke"),
+			java.util.Map.entry("falcon", "Falke"),
+			java.util.Map.entry("parrot", "Papagei"),
+			java.util.Map.entry("seagull", "Möwe"),
+			java.util.Map.entry("gull", "Möwe"),
+			java.util.Map.entry("duck", "Ente"),
+			java.util.Map.entry("goose", "Gans"),
+			java.util.Map.entry("swan", "Schwan"),
+			java.util.Map.entry("crow", "Krähe"),
+			java.util.Map.entry("raven", "Rabe"),
+			java.util.Map.entry("pigeon", "Taube"),
+			java.util.Map.entry("dove", "Taube"),
+			java.util.Map.entry("flamingo", "Flamingo"),
+			java.util.Map.entry("peacock", "Pfau"),
+			java.util.Map.entry("pelican", "Pelikan"),
+			java.util.Map.entry("toucan", "Tukan"),
+			java.util.Map.entry("ostrich", "Strauß"),
+			java.util.Map.entry("emu", "Emu"),
+			java.util.Map.entry("vulture", "Geier"),
+			java.util.Map.entry("stork", "Storch"),
+			java.util.Map.entry("snake", "Schlange"),
+			java.util.Map.entry("cobra", "Kobra"),
+			java.util.Map.entry("python", "Python"),
+			java.util.Map.entry("lizard", "Eidechse"),
+			java.util.Map.entry("gecko", "Gecko"),
+			java.util.Map.entry("chameleon", "Chamäleon"),
+			java.util.Map.entry("iguana", "Leguan"),
+			java.util.Map.entry("crocodile", "Krokodil"),
+			java.util.Map.entry("alligator", "Alligator"),
+			java.util.Map.entry("frog", "Frosch"),
+			java.util.Map.entry("toad", "Kröte"),
+			java.util.Map.entry("monkey", "Affe"),
+			java.util.Map.entry("gorilla", "Gorilla"),
+			java.util.Map.entry("chimpanzee", "Schimpanse"),
+			java.util.Map.entry("orangutan", "Orang-Utan"),
+			java.util.Map.entry("sloth", "Faultier"),
+			java.util.Map.entry("koala", "Koala"),
+			java.util.Map.entry("kangaroo", "Känguru"),
+			java.util.Map.entry("elephant", "Elefant"),
+			java.util.Map.entry("mammoth", "Mammut"),
+			java.util.Map.entry("giraffe", "Giraffe"),
+			java.util.Map.entry("zebra", "Zebra"),
+			java.util.Map.entry("hippo", "Nilpferd"),
+			java.util.Map.entry("hippopotamus", "Nilpferd"),
+			java.util.Map.entry("rhino", "Nashorn"),
+			java.util.Map.entry("rhinoceros", "Nashorn"),
+			java.util.Map.entry("lion", "Löwe"),
+			java.util.Map.entry("tiger", "Tiger"),
+			java.util.Map.entry("leopard", "Leopard"),
+			java.util.Map.entry("snow leopard", "Schneeleopard"),
+			java.util.Map.entry("panther", "Panther"),
+			java.util.Map.entry("jaguar", "Jaguar"),
+			java.util.Map.entry("cheetah", "Gepard"),
+			java.util.Map.entry("lynx", "Luchs"),
+			java.util.Map.entry("hyena", "Hyäne"),
+			java.util.Map.entry("jackal", "Schakal"),
+			java.util.Map.entry("buffalo", "Büffel"),
+			java.util.Map.entry("bison", "Bison"),
+			java.util.Map.entry("yak", "Yak"),
+			java.util.Map.entry("camel", "Kamel"),
+			java.util.Map.entry("alpaca", "Alpaka"),
+			java.util.Map.entry("llama", "Lama"),
+			java.util.Map.entry("moose", "Elch"),
+			java.util.Map.entry("elk", "Elch"),
+			java.util.Map.entry("antelope", "Antilope"),
+			java.util.Map.entry("gazelle", "Gazelle"),
+			java.util.Map.entry("whale", "Wal"),
+			java.util.Map.entry("orca", "Orca"),
+			java.util.Map.entry("killer whale", "Orca"),
+			java.util.Map.entry("narwhal", "Narwal"),
+			java.util.Map.entry("dolphin", "Delfin"),
+			java.util.Map.entry("seal", "Robbe"),
+			java.util.Map.entry("walrus", "Walross"),
+			java.util.Map.entry("otter", "Otter"),
+			java.util.Map.entry("beaver", "Biber"),
+			java.util.Map.entry("jellyfish", "Qualle"),
+			java.util.Map.entry("octopus", "Oktopus"),
+			java.util.Map.entry("squid", "Tintenfisch"),
+			java.util.Map.entry("starfish", "Seestern"),
+			java.util.Map.entry("clownfish", "Clownfisch"),
+			java.util.Map.entry("pufferfish", "Kugelfisch"),
+			java.util.Map.entry("stingray", "Rochen"),
+			java.util.Map.entry("manta", "Mantarochen"),
+			java.util.Map.entry("manta ray", "Mantarochen"),
+			java.util.Map.entry("eel", "Aal"),
+			java.util.Map.entry("piranha", "Piranha"),
+			java.util.Map.entry("anglerfish", "Anglerfisch"),
+			java.util.Map.entry("swordfish", "Schwertfisch"),
+			java.util.Map.entry("tuna", "Thunfisch"),
+			java.util.Map.entry("salmon", "Lachs"),
+			java.util.Map.entry("cod", "Kabeljau"),
+			java.util.Map.entry("fish", "Fisch"),
+			java.util.Map.entry("squirrel", "Eichhörnchen"),
+			java.util.Map.entry("hedgehog", "Igel"),
+			java.util.Map.entry("raccoon", "Waschbär"),
+			java.util.Map.entry("badger", "Dachs"),
+			java.util.Map.entry("skunk", "Stinktier"),
+			java.util.Map.entry("mouse", "Maus"),
+			java.util.Map.entry("rat", "Ratte"),
+			java.util.Map.entry("hamster", "Hamster"),
+			java.util.Map.entry("bat", "Fledermaus"),
+			java.util.Map.entry("butterfly", "Schmetterling"),
+			java.util.Map.entry("bee", "Biene"),
+			java.util.Map.entry("wasp", "Wespe"),
+			java.util.Map.entry("ant", "Ameise"),
+			java.util.Map.entry("beetle", "Käfer"),
+			java.util.Map.entry("scarab", "Skarabäus"),
+			java.util.Map.entry("ladybug", "Marienkäfer"),
+			java.util.Map.entry("dragonfly", "Libelle"),
+			java.util.Map.entry("snail", "Schnecke"),
+			java.util.Map.entry("worm", "Wurm"),
+			java.util.Map.entry("scorpion", "Skorpion"),
+			java.util.Map.entry("spider", "Spinne"),
+			java.util.Map.entry("tarantula", "Vogelspinne"),
+			java.util.Map.entry("cow", "Kuh"),
+			java.util.Map.entry("bull", "Stier"),
+			java.util.Map.entry("pig", "Schwein"),
+			java.util.Map.entry("sheep", "Schaf"),
+			java.util.Map.entry("goat", "Ziege"),
+			java.util.Map.entry("chicken", "Huhn"),
+			java.util.Map.entry("horse", "Pferd"),
+			java.util.Map.entry("donkey", "Esel"),
+			java.util.Map.entry("cat", "Katze"),
+			java.util.Map.entry("dog", "Hund"),
+			java.util.Map.entry("dragon", "Drache"),
+			java.util.Map.entry("baby dragon", "Babydrache"),
+			java.util.Map.entry("dino", "Dino"),
+			java.util.Map.entry("dinosaur", "Dinosaurier"),
+			java.util.Map.entry("raptor", "Raptor"),
+			java.util.Map.entry("trex", "T-Rex"),
+			java.util.Map.entry("t rex", "T-Rex"),
+			java.util.Map.entry("yeti", "Yeti"),
+			java.util.Map.entry("troll", "Troll"),
+			java.util.Map.entry("goblin", "Goblin"),
+			java.util.Map.entry("orc", "Ork"),
+			java.util.Map.entry("ogre", "Oger"),
+			java.util.Map.entry("golem", "Golem"),
+			java.util.Map.entry("ghost", "Geist"),
+			java.util.Map.entry("mummy", "Mumie"),
+			java.util.Map.entry("werewolf", "Werwolf"),
+			java.util.Map.entry("vampire", "Vampir"),
+			java.util.Map.entry("skeleton", "Skelett"),
+			java.util.Map.entry("zombie", "Zombie"),
+			java.util.Map.entry("slime", "Schleim"),
+			java.util.Map.entry("witch", "Hexe"),
+			java.util.Map.entry("wizard", "Zauberer"),
+			java.util.Map.entry("knight", "Ritter"),
+			java.util.Map.entry("pirate", "Pirat"),
+			java.util.Map.entry("bandit", "Bandit"),
+			java.util.Map.entry("snowman", "Schneemann"),
+			java.util.Map.entry("gingerbread", "Lebkuchenmann"),
+			java.util.Map.entry("gingerbread man", "Lebkuchenmann"),
+			java.util.Map.entry("elf", "Elf"),
+			java.util.Map.entry("santa", "Weihnachtsmann"),
+			java.util.Map.entry("krampus", "Krampus"),
+			java.util.Map.entry("reaper", "Sensenmann"),
+			java.util.Map.entry("pumpkin", "Kürbis"),
+			java.util.Map.entry("scarecrow", "Vogelscheuche"),
+			java.util.Map.entry("mushroom", "Pilz"),
+			java.util.Map.entry("treant", "Baumgeist"),
+			java.util.Map.entry("ent", "Baumgeist"));
 	private static final java.util.Map<String, String> COLORS = java.util.Map.of("black", "schwarz", "white", "weiß",
 			"brown", "braun", "gray", "grau", "grey", "grau", "red", "rot", "golden", "golden", "gold", "golden",
 			"blue", "blau", "green", "grün");
@@ -463,10 +646,18 @@ public final class StatsTracker {
 	 * Deutscher Name aus einem Modellnamen: Hersteller-Kürzel (nm_, nocsy_, pet_ …) weg, bekannte Tiere übersetzen, Farben
 	 * dahinter in Klammern („rabbit black“ → „Kaninchen (schwarz)“). null = unbekannt.
 	 */
-	private static String germanName(String words) {
+	static String germanName(String words) {
+		return germanName(words, false);
+	}
+
+	/** strict: nur übersetzen, wenn der ganze Name (ohne Farben/Kürzel) bekannt ist – für alte Statistik-Einträge. */
+	static String germanName(String words, boolean strict) {
 		String w = words.toLowerCase(java.util.Locale.ROOT)
 				.replaceAll("\\b(nm|nocsy|mm|me|pet|pets|custom|op|opsucht|mob|mobs)\\b", " ")
 				.replaceAll("\\s+", " ").strip();
+		if (GERMAN.containsKey(w)) {
+			return GERMAN.get(w); // ganzer Name zuerst („red panda“ → Roter Panda, nicht „Panda (rot)“)
+		}
 		java.util.List<String> colors = new java.util.ArrayList<>();
 		StringBuilder rest = new StringBuilder();
 		for (String part : w.split(" ")) {
@@ -477,7 +668,7 @@ public final class StatsTracker {
 			}
 		}
 		String animal = GERMAN.get(rest.toString());
-		if (animal == null) {
+		if (animal == null && !strict) {
 			// einzelnes bekanntes Wort im Namen (z. B. „baby shark“ → Hai)
 			for (String part : rest.toString().split(" ")) {
 				if (GERMAN.containsKey(part)) {

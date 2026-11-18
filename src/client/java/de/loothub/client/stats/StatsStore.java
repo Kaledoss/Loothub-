@@ -171,10 +171,7 @@ public final class StatsStore {
 		// alte Fehlzählungen umbenennen: „Fire“ war der Maulwurf (Feuer-Effekt des Modells statt des Modellnamens)
 		// „Server-Mob (Bat)“ war der Kasuar (unsichtbare Fledermaus als Träger, Name damals nicht lesbar)
 		Map<String, String> rename = Map.of("killed.~Fire", "killed.~Maulwurf",
-				"killed.~Server-Mob (Bat)", "killed.~Kasuar", "killed.~Server-Mob (Fledermaus)", "killed.~Kasuar", "killed.~Deer", "killed.~Rentier",
-				"killed.~Boar", "killed.~Eber", "killed.~Mole", "killed.~Maulwurf",
-				"killed.~Nocsy Pet Penguin", "killed.~Pinguin", "killed.~Rabbit Black", "killed.~Kaninchen (schwarz)",
-				"killed.~Eagle Brown", "killed.~Adler (braun)");
+				"killed.~Server-Mob (Bat)", "killed.~Kasuar", "killed.~Server-Mob (Fledermaus)", "killed.~Kasuar");
 		for (Map<String, Long> v : days.values()) {
 			rename.forEach((from, to) -> {
 				Long n = v.remove(from);
@@ -183,6 +180,18 @@ public final class StatsStore {
 					dirty = true;
 				}
 			});
+			// englische Mob-Namen aus älteren Versionen eindeutschen („Rabbit Black“ → „Kaninchen (schwarz)“)
+			for (String key : new java.util.ArrayList<>(v.keySet())) {
+				if (!key.startsWith("killed.~")) {
+					continue;
+				}
+				String german = StatsTracker.germanName(key.substring(8), true);
+				if (german != null && !german.equals(key.substring(8))) {
+					Long n = v.remove(key);
+					v.merge("killed.~" + german, n, Long::sum);
+					dirty = true;
+				}
+			}
 		}
 	}
 }
