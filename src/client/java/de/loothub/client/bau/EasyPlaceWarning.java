@@ -39,15 +39,13 @@ public final class EasyPlaceWarning {
 			loggedPrinting = printing;
 			de.loothub.Loothub.LOGGER.info("[Loothub-Bau] Printer {}", printing ? "druckt" : "druckt nicht");
 		}
-		// Druckmodus des Printers an oder Easy-Place-Taste gedrückt (wie in Litematica belegt):
-		// die Reichweite absuchen – ohne dass man dafür rechtsklicken muss
-		boolean easyKey = LitematicaBridge.easyPlaceOn() && LitematicaBridge.easyPlaceKeyHeld();
-		if (printing || easyKey) {
+		// Druckmodus des Printers an: dessen Reichweite absuchen (der Printer setzt alles darin)
+		if (printing) {
 			if (--printerScanIn > 0) {
 				return;
 			}
 			printerScanIn = 10;
-			double range = printing ? LitematicaBridge.printerRange() : mc.player.blockInteractionRange();
+			double range = LitematicaBridge.printerRange();
 			java.util.Map<String, Long> inv = Build.inventory();
 			java.util.List<ItemStack> lacking = new java.util.ArrayList<>();
 			for (ItemStack s : LitematicaBridge.neededAround(mc, range)) {
@@ -57,13 +55,13 @@ public final class EasyPlaceWarning {
 				}
 			}
 			if (!lacking.isEmpty()) {
-				printer = printing;
+				printer = true;
 				show(lacking.get(0), lacking.size() - 1);
 			}
 			return;
 		}
-		// sonst (Easy Place an): beim Rechtsklick auf einen fehlenden Schematic-Block
-		if (!LitematicaBridge.easyPlaceOn() || !mc.options.keyUse.isDown()) {
+		// Easy Place: nur der Block, auf den man schaut – solange die Easy-Place-Taste (wie in Litematica belegt) gedrückt ist
+		if (!LitematicaBridge.easyPlaceOn() || !(LitematicaBridge.easyPlaceKeyHeld() || mc.options.keyUse.isDown())) {
 			return;
 		}
 		ItemStack need = LitematicaBridge.targetedNeeded(mc);
