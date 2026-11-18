@@ -171,7 +171,8 @@ public final class StatsStore {
 		// alte Fehlzählungen umbenennen: „Fire“ war der Maulwurf (Feuer-Effekt des Modells statt des Modellnamens)
 		// „Server-Mob (Bat)“ war der Kasuar (unsichtbare Fledermaus als Träger, Name damals nicht lesbar)
 		Map<String, String> rename = Map.of("killed.~Fire", "killed.~Maulwurf",
-				"killed.~Server-Mob (Bat)", "killed.~Kasuar", "killed.~Server-Mob (Fledermaus)", "killed.~Kasuar");
+				"killed.~Server-Mob (Bat)", "killed.~Kasuar", "killed.~Server-Mob (Fledermaus)", "killed.~Kasuar", "killed.~Deer", "killed.~Rentier",
+				"killed.~Boar", "killed.~Eber", "killed.~Mole", "killed.~Maulwurf");
 		for (Map<String, Long> v : days.values()) {
 			rename.forEach((from, to) -> {
 				Long n = v.remove(from);

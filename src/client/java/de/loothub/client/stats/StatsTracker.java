@@ -25,10 +25,12 @@ public final class StatsTracker {
 	/** Bewegungen über dieser Strecke pro Tick gelten als Teleport und zählen nicht. */
 	private static final double MAX_STEP = 10.0;
 	/** So lange nach dem letzten Treffer zählt ein Mob-Tod als eigener Kill. */
-	private static final long KILL_WINDOW_MS = 5_000;
+	private static final long KILL_WINDOW_MS = 10_000;
+	/** Verschwindet ein getroffener Mob so lange nach dem letzten Treffer (Sterbe-Animation von Server-Modellen), zählt es. */
+	private static final long VANISH_KILL_MS = 8_000;
 
 	/** {@code name}: Name eines Server-Mobs (eigener Name), sonst null → Zählung nach Mob-Art. */
-	private record Target(EntityType<?> type, String name, float lastHealth, long lastHit) {
+	private record Target(EntityType<?> type, String name, float lastHealth, long lastHit, double x, double y, double z) {
 	}
 
 	private static final Map<Integer, Target> TARGETS = new HashMap<>();
@@ -216,7 +218,7 @@ public final class StatsTracker {
 		}
 		if (living != null && tracking(mc)) {
 			TARGETS.put(living.getId(), new Target(living.getType(), customName(living), living.getHealth(),
-					System.currentTimeMillis()));
+					System.currentTimeMillis(), living.getX(), living.getY(), living.getZ()));
 		}
 	}
 
@@ -409,7 +411,8 @@ public final class StatsTracker {
 
 	/** Englische Modellnamen bekannter OPSUCHT-Mobs → deutscher Name (sonst wird der Modellname schön geschrieben). */
 	private static final java.util.Map<String, String> GERMAN = java.util.Map.of(
-			"mole", "Maulwurf", "cassowary", "Kasuar", "kasuar", "Kasuar");
+			"mole", "Maulwurf", "cassowary", "Kasuar", "kasuar", "Kasuar", "deer", "Rentier", "reindeer", "Rentier",
+			"boar", "Eber");
 
 	/** Eigenes Modell eines Items als lesbarer Name (eigener Item-Name hat Vorrang), sonst null. */
 	private static String itemModelName(ItemStack stack) {
@@ -712,11 +715,15 @@ public final class StatsTracker {
 			Target t = e.getValue();
 			Entity entity = mc.level.getEntity(e.getKey());
 			if (!(entity instanceof LivingEntity living)) {
-				// Server-Mobs verschwinden beim Tod oft sofort, ohne Sterbe-Animation: verschwindet ein Mob direkt nach
-				// einem Treffer, zählt das als Kill
-				if (now - t.lastHit() < 1_500L) {
+				// Server-Mobs verschwinden beim Tod ohne normale Sterbe-Animation – sofort oder nach der Animation ihres
+				// Modells. Verschwindet ein Mob kurz nach einem Treffer, während man noch in der Nähe ist (nicht nur
+				// außer Sichtweite gelaufen), zählt das als Kill
+				boolean kill = now - t.lastHit() < VANISH_KILL_MS && mc.player.distanceToSqr(t.x(), t.y(), t.z()) < 24 * 24;
+				if (kill) {
 					StatsStore.add(killKey(t), 1);
 				}
+				de.loothub.Loothub.LOGGER.info("[Loothub-Mobinfo] {} verschwunden {} ms nach dem letzten Treffer → {}",
+						killKey(t), now - t.lastHit(), kill ? "als Kill gezählt" : "nicht gezählt");
 				it.remove();
 				continue;
 			}
@@ -731,7 +738,8 @@ public final class StatsTracker {
 				it.remove();
 			} else {
 				String n = customName(living);
-				e.setValue(new Target(t.type(), n != null ? n : t.name(), health, t.lastHit()));
+				e.setValue(new Target(t.type(), n != null ? n : t.name(), health, t.lastHit(), living.getX(), living.getY(),
+						living.getZ()));
 			}
 		}
 	}
