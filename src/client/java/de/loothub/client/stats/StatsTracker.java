@@ -227,7 +227,13 @@ public final class StatsTracker {
 				TARGETS.put(root.getId(), new Target(root.getType(), model, 0F, System.currentTimeMillis(), root.getX(),
 						root.getY(), root.getZ()));
 			} else {
-				de.loothub.Loothub.LOGGER.info("[Loothub-Mobinfo] getroffen, aber kein Mob gefunden: {}", part(entity));
+				StringBuilder b = new StringBuilder("[Loothub-Mobinfo] getroffen, aber kein Mob gefunden: ").append(part(entity));
+				for (Entity n : entity.level().getEntities(entity, entity.getBoundingBox().inflate(4.0))) {
+					if (!(n instanceof net.minecraft.world.entity.player.Player)) {
+						b.append("\n    daneben: ").append(part(n));
+					}
+				}
+				de.loothub.Loothub.LOGGER.info(b.toString());
 			}
 		}
 		if (living != null && tracking(mc)) {
