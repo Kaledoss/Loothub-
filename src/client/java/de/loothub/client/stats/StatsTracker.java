@@ -236,6 +236,23 @@ public final class StatsTracker {
 				return l;
 			}
 		}
+		// lose Trefferfläche (Interaktions-Entity, Anzeige, Rüstungsständer), die an nichts hängt: das nächste Lebewesen
+		// direkt daneben ist der eigentliche Mob (z. B. Maulwurf = Kaninchen unter einer Trefferfläche)
+		LivingEntity near = null;
+		double best = 2.5 * 2.5;
+		for (Entity e : entity.level().getEntities(entity, entity.getBoundingBox().inflate(2.0))) {
+			if (e instanceof LivingEntity l && !(e instanceof net.minecraft.world.entity.player.Player)
+					&& !(e instanceof net.minecraft.world.entity.decoration.ArmorStand) && l.isAlive()) {
+				double d = e.distanceToSqr(entity);
+				if (d < best) {
+					best = d;
+					near = l;
+				}
+			}
+		}
+		if (near != null) {
+			return near;
+		}
 		return entity instanceof LivingEntity l ? l : null;
 	}
 
