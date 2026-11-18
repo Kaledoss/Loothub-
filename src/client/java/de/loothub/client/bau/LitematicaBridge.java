@@ -276,10 +276,14 @@ final class LitematicaBridge {
 		return printMode instanceof fi.dy.masa.malilib.config.options.ConfigBoolean b && b.getBooleanValue();
 	}
 
-	/** Reichweite des Printers (Blöcke). */
+	/** Höchste Reichweite für die Printer-Prüfung (Blöcke). */
+	static final double MAX_PRINTER_RANGE = 3.0;
+
+	/** Reichweite des Printers (Blöcke), höchstens {@link #MAX_PRINTER_RANGE}. */
 	static double printerRange() {
 		lookupPrinter();
-		return printRange instanceof fi.dy.masa.malilib.config.options.ConfigDouble d ? d.getDoubleValue() : 5.0;
+		double r = printRange instanceof fi.dy.masa.malilib.config.options.ConfigDouble d ? d.getDoubleValue() : MAX_PRINTER_RANGE;
+		return Math.min(r, MAX_PRINTER_RANGE);
 	}
 
 	/**
