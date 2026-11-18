@@ -109,7 +109,8 @@ public final class InvTools {
 	/** Ist das eine echte Kiste (kein Server-Menü)? Erkennbar am unveränderten Minecraft-Titel. */
 	static boolean realContainer(AbstractContainerScreen<?> screen) {
 		AbstractContainerMenu menu = screen.getMenu();
-		if (!(menu instanceof ChestMenu) && !(menu instanceof ShulkerBoxMenu)) {
+		if (!(menu instanceof ChestMenu) && !(menu instanceof ShulkerBoxMenu)
+				&& !(menu instanceof net.minecraft.world.inventory.HopperMenu)) {
 			return false;
 		}
 		if (screen.getTitle().getContents() instanceof TranslatableContents t && t.getKey().startsWith("container.")) {
@@ -136,7 +137,8 @@ public final class InvTools {
 		return block instanceof net.minecraft.world.level.block.ChestBlock
 				|| block instanceof net.minecraft.world.level.block.BarrelBlock
 				|| block instanceof net.minecraft.world.level.block.ShulkerBoxBlock
-				|| block instanceof net.minecraft.world.level.block.EnderChestBlock;
+				|| block instanceof net.minecraft.world.level.block.EnderChestBlock
+				|| block instanceof net.minecraft.world.level.block.HopperBlock;
 	}
 
 	/**
@@ -223,6 +225,9 @@ public final class InvTools {
 		// ganze Höhe des Menüs (im Tresor inkl. Menü-Reihe), damit die Knöpfe über dem Inventar sitzen
 		int containerRows = menu instanceof ChestMenu chest ? chest.getRowCount() : (containerSlots(menu).size() + 8) / 9;
 		int invY = top + 17 + containerRows * 18 + 1; // Höhe der Beschriftung „Inventar“
+		if (menu instanceof net.minecraft.world.inventory.HopperMenu) {
+			invY = top + 38; // Trichter: niedrigeres Fenster, „Inventar“ steht bei 40
+		}
 		int x = left + w - 14;
 		if (c.invSort) {
 			Screens.getButtons(screen).add(small(x, top + 4, "⇅", "loothub.inv.sort_container", () -> sort(containerSlots(menu))));
