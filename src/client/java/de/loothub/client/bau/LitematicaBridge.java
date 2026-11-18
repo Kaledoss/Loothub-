@@ -400,6 +400,8 @@ final class LitematicaBridge {
 			}
 		}
 		MaterialCache cache = MaterialCache.getInstance();
+		// gleiche Blöcke teilen sich ein Item (spart Speicher bei großen Schematics)
+		Map<BlockState, ItemStack> items = new HashMap<>();
 		for (var e : all.entrySet()) {
 			long key = e.getKey();
 			int x = BlockPos.getX(key), y = BlockPos.getY(key), z = BlockPos.getZ(key);
@@ -409,11 +411,15 @@ final class LitematicaBridge {
 					&& all.containsKey(BlockPos.asLong(x, y, z + 1)) && all.containsKey(BlockPos.asLong(x, y, z - 1))) {
 				continue;
 			}
-			ItemStack item = cache.getRequiredBuildItemForState(e.getValue());
-			if (item == null || item.isEmpty()) {
+			BlockState st = e.getValue();
+			ItemStack item = items.computeIfAbsent(st, k -> {
+				ItemStack it = cache.getRequiredBuildItemForState(k);
+				return it == null ? ItemStack.EMPTY : it;
+			});
+			if (item.isEmpty()) {
 				continue;
 			}
-			out.add(new Preview.Block(x, y, z, item));
+			out.add(new Preview.Block(x, y, z, item, st.canOcclude()));
 			if (out.size() >= max) {
 				break;
 			}

@@ -21,12 +21,12 @@ import de.loothub.client.Fmt;
  */
 public final class Preview extends Screen {
 	/** Ein Block der Schematic (relativ zur Schematic) und das Item, das ihn zeigt. */
-	record Block(int x, int y, int z, ItemStack item) {
+	record Block(int x, int y, int z, ItemStack item, boolean opaque) {
 	}
 
 	/** Höchstens so viele Blöcke laden bzw. zeichnen (sonst wird es zu langsam). */
-	private static final int MAX_LOAD = 120_000;
-	private static final int MAX_DRAW = 25_000;
+	private static final int MAX_LOAD = 2_000_000;
+	private static final int MAX_DRAW = 60_000;
 	/** Versatz je Block in der Schrägansicht (Pixel bei Zoom 1) – passend zu den Würfeln der Inventar-Items. */
 	private static final float AX = 7.07F, AY = 3.54F, UP = 8.66F;
 
@@ -40,7 +40,7 @@ public final class Preview extends Screen {
 	private float zoom = 1.0F, panX, panY;
 	private boolean dragging;
 	private double lastX, lastY;
-	private boolean truncated;
+	private boolean truncated, drawCut;
 
 	public Preview(Screen parent, Plan plan) {
 		super(Component.translatable("loothub.build.preview.title", plan.name));
@@ -118,9 +118,25 @@ public final class Preview extends Screen {
 		if (all == null) {
 			return;
 		}
-		List<Block> list = new ArrayList<>();
+		List<Block> candidates = new ArrayList<>();
+		java.util.Set<Long> solid = new java.util.HashSet<>();
 		for (Block b : all) {
 			if (b.y() > layer || (layerOnly && b.y() != layer)) {
+				continue;
+			}
+			candidates.add(b);
+			if (b.opaque()) {
+				int[] t = turned(b);
+				solid.add(net.minecraft.core.BlockPos.asLong(t[0], b.y(), t[1]));
+			}
+		}
+		// Blöcke weglassen, deren drei sichtbare Seiten (vorn rechts, vorn links, oben) von festen Blöcken verdeckt sind
+		List<Block> list = new ArrayList<>();
+		for (Block b : candidates) {
+			int[] t = turned(b);
+			if (solid.contains(net.minecraft.core.BlockPos.asLong(t[0] + 1, b.y(), t[1]))
+					&& solid.contains(net.minecraft.core.BlockPos.asLong(t[0], b.y(), t[1] - 1))
+					&& solid.contains(net.minecraft.core.BlockPos.asLong(t[0], b.y() + 1, t[1]))) {
 				continue;
 			}
 			list.add(b);
@@ -130,7 +146,7 @@ public final class Preview extends Screen {
 			int[] t = turned(b);
 			return t[0] - t[1] + b.y();
 		}));
-		truncated |= list.size() > MAX_DRAW;
+		drawCut = list.size() > MAX_DRAW;
 		// zu viele: die vordersten behalten (die sieht man)
 		shown = list.size() > MAX_DRAW ? list.subList(list.size() - MAX_DRAW, list.size()) : list;
 	}
@@ -200,7 +216,7 @@ public final class Preview extends Screen {
 		String info = blocks == null ? "" : Component.translatable(layerOnly ? "loothub.build.preview.info_layer"
 				: "loothub.build.preview.info", Fmt.whole(list.size()), layer - minY + 1, maxY - minY + 1).getString();
 		g.drawString(font, info, 8, 20, 0xFFB9A9AB, true);
-		if (truncated) {
+		if (truncated || drawCut) {
 			g.drawString(font, Component.translatable("loothub.build.preview.truncated"), 8, 32, 0xFFFF8A8A, true);
 		}
 		Component hint = Component.translatable("loothub.build.preview.hint");
