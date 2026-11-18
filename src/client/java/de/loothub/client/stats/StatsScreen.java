@@ -354,7 +354,7 @@ public class StatsScreen extends LoothubScreen {
 	 */
 	private boolean accepts(String prefix, String id, Kind kind) {
 		return switch (category) {
-			case BLOCKS -> !isFoodBlock(id) && (!prefix.equals("picked.") || (isBlockItem(id) && !isFood(id)));
+			case BLOCKS -> !isFoodBlock(id) && !isLeaves(id) && (!prefix.equals("picked.") || (isBlockItem(id) && !isFood(id)));
 			case PLANTS -> isPlantId(id) && !isFood(id) && !isFoodBlock(id);
 			case FOOD -> isFoodBlock(id) || (!prefix.equals("mined.") && isFood(id));
 			case TOOLS -> !prefix.equals("picked.") || isTool(id);
@@ -411,6 +411,13 @@ public class StatsScreen extends LoothubScreen {
 		return new boolean[]{false, false, true, true};
 	}
 
+	/** Laub jeder Art (Eiche, Kirsche, Azalee …) – steht unter „Pflanzen“. */
+	private static boolean isLeaves(String id) {
+		Identifier identifier = Identifier.tryParse(id);
+		Block block = identifier == null ? null : BuiltInRegistries.BLOCK.getOptional(identifier).orElse(null);
+		return block != null && block.defaultBlockState().is(net.minecraft.tags.BlockTags.LEAVES);
+	}
+
 	/** Melonen und Kürbisse: eigentlich Blöcke, stehen aber unter „Nahrung“. */
 	private static boolean isFoodBlock(String id) {
 		return id.equals("minecraft:melon") || id.equals("minecraft:pumpkin") || id.equals("minecraft:carved_pumpkin");
@@ -430,8 +437,8 @@ public class StatsScreen extends LoothubScreen {
 			return false;
 		}
 		Block block = BuiltInRegistries.BLOCK.getOptional(identifier).orElse(null);
-		if (block != null && StatsTracker.isPlant(block)) {
-			return true;
+		if (block != null && (StatsTracker.isPlant(block) || block.defaultBlockState().is(net.minecraft.tags.BlockTags.LEAVES))) {
+			return true; // Laub zählt zu den Pflanzen
 		}
 		Item item = BuiltInRegistries.ITEM.getOptional(identifier).orElse(null);
 		if (item == Items.WHEAT || item == Items.SUGAR_CANE || item == Items.BAMBOO || item == Items.CACTUS) {
