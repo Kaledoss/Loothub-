@@ -802,7 +802,7 @@
 	"loothub.stats.day": "Gezeigter Tag: %s",
 	"loothub.pokedex.pcg_off": "Aus – einschalten unter Einstellungen › Extras",
 	"loothub.cosmetics.pets.type.donkey": "Esel",
-	"loothub.stats.general.treasures": "Gefundene Jobschätze",
+	"loothub.stats.general.treasures": "Jobschätze (erhalten / Möglichkeiten)",
 	"loothub.tab.build": "Bau",
 	"loothub.tab.build.header": "Bau – Schematics aus Litematica",
 	"loothub.hud.build": "Bau-Fortschritt",

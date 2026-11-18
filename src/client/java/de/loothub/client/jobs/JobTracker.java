@@ -183,6 +183,7 @@ public final class JobTracker {
 		while (c.treasureXp >= TREASURE_STEP) {
 			c.treasureXp -= TREASURE_STEP;
 			c.treasureChances++;
+			de.loothub.client.stats.StatsStore.add("general.treasure_chances", 1); // für „erhalten / Möglichkeiten“
 			crossed = true;
 		}
 		long now = System.currentTimeMillis();

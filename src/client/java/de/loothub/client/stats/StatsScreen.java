@@ -534,11 +534,16 @@ public class StatsScreen extends LoothubScreen {
 		entries.add(entry("damage_taken", hearts(get("general.damage_taken"))));
 		entries.add(entry("deaths", Fmt.whole(get("general.deaths"))));
 		// gefundene Jobschätze – bei „Gesamt“ auch die vor dem Zählen in der Statistik (Zähler des Job-Widgets)
+		// als „erhalten / Möglichkeiten“: alle 100.000 Job-XP gibt es eine Chance auf einen Jobschatz
 		long treasures = get("general.treasures");
+		long chances = get("general.treasure_chances");
 		if (range == Range.TOTAL) {
-			treasures = Math.max(treasures, de.loothub.client.jobs.WidgetConfig.get().treasuresFound);
+			de.loothub.client.jobs.WidgetConfig wc = de.loothub.client.jobs.WidgetConfig.get();
+			treasures = Math.max(treasures, wc.treasuresFound);
+			chances = Math.max(chances, wc.treasureChances);
 		}
-		entries.add(entry("treasures", Fmt.whole(treasures)));
+		chances = Math.max(chances, treasures);
+		entries.add(entry("treasures", Fmt.whole(treasures) + " / " + Fmt.whole(chances)));
 		// Spitzenreiter im gewählten Zeitraum
 		entries.add(top("top_mined", Kind.BLOCK, "mined."));
 		entries.add(top("top_placed", Kind.BLOCK, "placed."));

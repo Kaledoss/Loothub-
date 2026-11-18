@@ -802,7 +802,7 @@
 	"loothub.stats.day": "Showing day: %s",
 	"loothub.pokedex.pcg_off": "Off – turn on in Settings › Extras",
 	"loothub.cosmetics.pets.type.donkey": "Donkey",
-	"loothub.stats.general.treasures": "Job treasures found",
+	"loothub.stats.general.treasures": "Job treasures (found / chances)",
 	"loothub.tab.build": "Build",
 	"loothub.tab.build.header": "Build – schematics from Litematica",
 	"loothub.hud.build": "Build progress",
