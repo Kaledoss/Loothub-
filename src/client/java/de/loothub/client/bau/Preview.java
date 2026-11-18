@@ -60,6 +60,7 @@ public final class Preview extends Screen {
 	/** Gerechnetes Bild: je Fläche 4 Ecken (x, y) und Textur (u0, v0, u1, v1); dazu je Fläche eine Farbe. */
 	private float[] mesh = new float[0];
 	private int[] colors = new int[0];
+	private boolean[] reversed = new boolean[0];
 	private int faces, shownBlocks;
 	private Identifier atlas;
 	private float cx, cy, cz;
@@ -289,6 +290,7 @@ public final class Preview extends Screen {
 		int total = Math.min(count, MAX_FACES);
 		float[] m = new float[total * 12];
 		int[] col = new int[total];
+		boolean[] rev = new boolean[total];
 		int f = 0;
 		for (float[] k : keys) {
 			int mask = (int) k[1];
@@ -318,6 +320,13 @@ public final class Preview extends Screen {
 					m[o + 10] = face.u1();
 					m[o + 11] = face.v1();
 				}
+				// Umlaufsinn wie bei normalen GUI-Vierecken, sonst wirft die Grafikkarte die Fläche weg (Rückseite)
+				float area = 0;
+				for (int i = 0; i < 4; i++) {
+					int j = (i + 1) % 4;
+					area += m[o + i * 2] * m[o + j * 2 + 1] - m[o + j * 2] * m[o + i * 2 + 1];
+				}
+				rev[f] = area > 0;
 				float s = shade(dir);
 				int base = face == null ? 0xFF888888 : face.tint() == -1 ? 0xFFFFFFFF : face.tint();
 				int r = (int) (((base >> 16) & 0xFF) * s), g = (int) (((base >> 8) & 0xFF) * s), bl = (int) ((base & 0xFF) * s);
@@ -327,22 +336,25 @@ public final class Preview extends Screen {
 		}
 		mesh = m;
 		colors = col;
+		reversed = rev;
 		faces = f;
 	}
 
 	/** Alle Flächen auf einmal zeichnen (eigenes GUI-Element mit beliebigen Vierecken). */
 	private record Mesh(RenderPipeline pipeline, TextureSetup textureSetup, Matrix3x2f pose, float[] data, int[] colors,
-			int count, ScreenRectangle scissorArea, ScreenRectangle bounds) implements GuiElementRenderState {
+			boolean[] reversed, int count, ScreenRectangle scissorArea, ScreenRectangle bounds) implements GuiElementRenderState {
+		private static final int[] FORWARD = {0, 1, 2, 3}, BACKWARD = {0, 3, 2, 1};
+
 		@Override
 		public void buildVertices(VertexConsumer v) {
 			for (int f = 0; f < count; f++) {
 				int o = f * 12;
-				float u0 = data[o + 8], v0 = data[o + 9], u1 = data[o + 10], v1 = data[o + 11];
+				float[] us = {data[o + 8], data[o + 10], data[o + 10], data[o + 8]};
+				float[] vs = {data[o + 9], data[o + 9], data[o + 11], data[o + 11]};
 				int c = colors[f];
-				v.addVertexWith2DPose(pose, data[o], data[o + 1]).setUv(u0, v0).setColor(c);
-				v.addVertexWith2DPose(pose, data[o + 2], data[o + 3]).setUv(u1, v0).setColor(c);
-				v.addVertexWith2DPose(pose, data[o + 4], data[o + 5]).setUv(u1, v1).setColor(c);
-				v.addVertexWith2DPose(pose, data[o + 6], data[o + 7]).setUv(u0, v1).setColor(c);
+				for (int i : reversed[f] ? BACKWARD : FORWARD) {
+					v.addVertexWith2DPose(pose, data[o + i * 2], data[o + i * 2 + 1]).setUv(us[i], vs[i]).setColor(c);
+				}
 			}
 		}
 	}
@@ -352,6 +364,7 @@ public final class Preview extends Screen {
 	@Override
 	public void render(GuiGraphics g, int mx, int my, float delta) {
 		g.fill(0, 0, width, height, 0xF0100A0B);
+		g.nextStratum(); // Modell über dem Hintergrund (sonst kann die Fläche es verdecken)
 		if (blocks == null) {
 			Component c = Component.translatable("loothub.build.counting");
 			g.drawString(font, c, (width - font.width(c)) / 2, height / 2, 0xFFB9A9AB, false);
@@ -365,7 +378,7 @@ public final class Preview extends Screen {
 				pose.scale(zoom, zoom);
 				ScreenRectangle area = new ScreenRectangle(0, 0, width, height - 30);
 				LitematicaBridge.submit(g, new Mesh(RenderPipelines.GUI_TEXTURED, setup, new Matrix3x2f(pose), mesh, colors,
-						faces, area, area));
+						reversed, faces, area, area));
 				pose.popMatrix();
 			} catch (RuntimeException | LinkageError e) {
 				Loothub.LOGGER.warn("3D-Ansicht kann nicht gezeichnet werden", e);
