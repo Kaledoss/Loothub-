@@ -168,5 +168,13 @@ public final class StatsStore {
 		} catch (IOException | RuntimeException e) {
 			Loothub.LOGGER.warn("Statistik konnte nicht gelesen werden", e);
 		}
+		// alte Fehlzählungen umbenennen: „Fire“ war der Maulwurf (Feuer-Effekt des Modells statt des Modellnamens)
+		for (Map<String, Long> v : days.values()) {
+			Long fire = v.remove("killed.~Fire");
+			if (fire != null) {
+				v.merge("killed.~Maulwurf", fire, Long::sum);
+				dirty = true;
+			}
+		}
 	}
 }

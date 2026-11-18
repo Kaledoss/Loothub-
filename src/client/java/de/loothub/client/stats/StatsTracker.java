@@ -384,9 +384,14 @@ public final class StatsTracker {
 			parts.add(living.getVehicle());
 		}
 		parts.addAll(living.level().getEntities(living, living.getBoundingBox().inflate(1.5, 0.5, 1.5).expandTowards(0.0, 2.5, 0.0)));
-		String best = null;
-		double bestD = Double.MAX_VALUE;
+		// ein Modell besteht aus vielen Teilen (Kopf, Arme, Beine …) – der Name, der am häufigsten vorkommt, gewinnt;
+		// einzelne Effekte daneben (z. B. Feuer) fallen so heraus
+		java.util.Map<String, Integer> votes = new java.util.HashMap<>();
+		java.util.Set<Entity> seen = new java.util.HashSet<>();
 		for (Entity e : parts) {
+			if (!seen.add(e)) {
+				continue;
+			}
 			ItemStack stack = ItemStack.EMPTY;
 			if (e instanceof net.minecraft.world.entity.Display.ItemDisplay idp) {
 				stack = ((de.loothub.client.mixin.ItemDisplayAccessor) idp).loothub$getItemStack();
@@ -394,17 +399,17 @@ public final class StatsTracker {
 				stack = as.getItemBySlot(net.minecraft.world.entity.EquipmentSlot.HEAD);
 			}
 			String n = itemModelName(stack);
-			if (n == null) {
-				continue;
-			}
-			double d = e.distanceToSqr(living);
-			if (d < bestD) {
-				bestD = d;
-				best = n;
+			if (n != null) {
+				votes.merge(n, 1, Integer::sum);
 			}
 		}
-		return best;
+		return votes.entrySet().stream().max(java.util.Map.Entry.comparingByValue()).map(java.util.Map.Entry::getKey)
+				.orElse(null);
 	}
+
+	/** Englische Modellnamen bekannter OPSUCHT-Mobs → deutscher Name (sonst wird der Modellname schön geschrieben). */
+	private static final java.util.Map<String, String> GERMAN = java.util.Map.of(
+			"mole", "Maulwurf", "cassowary", "Kasuar", "kasuar", "Kasuar");
 
 	/** Eigenes Modell eines Items als lesbarer Name (eigener Item-Name hat Vorrang), sonst null. */
 	private static String itemModelName(ItemStack stack) {
@@ -419,12 +424,26 @@ public final class StatsTracker {
 		if (model == null || "minecraft".equals(model.getNamespace())) {
 			return null;
 		}
-		String path = model.getPath();
-		path = path.substring(path.lastIndexOf('/') + 1) // nur der letzte Teil: mobs/kasuar_body → kasuar_body
-				.replaceAll("(_|-)(body|head|model|base|main|idle|walk|anim|entity|mob)$", "")
+		// ModelEngine & Co.: „modelengine:mole/molehead“ – vorn steht das Modell (mole), hinten nur das Körperteil.
+		// Allgemeine Ordner (mobs/, entity/ …) überspringen; interne Effekte (internal_fire) zählen nicht.
+		String path = null;
+		for (String seg : model.getPath().split("/")) {
+			if (!seg.isEmpty() && !seg.matches("mobs?|entity|entities|models?|items?|custom|creatures?")) {
+				path = seg;
+				break;
+			}
+		}
+		if (path == null || path.startsWith("internal")) {
+			return null;
+		}
+		path = path.replaceAll("(_|-)(body|head|model|base|main|idle|walk|anim|entity|mob)$", "")
 				.replaceAll("[_\\-]+", " ").replaceAll("\\d+", " ").replaceAll("\\s+", " ").strip();
 		if (path.length() < 2) {
 			return null;
+		}
+		String known = GERMAN.get(path.toLowerCase(java.util.Locale.ROOT));
+		if (known != null) {
+			return known;
 		}
 		StringBuilder out = new StringBuilder();
 		for (String w : path.split(" ")) {
