@@ -858,5 +858,19 @@
 	"loothub.build.hud.done": "done!",
 	"loothub.build.hud.wrong": "%s wrong",
 	"loothub.build.warn.missing_more": "Missing in inventory: %s (and %s more)",
-	"loothub.build.warn.missing": "Missing in inventory: %s"
+	"loothub.build.warn.missing": "Missing in inventory: %s",
+	"loothub.build.btn.preview": "3D view",
+	"loothub.build.col.recipe": "Recipe",
+	"loothub.build.col.recipe.tooltip": "What the amount you still need costs if you craft it from its ingredients (ingredients at market price, themselves bought or crafted, whichever is cheaper). Green = cheaper than buying. Click a material with ▸ to see the base materials. Known recipes from your recipe book: %s",
+	"loothub.build.cost.cheapest": "Cheapest way: %s",
+	"loothub.build.preview.title": "3D view: %s",
+	"loothub.build.preview.layer_down": "Layer −",
+	"loothub.build.preview.layer_up": "Layer +",
+	"loothub.build.preview.layer_mode": "Only this layer",
+	"loothub.build.preview.all": "All layers",
+	"loothub.build.preview.reset": "Reset view",
+	"loothub.build.preview.info": "%s blocks · up to layer %s of %s",
+	"loothub.build.preview.info_layer": "%s blocks · only layer %s of %s",
+	"loothub.build.preview.truncated": "Very large schematic: only the front blocks are shown. Hide layers to look inside.",
+	"loothub.build.preview.hint": "Drag: move · Mouse wheel: zoom"
 }

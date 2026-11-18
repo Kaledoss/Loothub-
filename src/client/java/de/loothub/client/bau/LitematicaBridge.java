@@ -351,6 +351,76 @@ final class LitematicaBridge {
 		return InventoryUtils.getStoredItems(stack);
 	}
 
+	// ------------------------------------------------------------------ Rezepte
+
+	/** Alle Rezepte im Rezeptbuch des Spielers (über MaLiLibs Zugriff auf die interne Liste). */
+	static java.util.Collection<net.minecraft.world.item.crafting.display.RecipeDisplayEntry> knownRecipes() {
+		Minecraft mc = Minecraft.getInstance();
+		if (mc.player == null) {
+			return List.of();
+		}
+		return ((fi.dy.masa.malilib.mixin.recipe.IMixinClientRecipeBook) mc.player.getRecipeBook()).malilib_getRecipeMap()
+				.values();
+	}
+
+	// ------------------------------------------------------------------ 3D-Ansicht
+
+	/**
+	 * Alle sichtbaren Blöcke der Schematic (ganz von Blöcken umschlossene weggelassen) mit dem Item, das sie darstellt –
+	 * Koordinaten relativ zur Schematic, ohne Drehung der Platzierung. Höchstens {@code max} Blöcke.
+	 */
+	static List<Preview.Block> previewBlocks(Plan plan, int max) {
+		List<Preview.Block> out = new ArrayList<>();
+		if (!(plan.handle instanceof SchematicPlacement p)) {
+			return out;
+		}
+		LitematicaSchematic schematic = p.getSchematic();
+		Map<Long, BlockState> all = new HashMap<>();
+		for (String region : schematic.getAreaSizes().keySet()) {
+			var container = schematic.getSubRegionContainer(region);
+			BlockPos pos = schematic.getSubRegionPosition(region);
+			BlockPos size = schematic.getAreaSize(region);
+			if (container == null || pos == null || size == null) {
+				continue;
+			}
+			// negative Größe = Bereich geht von pos aus in die andere Richtung
+			int ox = pos.getX() + Math.min(0, size.getX() + 1);
+			int oy = pos.getY() + Math.min(0, size.getY() + 1);
+			int oz = pos.getZ() + Math.min(0, size.getZ() + 1);
+			var dim = container.getSize();
+			for (int y = 0; y < dim.getY(); y++) {
+				for (int z = 0; z < dim.getZ(); z++) {
+					for (int x = 0; x < dim.getX(); x++) {
+						BlockState st = container.get(x, y, z);
+						if (st != null && !st.isAir()) {
+							all.put(BlockPos.asLong(ox + x, oy + y, oz + z), st);
+						}
+					}
+				}
+			}
+		}
+		MaterialCache cache = MaterialCache.getInstance();
+		for (var e : all.entrySet()) {
+			long key = e.getKey();
+			int x = BlockPos.getX(key), y = BlockPos.getY(key), z = BlockPos.getZ(key);
+			// ganz umschlossen: unsichtbar, nicht zeichnen
+			if (all.containsKey(BlockPos.asLong(x + 1, y, z)) && all.containsKey(BlockPos.asLong(x - 1, y, z))
+					&& all.containsKey(BlockPos.asLong(x, y + 1, z)) && all.containsKey(BlockPos.asLong(x, y - 1, z))
+					&& all.containsKey(BlockPos.asLong(x, y, z + 1)) && all.containsKey(BlockPos.asLong(x, y, z - 1))) {
+				continue;
+			}
+			ItemStack item = cache.getRequiredBuildItemForState(e.getValue());
+			if (item == null || item.isEmpty()) {
+				continue;
+			}
+			out.add(new Preview.Block(x, y, z, item));
+			if (out.size() >= max) {
+				break;
+			}
+		}
+		return out;
+	}
+
 	// ------------------------------------------------------------------ Gemeinsam bauen
 
 	/** Platzierung zum Teilen: Einstellungen (ohne eigenen Dateipfad) und die Schematic-Datei. */

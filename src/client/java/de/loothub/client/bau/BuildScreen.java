@@ -37,8 +37,17 @@ public final class BuildScreen extends de.loothub.client.LoothubScreen {
 
 	/** Eine Zeile der Materialtabelle. */
 	private record Row(String id, ItemStack icon, String name, long total, long need, long inv, long stock, long buy,
-			double price) {
+			double price, double recipe) {
 	}
+
+	/** Eine Zeile der Tabelle: Material oder (aufgeklappt) eine Zutat darunter. */
+	private record Line(Row row, Recipes.Part part) {
+	}
+
+	/** Aufgeklappte Materialien (Item-ID) – zeigen, woraus sie bestehen. */
+	private static final java.util.Set<String> EXPANDED = new java.util.HashSet<>();
+	private List<Line> lines = List.of();
+	private double cheapest;
 
 	private static String selectedId;
 	private List<Plan> plans = List.of();
@@ -51,6 +60,7 @@ public final class BuildScreen extends de.loothub.client.LoothubScreen {
 	private int refreshIn;
 	private int listX, listY, listW, listH, detailX, detailW, tableY, tableH;
 	private EditBox shareBox;
+	private int tableColW;
 
 	public BuildScreen() {
 		super(Page.BUILD);
@@ -114,6 +124,7 @@ public final class BuildScreen extends de.loothub.client.LoothubScreen {
 			int dx = detailX + 4;
 			dx = button(dx, dy, "loothub.build.btn.placement", b -> Build.openPlacement(selected, this));
 			dx = button(dx, dy, "loothub.build.btn.materials", b -> Build.openMaterialList(selected, this));
+			dx = button(dx, dy, "loothub.build.btn.preview", b -> minecraft.setScreen(new Preview(this, selected)));
 			Button recount = Button.builder(Component.translatable("loothub.build.btn.recount"), b -> {
 				Build.recount(selected);
 				refreshIn = 20;
@@ -171,8 +182,10 @@ public final class BuildScreen extends de.loothub.client.LoothubScreen {
 	private void refresh() {
 		if (selected == null) {
 			rows = List.of();
+			lines = List.of();
 			return;
 		}
+		Recipes.refresh();
 		Plan fresh = Build.plan(selected.id);
 		if (fresh != null) {
 			selected = fresh;
@@ -189,6 +202,7 @@ public final class BuildScreen extends de.loothub.client.LoothubScreen {
 		List<Row> out = new ArrayList<>();
 		totalCost = 0;
 		buyCost = 0;
+		cheapest = 0;
 		noPrice = 0;
 		java.util.Set<String> ids = new java.util.HashSet<>(totals.keySet());
 		ids.addAll(need.keySet());
@@ -199,21 +213,38 @@ public final class BuildScreen extends de.loothub.client.LoothubScreen {
 			long st = stockHere.getOrDefault(id, 0L);
 			long buy = Math.max(0, n - have - st);
 			double price = price(id);
+			double recipe = Recipes.recipeUnit(id);
 			if (Double.isNaN(price)) {
 				noPrice++;
 			} else {
 				totalCost += total * price;
 				buyCost += buy * price;
 			}
+			// günstigster Weg: kaufen oder aus den Zutaten herstellen
+			double best = Double.isNaN(price) ? recipe : Double.isNaN(recipe) ? price : Math.min(price, recipe);
+			if (!Double.isNaN(best)) {
+				cheapest += buy * best;
+			}
 			Item item = item(id);
 			ItemStack icon = item == null ? new ItemStack(Items.BARRIER) : new ItemStack(item);
-			out.add(new Row(id, icon, icon.getHoverName().getString(), total, n, have, st, buy, price));
+			out.add(new Row(id, icon, icon.getHoverName().getString(), total, n, have, st, buy, price, recipe));
 		}
 		// zuerst, was am meisten kostet; dann, wovon am meisten fehlt
 		out.sort(Comparator.comparingDouble((Row r) -> Double.isNaN(r.price()) ? -1 : r.buy() * r.price()).reversed()
 				.thenComparing(Comparator.comparingLong(Row::buy).reversed())
 				.thenComparing(Row::name, String.CASE_INSENSITIVE_ORDER));
 		rows = out;
+		List<Line> ls = new ArrayList<>();
+		for (Row row : out) {
+			ls.add(new Line(row, null));
+			if (EXPANDED.contains(row.id())) {
+				// für die noch zu besorgende Menge (oder, wenn nichts fehlt, für ein Stück)
+				for (Recipes.Part part : Recipes.breakdown(row.id(), Math.max(1, row.buy()))) {
+					ls.add(new Line(row, part));
+				}
+			}
+		}
+		lines = ls;
 		clampScroll();
 	}
 
@@ -355,6 +386,10 @@ public final class BuildScreen extends de.loothub.client.LoothubScreen {
 		g.drawString(font, costs, x + 6, y, TEXT, false);
 		String buy = Component.translatable("loothub.build.cost.buy", Fmt.money(buyCost)).getString();
 		g.drawString(font, buy, x + 6 + font.width(costs) + 14, y, GOLD, false);
+		if (cheapest > 0 && cheapest < buyCost - 0.005) {
+			String ch = Component.translatable("loothub.build.cost.cheapest", Fmt.money(cheapest)).getString();
+			g.drawString(font, ch, x + 6 + font.width(costs) + 14 + font.width(buy) + 14, y, GREEN, false);
+		}
 		y += 11;
 		StringBuilder info = new StringBuilder();
 		if (selected.totals == null) {
@@ -378,7 +413,7 @@ public final class BuildScreen extends de.loothub.client.LoothubScreen {
 
 		// Tabelle
 		String[] heads = {"loothub.build.col.total", "loothub.build.col.need", "loothub.build.col.inv",
-				"loothub.build.col.stock", "loothub.build.col.buy", "loothub.build.col.price"};
+				"loothub.build.col.stock", "loothub.build.col.buy", "loothub.build.col.price", "loothub.build.col.recipe"};
 		int colW = Math.max(48, Math.min(70, (detailW - 160) / heads.length));
 		g.drawString(font, Component.translatable("loothub.build.col.material"), x + 26, y, FAINT, false);
 		for (int i = 0; i < heads.length; i++) {
@@ -390,10 +425,33 @@ public final class BuildScreen extends de.loothub.client.LoothubScreen {
 		tableH = listY + listH - 2 - tableY;
 		g.enableScissor(x + 1, tableY, x + detailW - 1, tableY + tableH);
 		int ry = tableY - scroll;
-		for (Row r : rows) {
+		int nameMax = colRight(0, heads.length, colW) - colW - (x + 26);
+		for (Line line : lines) {
+			Row r = line.row();
+			if (line.part() != null) {
+				// Zutat (aufgeklappt): eingerückt, Menge in „Besorgen“, Kosten in „Preis“
+				if (ry + ROW_H >= tableY && ry < tableY + tableH) {
+					Recipes.Part part = line.part();
+					g.fill(x + 14, ry, x + 15, ry + ROW_H, BORDER);
+					ItemStack icon = new ItemStack(part.item());
+					g.renderItem(icon, x + 20, ry + 1);
+					g.drawString(font, fit(icon.getHoverName().getString(), nameMax - 16), x + 40, ry + 5, MUTED, false);
+					String amount = Fmt.whole((long) Math.ceil(part.amount() - 1e-6));
+					g.drawString(font, amount, colRight(4, heads.length, colW) - font.width(amount), ry + 5, MUTED, false);
+					String c = Double.isNaN(part.cost()) ? Component.translatable("loothub.build.no_price").getString()
+							: Fmt.compact(part.cost()) + " $";
+					g.drawString(font, c, colRight(5, heads.length, colW) - font.width(c), ry + 5,
+							Double.isNaN(part.cost()) ? FAINT : MUTED, false);
+				}
+				ry += ROW_H;
+				continue;
+			}
 			if (ry + ROW_H >= tableY && ry < tableY + tableH) {
-				g.renderItem(r.icon(), x + 5, ry + 1);
-				int nameMax = colRight(0, heads.length, colW) - colW - (x + 26);
+				boolean craftable = Recipes.craftable(r.id());
+				if (craftable) {
+					g.drawString(font, EXPANDED.contains(r.id()) ? "▾" : "▸", x + 3, ry + 5, FAINT, false);
+				}
+				g.renderItem(r.icon(), x + 8, ry + 1);
 				g.drawString(font, fit(r.name(), nameMax), x + 26, ry + 5, r.buy() > 0 ? TEXT : GREEN, false);
 				long[] vals = {r.total(), r.need(), r.inv(), r.stock(), r.buy()};
 				for (int i = 0; i < vals.length; i++) {
@@ -405,6 +463,11 @@ public final class BuildScreen extends de.loothub.client.LoothubScreen {
 						: Fmt.compact(r.buy() * r.price()) + " $";
 				g.drawString(font, p, colRight(5, heads.length, colW) - font.width(p), ry + 5,
 						Double.isNaN(r.price()) ? FAINT : TEXT, false);
+				// nach Rezept: grün, wenn Herstellen billiger ist als Kaufen
+				String rc = Double.isNaN(r.recipe()) ? "–" : Fmt.compact(Math.max(1, r.buy()) * r.recipe()) + " $";
+				boolean cheaper = !Double.isNaN(r.recipe()) && (Double.isNaN(r.price()) || r.recipe() < r.price());
+				g.drawString(font, rc, colRight(6, heads.length, colW) - font.width(rc), ry + 5,
+						Double.isNaN(r.recipe()) ? FAINT : cheaper ? GREEN : MUTED, false);
 			}
 			ry += ROW_H;
 		}
@@ -413,10 +476,15 @@ public final class BuildScreen extends de.loothub.client.LoothubScreen {
 			Component msg = Component.translatable("loothub.build.counting");
 			g.drawString(font, msg, x + (detailW - font.width(msg)) / 2, tableY + 10, FAINT, false);
 		}
-		// Hinweis zur Preisspalte
-		if (mx >= colRight(5, heads.length, colW) - colW && mx < colRight(5, heads.length, colW) && my >= y && my < y + 10) {
-			g.setTooltipForNextFrame(font, Component.translatable("loothub.build.col.price.tooltip"), mx, my);
+		// Hinweise zu den Preisspalten
+		if (my >= y && my < y + 10) {
+			if (mx >= colRight(5, heads.length, colW) - colW && mx < colRight(5, heads.length, colW)) {
+				g.setTooltipForNextFrame(font, Component.translatable("loothub.build.col.price.tooltip"), mx, my);
+			} else if (mx >= colRight(6, heads.length, colW) - colW && mx < colRight(6, heads.length, colW)) {
+				g.setTooltipForNextFrame(font, Component.translatable("loothub.build.col.recipe.tooltip", Recipes.known()), mx, my);
+			}
 		}
+		tableColW = colW;
 	}
 
 	private int colRight(int i, int count, int colW) {
@@ -424,7 +492,7 @@ public final class BuildScreen extends de.loothub.client.LoothubScreen {
 	}
 
 	private void clampScroll() {
-		int max = Math.max(0, rows.size() * ROW_H - Math.max(0, tableH));
+		int max = Math.max(0, lines.size() * ROW_H - Math.max(0, tableH));
 		scroll = Math.max(0, Math.min(scroll, max));
 	}
 
@@ -479,6 +547,20 @@ public final class BuildScreen extends de.loothub.client.LoothubScreen {
 					}
 				}
 				y += 24;
+			}
+		}
+		// Material auf-/zuklappen (nur, wenn es ein Rezept dafür gibt)
+		if (selected != null && mx >= detailX && mx < detailX + detailW && my >= tableY && my < tableY + tableH) {
+			int idx = (int) ((my - tableY + scroll) / ROW_H);
+			if (idx >= 0 && idx < lines.size() && lines.get(idx).part() == null) {
+				String id = lines.get(idx).row().id();
+				if (Recipes.craftable(id)) {
+					if (!EXPANDED.remove(id)) {
+						EXPANDED.add(id);
+					}
+					refresh();
+					return true;
+				}
 			}
 		}
 		// Teilen beenden (✖ hinter dem Namen)
