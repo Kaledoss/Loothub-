@@ -230,9 +230,7 @@ public final class BuildScreen extends de.loothub.client.LoothubScreen {
 			out.add(new Row(id, icon, icon.getHoverName().getString(), total, n, have, st, buy, price, recipe));
 		}
 		// zuerst, was am meisten kostet; dann, wovon am meisten fehlt
-		out.sort(Comparator.comparingDouble((Row r) -> Double.isNaN(r.price()) ? -1 : r.buy() * r.price()).reversed()
-				.thenComparing(Comparator.comparingLong(Row::buy).reversed())
-				.thenComparing(Row::name, String.CASE_INSENSITIVE_ORDER));
+		out.sort(comparator());
 		rows = out;
 		List<Line> ls = new ArrayList<>();
 		for (Row row : out) {
@@ -246,6 +244,33 @@ public final class BuildScreen extends de.loothub.client.LoothubScreen {
 		}
 		lines = ls;
 		clampScroll();
+	}
+
+	/**
+	 * Sortierung nach der angeklickten Spalte: 0 = Material, 1 Gesamt, 2 Fehlt, 3 Inventar, 4 Lager, 5 Besorgen,
+	 * 6 Preis, 7 Rezept; -1 = Standard (zuerst, was am meisten kostet). Ohne Preis steht immer unten.
+	 */
+	private static int sortColumn = -1;
+	private static boolean sortDesc = true;
+
+	private static Comparator<Row> comparator() {
+		Comparator<Row> byName = Comparator.comparing(Row::name, String.CASE_INSENSITIVE_ORDER);
+		Comparator<Row> c = switch (sortColumn) {
+			case 0 -> byName;
+			case 1 -> Comparator.comparingLong(Row::total);
+			case 2 -> Comparator.comparingLong(Row::need);
+			case 3 -> Comparator.comparingLong(Row::inv);
+			case 4 -> Comparator.comparingLong(Row::stock);
+			case 5 -> Comparator.comparingLong(Row::buy);
+			case 6 -> Comparator.comparingDouble((Row r) -> Double.isNaN(r.price()) ? -1 : r.buy() * r.price());
+			case 7 -> Comparator.comparingDouble((Row r) -> Double.isNaN(r.recipe()) ? -1 : Math.max(1, r.buy()) * r.recipe());
+			default -> Comparator.comparingDouble((Row r) -> Double.isNaN(r.price()) ? -1 : r.buy() * r.price())
+					.thenComparing(Comparator.comparingLong(Row::buy));
+		};
+		if (sortDesc) {
+			c = c.reversed();
+		}
+		return c.thenComparing(byName);
 	}
 
 	/** Was noch gebraucht wird: laut Litematica fehlend, sonst (noch nicht gezählt) alles. */
@@ -415,10 +440,13 @@ public final class BuildScreen extends de.loothub.client.LoothubScreen {
 		String[] heads = {"loothub.build.col.total", "loothub.build.col.need", "loothub.build.col.inv",
 				"loothub.build.col.stock", "loothub.build.col.buy", "loothub.build.col.price", "loothub.build.col.recipe"};
 		int colW = Math.max(48, Math.min(70, (detailW - 160) / heads.length));
-		g.drawString(font, Component.translatable("loothub.build.col.material"), x + 26, y, FAINT, false);
+		headerY = y;
+		headColW = colW;
+		String mat = Component.translatable("loothub.build.col.material").getString() + arrow(0);
+		g.drawString(font, mat, x + 26, y, sortColumn == 0 ? GOLD : FAINT, false);
 		for (int i = 0; i < heads.length; i++) {
-			Component h = Component.translatable(heads[i]);
-			g.drawString(font, h, colRight(i, heads.length, colW) - font.width(h), y, FAINT, false);
+			String h = Component.translatable(heads[i]).getString() + arrow(i + 1);
+			g.drawString(font, h, colRight(i, heads.length, colW) - font.width(h), y, sortColumn == i + 1 ? GOLD : FAINT, false);
 		}
 		g.fill(x + 1, y + 10, x + detailW - 1, y + 11, BORDER);
 		tableY = y + 12;
@@ -487,6 +515,12 @@ public final class BuildScreen extends de.loothub.client.LoothubScreen {
 		tableColW = colW;
 	}
 
+	private static String arrow(int col) {
+		return sortColumn == col ? (sortDesc ? " ▼" : " ▲") : "";
+	}
+
+	private int headerY = -100, headColW = 50;
+
 	private int colRight(int i, int count, int colW) {
 		return detailX + detailW - 8 - (count - 1 - i) * colW;
 	}
@@ -548,6 +582,24 @@ public final class BuildScreen extends de.loothub.client.LoothubScreen {
 				}
 				y += 24;
 			}
+		}
+		// Spaltenkopf: nach dieser Spalte sortieren (nochmal klicken = andersherum)
+		if (selected != null && my >= headerY && my < headerY + 10 && mx >= detailX && mx < detailX + detailW) {
+			int col = 0;
+			for (int i = 0; i < 7; i++) {
+				if (mx >= colRight(i, 7, headColW) - headColW && mx < colRight(i, 7, headColW) + 2) {
+					col = i + 1;
+				}
+			}
+			if (sortColumn == col) {
+				sortDesc = !sortDesc;
+			} else {
+				sortColumn = col;
+				sortDesc = col != 0; // Namen A–Z, Zahlen groß zuerst
+			}
+			scroll = 0;
+			refresh();
+			return true;
 		}
 		// Material auf-/zuklappen (nur, wenn es ein Rezept dafür gibt)
 		if (selected != null && mx >= detailX && mx < detailX + detailW && my >= tableY && my < tableY + tableH) {
