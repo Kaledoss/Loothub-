@@ -210,6 +210,9 @@ public final class WidgetConfig {
 	public boolean buildWarn = true;
 	public double buildHudX = 0.5;
 	public double buildHudY = 0.1;
+	/** Lage der Fehlt-Einblendung (wie die Twitch-Alerts: oben in der Mitte). */
+	public double buildWarnX = 0.5;
+	public double buildWarnY = 0.22;
 	/** YouTube Music (Desktop-App, API Server): „Läuft gerade“ im HUD. */
 	public boolean musicEnabled = false;
 	public boolean musicLocked = false;

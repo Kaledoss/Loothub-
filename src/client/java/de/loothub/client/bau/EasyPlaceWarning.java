@@ -14,12 +14,13 @@ import de.loothub.client.jobs.WidgetConfig;
  * Easy Place (Litematica) bzw. der Litematica-Printer findet einen Block nicht im Inventar: deutlich anzeigen, welcher
  * fehlt – statt dass einfach nichts passiert. Nur Anzeige; gesetzt oder verschoben wird nichts.
  */
-final class EasyPlaceWarning {
+public final class EasyPlaceWarning {
 	private static final long SHOW_MS = 3_000L;
 	private static ItemStack missing = ItemStack.EMPTY;
 	/** Weitere fehlende Blöcke (Printer: mehrere in Reichweite). */
 	private static int more;
 	private static int printerScanIn;
+	private static boolean printer;
 	private static long until;
 	private static String lastSoundFor = "";
 	private static long lastSoundAt;
@@ -46,6 +47,7 @@ final class EasyPlaceWarning {
 				}
 			}
 			if (!lacking.isEmpty()) {
+				printer = true;
 				show(lacking.get(0), lacking.size() - 1);
 			}
 			return;
@@ -61,6 +63,7 @@ final class EasyPlaceWarning {
 		if (have != null && have > 0) {
 			return;
 		}
+		printer = false;
 		show(need, 0);
 	}
 
@@ -78,22 +81,41 @@ final class EasyPlaceWarning {
 		}
 	}
 
-	/** Hinweis über der Schnellleiste: „Fehlt im Inventar: Glas“. */
+	/** Einblendung im Stil der Twitch-Alerts: großer Titel „⚠ Glas fehlt“, darunter der Grund. */
 	static void render(GuiGraphics g, DeltaTracker delta) {
 		Minecraft mc = Minecraft.getInstance();
-		if (missing.isEmpty() || System.currentTimeMillis() > until || mc.options.hideGui) {
+		long now = System.currentTimeMillis();
+		if (missing.isEmpty() || now > until || mc.options.hideGui) {
 			return;
 		}
-		Component text = more > 0
-				? Component.translatable("loothub.build.warn.missing_more", missing.getHoverName(), more)
-				: Component.translatable("loothub.build.warn.missing", missing.getHoverName());
-		int w = mc.font.width(text) + 30;
-		int x = (g.guiWidth() - w) / 2;
-		int y = g.guiHeight() - 82;
-		g.fill(x, y, x + w, y + 20, 0xD0120A0C);
-		g.fill(x, y, x + w, y + 1, 0xFFE23B3B);
-		g.fill(x, y + 19, x + w, y + 20, 0xFFE23B3B);
-		g.renderItem(missing, x + 3, y + 2);
-		g.drawString(mc.font, text, x + 24, y + 6, 0xFFFF8A8A, true);
+		String title = "⚠ " + Component.translatable("loothub.build.warn.title", missing.getHoverName()).getString();
+		String sub = (more > 0 ? Component.translatable("loothub.build.warn.sub_more", more)
+				: Component.translatable(printer ? "loothub.build.warn.sub_printer" : "loothub.build.warn.sub")).getString();
+		int[] size = sampleBox(mc, title, sub);
+		int[] p = pos(g.guiWidth(), g.guiHeight(), size[0], size[1]);
+		// hereinrutschen und am Ende ausblenden wie die Alerts
+		long age = SHOW_MS - (until - now);
+		float a = age < 200 ? age / 200F : until - now < 400 ? (until - now) / 400F : 1F;
+		a = Math.max(0F, Math.min(1F, a));
+		int y = p[1] + (int) ((1 - Math.min(1F, age / 200F)) * -12);
+		de.loothub.client.streamer.Alerts.drawBox(g, mc.font, title, sub, 0xFFE23B3B, p[0] + 18, y, a);
+		g.renderItem(missing, p[0], y + (size[1] - 16) / 2);
+	}
+
+	/** Größe der Einblendung (mit Platz für das Item links). */
+	private static int[] sampleBox(Minecraft mc, String title, String sub) {
+		int[] s = de.loothub.client.streamer.Alerts.boxSize(mc.font, title, sub);
+		return new int[]{s[0] + 18, s[1]};
+	}
+
+	/** Beispielgröße für „HUD-Positionen“. */
+	public static int[] sampleSize() {
+		Minecraft mc = Minecraft.getInstance();
+		return sampleBox(mc, "⚠ Glas fehlt", Component.translatable("loothub.build.warn.sub").getString());
+	}
+
+	static int[] pos(int sw, int sh, int w, int h) {
+		WidgetConfig c = WidgetConfig.get();
+		return new int[]{(int) Math.round(c.buildWarnX * Math.max(0, sw - w)), (int) Math.round(c.buildWarnY * Math.max(0, sh - h))};
 	}
 }

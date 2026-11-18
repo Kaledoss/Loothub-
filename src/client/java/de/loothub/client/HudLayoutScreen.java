@@ -61,6 +61,8 @@ public class HudLayoutScreen extends Screen {
 			huds.add(new Hud("loothub.hud.build", () -> new int[]{de.loothub.client.bau.BuildHud.W,
 					de.loothub.client.bau.BuildHud.H}, () -> c.buildHudX, () -> c.buildHudY, v -> c.buildHudX = v,
 					v -> c.buildHudY = v, 4, false, 0.5, 0.1, () -> c.buildHud));
+			huds.add(new Hud("loothub.hud.build_warn", de.loothub.client.bau.EasyPlaceWarning::sampleSize, () -> c.buildWarnX,
+					() -> c.buildWarnY, v -> c.buildWarnX = v, v -> c.buildWarnY = v, 0, false, 0.5, 0.22, () -> c.buildWarn));
 		}
 		huds.add(new Hud("loothub.hud.pcg", () -> new int[]{150, 32}, () -> c.pcgOverlayX, () -> c.pcgOverlayY,
 				v -> c.pcgOverlayX = v, v -> c.pcgOverlayY = v, 4, false, 1.0, 0.0, () -> c.pcgEnabled));

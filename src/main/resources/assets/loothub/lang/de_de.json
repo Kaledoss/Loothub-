@@ -872,5 +872,10 @@
 	"loothub.build.preview.info": "%s Blöcke · bis Ebene %s von %s",
 	"loothub.build.preview.info_layer": "%s Blöcke · nur Ebene %s von %s",
 	"loothub.build.preview.truncated": "Sehr große Schematic: Es werden nur die vorderen Blöcke gezeigt. Blende Ebenen aus, um ins Innere zu sehen.",
-	"loothub.build.preview.hint": "Mausrad: drehen · Umschalt + Mausrad: Zoom · Ziehen: verschieben · rechts ziehen: kippen"
+	"loothub.build.preview.hint": "Mausrad: drehen · Umschalt + Mausrad: Zoom · Ziehen: verschieben · rechts ziehen: kippen",
+	"loothub.hud.build_warn": "Bau: Fehlt-Einblendung",
+	"loothub.build.warn.title": "%s fehlt",
+	"loothub.build.warn.sub": "Easy Place findet den Block nicht in deinem Inventar",
+	"loothub.build.warn.sub_printer": "Der Printer findet den Block nicht in deinem Inventar",
+	"loothub.build.warn.sub_more": "und %s weitere Blöcke in Reichweite fehlen im Inventar"
 }
