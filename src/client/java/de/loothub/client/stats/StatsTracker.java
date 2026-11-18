@@ -249,7 +249,11 @@ public final class StatsTracker {
 			name = living.getVehicle().getCustomName();
 		}
 		if (name == null) {
-			return null;
+			name = nearbyLabel(living); // Namensschild schwebt nur über dem Mob (Textanzeige/Rüstungsständer)
+		}
+		if (name == null) {
+			// unsichtbarer Träger (z. B. Fledermaus als Trefferfläche) ohne lesbaren Namen: nicht als echtes Tier zählen
+			return living.isInvisible() ? "Server-Mob (" + living.getType().getDescription().getString() + ")" : null;
 		}
 		String n = net.minecraft.ChatFormatting.stripFormatting(name.getString());
 		if (n == null) {
@@ -264,6 +268,31 @@ public final class StatsTracker {
 			return null;
 		}
 		return n.length() > 40 ? n.substring(0, 40).strip() : n;
+	}
+
+	/** Text einer Textanzeige oder eines Rüstungsständers direkt über dem Mob (bis 3 Blöcke hoch). */
+	private static net.minecraft.network.chat.Component nearbyLabel(LivingEntity living) {
+		var level = living.level();
+		var box = living.getBoundingBox().inflate(0.8, 0.0, 0.8).expandTowards(0.0, 3.0, 0.0);
+		net.minecraft.network.chat.Component best = null;
+		double bestD = Double.MAX_VALUE;
+		for (Entity e : level.getEntities(living, box)) {
+			net.minecraft.network.chat.Component text = null;
+			if (e instanceof net.minecraft.world.entity.Display.TextDisplay td) {
+				text = ((de.loothub.client.mixin.TextDisplayAccessor) td).loothub$getText();
+			} else if (e instanceof net.minecraft.world.entity.decoration.ArmorStand && e.hasCustomName()) {
+				text = e.getCustomName();
+			}
+			if (text == null || text.getString().isBlank()) {
+				continue;
+			}
+			double d = e.distanceToSqr(living);
+			if (d < bestD) {
+				bestD = d;
+				best = text;
+			}
+		}
+		return best;
 	}
 
 	private static String killKey(Target t) {
