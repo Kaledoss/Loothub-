@@ -231,8 +231,10 @@ final class LitematicaBridge {
 
 	// ------------------------------------------------------------------ Easy Place: fehlt der Block im Inventar?
 
+	/** Easy Place an – oder der Litematica-Printer installiert (der setzt ebenfalls aus dem Inventar)? */
 	static boolean easyPlaceOn() {
-		return Configs.Generic.EASY_PLACE_MODE.getBooleanValue();
+		return Configs.Generic.EASY_PLACE_MODE.getBooleanValue()
+				|| net.fabricmc.loader.api.FabricLoader.getInstance().isModLoaded("litematica_printer");
 	}
 
 	/** Block, auf den der Spieler in der Schematic zielt und der noch nicht steht – das dafür nötige Item, sonst leer. */
