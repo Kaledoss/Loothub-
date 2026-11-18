@@ -872,5 +872,5 @@
 	"loothub.build.preview.info": "%s blocks · up to layer %s of %s",
 	"loothub.build.preview.info_layer": "%s blocks · only layer %s of %s",
 	"loothub.build.preview.truncated": "Very large schematic: only the front blocks are shown. Hide layers to look inside.",
-	"loothub.build.preview.hint": "Drag: move · Mouse wheel: zoom"
+	"loothub.build.preview.hint": "Mouse wheel: rotate · Shift + wheel: zoom · Drag: move · Right-drag: tilt"
 }

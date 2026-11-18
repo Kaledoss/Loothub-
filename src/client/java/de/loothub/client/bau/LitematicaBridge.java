@@ -399,9 +399,6 @@ final class LitematicaBridge {
 				}
 			}
 		}
-		MaterialCache cache = MaterialCache.getInstance();
-		// gleiche Blöcke teilen sich ein Item (spart Speicher bei großen Schematics)
-		Map<BlockState, ItemStack> items = new HashMap<>();
 		for (var e : all.entrySet()) {
 			long key = e.getKey();
 			int x = BlockPos.getX(key), y = BlockPos.getY(key), z = BlockPos.getZ(key);
@@ -412,19 +409,17 @@ final class LitematicaBridge {
 				continue;
 			}
 			BlockState st = e.getValue();
-			ItemStack item = items.computeIfAbsent(st, k -> {
-				ItemStack it = cache.getRequiredBuildItemForState(k);
-				return it == null ? ItemStack.EMPTY : it;
-			});
-			if (item.isEmpty()) {
-				continue;
-			}
-			out.add(new Preview.Block(x, y, z, item, st.canOcclude()));
+			out.add(new Preview.Block(x, y, z, st, st.canOcclude()));
 			if (out.size() >= max) {
 				break;
 			}
 		}
 		return out;
+	}
+
+	/** Eigenes Zeichen-Element in die GUI geben (MaLiLib kommt an die interne Liste von GuiGraphics). */
+	static void submit(net.minecraft.client.gui.GuiGraphics g, net.minecraft.client.gui.render.state.GuiElementRenderState e) {
+		fi.dy.masa.malilib.render.GuiContext.fromGuiGraphics(g).addSimpleElement(e);
 	}
 
 	// ------------------------------------------------------------------ Gemeinsam bauen

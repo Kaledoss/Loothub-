@@ -872,5 +872,5 @@
 	"loothub.build.preview.info": "%s Blöcke · bis Ebene %s von %s",
 	"loothub.build.preview.info_layer": "%s Blöcke · nur Ebene %s von %s",
 	"loothub.build.preview.truncated": "Sehr große Schematic: Es werden nur die vorderen Blöcke gezeigt. Blende Ebenen aus, um ins Innere zu sehen.",
-	"loothub.build.preview.hint": "Ziehen: verschieben · Mausrad: Zoom"
+	"loothub.build.preview.hint": "Mausrad: drehen · Umschalt + Mausrad: Zoom · Ziehen: verschieben · rechts ziehen: kippen"
 }
