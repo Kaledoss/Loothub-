@@ -235,6 +235,11 @@ final class LitematicaBridge {
 		return Configs.Generic.EASY_PLACE_MODE.getBooleanValue();
 	}
 
+	/** Easy-Place-Taste gedrückt – so, wie sie in Litematica belegt ist (Standard: rechte Maustaste)? */
+	static boolean easyPlaceKeyHeld() {
+		return fi.dy.masa.litematica.config.Hotkeys.EASY_PLACE_ACTIVATION.getKeybind().isKeybindHeld();
+	}
+
 	// ------------------------------------------------------------------ Litematica-Printer (über Reflexion, optional)
 
 	private static final String PRINTER = "me.aleksilassila.litematica.printer.config.";

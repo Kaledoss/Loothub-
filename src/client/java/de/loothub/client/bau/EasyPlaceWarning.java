@@ -39,8 +39,10 @@ public final class EasyPlaceWarning {
 			loggedPrinting = printing;
 			de.loothub.Loothub.LOGGER.info("[Loothub-Bau] Printer {}", printing ? "druckt" : "druckt nicht");
 		}
-		// Printer an oder im Bereich einer Schematic: laufend die Reichweite absuchen – auch ohne Rechtsklick
-		if (printing || Build.here() != null) {
+		// Printer an, im Bereich einer Schematic oder Easy-Place-Taste gedrückt (wie in Litematica belegt):
+		// laufend die Reichweite absuchen – ohne dass man dafür rechtsklicken muss
+		boolean easyKey = LitematicaBridge.easyPlaceOn() && LitematicaBridge.easyPlaceKeyHeld();
+		if (printing || easyKey || Build.here() != null) {
 			if (--printerScanIn > 0) {
 				return;
 			}
@@ -60,7 +62,7 @@ public final class EasyPlaceWarning {
 			}
 			return;
 		}
-		// sonst: beim Rechtsklick auf einen fehlenden Schematic-Block (mit Easy Place, aber auch ohne)
+		// sonst: beim Rechtsklick auf einen fehlenden Schematic-Block
 		if (!mc.options.keyUse.isDown()) {
 			return;
 		}
