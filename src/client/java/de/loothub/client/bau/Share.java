@@ -252,7 +252,11 @@ public final class Share {
 			byte[] data = Base64.getDecoder().decode(r.get("file").getAsString());
 			String fileName = r.has("fileName") ? r.get("fileName").getAsString() : "geteilt.litematic";
 			fileName = fileName.replaceAll("[^A-Za-z0-9._ -]", "_");
-			if (!fileName.toLowerCase(Locale.ROOT).endsWith(".litematic")) {
+			// Endung behalten: Litematica liest die Datei je nach Endung als .litematic, .schem (Sponge), .schematic
+			// oder .nbt (Strukturblock) – eine umbenannte .schem wäre „ohne Versionsangabe“ und ließe sich nicht laden
+			String lower = fileName.toLowerCase(Locale.ROOT);
+			if (!(lower.endsWith(".litematic") || lower.endsWith(".schem") || lower.endsWith(".schematic")
+					|| lower.endsWith(".nbt"))) {
 				fileName = fileName + ".litematic";
 			}
 			Path dir = LitematicaBridge.sharedDir();
