@@ -107,6 +107,10 @@ public final class PetsLayer extends RenderLayer<AvatarRenderState, PlayerModel>
 			if (type == null) {
 				continue;
 			}
+			if (Cosmetics.petOnHead(state, slot)) {
+				drawOnHead(poseStack, collector, light, state, type, slot, t);
+				continue;
+			}
 			float side = slot == 0 ? 1.0F : -1.0F;
 			boolean walker = Play.walker(type);
 			boolean ground = type.equals("slime") || walker;
@@ -272,6 +276,87 @@ public final class PetsLayer extends RenderLayer<AvatarRenderState, PlayerModel>
 			}
 			poseStack.popPose();
 		}
+	}
+
+	/**
+	 * Haustier auf dem Kopf: klein, fest am Kopf (dreht und nickt mit). Wolf sitzt, Roter Panda rollt sich ein, Biene,
+	 * Allay, Vex und Himmelsschlange schweben knapp darüber; sind beide Plätze auf dem Kopf, sitzen sie nebeneinander.
+	 */
+	private void drawOnHead(PoseStack poseStack, SubmitNodeCollector collector, int light, AvatarRenderState state,
+			String type, int slot, float t) {
+		if (state.isInvisible && !FirstPerson.is(state)) {
+			return;
+		}
+		if (FirstPerson.is(state)) {
+			return; // in der Ego-Perspektive säße es direkt vor der Kamera
+		}
+		float scale = switch (type) {
+			case "dragon", "serpent" -> 0.18F;
+			case "donkey" -> 0.24F;
+			case "wolf", "red_panda" -> 0.3F;
+			default -> 0.28F;
+		};
+		boolean hover = type.equals("bee") || type.equals("allay") || type.equals("vex") || type.equals("serpent")
+				|| type.equals("dragon");
+		boolean both = Cosmetics.petOnHead(state, 0) && Cosmetics.petOnHead(state, 1);
+		float dx = both ? (slot == 0 ? -0.13F : 0.13F) : 0.0F;
+		float bob = hover ? -0.12F - (float) Math.sin(t * 0.12F + slot * 2.0F) * 0.04F : 0.02F;
+		poseStack.pushPose();
+		getParentModel().head.translateAndRotate(poseStack);
+		// Kopfoberseite liegt 8 Pixel über dem Drehpunkt; Füße des Modells genau darauf
+		poseStack.translate(dx, -0.5F - 1.5F * scale + bob, 0.0F);
+		poseStack.scale(scale, scale, scale);
+		switch (type) {
+			case "slime" -> {
+				SlimeRenderState s = base(new SlimeRenderState(), t, 0.0F);
+				s.size = 1;
+				collector.submitModel(slimeInner, s, poseStack, RenderTypes.entityCutoutNoCull(SLIME_TEX), light,
+						OverlayTexture.NO_OVERLAY, 0, null);
+				collector.submitModel(slimeOuter, s, poseStack, RenderTypes.entityTranslucent(SLIME_TEX), light,
+						OverlayTexture.NO_OVERLAY, 0, null);
+			}
+			case "allay" -> submit(collector, poseStack, allay, base(new AllayRenderState(), t, 0.0F), ALLAY_TEX);
+			case "bee" -> {
+				BeeRenderState s = base(new BeeRenderState(), t, 0.0F);
+				s.isOnGround = false;
+				submit(collector, poseStack, bee, s, BEE_TEX);
+			}
+			case "wolf" -> {
+				WolfRenderState s = base(new WolfRenderState(), t, 0.0F);
+				s.isSitting = true;
+				submit(collector, poseStack, wolf, s, WOLF_TEX);
+			}
+			case "penguin" -> submit(collector, poseStack, penguin, base(new LivingEntityRenderState(), t, 0.0F), PENGUIN_TEX);
+			case "panda" -> {
+				PandaRenderState s = base(new PandaRenderState(), t, 0.0F);
+				s.variant = net.minecraft.world.entity.animal.panda.Panda.Gene.NORMAL;
+				s.isBaby = true;
+				submit(collector, poseStack, panda, s, PANDA_TEX);
+			}
+			case "donkey" -> {
+				net.minecraft.client.renderer.entity.state.DonkeyRenderState s = base(
+						new net.minecraft.client.renderer.entity.state.DonkeyRenderState(), t, 0.0F);
+				s.isBaby = true;
+				s.animateTail = true;
+				submit(collector, poseStack, donkey, s, DONKEY_TEX);
+			}
+			case "red_panda" -> {
+				PetModels.RedPandaState s = base(new PetModels.RedPandaState(), t, 0.0F);
+				s.curl = 1.0F; // eingerollt auf dem Kopf
+				submit(collector, poseStack, redPanda, s, RED_PANDA_TEX);
+			}
+			case "zombie" -> {
+				ZombieRenderState s = base(new ZombieRenderState(), t, 0.0F);
+				s.isBaby = true;
+				submit(collector, poseStack, zombie, s, ZOMBIE_TEX);
+			}
+			case "serpent" -> submit(collector, poseStack, serpent, base(new LivingEntityRenderState(), t + slot * 17.0F, 0.0F),
+					SERPENT_TEX);
+			case "dragon" -> submit(collector, poseStack, dragon, base(new LivingEntityRenderState(), t + slot * 13.0F, 0.0F),
+					DRAGON_TEX);
+			default -> submit(collector, poseStack, vex, base(new VexRenderState(), t, 0.0F), VEX_TEX);
+		}
+		poseStack.popPose();
 	}
 
 	private static <S extends LivingEntityRenderState> void submit(SubmitNodeCollector collector, PoseStack poseStack,

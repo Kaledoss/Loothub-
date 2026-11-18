@@ -877,5 +877,8 @@
 	"loothub.build.warn.title": "%s missing",
 	"loothub.build.warn.sub": "This block is missing from your inventory",
 	"loothub.build.warn.sub_printer": "The printer can't find the block in your inventory",
-	"loothub.build.warn.sub_more": "and %s more blocks in reach are missing from your inventory"
+	"loothub.build.warn.sub_more": "and %s more blocks in reach are missing from your inventory",
+	"loothub.cosmetics.pets.place": "Place",
+	"loothub.cosmetics.pets.place.off": "follows you",
+	"loothub.cosmetics.pets.place.head": "on your head"
 }

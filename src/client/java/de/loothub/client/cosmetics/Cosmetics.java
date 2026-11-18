@@ -50,6 +50,8 @@ public final class Cosmetics {
 	public static final String AURA_LEVELS = "auralevels";
 	/** Haustiere neben den Mini-Mes, Wert = "slime,allay" (je Platz). */
 	public static final String PETS = "pets";
+	/** Wo das Haustier je Platz ist: "head" = sitzt/liegt auf dem Kopf, sonst folgt es. */
+	public static final String PET_PLACE = "petplace";
 	/** Mini-Mes winken, jubeln und gähnen. */
 	public static final String EMOTES = "emotes";
 	/** Energie-Kegel beim Hoch- und Runterfliegen. */
@@ -389,6 +391,7 @@ public final class Cosmetics {
 		putOwn(mine, values, MINI_WING_COLOR_OUTER, cfg.miniMeWingColorOuter);
 		putOwn(mine, values, FOOTSTEPS, cfg.footsteps);
 		putOwn(mine, values, PETS, cfg.pets == null || cfg.pets.replace(",", "").isBlank() ? "" : cfg.pets);
+		putOwn(mine, values, PET_PLACE, cfg.petPlace == null || cfg.petPlace.replace(",", "").isBlank() ? "" : cfg.petPlace);
 		putOwn(mine, values, MINI_TRAITS, cfg.miniMeTraits == null || cfg.miniMeTraits.replace(",", "").isBlank() ? "" : cfg.miniMeTraits);
 		if (cfg.crown) {
 			mine.add(CROWN);
@@ -513,6 +516,29 @@ public final class Cosmetics {
 		String[] parts = raw.split(",", -1);
 		String s = slot < parts.length ? parts[slot].strip().toLowerCase(Locale.ROOT) : "";
 		return PET_TYPES.contains(s) ? s : null;
+	}
+
+	/** Sitzt das Haustier auf Platz {@code slot} auf dem Kopf (statt zu folgen)? */
+	public static boolean petOnHead(Object state, int slot) {
+		if (pet(state, slot) == null) {
+			return false;
+		}
+		String raw = raw(state, PET_PLACE);
+		if (raw == null) {
+			return false;
+		}
+		String[] parts = raw.split(",", -1);
+		return slot < parts.length && "head".equalsIgnoreCase(parts[slot].strip());
+	}
+
+	/** Irgendein Haustier auf dem Kopf? (Dann bleibt die Krone weg.) */
+	public static boolean anyPetOnHead(Object state) {
+		for (int i = 0; i < MAX_PETS; i++) {
+			if (petOnHead(state, i)) {
+				return true;
+			}
+		}
+		return false;
 	}
 
 	public static boolean has(Object state, String cosmetic) {

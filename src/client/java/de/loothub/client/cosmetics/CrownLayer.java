@@ -44,7 +44,7 @@ public final class CrownLayer extends RenderLayer<AvatarRenderState, PlayerModel
 
 	private void draw(PoseStack poseStack, SubmitNodeCollector collector, int light, AvatarRenderState state,
 			float yRot, float xRot) {
-		if (!Cosmetics.has(state, Cosmetics.CROWN) || state.isInvisible) {
+		if (!Cosmetics.has(state, Cosmetics.CROWN) || state.isInvisible || Cosmetics.anyPetOnHead(state)) {
 			return;
 		}
 		float t = state.ageInTicks;

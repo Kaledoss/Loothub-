@@ -205,9 +205,13 @@ public class CosmeticsScreen extends LoothubScreen {
 							Component.translatable(slot == 0 ? "loothub.cosmetics.pets.right" : "loothub.cosmetics.pets.left").getString(),
 							PET_OPTIONS, "loothub.cosmetics.pets.type.", () -> slotValue(c.pets, slot),
 							v -> c.pets = setSlot(c.pets, slot, v, Cosmetics.MAX_PETS));
+					// Platz: folgt dir oder sitzt auf dem Kopf (statt der Krone)
+					dropdown(descX + k * (dw + 6), y + 50, dw, Component.translatable("loothub.cosmetics.pets.place").getString(),
+							PET_PLACES, "loothub.cosmetics.pets.place.", () -> slotValue(c.petPlace, slot),
+							v -> c.petPlace = setSlot(c.petPlace, slot, v, Cosmetics.MAX_PETS));
 				}
-				sections.add(new Section(y, 54, "loothub.cosmetics.pets", "loothub.cosmetics.pets.desc"));
-				y += 54 + GAP;
+				sections.add(new Section(y, 74, "loothub.cosmetics.pets", "loothub.cosmetics.pets.desc"));
+				y += 74 + GAP;
 
 				// Gesten
 				toggle(lx, y + 20, lw, () -> c.miniMeEmotes, v -> c.miniMeEmotes = v);
@@ -432,6 +436,7 @@ public class CosmeticsScreen extends LoothubScreen {
 	// ------------------------------------------------------------------ Auswahllisten
 
 	private static final String[] WING_OPTIONS = {"", "dragon", "devil", "angel", "drake"};
+	private static final String[] PET_PLACES = {"", "head"};
 	private static final String[] PET_OPTIONS = {"", "slime", "allay", "bee", "vex", "wolf", "penguin", "dragon", "panda", "red_panda", "donkey", "zombie", "serpent"};
 	private static final String[] ARMOR_WHO = {"", "all"};
 	private static final String[] RANGE_OPTIONS = {"", "8", "16", "32", "64"};
