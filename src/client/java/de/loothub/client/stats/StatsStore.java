@@ -169,12 +169,17 @@ public final class StatsStore {
 			Loothub.LOGGER.warn("Statistik konnte nicht gelesen werden", e);
 		}
 		// alte Fehlzählungen umbenennen: „Fire“ war der Maulwurf (Feuer-Effekt des Modells statt des Modellnamens)
+		// „Server-Mob (Bat)“ war der Kasuar (unsichtbare Fledermaus als Träger, Name damals nicht lesbar)
+		Map<String, String> rename = Map.of("killed.~Fire", "killed.~Maulwurf",
+				"killed.~Server-Mob (Bat)", "killed.~Kasuar", "killed.~Server-Mob (Fledermaus)", "killed.~Kasuar");
 		for (Map<String, Long> v : days.values()) {
-			Long fire = v.remove("killed.~Fire");
-			if (fire != null) {
-				v.merge("killed.~Maulwurf", fire, Long::sum);
-				dirty = true;
-			}
+			rename.forEach((from, to) -> {
+				Long n = v.remove(from);
+				if (n != null) {
+					v.merge(to, n, Long::sum);
+					dirty = true;
+				}
+			});
 		}
 	}
 }
