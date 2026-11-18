@@ -29,6 +29,7 @@ public abstract class HumanoidHeadMixin {
 			// Andere Spieler, die seit 5 Minuten völlig stillstehen, schlafen (nur eigene Darstellung)
 			de.loothub.client.quick.AfkView.markLying(state, de.loothub.client.quick.OtherAfk.lieProgress(entity),
 					de.loothub.client.quick.OtherAfk.style(entity));
+			hideHandsWhileLying(state);
 			if (entity instanceof net.minecraft.world.entity.player.Player) {
 				// Kopf-Items (Autos, Köpfe …) auch bei anderen Spielern ausblenden – echte Helme bleiben sichtbar
 				if (WidgetConfig.get().hideOwnHeadItem) {
@@ -49,6 +50,7 @@ public abstract class HumanoidHeadMixin {
 		}
 		// AFK-Ansicht: eigener Charakter liegt schlafend da (nur eigene Darstellung)
 		de.loothub.client.quick.AfkView.markOwn(state);
+		hideHandsWhileLying(state);
 		if (WidgetConfig.get().hideOwnCape && state instanceof net.minecraft.client.renderer.entity.state.AvatarRenderState avatar) {
 			avatar.showCape = false;
 		}
@@ -62,6 +64,14 @@ public abstract class HumanoidHeadMixin {
 		// benutzt oder geflogen wird)
 		if (de.loothub.client.cosmetics.Emotes.wheel() != null && !state.isUsingItem && state.attackTime <= 0.0F
 				&& de.loothub.client.cosmetics.Motion.fly(state) <= 0.5F) {
+			state.leftHandItemState.clear();
+			state.rightHandItemState.clear();
+		}
+	}
+
+	/** AFK-Animation (hinlegen, Hände hinter dem Kopf): nichts in den Händen zeigen. */
+	private static void hideHandsWhileLying(HumanoidRenderState state) {
+		if (de.loothub.client.quick.AfkView.pose(state) != null) {
 			state.leftHandItemState.clear();
 			state.rightHandItemState.clear();
 		}
