@@ -270,13 +270,10 @@ final class LitematicaBridge {
 		}
 	}
 
-	/** Druckt der Printer gerade (Druckmodus an oder Druck-Taste gehalten)? */
+	/** Ist der Druckmodus des Printers eingeschaltet (Umschalter)? Nur dann wird auf fehlende Blöcke geprüft. */
 	static boolean printerActive() {
 		lookupPrinter();
-		if (printMode instanceof fi.dy.masa.malilib.config.options.ConfigBoolean b && b.getBooleanValue()) {
-			return true;
-		}
-		return printKey instanceof fi.dy.masa.malilib.config.options.ConfigHotkey k && k.getKeybind().isKeybindHeld();
+		return printMode instanceof fi.dy.masa.malilib.config.options.ConfigBoolean b && b.getBooleanValue();
 	}
 
 	/** Reichweite des Printers (Blöcke). */
