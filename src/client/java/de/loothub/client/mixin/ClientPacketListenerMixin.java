@@ -25,7 +25,7 @@ public abstract class ClientPacketListenerMixin {
 		}
 		Entity entity = mc.level.getEntity(packet.getItemId());
 		if (entity instanceof ItemEntity item) {
-			StatsTracker.onPickup(item.getItem().getItem(), packet.getAmount());
+			StatsTracker.onPickup(item.getItem(), packet.getAmount());
 		}
 	}
 }

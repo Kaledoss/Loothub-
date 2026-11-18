@@ -3,6 +3,7 @@
 	"package": "de.loothub.client.mixin",
 	"compatibilityLevel": "JAVA_21",
 	"client": [
+		"ItemDisplayAccessor",
 		"TextDisplayAccessor",
 		"InventoryEntityMixin",
 		"GuiMixin",

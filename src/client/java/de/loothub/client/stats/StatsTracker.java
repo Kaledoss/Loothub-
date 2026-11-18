@@ -127,10 +127,18 @@ public final class StatsTracker {
 		}
 	}
 
-	public static void onPickup(Item item, int amount) {
-		if (tracking(Minecraft.getInstance())) {
-			StatsStore.add("picked." + BuiltInRegistries.ITEM.getKey(item), Math.max(1, amount));
+	public static void onPickup(ItemStack stack, int amount) {
+		if (!tracking(Minecraft.getInstance()) || stack.isEmpty()) {
+			return;
 		}
+		// Server-Items mit eigenem Namen (z. B. „Kasuarhorn“ als Mob-Drop) unter ihrem Namen zählen
+		var custom = stack.get(net.minecraft.core.component.DataComponents.CUSTOM_NAME);
+		String name = custom == null ? null : net.minecraft.ChatFormatting.stripFormatting(custom.getString());
+		if (name != null && !(name = name.strip()).isEmpty()) {
+			StatsStore.add("picked.~" + (name.length() > 40 ? name.substring(0, 40).strip() : name), Math.max(1, amount));
+			return;
+		}
+		StatsStore.add("picked." + BuiltInRegistries.ITEM.getKey(stack.getItem()), Math.max(1, amount));
 	}
 
 	/**
@@ -252,6 +260,12 @@ public final class StatsTracker {
 			name = nearbyLabel(living); // Namensschild schwebt nur über dem Mob (Textanzeige/Rüstungsständer)
 		}
 		if (name == null) {
+			// kein Name zu lesen: Name des Modells nehmen (Item-Anzeige bzw. Kopf-Item eines Rüstungsständers mit eigenem
+			// Item-Modell, z. B. „opsucht:mobs/kasuar“ → „Kasuar“)
+			String model = modelName(living);
+			if (model != null) {
+				return model;
+			}
 			// unsichtbarer Träger (z. B. Fledermaus als Trefferfläche) ohne lesbaren Namen: nicht als echtes Tier zählen
 			return living.isInvisible() ? "Server-Mob (" + living.getType().getDescription().getString() + ")" : null;
 		}
@@ -293,6 +307,63 @@ public final class StatsTracker {
 			}
 		}
 		return best;
+	}
+
+	/** Name aus dem Modell eines Server-Mobs: Item-Anzeigen bzw. Rüstungsständer-Köpfe, die mitreiten oder direkt dabei sind. */
+	private static String modelName(LivingEntity living) {
+		java.util.List<Entity> parts = new java.util.ArrayList<>();
+		living.getIndirectPassengers().forEach(parts::add);
+		if (living.getVehicle() != null) {
+			parts.add(living.getVehicle());
+		}
+		parts.addAll(living.level().getEntities(living, living.getBoundingBox().inflate(1.5, 0.5, 1.5).expandTowards(0.0, 2.5, 0.0)));
+		String best = null;
+		double bestD = Double.MAX_VALUE;
+		for (Entity e : parts) {
+			ItemStack stack = ItemStack.EMPTY;
+			if (e instanceof net.minecraft.world.entity.Display.ItemDisplay idp) {
+				stack = ((de.loothub.client.mixin.ItemDisplayAccessor) idp).loothub$getItemStack();
+			} else if (e instanceof net.minecraft.world.entity.decoration.ArmorStand as) {
+				stack = as.getItemBySlot(net.minecraft.world.entity.EquipmentSlot.HEAD);
+			}
+			String n = itemModelName(stack);
+			if (n == null) {
+				continue;
+			}
+			double d = e.distanceToSqr(living);
+			if (d < bestD) {
+				bestD = d;
+				best = n;
+			}
+		}
+		return best;
+	}
+
+	/** Eigenes Modell eines Items als lesbarer Name (eigener Item-Name hat Vorrang), sonst null. */
+	private static String itemModelName(ItemStack stack) {
+		if (stack == null || stack.isEmpty()) {
+			return null;
+		}
+		var custom = stack.get(net.minecraft.core.component.DataComponents.CUSTOM_NAME);
+		if (custom != null && !custom.getString().isBlank()) {
+			return net.minecraft.ChatFormatting.stripFormatting(custom.getString()).strip();
+		}
+		var model = stack.get(net.minecraft.core.component.DataComponents.ITEM_MODEL);
+		if (model == null || "minecraft".equals(model.getNamespace())) {
+			return null;
+		}
+		String path = model.getPath();
+		path = path.substring(path.lastIndexOf('/') + 1) // nur der letzte Teil: mobs/kasuar_body → kasuar_body
+				.replaceAll("(_|-)(body|head|model|base|main|idle|walk|anim|entity|mob)$", "")
+				.replaceAll("[_\\-]+", " ").replaceAll("\\d+", " ").replaceAll("\\s+", " ").strip();
+		if (path.length() < 2) {
+			return null;
+		}
+		StringBuilder out = new StringBuilder();
+		for (String w : path.split(" ")) {
+			out.append(out.length() > 0 ? " " : "").append(Character.toUpperCase(w.charAt(0))).append(w.substring(1));
+		}
+		return out.toString();
 	}
 
 	private static String killKey(Target t) {
