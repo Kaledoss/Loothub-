@@ -216,7 +216,19 @@ public final class StatsTracker {
 		if (living != null && tracking(mc) && !TARGETS.containsKey(living.getId())) {
 			describe(entity, living);
 		} else if (living == null && tracking(mc)) {
-			de.loothub.Loothub.LOGGER.info("[Loothub-Mobinfo] getroffen, aber kein Mob gefunden: {}", part(entity));
+			// kein Lebewesen zu sehen (der Server schickt bei manchen Modell-Mobs nur Modell und Trefferfläche): dann ist
+			// das Modell selbst der Mob – beobachtet wird das Teil, auf dem die Trefferfläche sitzt
+			Entity root = entity.getRootVehicle();
+			String model = modelName(entity, 3.0);
+			if (model != null) {
+				if (!TARGETS.containsKey(root.getId())) {
+					de.loothub.Loothub.LOGGER.info("[Loothub-Mobinfo] getroffen: {} | nur Modell, gezählt als: {}", part(entity), model);
+				}
+				TARGETS.put(root.getId(), new Target(root.getType(), model, 0F, System.currentTimeMillis(), root.getX(),
+						root.getY(), root.getZ()));
+			} else {
+				de.loothub.Loothub.LOGGER.info("[Loothub-Mobinfo] getroffen, aber kein Mob gefunden: {}", part(entity));
+			}
 		}
 		if (living != null && tracking(mc)) {
 			TARGETS.put(living.getId(), new Target(living.getType(), customName(living), living.getHealth(),
@@ -381,13 +393,17 @@ public final class StatsTracker {
 	}
 
 	/** Name aus dem Modell eines Server-Mobs: Item-Anzeigen bzw. Rüstungsständer-Köpfe, die mitreiten oder direkt dabei sind. */
-	private static String modelName(LivingEntity living) {
+	private static String modelName(Entity living) {
+		return modelName(living, 1.5);
+	}
+
+	private static String modelName(Entity living, double reach) {
 		java.util.List<Entity> parts = new java.util.ArrayList<>();
 		living.getIndirectPassengers().forEach(parts::add);
 		if (living.getVehicle() != null) {
 			parts.add(living.getVehicle());
 		}
-		parts.addAll(living.level().getEntities(living, living.getBoundingBox().inflate(1.5, 0.5, 1.5).expandTowards(0.0, 2.5, 0.0)));
+		parts.addAll(living.level().getEntities(living, living.getBoundingBox().inflate(reach, 0.5, reach).expandTowards(0.0, 2.5, 0.0)));
 		// ein Modell besteht aus vielen Teilen (Kopf, Arme, Beine …) – der Name, der am häufigsten vorkommt, gewinnt;
 		// einzelne Effekte daneben (z. B. Feuer) fallen so heraus
 		java.util.Map<String, Integer> votes = new java.util.HashMap<>();
@@ -423,7 +439,8 @@ public final class StatsTracker {
 			java.util.Map.entry("bunny", "Kaninchen"), java.util.Map.entry("hare", "Hase"),
 			java.util.Map.entry("crab", "Krabbe"), java.util.Map.entry("turtle", "Schildkröte"),
 			java.util.Map.entry("fox", "Fuchs"), java.util.Map.entry("wolf", "Wolf"), java.util.Map.entry("bear", "Bär"),
-			java.util.Map.entry("owl", "Eule"), java.util.Map.entry("duck", "Ente"), java.util.Map.entry("snake", "Schlange"),
+			java.util.Map.entry("owl", "Eule"), java.util.Map.entry("eagle", "Adler"), java.util.Map.entry("hawk", "Falke"),
+			java.util.Map.entry("falcon", "Falke"), java.util.Map.entry("parrot", "Papagei"), java.util.Map.entry("seagull", "Möwe"), java.util.Map.entry("duck", "Ente"), java.util.Map.entry("snake", "Schlange"),
 			java.util.Map.entry("monkey", "Affe"), java.util.Map.entry("elephant", "Elefant"),
 			java.util.Map.entry("giraffe", "Giraffe"), java.util.Map.entry("lion", "Löwe"), java.util.Map.entry("tiger", "Tiger"),
 			java.util.Map.entry("whale", "Wal"), java.util.Map.entry("dolphin", "Delfin"), java.util.Map.entry("jellyfish", "Qualle"),
@@ -768,6 +785,15 @@ public final class StatsTracker {
 			Map.Entry<Integer, Target> e = it.next();
 			Target t = e.getValue();
 			Entity entity = mc.level.getEntity(e.getKey());
+			if (entity != null && !(entity instanceof LivingEntity)) {
+				// reines Modell (ohne Lebewesen): nur auf das Verschwinden warten
+				if (now - t.lastHit() > KILL_WINDOW_MS) {
+					it.remove();
+				} else {
+					e.setValue(new Target(t.type(), t.name(), 0F, t.lastHit(), entity.getX(), entity.getY(), entity.getZ()));
+				}
+				continue;
+			}
 			if (!(entity instanceof LivingEntity living)) {
 				// Server-Mobs verschwinden beim Tod ohne normale Sterbe-Animation – sofort oder nach der Animation ihres
 				// Modells. Verschwindet ein Mob kurz nach einem Treffer, während man noch in der Nähe ist (nicht nur
