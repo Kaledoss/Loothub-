@@ -273,6 +273,9 @@ public class StatsScreen extends LoothubScreen {
 					if (kind == Kind.PLANT) {
 						id = plantKey(id); // Feldfrucht-Block (z. B. „Wheat Crops“) und Samen in eine Zeile
 					}
+					if (category == Category.FOOD && isGlowBerries(id)) {
+						id = "minecraft:glow_berries"; // geerntete Ranken und Beeren in eine Zeile
+					}
 					byId.computeIfAbsent(id, k -> new long[columnCount])[cols[i]] += e.getValue();
 				}
 			}
@@ -355,8 +358,8 @@ public class StatsScreen extends LoothubScreen {
 	private boolean accepts(String prefix, String id, Kind kind) {
 		return switch (category) {
 			case BLOCKS -> !isFoodBlock(id) && !isLeaves(id) && (!prefix.equals("picked.") || (isBlockItem(id) && !isFood(id)));
-			case PLANTS -> isPlantId(id) && !isFood(id) && !isFoodBlock(id);
-			case FOOD -> isFoodBlock(id) || (!prefix.equals("mined.") && isFood(id));
+			case PLANTS -> isPlantId(id) && !isFood(id) && !isFoodBlock(id) && !isGlowBerries(id);
+			case FOOD -> isFoodBlock(id) || isGlowBerries(id) || (!prefix.equals("mined.") && isFood(id));
 			case TOOLS -> !prefix.equals("picked.") || isTool(id);
 			case ITEMS -> !isTool(id) && !isFood(id) && !isFoodBlock(id) && !isPlantId(id) && !isBlockItem(id);
 			default -> true;
@@ -416,6 +419,11 @@ public class StatsScreen extends LoothubScreen {
 		Identifier identifier = Identifier.tryParse(id);
 		Block block = identifier == null ? null : BuiltInRegistries.BLOCK.getOptional(identifier).orElse(null);
 		return block != null && block.defaultBlockState().is(net.minecraft.tags.BlockTags.LEAVES);
+	}
+
+	/** Leuchtbeeren samt ihren Ranken – stehen unter „Nahrung“, nicht unter „Pflanzen“. */
+	private static boolean isGlowBerries(String id) {
+		return id.equals("minecraft:glow_berries") || id.equals("minecraft:cave_vines") || id.equals("minecraft:cave_vines_plant");
 	}
 
 	/** Melonen und Kürbisse: eigentlich Blöcke, stehen aber unter „Nahrung“. */
