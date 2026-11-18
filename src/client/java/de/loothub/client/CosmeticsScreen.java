@@ -173,6 +173,17 @@ public class CosmeticsScreen extends LoothubScreen {
 							v -> c.miniMeWingColorOuter = setSlot(c.miniMeWingColorOuter, slot, v, Cosmetics.MAX_MINI_MES), style, true,
 							inner);
 					rowPreviews.add(new RowPreview(nx + 30, by - 1, 18, style, inner, outer));
+					// Skin kam nicht (Mojang langsam/überlastet): sofort neu laden statt auf den nächsten Versuch zu warten
+					Button reload = Button.builder(Component.literal("↻"), btn -> {
+						String n = slot < c.miniMes.size() ? c.miniMes.get(slot) : null;
+						if (n != null && !n.isBlank()) {
+							SkinLookup.forget(n);
+							SkinLookup.state(n);
+						}
+					}).bounds(nx + 54, by, 16, 16).build();
+					reload.setTooltip(net.minecraft.client.gui.components.Tooltip.create(
+							Component.translatable("loothub.cosmetics.minime.reload")));
+					addRenderableWidget(reload);
 					resetButton(nx, by, () -> {
 						c.miniMeWingColor = setSlot(c.miniMeWingColor, slot, "", Cosmetics.MAX_MINI_MES);
 						c.miniMeWingColorOuter = setSlot(c.miniMeWingColorOuter, slot, "", Cosmetics.MAX_MINI_MES);
