@@ -1,23 +1,27 @@
 #version 120
-// Schritt 4: Gluehen dazu, Farbstimmung, sanfte Tonkurve, Vignette
+// Schritt 3: Gluehen senkrecht weichzeichnen und dazu, Farbstimmung, sanfte Tonkurve, Vignette
+// (der senkrechte Weichzeichner laeuft hier mit, das spart einen ganzen Bilddurchgang)
 #include "/common.glsl"
+#include "/blur.glsl"
 
 uniform sampler2D colortex0;
-uniform sampler2D colortex1;
-uniform float viewWidth;
-uniform float viewHeight;
-
-varying vec2 texcoord;
 
 vec3 tonemap(vec3 x) {
-	// weiche Kurve: dunkle Toene unveraendert, Spitzlichter laufen sanft aus statt hart abzuschneiden
-	return x / (1.0 + max(x - 0.8, 0.0) * 0.9);
+	// dunkle und mittlere Toene bleiben unveraendert, Spitzlichter laufen weich gegen Weiss aus
+	// (ueber den hellsten Farbkanal, damit sich Farbtoene nicht verschieben)
+	float m = max(x.r, max(x.g, x.b));
+	float k = 0.72;
+	if (m <= k) {
+		return x;
+	}
+	float t = k + (1.0 - k) * (1.0 - exp(-(m - k) / (1.0 - k)));
+	return x * (t / m);
 }
 
 void main() {
 	vec3 color = texture2D(colortex0, texcoord).rgb;
 #ifdef BLOOM
-	vec3 glow = texture2D(colortex1, texcoord).rgb;
+	vec3 glow = blur(vec2(0.0, 1.0));
 	// Gluehen nur dazugeben, wo es heller ist als das Bild darunter (keine milchige Schicht ueber weissen Flaechen)
 	color += glow * BLOOM_STRENGTH;
 #endif
@@ -46,7 +50,7 @@ void main() {
 #if DEBUG_VIEW == 1
 	color = texture2D(colortex0, texcoord).rgb; // ohne jede Nachbearbeitung
 #elif DEBUG_VIEW == 3
-	color = texture2D(colortex1, texcoord).rgb * 3.0; // nur das Gluehen
+	color = blur(vec2(0.0, 1.0)) * 3.0; // nur das Gluehen
 #elif DEBUG_VIEW == 4
 	color = texture2D(colortex0, texcoord).rgb; // Dunst und Grundbild ohne Farbstimmung
 #endif

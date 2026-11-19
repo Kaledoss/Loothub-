@@ -56,6 +56,15 @@ public final class ShaderPack {
 				}
 				list = new String(in.readAllBytes(), StandardCharsets.UTF_8);
 			}
+			// alte Fassung vorher wegräumen, damit weggefallene Shader-Dateien nicht weiterlaufen
+			Path shaders = dir.resolve("shaders");
+			if (Files.isDirectory(shaders)) {
+				try (var walk = Files.walk(shaders)) {
+					for (Path p : walk.sorted(java.util.Comparator.reverseOrder()).toList()) {
+						Files.deleteIfExists(p);
+					}
+				}
+			}
 			for (String name : list.split("\\R")) {
 				name = name.strip();
 				if (name.isEmpty()) {

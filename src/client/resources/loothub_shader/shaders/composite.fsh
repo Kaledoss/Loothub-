@@ -41,6 +41,7 @@ void main() {
 #endif
 
 	/*
+	const int colortex0Format = RGBA16F;
 	const int colortex1Format = RGBA16F;
 	const bool colortex1Clear = true;
 	const int colortex2Format = R8;
