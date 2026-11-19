@@ -90,15 +90,26 @@ vec3 stars(vec3 q, float t) {
 	return sum;
 }
 
+// Blickrichtung dieses Bildpunkts in Weltrichtung
+vec3 skyDir(mat4 modelViewInverse) {
+	vec3 ndc = vec3(gl_FragCoord.xy / vec2(viewWidth, viewHeight), 1.0) * 2.0 - 1.0;
+	vec4 v = gbufferProjectionInverse * vec4(ndc, 1.0);
+	return normalize(mat3(modelViewInverse) * (v.xyz / v.w));
+}
+
+// Himmel zum Horizont hin weich in die Nebelfarbe uebergehen lassen (sonst harte Kante,
+// besonders mit Nachtsicht oder wo am Horizont noch keine Chunks geladen sind)
+vec3 horizonBlend(vec3 sky, vec3 fog, vec3 dir) {
+	return mix(fog, sky, smoothstep(-0.02, 0.32, dir.y));
+}
+
 // Beitrag zum Himmel fuer diesen Bildpunkt (0 am Tag)
 vec3 nightSky(mat4 modelViewInverse, vec3 sunView, float sunH, float rain) {
 	float night = 1.0 - smoothstep(-0.25, 0.05, sunH);
 	if (night <= 0.0) {
 		return vec3(0.0);
 	}
-	vec3 ndc = vec3(gl_FragCoord.xy / vec2(viewWidth, viewHeight), 1.0) * 2.0 - 1.0;
-	vec4 v = gbufferProjectionInverse * vec4(ndc, 1.0);
-	vec3 dir = normalize(mat3(modelViewInverse) * (v.xyz / v.w));
+	vec3 dir = skyDir(modelViewInverse);
 	vec3 sun = normalize(mat3(modelViewInverse) * sunView);
 	vec3 q = skyCoords(dir, sun);
 	// zum Horizont hin ausblenden, bei Regen fast weg

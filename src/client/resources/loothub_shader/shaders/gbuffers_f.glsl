@@ -181,9 +181,11 @@ void main() {
 #ifdef MC_RENDER_STAGE_SKY
 	if (renderStage == MC_RENDER_STAGE_SKY) {
 		color.rgb += nightSky(gbufferModelViewInverse, sunPosition, sunHeight(), rainStrength);
+		color.rgb = horizonBlend(color.rgb, fogColor, skyDir(gbufferModelViewInverse));
 	}
 #else
 	color.rgb += nightSky(gbufferModelViewInverse, sunPosition, sunHeight(), rainStrength);
+	color.rgb = horizonBlend(color.rgb, fogColor, skyDir(gbufferModelViewInverse));
 #endif
 #endif
 
