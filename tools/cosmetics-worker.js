@@ -195,6 +195,36 @@ async function uuidOfName(env, name) {
 	return null;
 }
 
+/**
+ * Posteingang je Spieler als eigene Liste („inbox:<uuid>“ = [ids]) statt KV-list(): list() ist im kostenlosen
+ * Cloudflare-Tarif auf 1.000 Aufrufe am Tag begrenzt – bei Abfragen alle paar Minuten war das schnell aufgebraucht
+ * (Fehler 500). Lesen (get) ist dagegen reichlich frei.
+ */
+async function inboxIds(env, uuid) {
+	const raw = await env.COSMETICS.get(`inbox:${uuid}`);
+	if (raw !== null) {
+		try {
+			const ids = JSON.parse(raw);
+			return Array.isArray(ids) ? ids.filter((id) => typeof id === "string" && UUID_RE.test(id)) : [];
+		} catch {
+			return [];
+		}
+	}
+	// alter Stand ohne Liste: einmal per list() übernehmen (darf scheitern)
+	try {
+		const list = await env.COSMETICS.list({ prefix: `share:${uuid}:` });
+		const ids = list.keys.map((k) => k.name.slice(`share:${uuid}:`.length)).filter((id) => UUID_RE.test(id));
+		await env.COSMETICS.put(`inbox:${uuid}`, JSON.stringify(ids), { expirationTtl: SHARE_TTL });
+		return ids;
+	} catch {
+		return [];
+	}
+}
+
+async function setInbox(env, uuid, ids) {
+	await env.COSMETICS.put(`inbox:${uuid}`, JSON.stringify(ids.slice(0, 50)), { expirationTtl: SHARE_TTL });
+}
+
 async function handleBuild(url, request, env) {
 	if (url.pathname === "/share") {
 		const [body, err] = await signedBody(request, env, async (b) => {
@@ -228,17 +258,24 @@ async function handleBuild(url, request, env) {
 		await env.COSMETICS.put(`share:${to}:${body.id}`, JSON.stringify({
 			id: body.id, from: body.uuid, fromName: me, name: body.name, rev: Date.now(), settings: body.settings,
 		}), { expirationTtl: SHARE_TTL });
+		const ids = await inboxIds(env, to);
+		if (!ids.includes(body.id)) {
+			ids.push(body.id);
+			await setInbox(env, to, ids);
+		}
 		return json({ ok: true });
 	}
 
 	if (url.pathname === "/inbox") {
 		const [body, err] = await signedBody(request, env, async (b) => `loothub-inbox\n${b.uuid}\n${b.ts}`);
 		if (err) return err;
-		const list = await env.COSMETICS.list({ prefix: `share:${body.uuid}:` });
+		const ids = await inboxIds(env, body.uuid);
 		const shares = [];
-		for (const k of list.keys.slice(0, 50)) {
-			const v = await env.COSMETICS.get(k.name);
+		const alive = [];
+		for (const id of ids.slice(0, 50)) {
+			const v = await env.COSMETICS.get(`share:${body.uuid}:${id}`);
 			if (v) {
+				alive.push(id);
 				try {
 					const s = JSON.parse(v);
 					shares.push({ id: s.id, fromName: s.fromName, name: s.name, rev: s.rev });
@@ -246,6 +283,9 @@ async function handleBuild(url, request, env) {
 					// kaputter Eintrag
 				}
 			}
+		}
+		if (alive.length !== ids.length) {
+			await setInbox(env, body.uuid, alive); // abgelaufene Einträge austragen (nur dann schreiben)
 		}
 		return json({ shares });
 	}
@@ -269,6 +309,10 @@ async function handleBuild(url, request, env) {
 			typeof b.id === "string" && UUID_RE.test(b.id) ? `loothub-share-drop\n${b.uuid}\n${b.ts}\n${b.id}` : null);
 		if (err) return err;
 		await env.COSMETICS.delete(`share:${body.uuid}:${body.id}`);
+		const ids = await inboxIds(env, body.uuid);
+		if (ids.includes(body.id)) {
+			await setInbox(env, body.uuid, ids.filter((id) => id !== body.id));
+		}
 		return json({ ok: true });
 	}
 
@@ -282,6 +326,10 @@ async function handleBuild(url, request, env) {
 			const v = await env.COSMETICS.get(`share:${to}:${body.id}`);
 			if (v && JSON.parse(v).from === body.uuid) {
 				await env.COSMETICS.delete(`share:${to}:${body.id}`);
+				const ids = await inboxIds(env, to);
+				if (ids.includes(body.id)) {
+					await setInbox(env, to, ids.filter((id) => id !== body.id));
+				}
 			}
 		}
 		return json({ ok: true });
@@ -409,8 +457,13 @@ export default {
 		}
 
 		if (request.method === "POST" && ["/share", "/inbox", "/share-get", "/share-drop", "/unshare"].includes(url.pathname)) {
-			const res = await handleBuild(url, request, env);
-			if (res) return res;
+			try {
+				const res = await handleBuild(url, request, env);
+				if (res) return res;
+			} catch (e) {
+				// z. B. Tageslimit von Cloudflare erreicht – verständlich antworten statt abzustürzen
+				return json({ error: "busy", detail: String(e && e.message || e).slice(0, 200) }, 503);
+			}
 		}
 
 		return new Response("Loothub Cosmetics", { status: 200 });

@@ -82,7 +82,7 @@ public final class Share {
 			return;
 		}
 		if (now >= nextPoll) {
-			nextPoll = now + 30_000;
+			nextPoll = now + 120_000; // alle 2 Minuten reicht (schont die Tageslimits des Servers)
 			async(Share::poll);
 			return;
 		}
@@ -314,6 +314,11 @@ public final class Share {
 					HttpResponse.BodyHandlers.ofString(StandardCharsets.UTF_8));
 			if (r.statusCode() == 404 && path.equals("/share")) {
 				status = tr("loothub.build.share.unknown");
+				return null;
+			}
+			if (r.statusCode() == 503) {
+				Loothub.LOGGER.debug("Bau-Server ausgelastet: {}", r.body());
+				status = tr("loothub.build.share.busy");
 				return null;
 			}
 			if (r.statusCode() != 200) {

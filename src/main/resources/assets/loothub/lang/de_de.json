@@ -846,6 +846,7 @@
 	"loothub.build.share.accepted": "Geteilte Schematic übernommen.",
 	"loothub.build.share.failed": "Die geteilte Schematic konnte nicht übernommen werden.",
 	"loothub.build.share.unknown": "Diesen Spieler gibt es nicht bei Loothub+ (er braucht Loothub+ und muss einmal online gewesen sein).",
+	"loothub.build.share.busy": "Der Loothub-Server ist gerade ausgelastet – versuch es später noch einmal.",
 	"loothub.build.share.error": "Der Loothub-Server lehnt ab (Fehler %s).",
 	"loothub.build.share.offline": "Der Loothub-Server ist gerade nicht erreichbar.",
 	"loothub.build.no_litematica": "Für diesen Reiter brauchst du Litematica.",

@@ -846,6 +846,7 @@
 	"loothub.build.share.accepted": "Shared schematic added.",
 	"loothub.build.share.failed": "The shared schematic could not be added.",
 	"loothub.build.share.unknown": "This player isn't known to Loothub+ (they need Loothub+ and must have been online once).",
+	"loothub.build.share.busy": "The Loothub server is busy right now – please try again later.",
 	"loothub.build.share.error": "The Loothub server refused (error %s).",
 	"loothub.build.share.offline": "The Loothub server can't be reached right now.",
 	"loothub.build.no_litematica": "This tab needs Litematica.",
