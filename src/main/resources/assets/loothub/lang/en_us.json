@@ -880,5 +880,20 @@
 	"loothub.build.warn.sub_more": "and %s more blocks in reach are missing from your inventory",
 	"loothub.cosmetics.pets.place": "Place",
 	"loothub.cosmetics.pets.place.off": "follows you",
-	"loothub.cosmetics.pets.place.head": "on your head"
+	"loothub.cosmetics.pets.place.head": "on your head",
+	"loothub.stats.cat.chart": "History",
+	"loothub.stats.chart.blocks": "Blocks",
+	"loothub.stats.chart.mobs": "Mobs",
+	"loothub.stats.chart.play": "Play time",
+	"loothub.stats.chart.distance": "Distance",
+	"loothub.stats.chart.treasures": "Job treasures",
+	"loothub.stats.chart.money": "Job money",
+	"loothub.stats.chart.period.days7": "7 days",
+	"loothub.stats.chart.period.days30": "30 days",
+	"loothub.stats.chart.period.weeks12": "12 weeks",
+	"loothub.stats.chart.sum": "Total",
+	"loothub.stats.chart.best_day": "Best day",
+	"loothub.stats.chart.best_week": "Best week",
+	"loothub.stats.chart.avg": "Average",
+	"loothub.stats.chart.empty": "No values for this period yet"
 }

@@ -49,7 +49,8 @@ public class StatsScreen extends LoothubScreen {
 		FOOD("loothub.stats.cat.food"),
 		ITEMS("loothub.stats.cat.items"),
 		TOOLS("loothub.stats.cat.tools"),
-		MOBS("loothub.stats.cat.mobs");
+		MOBS("loothub.stats.cat.mobs"),
+		CHART("loothub.stats.cat.chart");
 
 		final String translationKey;
 
@@ -120,6 +121,17 @@ public class StatsScreen extends LoothubScreen {
 			x += bw + 4;
 		}
 		rangeButtons.clear();
+		if (category == Category.CHART) {
+			prevDay = null;
+			nextDay = null;
+			StatsChart.init(this, cl, cr, y + 20);
+			tableX = cl;
+			tableY = y + 42;
+			tableW = cw;
+			tableH = cb - tableY;
+			updateToggleButtons();
+			return;
+		}
 		int rw = Mth.clamp((cw / 2 - 8) / 3, 46, 70);
 		x = cr - 3 * rw - 8;
 		// Tage zurück- und vorblättern (wie im Jobverlauf) – links neben „Heute“
@@ -164,6 +176,17 @@ public class StatsScreen extends LoothubScreen {
 
 		seenVersion = -1;
 		refresh();
+	}
+
+	/** Für {@link StatsChart}: Knopf hinzufügen. */
+	Button addButton(Button b) {
+		return addRenderableWidget(b);
+	}
+
+	/** Für {@link StatsChart}: Ansicht neu aufbauen. */
+	void rebuild() {
+		clearWidgets();
+		init();
 	}
 
 	private void updateToggleButtons() {
@@ -244,6 +267,7 @@ public class StatsScreen extends LoothubScreen {
 			case ITEMS -> buildRows(new String[]{"picked.", "used."}, Kind.ITEM);
 			case TOOLS -> buildRows(new String[]{"tool_mined.", "tool_hits.", "tool_used.", "picked."}, Kind.ITEM);
 			case MOBS -> buildRows(new String[]{"killed."}, Kind.MOB);
+			case CHART -> List.of();
 		};
 		clampScroll();
 	}
@@ -483,6 +507,10 @@ public class StatsScreen extends LoothubScreen {
 	public void render(GuiGraphics g, int mouseX, int mouseY, float delta) {
 		panel(g, tableX, tableY, tableW, tableH);
 		super.render(g, mouseX, mouseY, delta);
+		if (category == Category.CHART) {
+			StatsChart.render(g, font, tableX, tableY, tableW, tableH, mouseX, mouseY);
+			return;
+		}
 		renderSince(g);
 		if (category == Category.GENERAL) {
 			renderGeneral(g);
@@ -654,7 +682,7 @@ public class StatsScreen extends LoothubScreen {
 			case TOOLS -> List.of("loothub.stats.col.tool_mined", "loothub.stats.col.tool_hits", "loothub.stats.col.tool_used",
 					"loothub.stats.col.picked");
 			case MOBS -> List.of("loothub.stats.col.killed");
-			case GENERAL -> List.of();
+			case GENERAL, CHART -> List.of();
 		};
 	}
 
@@ -734,6 +762,20 @@ public class StatsScreen extends LoothubScreen {
 		if (super.mouseClicked(event, doubleClick)) {
 			return true;
 		}
+		if (category == Category.CHART) {
+			int[] jump = StatsChart.click(event.x(), event.y(), tableX, tableY, tableW, tableH);
+			if (jump != null) {
+				// Klick auf einen Tagesbalken: diesen Tag in der passenden Liste zeigen
+				category = Category.values()[jump[0]];
+				range = Range.TODAY;
+				dayBack = jump[1];
+				scroll = 0;
+				clearWidgets();
+				init();
+				return true;
+			}
+			return false;
+		}
 		// Klick auf eine Spaltenüberschrift sortiert danach (nochmal klicken = umgekehrt)
 		if (category != Category.GENERAL && event.button() == 0
 				&& event.y() >= tableY && event.y() < tableY + 15 && event.x() >= tableX && event.x() < tableX + tableW) {
@@ -760,7 +802,8 @@ public class StatsScreen extends LoothubScreen {
 
 	@Override
 	public boolean mouseScrolled(double mx, double my, double horizontal, double vertical) {
-		if (category != Category.GENERAL && mx >= tableX && mx < tableX + tableW && my >= tableY && my < tableY + tableH) {
+		if (category != Category.GENERAL && category != Category.CHART && mx >= tableX && mx < tableX + tableW
+				&& my >= tableY && my < tableY + tableH) {
 			scroll -= vertical * ROW_H * 2;
 			clampScroll();
 			return true;
@@ -782,7 +825,7 @@ public class StatsScreen extends LoothubScreen {
 	}
 
 	/** Zentimeter → "350 m" oder "12,4 km". */
-	private static String distance(long cm) {
+	static String distance(long cm) {
 		double m = cm / 100.0;
 		return m < 1000 ? Fmt.whole(Math.round(m)) + " m" : Fmt.compactPlain(m / 1000.0) + " km";
 	}

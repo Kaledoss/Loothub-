@@ -880,5 +880,20 @@
 	"loothub.build.warn.sub_more": "und %s weitere Blöcke in Reichweite fehlen im Inventar",
 	"loothub.cosmetics.pets.place": "Platz",
 	"loothub.cosmetics.pets.place.off": "folgt dir",
-	"loothub.cosmetics.pets.place.head": "auf dem Kopf"
+	"loothub.cosmetics.pets.place.head": "auf dem Kopf",
+	"loothub.stats.cat.chart": "Verlauf",
+	"loothub.stats.chart.blocks": "Blöcke",
+	"loothub.stats.chart.mobs": "Mobs",
+	"loothub.stats.chart.play": "Spielzeit",
+	"loothub.stats.chart.distance": "Strecke",
+	"loothub.stats.chart.treasures": "Jobschätze",
+	"loothub.stats.chart.money": "Job-Geld",
+	"loothub.stats.chart.period.days7": "7 Tage",
+	"loothub.stats.chart.period.days30": "30 Tage",
+	"loothub.stats.chart.period.weeks12": "12 Wochen",
+	"loothub.stats.chart.sum": "Summe",
+	"loothub.stats.chart.best_day": "Bester Tag",
+	"loothub.stats.chart.best_week": "Beste Woche",
+	"loothub.stats.chart.avg": "Schnitt",
+	"loothub.stats.chart.empty": "Für diesen Zeitraum gibt es noch keine Werte"
 }
