@@ -191,6 +191,9 @@ void main() {
 #ifdef LIT
 #ifdef SHADED
 	color.rgb *= shadedLight(lit);
+#if defined SURFACE && !defined WATER
+	color.rgb *= 1.06; // Bloecke ganz leicht heller
+#endif
 #else
 	color.rgb *= neutral(texture2D(lightmap, lmcoord).rgb);
 #endif
