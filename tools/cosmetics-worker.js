@@ -380,9 +380,27 @@ function ahName(item) {
 	return "";
 }
 
-function ahKey(name, material) {
+function ahKey(name, material, stars) {
 	const n = name.replace(/[§&][0-9a-fk-orx]/gi, "").replace(/\s+/g, " ").trim().toLowerCase();
-	return n ? `${n}|${String(material || "").toLowerCase()}` : "";
+	if (!n) return "";
+	const k = `${n}|${String(material || "").toLowerCase()}`;
+	return stars >= 0 ? `${k}|${stars}*` : k;
+}
+
+// Gefüllte Sterne in der „Zustand:“-Zeile (✯ voll, ✩ leer), oder -1 ohne Zustand
+function ahStars(item) {
+	let lore = item.lore;
+	if (typeof lore === "string") { try { lore = JSON.parse(lore); } catch { lore = [lore]; } }
+	if (!Array.isArray(lore)) return -1;
+	for (const l of lore) {
+		const t = ahText(l).replace(/[§&][0-9a-fk-orx]/gi, "");
+		const i = t.indexOf("Zustand");
+		if (i < 0) continue;
+		let n = 0;
+		for (const c of t.slice(i)) if (c === "\u272F" || c === "\u2605") n++;
+		return n;
+	}
+	return -1;
 }
 
 function ahEnd(a) {
@@ -412,7 +430,7 @@ async function ahRun(env) {
 		const item = a && a.item;
 		const price = a && a.instantBuyPrice;
 		if (!item || !(price > 0)) continue;
-		const key = ahKey(ahName(item), item.material);
+		const key = ahKey(ahName(item), item.material, ahStars(item));
 		if (!key) continue;
 		const per = price / Math.max(1, item.amount || 1);
 		const o = offers[key] || (offers[key] = [per, 0]);

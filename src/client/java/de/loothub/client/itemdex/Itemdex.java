@@ -575,6 +575,21 @@ public final class Itemdex {
 		load();
 		String key = key(s);
 		Entry e = byKey.get(key);
+		int stars = de.loothub.client.AuctionNames.starsOf(s);
+		if (stars >= 0) {
+			// Items mit Zustand-Sternen: je Sternzahl ein eigener Eintrag
+			String base = key;
+			key = base + "|" + stars + "*";
+			e = byKey.get(key);
+			Entry old = e == null ? byKey.get(base) : null;
+			if (old != null && de.loothub.client.AuctionNames.starsOf(old.stack()) == stars) {
+				// bisheriger Eintrag ohne Sterne im Schlüssel, gleiche Sternzahl: übernehmen statt doppelt anlegen
+				byKey.remove(base);
+				old.key = key;
+				byKey.put(key, old);
+				e = old;
+			}
+		}
 		if (e != null && e.source != null && e.source.priority >= source.priority) {
 			return;
 		}

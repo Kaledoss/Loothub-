@@ -168,7 +168,82 @@ public final class AuctionNames {
 		if (custom == null) {
 			return null;
 		}
-		return key(custom.getString(), net.minecraft.core.registries.BuiltInRegistries.ITEM.getKey(stack.getItem()).getPath());
+		return key(custom.getString(), net.minecraft.core.registries.BuiltInRegistries.ITEM.getKey(stack.getItem()).getPath(),
+				starsOf(stack));
+	}
+
+	/** Name + Item-Art + Zustand-Sterne (falls das Item welche hat): „bohrer|netherite_pickaxe|1*“. */
+	public static String key(String name, String material, int stars) {
+		String k = key(name, material);
+		return k == null || stars < 0 ? k : k + "|" + stars + "*";
+	}
+
+	/** Gefüllte Sterne in der „Zustand:“-Zeile (✯ voll, ✩ leer), oder -1 ohne Zustand. */
+	public static int stars(Iterable<String> lines) {
+		for (String line : lines) {
+			if (line == null) {
+				continue;
+			}
+			String plain = line.replaceAll("(?i)[§&][0-9a-fk-orx]", "");
+			int i = plain.indexOf("Zustand");
+			if (i < 0) {
+				continue;
+			}
+			int n = 0;
+			for (int j = i; j < plain.length(); j++) {
+				char c = plain.charAt(j);
+				if (c == '\u272F' || c == '\u2605') {
+					n++;
+				}
+			}
+			return n;
+		}
+		return -1;
+	}
+
+	/** Zustand-Sterne eines Items aus seiner Beschreibung, oder -1. */
+	public static int starsOf(ItemStack stack) {
+		if (stack == null || stack.isEmpty()) {
+			return -1;
+		}
+		var lore = stack.get(DataComponents.LORE);
+		if (lore == null) {
+			return -1;
+		}
+		List<String> lines = new ArrayList<>();
+		for (var c : lore.lines()) {
+			lines.add(c.getString());
+		}
+		return stars(lines);
+	}
+
+	/** Zustand-Sterne aus der Beschreibung eines Auktions-Items der API. */
+	private static int starsOf(JsonObject item) {
+		JsonElement lore = item.get("lore");
+		if (lore == null || lore.isJsonNull()) {
+			return -1;
+		}
+		List<String> lines = new ArrayList<>();
+		if (lore.isJsonArray()) {
+			for (JsonElement l : lore.getAsJsonArray()) {
+				lines.add(text(l));
+			}
+		} else {
+			String t = lore.isJsonPrimitive() ? lore.getAsString() : lore.toString();
+			try {
+				JsonElement parsed = JsonParser.parseString(t);
+				if (parsed.isJsonArray()) {
+					for (JsonElement l : parsed.getAsJsonArray()) {
+						lines.add(text(l));
+					}
+				} else {
+					lines.add(t);
+				}
+			} catch (RuntimeException ex) {
+				lines.add(t);
+			}
+		}
+		return stars(lines);
 	}
 
 	/** Name + Item-Art („bohrer v3|diamond_pickaxe“): gleiche Namen auf anderen Items (z. B. umbenannte Fälschungen) zählen getrennt. */
@@ -322,7 +397,7 @@ public final class AuctionNames {
 				String sample = a.toString();
 				Loothub.LOGGER.info("[Loothub-AH] Beispiel-Angebot: {}", sample.length() > 1500 ? sample.substring(0, 1500) : sample);
 			}
-			String name = key(itemName(item), OpsuchtApi.str(item, "material"));
+			String name = key(itemName(item), OpsuchtApi.str(item, "material"), starsOf(item));
 			if (name == null) {
 				continue; // ohne eigenen Namen: das macht die Liste nach Item-Art
 			}

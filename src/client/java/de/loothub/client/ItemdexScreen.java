@@ -170,7 +170,7 @@ public class ItemdexScreen extends LoothubScreen {
 			int rightW = font.width(right);
 			// Auktionshaus nach Namen: Verkäufe und Schnitt (7 Tage / gesamt)
 			int ahX = ahColumnsX();
-			String ahKey = AuctionNames.key(Itemdex.clean(e.name), e.itemId);
+			String ahKey = AuctionNames.key(Itemdex.clean(e.name), e.itemId, AuctionNames.starsOf(stack));
 			AuctionNames.Total w7 = AuctionNames.window(ahKey, 7);
 			AuctionNames.Total all = AuctionNames.total(ahKey);
 			AuctionNames.Now offer = AuctionNames.now(ahKey);
