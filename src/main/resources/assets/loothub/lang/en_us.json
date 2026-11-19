@@ -223,6 +223,7 @@
 	"loothub.tooltip.ah.alltime_values": "%s sales · avg %s · %s – %s",
 	"loothub.tooltip.ah.week": "Last 7 days: ",
 	"loothub.tooltip.ah.week_values": "%s sales · avg %s",
+	"loothub.tooltip.ah.avg_alltime": "Avg. auction house (since %s): ",
 	"loothub.tooltip.ah.header": "Auction house",
 	"loothub.tooltip.ah.from": "Buy now from ",
 	"loothub.tooltip.ah.offers": "%s offers",

@@ -132,50 +132,22 @@ public final class PriceTooltip {
 		return line;
 	}
 
-	/** Auktionshaus nach Item-Name + Item-Art: günstigstes Angebot, letzter Verkauf, 7 Tage, gesamter Verlauf. */
+	/** Auktionshaus nach Item-Name + Item-Art: nur der Durchschnittspreis über den ganzen Verlauf. */
 	private static void appendByName(ItemStack stack, List<Component> lines) {
 		String key = AuctionNames.keyOf(stack);
 		if (key == null) {
 			return;
 		}
 		AuctionPrices.refreshIfStale();
-		AuctionNames.Now now = AuctionNames.now(key);
-		double[] last = AuctionNames.last(key);
-		AuctionNames.Total week = AuctionNames.window(key, 7);
 		AuctionNames.Total total = AuctionNames.total(key);
-		if (now == null && last == null && total == null) {
+		if (total == null) {
 			return;
 		}
-		int count = stack.getCount();
+		String since = java.time.Instant.ofEpochMilli(total.since()).atZone(java.time.ZoneId.systemDefault()).toLocalDate()
+				.format(java.time.format.DateTimeFormatter.ofPattern("dd.MM.yyyy"));
 		lines.add(Component.empty());
-		lines.add(Component.translatable("loothub.tooltip.ah.byname").withStyle(ChatFormatting.LIGHT_PURPLE));
-		if (now != null) {
-			MutableComponent l = Component.literal("  ")
-					.append(Component.translatable("loothub.tooltip.ah.from").withStyle(ChatFormatting.GRAY))
-					.append(Component.literal(money(now.minPerUnit())).withStyle(ChatFormatting.LIGHT_PURPLE));
-			if (count > 1) {
-				l.append(Component.literal(" (" + count + "× = " + money(now.minPerUnit() * count) + ")").withStyle(ChatFormatting.DARK_GRAY));
-			}
-			l.append(Component.literal(" · ").withStyle(ChatFormatting.DARK_GRAY))
-					.append(Component.translatable("loothub.tooltip.ah.offers", now.offers()).withStyle(ChatFormatting.DARK_GRAY));
-			lines.add(l);
-		}
-		if (last != null) {
-			lines.add(Component.literal("  ").append(Component.translatable("loothub.tooltip.ah.last_sale").withStyle(ChatFormatting.GRAY))
-					.append(Component.literal(money(last[0])).withStyle(ChatFormatting.WHITE))
-					.append(Component.literal(" (" + ago((long) last[1]) + ")").withStyle(ChatFormatting.DARK_GRAY)));
-		}
-		if (week != null) {
-			lines.add(Component.literal("  ").append(Component.translatable("loothub.tooltip.ah.week").withStyle(ChatFormatting.GRAY))
-					.append(Component.translatable("loothub.tooltip.ah.week_values", week.count(), money(week.avg())).withStyle(ChatFormatting.WHITE)));
-		}
-		if (total != null) {
-			String since = java.time.Instant.ofEpochMilli(total.since()).atZone(java.time.ZoneId.systemDefault()).toLocalDate()
-					.format(java.time.format.DateTimeFormatter.ofPattern("dd.MM.yyyy"));
-			lines.add(Component.literal("  ").append(Component.translatable("loothub.tooltip.ah.alltime", since).withStyle(ChatFormatting.GRAY))
-					.append(Component.translatable("loothub.tooltip.ah.alltime_values", total.count(), money(total.avg()),
-							money(total.min()), money(total.max())).withStyle(ChatFormatting.WHITE)));
-		}
+		lines.add(Component.empty().append(Component.translatable("loothub.tooltip.ah.avg_alltime", since).withStyle(ChatFormatting.LIGHT_PURPLE))
+				.append(Component.literal(money(total.avg())).withStyle(ChatFormatting.WHITE)));
 	}
 
 	/** „vor 5 Min.“, „vor 3 Std.“, „vor 2 Tagen“ */
