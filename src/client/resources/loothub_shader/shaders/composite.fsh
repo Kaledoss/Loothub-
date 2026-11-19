@@ -13,6 +13,7 @@ uniform vec3 skyColor;
 uniform vec3 fogColor;
 uniform float far;
 uniform int isEyeInWater;
+uniform float nightVision;
 uniform float rainStrength;
 
 varying vec2 texcoord;
@@ -56,8 +57,10 @@ void main() {
 		if (wl > 0.40) {
 			wc *= 0.40 / wl;
 		}
-		vec3 absorb = exp(-dist * vec3(0.10, 0.04, 0.025) * UNDERWATER_FOG);
-		float murk = 1.0 - exp(-dist * 0.05 * UNDERWATER_FOG);
+		// mit Nachtsicht etwas weiter sehen (gut ein Drittel), aber nicht glasklar
+		float clear = UNDERWATER_FOG * (1.0 - 0.35 * clamp(nightVision, 0.0, 1.0));
+		vec3 absorb = exp(-dist * vec3(0.10, 0.04, 0.025) * clear);
+		float murk = 1.0 - exp(-dist * 0.05 * clear);
 		color = mix(color * absorb, wc, murk);
 	}
 
