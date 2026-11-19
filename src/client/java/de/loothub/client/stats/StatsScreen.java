@@ -266,7 +266,7 @@ public class StatsScreen extends LoothubScreen {
 			case FOOD -> buildRows(new String[]{"mined.", "placed.", "picked.", "eaten."}, Kind.ITEM);
 			case ITEMS -> buildRows(new String[]{"picked.", "used."}, Kind.ITEM);
 			case TOOLS -> buildRows(new String[]{"tool_mined.", "tool_hits.", "tool_used.", "picked."}, Kind.ITEM);
-			case MOBS -> buildRows(new String[]{"killed.", "loot."}, Kind.MOB);
+			case MOBS -> buildRows(new String[]{"killed.", "mobloot."}, Kind.MOB);
 			case CHART -> List.of();
 		};
 		clampScroll();
@@ -761,7 +761,7 @@ public class StatsScreen extends LoothubScreen {
 
 	/** Was dieser Mob fallen gelassen hat (kurz nach dem Kill in der Nähe aufgesammelt), meiste zuerst. */
 	private List<net.minecraft.util.FormattedCharSequence> lootTooltip(Row row) {
-		String prefix = "lootitem." + row.id() + "|";
+		String prefix = "mobloot_item." + row.id() + "|";
 		List<Map.Entry<String, Long>> items = new ArrayList<>();
 		for (Map.Entry<String, Long> e : sums.entrySet()) {
 			if (e.getKey().startsWith(prefix) && e.getValue() > 0) {

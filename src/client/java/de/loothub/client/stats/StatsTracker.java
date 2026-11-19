@@ -130,6 +130,11 @@ public final class StatsTracker {
 	}
 
 	public static void onPickup(ItemStack stack, int amount) {
+		onPickup(stack, amount, null);
+	}
+
+	public static void onPickup(ItemStack stack, int amount, net.minecraft.world.entity.item.ItemEntity entity) {
+		pickupEntity = entity;
 		if (!tracking(Minecraft.getInstance()) || stack.isEmpty()) {
 			return;
 		}
@@ -752,30 +757,54 @@ public final class StatsTracker {
 		return out.toString();
 	}
 
-	/** Letzter Kill: was kurz danach in der Nähe aufgesammelt wird, zählt als Loot dieses Mobs. */
-	private static final long LOOT_WINDOW_MS = 15_000;
-	private static String lastKillMob;
-	private static long lastKillAt;
-	private static double lastKillX, lastKillY, lastKillZ;
+	/**
+	 * Letzte Kills: Ein aufgesammeltes Item zählt als Loot des Mobs, an dessen Todesstelle es lag (höchstens 3 Blöcke
+	 * entfernt) und der höchstens 20 s vorher gestorben ist – das Item muss außerdem nach dem Tod entstanden sein.
+	 * So landet z. B. ein Kasuarhorn nicht beim Skelett, das zufällig zuletzt gestorben ist.
+	 */
+	private static final long LOOT_WINDOW_MS = 20_000;
+	private record Kill(String mob, long at, double x, double y, double z) {
+	}
+
+	private static final java.util.ArrayDeque<Kill> RECENT_KILLS = new java.util.ArrayDeque<>();
+	private static net.minecraft.world.entity.item.ItemEntity pickupEntity;
 
 	private static void countKill(Target t) {
 		String key = killKey(t);
 		StatsStore.add(key, 1);
-		lastKillMob = key.substring("killed.".length());
-		lastKillAt = System.currentTimeMillis();
-		lastKillX = t.x();
-		lastKillY = t.y();
-		lastKillZ = t.z();
+		RECENT_KILLS.addFirst(new Kill(key.substring("killed.".length()), System.currentTimeMillis(), t.x(), t.y(), t.z()));
+		while (RECENT_KILLS.size() > 24) {
+			RECENT_KILLS.removeLast();
+		}
 	}
 
 	private static void countLoot(String item, int amount) {
-		Minecraft mc = Minecraft.getInstance();
-		if (lastKillMob == null || mc.player == null || System.currentTimeMillis() - lastKillAt > LOOT_WINDOW_MS
-				|| mc.player.distanceToSqr(lastKillX, lastKillY, lastKillZ) > 16 * 16) {
+		var entity = pickupEntity;
+		pickupEntity = null;
+		if (entity == null) {
+			return; // ohne Item-Lage keine sichere Zuordnung
+		}
+		long now = System.currentTimeMillis();
+		long itemBorn = now - entity.tickCount * 50L;
+		Kill best = null;
+		double bestDist = 3.0 * 3.0;
+		for (Kill k : RECENT_KILLS) {
+			if (now - k.at() > LOOT_WINDOW_MS || itemBorn < k.at() - 1500) {
+				continue; // zu alt, oder das Item lag schon vor dem Tod da
+			}
+			// Drops fallen von der Todesstelle herunter: waagerecht nah, senkrecht etwas Spielraum
+			double dx = entity.getX() - k.x(), dz = entity.getZ() - k.z(), dy = Math.max(0, Math.abs(entity.getY() - k.y()) - 2.0);
+			double d = dx * dx + dz * dz + dy * dy;
+			if (d <= bestDist) {
+				bestDist = d;
+				best = k;
+			}
+		}
+		if (best == null) {
 			return;
 		}
-		StatsStore.add("loot." + lastKillMob, amount);
-		StatsStore.add("lootitem." + lastKillMob + "|" + item, amount);
+		StatsStore.add("mobloot." + best.mob(), amount);
+		StatsStore.add("mobloot_item." + best.mob() + "|" + item, amount);
 	}
 
 	private static String killKey(Target t) {
