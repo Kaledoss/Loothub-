@@ -119,6 +119,8 @@ public final class WidgetConfig {
 	public String pets = "";
 	/** Zwei Kopf-Plätze: Haustier-Art oder "minime" (durch Komma getrennt, leer = frei). */
 	public String headPets = "";
+	/** Spielername je Kopf-Platz für ein Mini-Me mit fremdem Skin (leer = eigener Skin), durch Komma getrennt. */
+	public String headSkins = "";
 	public boolean miniMeEmotes = false;
 	/** Lebendigkeit der Mini-Mes in Prozent (Atmen, Blick, Nachschwingen, Reaktionen; 0 = steif wie früher). */
 	public int miniMeLife = 100;

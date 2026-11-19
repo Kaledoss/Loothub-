@@ -704,8 +704,19 @@ public final class MiniMeLayer extends RenderLayer<AvatarRenderState, PlayerMode
 			if (!Cosmetics.HEAD_MINI.equals(Cosmetics.headPet(state, slot))) {
 				continue;
 			}
+			PlayerSkin skin = state.skin;
+			String other = Cosmetics.headSkin(state, slot);
+			if (!other.isEmpty()) {
+				PlayerSkin found = SkinLookup.get(other);
+				if (found == null && !SkinLookup.gaveUp(other)) {
+					continue; // erst zeigen, wenn der richtige Skin da ist
+				}
+				if (found != null) {
+					skin = found; // nicht gefunden: eigener Skin
+				}
+			}
 			float s = HEAD_SCALE;
-			AvatarRenderState mini = miniState(state.id, 8 + slot, state.skin, t);
+			AvatarRenderState mini = miniState(state.id, 8 + slot, skin, t);
 			poseStack.pushPose();
 			if (lie > 0.5F) {
 				mini.isPassenger = false;
@@ -723,7 +734,6 @@ public final class MiniMeLayer extends RenderLayer<AvatarRenderState, PlayerMode
 				}
 			}
 			poseStack.scale(s, s, s);
-			PlayerSkin skin = state.skin;
 			PlayerModel model = skin.model() == PlayerModelType.SLIM ? slim : wide;
 			collector.submitModel(model, mini, poseStack, RenderTypes.entityTranslucent(skin.body().texturePath()), light,
 					OverlayTexture.NO_OVERLAY, 0, null);

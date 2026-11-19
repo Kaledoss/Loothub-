@@ -73,6 +73,8 @@ public final class Cosmetics {
 	public static final int MAX_PETS = 2;
 	public static final int MAX_HEAD = 2;
 	public static final String HEAD_MINI = "minime";
+	/** Spielername je Kopf-Platz (Mini-Me mit fremdem Skin), leer = eigener Skin. */
+	public static final String HEAD_SKINS = "headskins";
 	/** Flügel-Stile (Textur textures/entity/wing_<stil>.png). */
 	public static final List<String> WING_STYLES = List.of("dragon", "devil", "angel", "drake");
 
@@ -396,6 +398,7 @@ public final class Cosmetics {
 		putOwn(mine, values, FOOTSTEPS, cfg.footsteps);
 		putOwn(mine, values, PETS, cfg.pets == null || cfg.pets.replace(",", "").isBlank() ? "" : cfg.pets);
 		putOwn(mine, values, HEAD_PETS, cfg.headPets == null || cfg.headPets.replace(",", "").isBlank() ? "" : cfg.headPets);
+		putOwn(mine, values, HEAD_SKINS, cfg.headSkins == null || cfg.headSkins.replace(",", "").isBlank() ? "" : cfg.headSkins);
 		putOwn(mine, values, MINI_TRAITS, cfg.miniMeTraits == null || cfg.miniMeTraits.replace(",", "").isBlank() ? "" : cfg.miniMeTraits);
 		if (cfg.crown) {
 			mine.add(CROWN);
@@ -531,6 +534,17 @@ public final class Cosmetics {
 		String[] parts = raw.split(",", -1);
 		String s = slot < parts.length ? parts[slot].strip().toLowerCase(Locale.ROOT) : "";
 		return PET_TYPES.contains(s) || HEAD_MINI.equals(s) ? s : null;
+	}
+
+	/** Spielername für das Mini-Me auf Kopf-Platz {@code slot}, oder "" für den eigenen Skin. */
+	public static String headSkin(Object state, int slot) {
+		String raw = raw(state, HEAD_SKINS);
+		if (raw == null) {
+			return "";
+		}
+		String[] parts = raw.split(",", -1);
+		String s = slot < parts.length ? parts[slot].strip() : "";
+		return s.matches("[.*]?[A-Za-z0-9_]{1,16}") ? s : "";
 	}
 
 	/** Sind beide Kopf-Plätze belegt? (Dann sitzen sie nebeneinander.) */

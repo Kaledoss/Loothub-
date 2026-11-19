@@ -72,6 +72,9 @@ public class CosmeticsScreen extends LoothubScreen {
 	private final List<RowPreview> rowPreviews = new ArrayList<>();
 	private List<EditBox> nameBoxes = List.of();
 	private long namesChangedAt;
+	/** Kopf-Plätze: Namensfelder für Mini-Mes mit fremdem Skin (null = Platz hat kein Mini-Me). */
+	private final EditBox[] headNameBoxes = new EditBox[Cosmetics.MAX_HEAD];
+	private long headNamesChangedAt;
 	private Dropdown openDropdown;
 	private int jsonY = -1;
 	private int descX;
@@ -206,15 +209,36 @@ public class CosmeticsScreen extends LoothubScreen {
 							PET_OPTIONS, "loothub.cosmetics.pets.type.", () -> slotValue(c.pets, slot),
 							v -> c.pets = setSlot(c.pets, slot, v, Cosmetics.MAX_PETS));
 				}
+				boolean anyMini = false;
 				for (int k = 0; k < Cosmetics.MAX_HEAD; k++) {
 					final int slot = k;
 					dropdown(descX + k * (dw + 6), y + 50, dw,
 							Component.translatable(slot == 0 ? "loothub.cosmetics.pets.head_left" : "loothub.cosmetics.pets.head_right").getString(),
 							HEAD_OPTIONS, "loothub.cosmetics.pets.type.", () -> slotValue(c.headPets, slot),
-							v -> c.headPets = setSlot(c.headPets, slot, v, Cosmetics.MAX_HEAD));
+							v -> {
+								if (headNamesChangedAt != 0) {
+									applyHeadNames(); // gerade getippten Namen nicht verlieren
+								}
+								c.headPets = setSlot(c.headPets, slot, v, Cosmetics.MAX_HEAD);
+								rebuildWidgets(); // Namensfeld ein-/ausblenden
+							});
+					headNameBoxes[slot] = null;
+					if (Cosmetics.HEAD_MINI.equals(slotValue(c.headPets, slot))) {
+						// Mini-Me gewählt: darunter ein Feld für den Spielernamen (leer = du selbst)
+						anyMini = true;
+						EditBox box = new EditBox(font, descX + k * (dw + 6), y + 70, dw, 16,
+								Component.translatable("loothub.cosmetics.pets.head_name"));
+						box.setMaxLength(20);
+						box.setFilter(t -> t.matches("[.*]?[A-Za-z0-9_]*"));
+						box.setHint(Component.translatable("loothub.cosmetics.pets.head_name").withStyle(ChatFormatting.DARK_GRAY));
+						box.setValue(slotValue(c.headSkins, slot));
+						box.setResponder(t -> headNamesChangedAt = System.currentTimeMillis());
+						headNameBoxes[slot] = addRenderableWidget(box);
+					}
 				}
-				sections.add(new Section(y, 74, "loothub.cosmetics.pets", "loothub.cosmetics.pets.desc"));
-				y += 74 + GAP;
+				int ph = anyMini ? 94 : 74;
+				sections.add(new Section(y, ph, "loothub.cosmetics.pets", "loothub.cosmetics.pets.desc"));
+				y += ph + GAP;
 
 				// Gesten
 				toggle(lx, y + 20, lw, () -> c.miniMeEmotes, v -> c.miniMeEmotes = v);
@@ -308,8 +332,27 @@ public class CosmeticsScreen extends LoothubScreen {
 		}
 	}
 
+	/** Namen der Kopf-Mini-Mes übernehmen und speichern. */
+	private void applyHeadNames() {
+		headNamesChangedAt = 0;
+		WidgetConfig c = WidgetConfig.get();
+		for (int i = 0; i < Cosmetics.MAX_HEAD; i++) {
+			if (headNameBoxes[i] != null) {
+				String v = headNameBoxes[i].getValue().strip();
+				c.headSkins = setSlot(c.headSkins, i, v, Cosmetics.MAX_HEAD);
+				if (!v.isEmpty()) {
+					SkinLookup.forget(v);
+				}
+			}
+		}
+		c.save();
+	}
+
 	@Override
 	public void removed() {
+		if (headNamesChangedAt != 0) {
+			applyHeadNames();
+		}
 		// noch nicht übernommene Namen beim Schließen speichern
 		if (namesChangedAt != 0) {
 			namesChangedAt = 0;
@@ -679,6 +722,9 @@ public class CosmeticsScreen extends LoothubScreen {
 				de.loothub.client.cosmetics.WingPreview.draw(g, rp.x(), rp.y(), rp.h(), rp.style().get(), rp.inner().get(),
 						rp.outer().get());
 			}
+		}
+		if (headNamesChangedAt != 0 && System.currentTimeMillis() - headNamesChangedAt > 700) {
+			applyHeadNames();
 		}
 		// Mini-Me-Namen: kurz nach dem letzten Tastendruck übernehmen (kein „Übernehmen“ nötig)
 		if (namesChangedAt != 0 && System.currentTimeMillis() - namesChangedAt > 700) {

@@ -380,6 +380,7 @@
 	"loothub.cosmetics.pets.type.minime": "Mini-Me (you)",
 	"loothub.cosmetics.pets.head_right": "Head right",
 	"loothub.cosmetics.pets.head_left": "Head left",
+	"loothub.cosmetics.pets.head_name": "Player name (empty = you)",
 	"loothub.cosmetics.pets.type.off": "None",
 	"loothub.cosmetics.pets.type.slime": "Slime",
 	"loothub.cosmetics.pets.type.allay": "Allay",
