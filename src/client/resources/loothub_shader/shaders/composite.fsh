@@ -41,6 +41,25 @@ void main() {
 		}
 	}
 
+	// Unter Wasser: Wasser schluckt mit der Entfernung erst Rot, dann Gruen; die Sicht truebt weich ein
+	if (isEyeInWater == 1) {
+		float dist = far;
+		if (depth < 1.0) {
+			vec4 vw = gbufferProjectionInverse * vec4(texcoord * 2.0 - 1.0, depth * 2.0 - 1.0, 1.0);
+			dist = length(vw.xyz / vw.w);
+		}
+		// ruhige Wasserfarbe: etwas entsaettigt und nicht greller als noetig (Nachtsicht)
+		vec3 wc = mix(vec3(luma(fogColor)), fogColor, 0.6);
+		wc = mix(wc, vec3(0.06, 0.20, 0.26) * (0.3 + 2.0 * luma(fogColor)), 0.35);
+		float wl = luma(wc);
+		if (wl > 0.40) {
+			wc *= 0.40 / wl;
+		}
+		vec3 absorb = exp(-dist * vec3(0.10, 0.04, 0.025) * UNDERWATER_FOG);
+		float murk = 1.0 - exp(-dist * 0.05 * UNDERWATER_FOG);
+		color = mix(color * absorb, wc, murk);
+	}
+
 	// Dunst: nur auf Bloecken (nicht am Himmel), ueber Wasser, nimmt mit der Entfernung zu
 	if (depth < 1.0 && isEyeInWater == 0 && HAZE > 0.0) {
 		vec4 view = gbufferProjectionInverse * vec4(texcoord * 2.0 - 1.0, depth * 2.0 - 1.0, 1.0);

@@ -155,7 +155,7 @@ void main() {
 #endif
 
 #if defined WATER && defined WATER_FX
-	if (isWater > 0.5) {
+	if (isWater > 0.5 && isEyeInWater == 0) {
 		vec3 v = normalize(viewPos);
 		vec3 n = normalize(normalView);
 		vec3 nW = mat3(gbufferModelViewInverse) * n;
@@ -262,7 +262,8 @@ void main() {
 #ifndef NOFOG
 	// Vanilla-Nebel nur noch unter Wasser/Lava oder bei Blindheit/Dunkelheit; am Rand der Sichtweite blendet
 	// stattdessen der Composite-Schritt in den Himmel aus
-	if (fogEnd > fogStart && (isEyeInWater != 0 || fogEnd < far * 0.6)) {
+	// (unter Wasser macht das der Composite-Schritt mit echter Wassertruebung)
+	if (fogEnd > fogStart && (isEyeInWater >= 2 || (isEyeInWater == 0 && fogEnd < far * 0.6))) {
 		// Nebel erst ganz am Rand der Sichtweite (sonst faerbt der Abendhimmel nahe Waende lila)
 		float start = max(fogStart, fogEnd * 0.85);
 		float f = clamp((fogDist - start) / (fogEnd - start), 0.0, 1.0);

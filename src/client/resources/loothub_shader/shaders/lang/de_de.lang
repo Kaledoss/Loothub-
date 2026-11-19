@@ -79,3 +79,5 @@ option.WATER_DEPTH.comment=H\u00f6her = Wasser wird schneller tiefblau, flache S
 option.WATER_FOAM=Wasser: Schaum
 option.WATER_FOAM.comment=Leichter Schaum am Ufer und an flachen Stellen.
 option.WATER_FX.comment=Wellen, klare flache und tiefblaue tiefe Stellen, Spiegelung des Himmels und Sonnenglanz.
+option.UNDERWATER_FOG=Unter Wasser: Tr\u00fcbung
+option.UNDERWATER_FOG.comment=Wie schnell die Sicht unter Wasser eintr\u00fcbt und Farben (erst Rot, dann Gr\u00fcn) verschluckt werden.

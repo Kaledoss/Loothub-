@@ -77,3 +77,5 @@ option.WATER_DEPTH.comment=Higher = water turns deep blue sooner; shallow spots 
 option.WATER_FOAM=Water: foam
 option.WATER_FOAM.comment=Light foam along shores and in shallow spots.
 option.WATER_FX.comment=Waves, clear shallows and deep blue depths, sky reflection and sun glint.
+option.UNDERWATER_FOG=Underwater: murkiness
+option.UNDERWATER_FOG.comment=How quickly underwater visibility fades and colors (red first, then green) are absorbed.
