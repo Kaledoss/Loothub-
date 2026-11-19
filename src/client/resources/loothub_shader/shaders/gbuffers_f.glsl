@@ -160,8 +160,11 @@ void main() {
 		vec3 nW = mat3(gbufferModelViewInverse) * n;
 		float dist = length(viewPos);
 		float t = frameTimeCounter;
-		if (nW.y > 0.5) {
-			// Wellen: mehrere Wellenzuege aus verschiedenen Richtungen, in der Ferne ruhiger (kein Flimmern)
+		vec3 nFlat = n;
+		// in der Ferne wird die Oberflaeche glatt (sonst flimmert sie wie ein Fernseher ohne Empfang)
+		float far01 = smoothstep(6.0, 56.0, dist);
+		if (nW.y > 0.5 && far01 < 1.0) {
+			// Wellen: wenige, eher grosse Wellenzuege; feine Anteile verschwinden mit der Entfernung
 			vec2 p = worldPos.xz;
 			float dx = 0.0, dz = 0.0;
 			vec2 dirs[4];
@@ -169,21 +172,22 @@ void main() {
 			dirs[1] = vec2(-0.45, 1.0);
 			dirs[2] = vec2(0.8, -0.7);
 			dirs[3] = vec2(-0.9, -0.35);
-			float freq = 0.9, amp = 0.55, speed = 1.3;
+			float freq = 0.32, amp = 1.0, speed = 0.9;
 			for (int i = 0; i < 4; i++) {
 				vec2 d = normalize(dirs[i]);
 				float ph = dot(d, p) * freq + t * speed;
-				float c = cos(ph) * amp * freq;
+				// Anteil, der in dieser Entfernung kleiner als ein paar Pixel waere, ausblenden
+				float keep = clamp(1.0 - freq * dist / 22.0, 0.0, 1.0);
+				float c = cos(ph) * amp * freq * keep;
 				dx += d.x * c;
 				dz += d.y * c;
-				freq *= 1.9;
-				amp *= 0.5;
-				speed *= 1.35;
+				freq *= 1.7;
+				amp *= 0.55;
+				speed *= 1.25;
 			}
-			float k = WATER_WAVES * 0.07 / (1.0 + dist * 0.03);
+			float k = WATER_WAVES * 0.16 * (1.0 - far01);
 			n = normalize(mat3(gbufferModelView) * normalize(vec3(-dx * k, 1.0, -dz * k)));
 		}
-
 		// Wassertiefe entlang des Blicks (Boden aus depthtex1): flach klar und tuerkis, tief dunkelblau
 		vec2 uv = gl_FragCoord.xy / vec2(viewWidth, viewHeight);
 		float dBottom = texture2D(depthtex1, uv).r;
@@ -197,7 +201,7 @@ void main() {
 		vec3 deep = tint * vec3(0.18, 0.32, 0.48) * lum;
 		vec3 body = mix(shallow, deep, absorb);
 		// etwas Textur behalten, aber ruhiger als Vanilla
-		body *= mix(1.0, luma(texture2D(gtexture, texcoord).rgb) * 1.6, 0.25);
+		body *= mix(1.0, luma(texture2D(gtexture, texcoord).rgb) * 1.6, 0.25 * (1.0 - far01));
 		float alpha = mix(0.30, 0.94, absorb);
 
 		// Schaum am Ufer und an flachen Stellen
@@ -211,18 +215,20 @@ void main() {
 
 		// Spiegelung: Himmelsverlauf je nach Richtung des gespiegelten Strahls, nur wo Himmel ist
 		vec3 r = reflect(v, n);
-		float ry = (mat3(gbufferModelViewInverse) * r).y;
+		// Himmelsverlauf aus der glatten Flaeche (springt sonst bei jeder Welle zwischen Himmel und Horizont)
+		float ry = (mat3(gbufferModelViewInverse) * reflect(v, nFlat)).y;
 		float h = sunHeight();
 		float day = smoothstep(-0.05, 0.2, h);
 		float skyLit = clamp((lmcoord.y - 0.5 / 16.0) * 16.0 / 15.0, 0.0, 1.0);
 		vec3 refl = mix(fogColor, skyColor * 1.15, smoothstep(0.0, 0.45, ry)) * (0.5 + 0.6 * day) * skyLit * skyLit;
-		float facing = clamp(dot(-v, n), 0.0, 1.0);
+		float facing = clamp(dot(-v, normalize(mix(n, nFlat, 0.5))), 0.0, 1.0);
 		float fresnel = 0.02 + 0.98 * pow(1.0 - facing, 5.0);
 		vec3 col = mix(body, refl, clamp(fresnel * WATER_REFLECT * 1.15, 0.0, 1.0));
 
 		// Sonnen-/Mondglanz: scharfer Punkt und weicher Schimmer
 		float sl = clamp(dot(r, normalize(shadowLightPosition)), 0.0, 1.0);
-		float spec = pow(sl, 420.0) * 4.0 + pow(sl, 40.0) * 0.25;
+		// in der Ferne breiter und schwaecher statt einzelner aufblitzender Pixel
+		float spec = pow(sl, mix(420.0, 60.0, far01)) * mix(4.0, 0.8, far01) + pow(sl, 40.0) * 0.25;
 		vec3 glint = mix(vec3(0.6, 0.7, 0.9) * 0.35, mix(vec3(1.0, 0.95, 0.85), vec3(1.0, 0.62, 0.32), 1.0 - smoothstep(0.05, 0.4, h)), day);
 		col += glint * spec * lit * skyLit;
 
