@@ -12,10 +12,11 @@ varying vec3 normalView;
 varying float plant;
 varying vec3 shadowPos;
 #endif
-#ifdef WATER
+#ifdef SURFACE
 varying vec3 viewPos;
 varying vec3 worldPos;
 varying float isWater;
+varying float isIce;
 #endif
 attribute vec4 mc_Entity;
 attribute vec4 mc_midTexCoord;
@@ -80,9 +81,10 @@ void main() {
 	shadowPos = (shadowProjection * (shadowModelView * vec4(p, 1.0))).xyz;
 #endif
 #endif
-#ifdef WATER
+#ifdef SURFACE
 	viewPos = view.xyz;
 	worldPos = player + cameraPosition;
 	isWater = abs(id - 10010.0) < 0.5 ? 1.0 : 0.0;
+	isIce = abs(id - 10011.0) < 0.5 ? 1.0 : 0.0;
 #endif
 }

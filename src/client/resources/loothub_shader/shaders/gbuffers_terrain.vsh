@@ -3,5 +3,6 @@
 #define TEXTURED
 #define LIT
 #define SHADED
+#define SURFACE
 #define WAVING_PROGRAM
 #include "/gbuffers_v.glsl"

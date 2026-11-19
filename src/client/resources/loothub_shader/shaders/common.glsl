@@ -25,6 +25,8 @@
 #define WATER_WAVES 1.00      // [0.50 0.75 1.00 1.50 2.00 2.50]
 #define WATER_DEPTH 1.00      // [0.50 0.75 1.00 1.50 2.00]
 #define WATER_FOAM            // Schaum am Ufer
+#define ICE_FX                // Eis spiegelt, glaenzt und funkelt
+#define ICE_SPARKLE 1.00      // [0.00 0.50 1.00 1.50 2.00]
 #define UNDERWATER_FOG 1.00   // [0.50 0.75 1.00 1.30 1.60 2.00]
 
 // Nachthimmel

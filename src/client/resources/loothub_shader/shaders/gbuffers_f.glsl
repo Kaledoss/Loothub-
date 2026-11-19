@@ -23,6 +23,10 @@ uniform int renderStage;
 uniform vec3 skyColor;
 #include "/sky.glsl"
 #endif
+#if defined SURFACE && !defined WATER
+uniform vec3 skyColor;
+uniform float frameTimeCounter;
+#endif
 #ifdef WATER
 uniform mat4 gbufferModelView;
 uniform mat4 gbufferProjectionInverse;
@@ -43,10 +47,11 @@ varying vec3 normalView;
 varying float plant;
 varying vec3 shadowPos;
 #endif
-#ifdef WATER
+#ifdef SURFACE
 varying vec3 viewPos;
 varying vec3 worldPos;
 varying float isWater;
+varying float isIce;
 #endif
 
 vec3 neutral(vec3 c) {
@@ -255,6 +260,33 @@ void main() {
 	color.rgb = skyGradient(skyDir(gbufferModelViewInverse), skyColor, fogColor)
 			+ nightSky(gbufferModelViewInverse, sunPosition, sunHeight(), rainStrength);
 #endif
+#endif
+
+#if defined SURFACE && defined ICE_FX
+	if (isIce > 0.5 && isEyeInWater == 0) {
+		// Eis: kuehl und klar, spiegelt den Himmel, glaenzt in der Sonne, einzelne Kristalle funkeln
+		vec3 v = normalize(viewPos);
+		vec3 n = normalize(normalView);
+		float facing = clamp(dot(-v, n), 0.0, 1.0);
+		float fresnel = 0.04 + 0.96 * pow(1.0 - facing, 5.0);
+		vec3 r = reflect(v, n);
+		float ry = (mat3(gbufferModelViewInverse) * r).y;
+		float day = smoothstep(-0.05, 0.2, sunHeight());
+		float skyLit = clamp((lmcoord.y - 0.5 / 16.0) * 16.0 / 15.0, 0.0, 1.0);
+		vec3 refl = mix(fogColor, skyColor * 1.2, smoothstep(0.0, 0.45, ry)) * (0.5 + 0.6 * day) * skyLit;
+		color.rgb *= vec3(0.88, 0.97, 1.12);
+		color.rgb = mix(color.rgb, refl + color.rgb * 0.3, clamp(fresnel * 0.6, 0.0, 1.0));
+		float sl = clamp(dot(r, normalize(shadowLightPosition)), 0.0, 1.0);
+		color.rgb += vec3(1.0, 0.98, 0.95) * (pow(sl, 250.0) * 2.5 + pow(sl, 25.0) * 0.12) * lit * skyLit;
+		vec3 cell = floor(worldPos * 8.0 + n * 0.02);
+		float hsh = fract(sin(dot(cell, vec3(12.9898, 78.233, 37.719))) * 43758.5453);
+		if (hsh > 0.965) {
+			float tw = pow(0.5 + 0.5 * sin(frameTimeCounter * (2.0 + hsh * 6.0) + hsh * 80.0), 12.0);
+			float near = 1.0 - smoothstep(12.0, 40.0, length(viewPos));
+			color.rgb += vec3(0.85, 0.95, 1.0) * tw * near * (0.4 + max(lit, 0.2)) * ICE_SPARKLE;
+		}
+		color.a = mix(color.a, 1.0, fresnel * 0.5);
+	}
 #endif
 
 #if DEBUG_VIEW == 2
