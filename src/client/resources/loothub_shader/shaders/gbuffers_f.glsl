@@ -20,6 +20,7 @@ uniform sampler2D shadowtex1;
 #endif
 #ifdef SKY
 uniform int renderStage;
+uniform vec3 skyColor;
 #include "/sky.glsl"
 #endif
 #ifdef WATER
@@ -241,10 +242,13 @@ void main() {
 #ifdef SKY
 #ifdef MC_RENDER_STAGE_SKY
 	if (renderStage == MC_RENDER_STAGE_SKY) {
-		color.rgb += nightSky(gbufferModelViewInverse, sunPosition, sunHeight(), rainStrength);
+		// eigener Himmelsverlauf statt Vanilla-Farben (sonst Streifen am Horizont)
+		color.rgb = skyGradient(skyDir(gbufferModelViewInverse), skyColor, fogColor)
+				+ nightSky(gbufferModelViewInverse, sunPosition, sunHeight(), rainStrength);
 	}
 #else
-	color.rgb += nightSky(gbufferModelViewInverse, sunPosition, sunHeight(), rainStrength);
+	color.rgb = skyGradient(skyDir(gbufferModelViewInverse), skyColor, fogColor)
+			+ nightSky(gbufferModelViewInverse, sunPosition, sunHeight(), rainStrength);
 #endif
 #endif
 

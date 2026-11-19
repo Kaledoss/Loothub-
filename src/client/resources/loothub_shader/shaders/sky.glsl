@@ -97,6 +97,19 @@ vec3 skyDir(mat4 modelViewInverse) {
 	return normalize(mat3(modelViewInverse) * (v.xyz / v.w));
 }
 
+// Ein einziger Himmelsverlauf fuer alles (Himmel, leere Bereiche, Sichtweitenrand): oben die Himmelsfarbe,
+// zum Horizont hin etwas Nebelfarbe – gedeckelt, damit Nachtsicht keinen grellen Streifen macht
+vec3 skyGradient(vec3 dir, vec3 skyCol, vec3 fogCol) {
+	vec3 fogSoft = mix(skyCol, fogCol, 0.55);
+	// Nebelfarbe nie viel heller als der Himmel darueber (Nachtsicht, Regen)
+	float cap = max(luma(skyCol) * 2.5 + 0.06, 0.08);
+	float fl = luma(fogSoft);
+	if (fl > cap) {
+		fogSoft *= cap / fl;
+	}
+	return mix(fogSoft, skyCol, smoothstep(-0.05, 0.45, dir.y));
+}
+
 // Nachthimmel (Nebel + Sterne) fuer eine Blickrichtung; 0 am Tag. Laeuft auch unter dem Horizont weiter,
 // damit Bereiche ohne geladene Chunks denselben Himmel zeigen.
 vec3 nightSkyDir(vec3 dir, vec3 sunWorld, float sunH, float rain) {

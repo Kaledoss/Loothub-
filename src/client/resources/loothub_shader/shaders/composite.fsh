@@ -36,7 +36,7 @@ void main() {
 			w = smoothstep(far * 0.78, far * 0.98, length(vp.xyz / vp.w));
 		}
 		if (w > 0.0) {
-			vec3 fill = skyColor + nightSkyDir(dir, normalize(mat3(gbufferModelViewInverse) * sunPosition), sunH, rainStrength);
+			vec3 fill = skyGradient(dir, skyColor, fogColor) + nightSkyDir(dir, normalize(mat3(gbufferModelViewInverse) * sunPosition), sunH, rainStrength);
 			color = mix(color, fill, w);
 		}
 	}
