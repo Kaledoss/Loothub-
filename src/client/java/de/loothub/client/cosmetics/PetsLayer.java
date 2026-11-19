@@ -299,13 +299,37 @@ public final class PetsLayer extends RenderLayer<AvatarRenderState, PlayerModel>
 		boolean hover = type.equals("bee") || type.equals("allay") || type.equals("vex") || type.equals("serpent")
 				|| type.equals("dragon");
 		boolean both = Cosmetics.petOnHead(state, 0) && Cosmetics.petOnHead(state, 1);
-		float dx = both ? (slot == 0 ? -0.13F : 0.13F) : 0.0F;
-		float bob = hover ? -0.12F - (float) Math.sin(t * 0.12F + slot * 2.0F) * 0.04F : 0.02F;
+		float lie = de.loothub.client.quick.AfkView.lying(state);
 		poseStack.pushPose();
-		getParentModel().head.translateAndRotate(poseStack);
-		// Kopfoberseite liegt 8 Pixel über dem Drehpunkt; Füße des Modells genau darauf
-		poseStack.translate(dx, -0.5F - 1.5F * scale + bob, 0.0F);
-		poseStack.scale(scale, scale, scale);
+		boolean sit = true;
+		if (lie > 0.5F) {
+			// Spieler legt sich hin (AFK): das Haustier springt herunter und legt sich neben ihn
+			BodyPose.undo(poseStack, state, true);
+			float s = scale * 2.0F;
+			float side = slot == 0 ? 0.9F : -0.9F;
+			poseStack.translate(side, 1.5F - 1.5F * s + (hover ? -0.4F : 0.0F), 0.4F);
+			poseStack.mulPose(Axis.YP.rotationDegrees(slot == 0 ? -30.0F : 30.0F));
+			poseStack.scale(s, s, s);
+		} else {
+			float dx = both ? (slot == 0 ? -0.13F : 0.13F) : 0.0F;
+			float bob = hover ? -0.12F - (float) Math.sin(t * 0.12F + slot * 2.0F) * 0.04F : 0.02F;
+			// zu zweit auf dem Kopf: alle ~20 s spielen sie kurz miteinander – drehen sich zueinander und hüpfen
+			float turn = 0.0F;
+			if (both) {
+				float cycle = (t + state.id % 97) % 400.0F;
+				if (cycle < 50.0F) {
+					float k = Mth.sin(cycle / 50.0F * Mth.PI);
+					turn = (slot == 0 ? -70.0F : 70.0F) * k;
+					bob -= Math.abs(Mth.sin(cycle * 0.5F + slot * 1.6F)) * 0.08F * k;
+					sit = false;
+				}
+			}
+			getParentModel().head.translateAndRotate(poseStack);
+			// Kopfoberseite liegt 8 Pixel über dem Drehpunkt; Füße des Modells genau darauf
+			poseStack.translate(dx, -0.5F - 1.5F * scale + bob, 0.0F);
+			poseStack.mulPose(Axis.YP.rotationDegrees(turn));
+			poseStack.scale(scale, scale, scale);
+		}
 		switch (type) {
 			case "slime" -> {
 				SlimeRenderState s = base(new SlimeRenderState(), t, 0.0F);
@@ -323,7 +347,7 @@ public final class PetsLayer extends RenderLayer<AvatarRenderState, PlayerModel>
 			}
 			case "wolf" -> {
 				WolfRenderState s = base(new WolfRenderState(), t, 0.0F);
-				s.isSitting = true;
+				s.isSitting = sit;
 				submit(collector, poseStack, wolf, s, WOLF_TEX);
 			}
 			case "penguin" -> submit(collector, poseStack, penguin, base(new LivingEntityRenderState(), t, 0.0F), PENGUIN_TEX);
@@ -338,11 +362,12 @@ public final class PetsLayer extends RenderLayer<AvatarRenderState, PlayerModel>
 						new net.minecraft.client.renderer.entity.state.DonkeyRenderState(), t, 0.0F);
 				s.isBaby = true;
 				s.animateTail = true;
+				s.eatAnimation = lie > 0.5F ? 1.0F : 0.0F; // neben dem schlafenden Spieler: grasen
 				submit(collector, poseStack, donkey, s, DONKEY_TEX);
 			}
 			case "red_panda" -> {
 				PetModels.RedPandaState s = base(new PetModels.RedPandaState(), t, 0.0F);
-				s.curl = 1.0F; // eingerollt auf dem Kopf
+				s.curl = sit ? 1.0F : 0.0F; // eingerollt auf dem Kopf
 				submit(collector, poseStack, redPanda, s, RED_PANDA_TEX);
 			}
 			case "zombie" -> {

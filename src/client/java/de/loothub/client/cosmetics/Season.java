@@ -30,7 +30,9 @@ public final class Season {
 	private static final float PX = 1.0F / 16.0F;
 	private static final int RED = 0xFFC8202A, RED_DARK = 0xFFA5161F, FUR = 0xFFF4F4F4;
 	private static long checkedAt;
-	private static boolean winter, newYear;
+	private static boolean winter, newYear, halloween, easter;
+	private static final int PUMPKIN = 0xFFE38A1E, PUMPKIN_DARK = 0xFFC06A10, STEM = 0xFF5B7A2A, FACE = 0xFF2A1404,
+			EAR = 0xFFF2EEE8, EAR_IN = 0xFFF2A7B8;
 
 	private Season() {
 	}
@@ -45,6 +47,81 @@ public final class Season {
 		winter = d.getMonth() == Month.DECEMBER && d.getDayOfMonth() >= 5 && d.getDayOfMonth() <= 27;
 		newYear = (d.getMonth() == Month.DECEMBER && d.getDayOfMonth() == 31 && d.getHour() >= 18)
 				|| (d.getMonth() == Month.JANUARY && d.getDayOfMonth() == 1 && d.getHour() < 3);
+		// Halloween: 24. Oktober bis 2. November
+		halloween = (d.getMonth() == Month.OCTOBER && d.getDayOfMonth() >= 24)
+				|| (d.getMonth() == Month.NOVEMBER && d.getDayOfMonth() <= 2);
+		// Ostern: Gründonnerstag bis Ostermontag
+		java.time.LocalDate e = easterSunday(d.getYear());
+		java.time.LocalDate today = d.toLocalDate();
+		easter = !today.isBefore(e.minusDays(3)) && !today.isAfter(e.plusDays(1));
+	}
+
+	/** Ostersonntag (Gauß'sche Osterformel, gregorianisch). */
+	static java.time.LocalDate easterSunday(int y) {
+		int a = y % 19, b = y / 100, c = y % 100, d = b / 4, e = b % 4, f = (b + 8) / 25, g = (b - f + 1) / 3;
+		int h = (19 * a + b - d - g + 15) % 30, i = c / 4, k = c % 4, l = (32 + 2 * e + 2 * i - h - k) % 7;
+		int m = (a + 11 * h + 22 * l) / 451;
+		int month = (h + l - 7 * m + 114) / 31, day = ((h + l - 7 * m + 114) % 31) + 1;
+		return java.time.LocalDate.of(y, month, day);
+	}
+
+	/** Kürbiskopf-Zeit (Halloween)? */
+	public static boolean pumpkins() {
+		refresh();
+		return halloween && on();
+	}
+
+	/** Hasenohren-Zeit (Ostern)? */
+	public static boolean ears() {
+		refresh();
+		return easter && on();
+	}
+
+	/** Passende Kopfbedeckung je nach Datum auf den Kopf setzen; {@code preview} zeigt im Menü die Mütze. */
+	public static void submitHeadwear(PoseStack poseStack, SubmitNodeCollector collector, int light, boolean preview) {
+		if (pumpkins()) {
+			submitPumpkin(poseStack, collector, light);
+		} else if (ears()) {
+			submitEars(poseStack, collector, light);
+		} else if (hats() || preview) {
+			submitHat(poseStack, collector, light);
+		}
+	}
+
+	/** Irgendeine Kopfbedeckung gerade dran? */
+	public static boolean headwear() {
+		return hats() || pumpkins() || ears();
+	}
+
+	/** Kürbis über dem Kopf (Würfel-Stil) mit geschnitztem Gesicht vorn. */
+	public static void submitPumpkin(PoseStack poseStack, SubmitNodeCollector collector, int light) {
+		collector.submitCustomGeometry(poseStack, RenderTypes.entityCutoutNoCull(WHITE), (pose, vc) -> {
+			box(pose, vc, light, -4.6F, -8.9F, -4.6F, 4.6F, 0.4F, 4.6F, PUMPKIN);
+			// Rillen
+			box(pose, vc, light, -1.6F, -9.0F, -4.7F, -1.0F, 0.3F, 4.7F, PUMPKIN_DARK);
+			box(pose, vc, light, 1.0F, -9.0F, -4.7F, 1.6F, 0.3F, 4.7F, PUMPKIN_DARK);
+			// Stiel
+			box(pose, vc, light, -0.7F, -10.4F, -0.7F, 0.7F, -8.9F, 0.7F, STEM);
+			// Gesicht (vorn = −z): Augen, Nase, Mund
+			box(pose, vc, light, -3.2F, -5.6F, -4.75F, -1.6F, -4.2F, -4.6F, FACE);
+			box(pose, vc, light, 1.6F, -5.6F, -4.75F, 3.2F, -4.2F, -4.6F, FACE);
+			box(pose, vc, light, -0.5F, -3.8F, -4.75F, 0.5F, -3.0F, -4.6F, FACE);
+			box(pose, vc, light, -3.0F, -2.2F, -4.75F, 3.0F, -1.2F, -4.6F, FACE);
+			box(pose, vc, light, -2.2F, -1.2F, -4.75F, -1.2F, -0.6F, -4.6F, FACE);
+			box(pose, vc, light, 1.2F, -1.2F, -4.75F, 2.2F, -0.6F, -4.6F, FACE);
+		});
+	}
+
+	/** Hasenohren auf dem Kopf, eins leicht abgeknickt. */
+	public static void submitEars(PoseStack poseStack, SubmitNodeCollector collector, int light) {
+		collector.submitCustomGeometry(poseStack, RenderTypes.entityCutoutNoCull(WHITE), (pose, vc) -> {
+			box(pose, vc, light, -3.4F, -14.5F, -0.6F, -1.4F, -8.0F, 0.6F, EAR);
+			box(pose, vc, light, -3.0F, -13.8F, -0.75F, -1.8F, -8.6F, -0.6F, EAR_IN);
+			box(pose, vc, light, 1.4F, -11.5F, -0.6F, 3.4F, -8.0F, 0.6F, EAR);
+			box(pose, vc, light, 1.8F, -11.0F, -0.75F, 3.0F, -8.6F, -0.6F, EAR_IN);
+			// abgeknickte Spitze
+			box(pose, vc, light, 3.4F, -12.8F, -0.6F, 6.0F, -11.0F, 0.6F, EAR);
+		});
 	}
 
 	/** Jahreszeiten eingeschaltet (unabhängig vom Datum). */
