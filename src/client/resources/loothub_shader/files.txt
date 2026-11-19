@@ -46,4 +46,5 @@ shaders/lang/en_us.lang
 shaders/shaders.properties
 shaders/shadow.fsh
 shaders/shadow.vsh
+shaders/sky.glsl
 shaders/wave.glsl

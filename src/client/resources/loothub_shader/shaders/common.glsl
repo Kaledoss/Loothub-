@@ -22,6 +22,12 @@
 #define WATER_FX              // Wellen, Spiegelung und Sonnenglanz auf Wasser
 #define WATER_REFLECT 0.70    // [0.30 0.50 0.70 0.85 1.00]
 
+// Nachthimmel
+#define NEBULAS               // farbige Nebel am Nachthimmel
+#define NEBULA_STRENGTH 0.80  // [0.30 0.50 0.65 0.80 1.00 1.30 1.60]
+#define CUSTOM_STARS          // funkelnde Sterne in leicht unterschiedlichen Farben
+#define STAR_AMOUNT 1.00      // [0.50 0.75 1.00 1.50 2.00]
+
 const int shadowMapResolution = 1536;   // [1024 1536 2048 3072]
 const float shadowDistance = 80.0;      // [48.0 64.0 80.0 96.0 128.0]
 const float shadowDistanceRenderMul = 1.0;

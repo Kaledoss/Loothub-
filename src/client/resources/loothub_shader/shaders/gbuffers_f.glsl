@@ -16,6 +16,10 @@ uniform mat4 gbufferModelViewInverse;
 #if defined SHADED && defined SHADOWS
 uniform sampler2D shadowtex1;
 #endif
+#ifdef SKY
+uniform int renderStage;
+#include "/sky.glsl"
+#endif
 #ifdef WATER
 uniform mat4 gbufferModelView;
 uniform vec3 skyColor;
@@ -119,6 +123,11 @@ vec3 shadedLight(out float litOut) {
 #endif
 
 void main() {
+#if defined SKY && defined CUSTOM_STARS && defined MC_RENDER_STAGE_STARS
+	if (renderStage == MC_RENDER_STAGE_STARS) {
+		discard; // eigene Sterne statt der Vanilla-Sterne
+	}
+#endif
 	vec4 color = glcolor;
 #ifdef TEXTURED
 	color *= texture2D(gtexture, texcoord);
@@ -166,6 +175,16 @@ void main() {
 		color.rgb += glint * spec * 2.5 * lit;
 		color.a = max(color.a, min(spec * lit * 2.0, 1.0));
 	}
+#endif
+
+#ifdef SKY
+#ifdef MC_RENDER_STAGE_SKY
+	if (renderStage == MC_RENDER_STAGE_SKY) {
+		color.rgb += nightSky(gbufferModelViewInverse, sunPosition, sunHeight(), rainStrength);
+	}
+#else
+	color.rgb += nightSky(gbufferModelViewInverse, sunPosition, sunHeight(), rainStrength);
+#endif
 #endif
 
 #if DEBUG_VIEW == 2
