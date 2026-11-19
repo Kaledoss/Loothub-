@@ -3,6 +3,7 @@
 // Schalter je Programm: TEXTURED (Textur), LIT (Lichtkarte), SHADED (Sonne mit Richtung + Schatten),
 // ENTITY (rot bei Schaden), NOFOG, WATER
 uniform sampler2D gtexture;
+uniform ivec2 atlasSize;
 uniform sampler2D lightmap;
 uniform vec4 entityColor;
 uniform vec3 fogColor;
@@ -52,6 +53,7 @@ varying vec3 viewPos;
 varying vec3 worldPos;
 varying float isWater;
 varying float isIce;
+varying vec4 spriteBox;
 #endif
 
 vec3 neutral(vec3 c) {
@@ -142,7 +144,37 @@ void main() {
 #endif
 	vec4 color = glcolor;
 #ifdef TEXTURED
+#if defined SURFACE && defined TEX_SMOOTH
+	// In der Ferne fallen mehrere Texturpixel auf einen Bildschirmpixel – dann mehrere Proben innerhalb des Pixels
+	// mitteln (nur innerhalb der eigenen Blocktextur), statt dass Fugen und Muster zu einem flimmernden Gitter werden
+	vec2 dx = dFdx(texcoord), dy = dFdy(texcoord);
+	vec2 tsize = max(vec2(atlasSize), vec2(1.0));
+	float texelsPerPixel = max(length(dx * tsize), length(dy * tsize));
+	if (texelsPerPixel > 1.2 && spriteBox.z > 0.0) {
+		vec2 lo = spriteBox.xy - spriteBox.zw + 0.5 / tsize;
+		vec2 hi = spriteBox.xy + spriteBox.zw - 0.5 / tsize;
+		vec4 sum = texture2D(gtexture, clamp(texcoord + dx * 0.125 + dy * 0.375, lo, hi))
+				+ texture2D(gtexture, clamp(texcoord - dx * 0.375 + dy * 0.125, lo, hi))
+				+ texture2D(gtexture, clamp(texcoord - dx * 0.125 - dy * 0.375, lo, hi))
+				+ texture2D(gtexture, clamp(texcoord + dx * 0.375 - dy * 0.125, lo, hi));
+		vec4 tex = sum * 0.25;
+		if (texelsPerPixel > 3.0) {
+			// sehr weit weg: noch vier Proben dazu
+			vec4 more = texture2D(gtexture, clamp(texcoord + dx * 0.4 + dy * 0.4, lo, hi))
+					+ texture2D(gtexture, clamp(texcoord - dx * 0.4 + dy * 0.4, lo, hi))
+					+ texture2D(gtexture, clamp(texcoord - dx * 0.4 - dy * 0.4, lo, hi))
+					+ texture2D(gtexture, clamp(texcoord + dx * 0.4 - dy * 0.4, lo, hi));
+			tex = (sum + more) * 0.125;
+		}
+		// Ausschnitt (Gras, Blaetter): Deckkraft der Mitte behalten, damit nichts durchsichtig ausfranst
+		tex.a = texture2D(gtexture, texcoord).a;
+		color *= tex;
+	} else {
+		color *= texture2D(gtexture, texcoord);
+	}
+#else
 	color *= texture2D(gtexture, texcoord);
+#endif
 #endif
 	if (color.a < 0.1) {
 		discard;

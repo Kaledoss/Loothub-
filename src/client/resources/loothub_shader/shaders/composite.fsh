@@ -72,7 +72,8 @@ void main() {
 		float d = clamp(dist / 240.0, 0.0, 1.0);
 		float amount = (1.0 - exp(-d * d * 4.0)) * HAZE * (1.0 + rainStrength * 0.6);
 		// Dunst fast farblos (sonst faerbt der Abendhimmel alles lila)
-		vec3 haze = mix(fogColor, vec3(max(luma(fogColor), 0.6)), 0.75);
+		// Dunst in der (leicht entsaettigten) Himmelsfarbe statt als hellgrauer Schleier
+		vec3 haze = mix(fogColor, vec3(luma(fogColor)), 0.3);
 		color = mix(color, haze, clamp(amount, 0.0, 0.85));
 	}
 

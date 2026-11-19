@@ -44,9 +44,10 @@ void main() {
 	float mx = max(lin.r, max(lin.g, lin.b));
 	float mn = min(lin.r, min(lin.g, lin.b));
 	float chroma = (mx - mn) / max(mx, 1e-4);
-	lin = mix(lin, vec3(luma(lin)), smoothstep(0.45, 1.0, chroma) * 0.22);
+	lin = mix(lin, vec3(luma(lin)), smoothstep(0.55, 1.0, chroma) * 0.10);
 	// filmische Kurve: Mitten fast unveraendert, Lichter laufen weich aus und entsaettigen leicht
-	lin = filmic(lin * 0.8) / filmic(vec3(1.28)).x;
+	// so abgestimmt, dass mittleres Grau bleibt, wie es ist (vorher wurde alles leicht aufgehellt)
+	lin = filmic(lin * 0.6) / filmic(vec3(0.96)).x;
 	color = pow(clamp(lin, 0.0, 1.0), vec3(1.0 / 2.2));
 
 	// luftig: Schatten etwas anheben und leicht kuehl-weiss toenen (heller, klarer Look)

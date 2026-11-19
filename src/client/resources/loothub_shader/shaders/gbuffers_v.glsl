@@ -17,6 +17,7 @@ varying vec3 viewPos;
 varying vec3 worldPos;
 varying float isWater;
 varying float isIce;
+varying vec4 spriteBox;
 #endif
 attribute vec4 mc_Entity;
 attribute vec4 mc_midTexCoord;
@@ -86,5 +87,7 @@ void main() {
 	worldPos = player + cameraPosition;
 	isWater = abs(id - 10010.0) < 0.5 ? 1.0 : 0.0;
 	isIce = abs(id - 10011.0) < 0.5 ? 1.0 : 0.0;
+	// Lage der Blocktextur im Atlas (Mitte + halbe Groesse) – damit die Glaettung nicht in Nachbartexturen greift
+	spriteBox = vec4(mc_midTexCoord.xy, abs(texcoord - mc_midTexCoord.xy));
 #endif
 }

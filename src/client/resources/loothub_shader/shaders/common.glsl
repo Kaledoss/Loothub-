@@ -1,7 +1,7 @@
 // ---------------------------------------------------------------- Einstellungen (Iris: Shader-Optionen)
 #define EXPOSURE 1.00         // [0.70 0.80 0.90 0.95 1.00 1.05 1.10 1.15 1.20 1.30]
 #define CONTRAST 1.05         // [0.85 0.90 0.94 0.98 1.00 1.02 1.04 1.05 1.08 1.10 1.12 1.16 1.20]
-#define SATURATION 0.96       // [0.80 0.85 0.90 0.93 0.96 1.00 1.04 1.06 1.10 1.18 1.25 1.35 1.50]
+#define SATURATION 1.06       // [0.80 0.85 0.90 0.93 0.96 1.00 1.04 1.06 1.10 1.18 1.25 1.35 1.50]
 #define WARMTH 0.00           // [-0.10 -0.06 -0.04 -0.02 0.00 0.02 0.04 0.06 0.08 0.12]
 #define BLOOM                 // Gluehen an/aus
 #define BLOOM_STRENGTH 0.55   // [0.10 0.20 0.30 0.40 0.45 0.55 0.70 0.85 1.00 1.30]
@@ -25,6 +25,7 @@
 #define WATER_WAVES 1.00      // [0.50 0.75 1.00 1.50 2.00 2.50]
 #define WATER_DEPTH 1.00      // [0.50 0.75 1.00 1.50 2.00]
 #define WATER_FOAM            // Schaum am Ufer
+#define TEX_SMOOTH            // Texturen in der Ferne glaetten (kein flimmerndes Gitter)
 #define ICE_FX                // Eis spiegelt, glaenzt und funkelt
 #define ICE_SPARKLE 1.00      // [0.00 0.50 1.00 1.50 2.00]
 #define UNDERWATER_FOG 1.00   // [0.50 0.75 1.00 1.30 1.60 2.00]

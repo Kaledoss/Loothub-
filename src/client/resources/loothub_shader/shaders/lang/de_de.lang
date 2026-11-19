@@ -86,3 +86,5 @@ profile.STUFE5=EXTREME
 option.ICE_FX=Sch\u00f6nes Eis
 option.ICE_FX.comment=Eis wird k\u00fchl und klar, spiegelt den Himmel, gl\u00e4nzt in der Sonne und einzelne Kristalle funkeln.
 option.ICE_SPARKLE=Eis: Funkeln
+option.TEX_SMOOTH=Texturen in der Ferne gl\u00e4tten
+option.TEX_SMOOTH.comment=Verhindert, dass B\u00f6den und W\u00e4nde in der Ferne zu einem flimmernden Gitter werden. Kostet etwas Leistung.

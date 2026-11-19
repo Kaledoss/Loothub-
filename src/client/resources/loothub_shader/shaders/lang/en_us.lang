@@ -84,3 +84,5 @@ profile.STUFE5=EXTREME
 option.ICE_FX=Nice ice
 option.ICE_FX.comment=Ice turns cool and clear, reflects the sky, shines in the sun and single crystals sparkle.
 option.ICE_SPARKLE=Ice: sparkle
+option.TEX_SMOOTH=Smooth distant textures
+option.TEX_SMOOTH.comment=Stops distant floors and walls from turning into a flickering grid. Costs some performance.
