@@ -81,3 +81,5 @@ option.WATER_FOAM.comment=Leichter Schaum am Ufer und an flachen Stellen.
 option.WATER_FX.comment=Wellen, klare flache und tiefblaue tiefe Stellen, Spiegelung des Himmels und Sonnenglanz.
 option.UNDERWATER_FOG=Unter Wasser: Tr\u00fcbung
 option.UNDERWATER_FOG.comment=Wie schnell die Sicht unter Wasser eintr\u00fcbt und Farben (erst Rot, dann Gr\u00fcn) verschluckt werden.
+option.SUN_SIZE=Gr\u00f6\u00dfe von Sonne und Mond
+option.SUN_SIZE.comment=100 % = wie Minecraft.

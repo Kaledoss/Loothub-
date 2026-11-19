@@ -145,6 +145,11 @@ void main() {
 #ifdef ENTITY
 	color.rgb = mix(color.rgb, entityColor.rgb, entityColor.a);
 #endif
+#ifdef SUN_MOON
+	// nur der Kern von Sonne/Mond leuchtet, der schwache Schimmer der Textur faellt weg (sonst riesiges helles Quadrat)
+	float core = smoothstep(0.18, 0.5, luma(color.rgb));
+	color.rgb *= core;
+#endif
 	float lit = 0.0;
 #ifdef LIT
 #ifdef SHADED
@@ -273,7 +278,9 @@ void main() {
 #ifdef EMISSIVE_MASK
 	/* RENDERTARGETS: 0,2 */
 	gl_FragData[0] = color;
-#ifdef ALWAYS_GLOW
+#if defined SUN_MOON
+	gl_FragData[1] = vec4(core, 0.0, 0.0, 1.0);
+#elif defined ALWAYS_GLOW
 	gl_FragData[1] = vec4(1.0, 0.0, 0.0, 1.0);
 #else
 	gl_FragData[1] = vec4(emissive, 0.0, 0.0, 1.0);

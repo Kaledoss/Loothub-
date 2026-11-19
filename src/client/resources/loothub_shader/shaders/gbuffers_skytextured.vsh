@@ -3,4 +3,5 @@
 #define ALWAYS_GLOW
 #define TEXTURED
 #define NOFOG
+#define SUN_MOON
 #include "/gbuffers_v.glsl"

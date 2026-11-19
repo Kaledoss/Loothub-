@@ -17,6 +17,7 @@
 #define SHADOW_LEVEL 0.58     // [0.30 0.35 0.40 0.45 0.50 0.58 0.65 0.72 0.80]
 #define SHADOW_SOFT 1.5       // [0.5 1.0 1.5 2.0 3.0]
 #define NIGHT_LIGHT 1.00      // [0.60 0.80 1.00 1.20 1.40]
+#define SUN_SIZE 0.60         // [0.35 0.45 0.60 0.75 0.90 1.00]
 #define WAVING                // wehende Blaetter und Pflanzen
 #define WAVE_STRENGTH 1.00    // [0.50 0.75 1.00 1.30 1.60 2.00]
 #define WATER_FX              // Wellen, Spiegelung und Sonnenglanz auf Wasser

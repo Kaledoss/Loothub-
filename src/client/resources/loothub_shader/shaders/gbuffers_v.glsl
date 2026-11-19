@@ -30,6 +30,14 @@ uniform mat4 shadowProjection;
 
 void main() {
 	gl_Position = ftransform();
+#ifdef SUN_MOON
+	// Sonne und Mond kleiner: Eckpunkte des Quadrats (liegt bei y = +/-100) zur Mitte ziehen
+	vec4 sv = gl_Vertex;
+	if (abs(abs(sv.y) - 100.0) < 2.0) {
+		sv.xz *= SUN_SIZE;
+		gl_Position = gl_ModelViewProjectionMatrix * sv;
+	}
+#endif
 	texcoord = (gl_TextureMatrix[0] * gl_MultiTexCoord0).xy;
 	// Lichtwerte: 0 = automatisch, 1 = ueber Texturmatrix, 2 = roh/256, 3 = aus (volles Tageslicht, zum Testen)
 	vec2 viaMatrix = (gl_TextureMatrix[1] * gl_MultiTexCoord1).xy;

@@ -33,7 +33,8 @@ void main() {
 			w = 1.0 - smoothstep(-0.04, 0.04, dir.y);
 		} else {
 			vec4 vp = gbufferProjectionInverse * vec4(texcoord * 2.0 - 1.0, depth * 2.0 - 1.0, 1.0);
-			w = smoothstep(far * 0.78, far * 0.98, length(vp.xyz / vp.w));
+			// schmaler Rand am Ende der Sichtweite (hoechstens 20 Bloecke)
+			w = smoothstep(far - min(far * 0.2, 20.0), far - 2.0, length(vp.xyz / vp.w));
 		}
 		if (w > 0.0) {
 			vec3 fill = skyGradient(dir, skyColor, fogColor) + nightSkyDir(dir, normalize(mat3(gbufferModelViewInverse) * sunPosition), sunH, rainStrength);
@@ -64,7 +65,8 @@ void main() {
 	if (depth < 1.0 && isEyeInWater == 0 && HAZE > 0.0) {
 		vec4 view = gbufferProjectionInverse * vec4(texcoord * 2.0 - 1.0, depth * 2.0 - 1.0, 1.0);
 		float dist = length(view.xyz / view.w);
-		float d = clamp(dist / max(far, 16.0), 0.0, 1.0);
+		// in festen Bloecken statt relativ zur Sichtweite (sonst bei kleiner Sichtweite schon nach wenigen Bloecken dicht)
+		float d = clamp(dist / 240.0, 0.0, 1.0);
 		float amount = (1.0 - exp(-d * d * 4.0)) * HAZE * (1.0 + rainStrength * 0.6);
 		// Dunst fast farblos (sonst faerbt der Abendhimmel alles lila)
 		vec3 haze = mix(fogColor, vec3(max(luma(fogColor), 0.6)), 0.75);
