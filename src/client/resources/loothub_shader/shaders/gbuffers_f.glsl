@@ -22,8 +22,12 @@ uniform int renderStage;
 #endif
 #ifdef WATER
 uniform mat4 gbufferModelView;
+uniform mat4 gbufferProjectionInverse;
 uniform vec3 skyColor;
 uniform float frameTimeCounter;
+uniform float viewWidth;
+uniform float viewHeight;
+uniform sampler2D depthtex1;
 #endif
 
 varying vec2 texcoord;
@@ -149,31 +153,80 @@ void main() {
 
 #if defined WATER && defined WATER_FX
 	if (isWater > 0.5) {
-		vec3 nW = mat3(gbufferModelViewInverse) * normalize(normalView);
 		vec3 v = normalize(viewPos);
 		vec3 n = normalize(normalView);
+		vec3 nW = mat3(gbufferModelViewInverse) * n;
+		float dist = length(viewPos);
+		float t = frameTimeCounter;
 		if (nW.y > 0.5) {
-			// kleine Wellen nur auf der Oberflaeche (Normale wird gekippt, keine Geometrie)
-			float t = frameTimeCounter;
+			// Wellen: mehrere Wellenzuege aus verschiedenen Richtungen, in der Ferne ruhiger (kein Flimmern)
 			vec2 p = worldPos.xz;
-			float dx = cos(p.x * 1.3 + t * 1.6) * 0.6 + cos(p.x * 2.7 + p.y * 1.1 + t * 2.3) * 0.3 + cos((p.x + p.y) * 4.1 - t * 2.9) * 0.15;
-			float dz = cos(p.y * 1.1 - t * 1.4) * 0.6 + cos(p.y * 2.9 - p.x * 0.9 + t * 2.1) * 0.3 + cos((p.y - p.x) * 3.7 + t * 3.1) * 0.15;
-			vec3 waveN = normalize(vec3(-dx * 0.06, 1.0, -dz * 0.06));
-			n = normalize(mat3(gbufferModelView) * waveN);
+			float dx = 0.0, dz = 0.0;
+			vec2 dirs[4];
+			dirs[0] = vec2(1.0, 0.25);
+			dirs[1] = vec2(-0.45, 1.0);
+			dirs[2] = vec2(0.8, -0.7);
+			dirs[3] = vec2(-0.9, -0.35);
+			float freq = 0.9, amp = 0.55, speed = 1.3;
+			for (int i = 0; i < 4; i++) {
+				vec2 d = normalize(dirs[i]);
+				float ph = dot(d, p) * freq + t * speed;
+				float c = cos(ph) * amp * freq;
+				dx += d.x * c;
+				dz += d.y * c;
+				freq *= 1.9;
+				amp *= 0.5;
+				speed *= 1.35;
+			}
+			float k = WATER_WAVES * 0.07 / (1.0 + dist * 0.03);
+			n = normalize(mat3(gbufferModelView) * normalize(vec3(-dx * k, 1.0, -dz * k)));
 		}
+
+		// Wassertiefe entlang des Blicks (Boden aus depthtex1): flach klar und tuerkis, tief dunkelblau
+		vec2 uv = gl_FragCoord.xy / vec2(viewWidth, viewHeight);
+		float dBottom = texture2D(depthtex1, uv).r;
+		vec4 pb = gbufferProjectionInverse * vec4(uv * 2.0 - 1.0, dBottom * 2.0 - 1.0, 1.0);
+		float thick = dBottom >= 1.0 ? 64.0 : max(length(pb.xyz / pb.w) - dist, 0.0);
+		float absorb = 1.0 - exp(-thick * 0.22 * WATER_DEPTH);
+		vec3 tint = glcolor.rgb; // Biom-Wasserfarbe
+		vec3 lightNow = color.rgb / max(texture2D(gtexture, texcoord).rgb * glcolor.rgb, vec3(0.05)); // Licht an dieser Stelle
+		float lum = clamp(luma(lightNow), 0.05, 1.5);
+		vec3 shallow = mix(tint, vec3(0.35, 0.85, 0.85), 0.35) * 1.05 * lum;
+		vec3 deep = tint * vec3(0.18, 0.32, 0.48) * lum;
+		vec3 body = mix(shallow, deep, absorb);
+		// etwas Textur behalten, aber ruhiger als Vanilla
+		body *= mix(1.0, luma(texture2D(gtexture, texcoord).rgb) * 1.6, 0.25);
+		float alpha = mix(0.30, 0.94, absorb);
+
+		// Schaum am Ufer und an flachen Stellen
+		float foam = 0.0;
+#ifdef WATER_FOAM
+		if (nW.y > 0.5 && thick < 0.35 && dBottom < 1.0) {
+			float wob = 0.5 + 0.5 * sin(worldPos.x * 3.1 + t * 2.0) * sin(worldPos.z * 2.7 - t * 1.7);
+			foam = (1.0 - thick / 0.35) * (0.55 + 0.45 * wob);
+		}
+#endif
+
+		// Spiegelung: Himmelsverlauf je nach Richtung des gespiegelten Strahls, nur wo Himmel ist
+		vec3 r = reflect(v, n);
+		float ry = (mat3(gbufferModelViewInverse) * r).y;
+		float h = sunHeight();
+		float day = smoothstep(-0.05, 0.2, h);
+		float skyLit = clamp((lmcoord.y - 0.5 / 16.0) * 16.0 / 15.0, 0.0, 1.0);
+		vec3 refl = mix(fogColor, skyColor * 1.15, smoothstep(0.0, 0.45, ry)) * (0.5 + 0.6 * day) * skyLit * skyLit;
 		float facing = clamp(dot(-v, n), 0.0, 1.0);
 		float fresnel = 0.02 + 0.98 * pow(1.0 - facing, 5.0);
-		// Spiegelung: Himmelsfarbe, aber nur wo Himmel ist (nicht in Hoehlen)
-		float skyLit = clamp((lmcoord.y - 0.5 / 16.0) * 16.0 / 15.0, 0.0, 1.0);
-		vec3 refl = skyColor * (0.6 + 0.6 * smoothstep(-0.05, 0.2, sunHeight())) * skyLit * skyLit;
-		color.rgb = mix(color.rgb, refl, fresnel * WATER_REFLECT);
-		color.a = mix(color.a * 0.85, 1.0, fresnel * 0.7);
-		// Sonnenglanz
-		float spec = pow(clamp(dot(reflect(v, n), normalize(shadowLightPosition)), 0.0, 1.0), 180.0);
-		float h = sunHeight();
-		vec3 glint = mix(vec3(0.6, 0.7, 0.9) * 0.3, mix(vec3(1.0, 0.95, 0.85), vec3(1.0, 0.65, 0.35), 1.0 - smoothstep(0.05, 0.4, h)), smoothstep(-0.05, 0.2, h));
-		color.rgb += glint * spec * 2.5 * lit;
-		color.a = max(color.a, min(spec * lit * 2.0, 1.0));
+		vec3 col = mix(body, refl, clamp(fresnel * WATER_REFLECT * 1.15, 0.0, 1.0));
+
+		// Sonnen-/Mondglanz: scharfer Punkt und weicher Schimmer
+		float sl = clamp(dot(r, normalize(shadowLightPosition)), 0.0, 1.0);
+		float spec = pow(sl, 420.0) * 4.0 + pow(sl, 40.0) * 0.25;
+		vec3 glint = mix(vec3(0.6, 0.7, 0.9) * 0.35, mix(vec3(1.0, 0.95, 0.85), vec3(1.0, 0.62, 0.32), 1.0 - smoothstep(0.05, 0.4, h)), day);
+		col += glint * spec * lit * skyLit;
+
+		col = mix(col, vec3(0.92, 0.96, 1.0) * lum, foam * 0.8);
+		color.rgb = col;
+		color.a = clamp(max(max(mix(alpha, 1.0, fresnel * 0.75), spec * lit), foam * 0.9), 0.0, 1.0);
 	}
 #endif
 

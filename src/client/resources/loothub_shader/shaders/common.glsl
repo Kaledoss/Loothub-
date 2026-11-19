@@ -13,14 +13,17 @@
 
 // Licht (Fassung 9): Sonne mit Richtung, Schatten, kuehle Schattenseiten, warmes Abendlicht
 #define SHADOWS               // echte Schatten von Sonne und Mond
-#define SUN_LIGHT 0.60        // [0.30 0.40 0.50 0.60 0.70 0.80 0.90]
-#define SHADOW_LEVEL 0.58     // [0.40 0.45 0.50 0.58 0.65 0.72 0.80]
+#define SUN_LIGHT 0.60        // [0.30 0.40 0.50 0.60 0.70 0.80 0.90 1.00 1.20]
+#define SHADOW_LEVEL 0.58     // [0.30 0.35 0.40 0.45 0.50 0.58 0.65 0.72 0.80]
 #define SHADOW_SOFT 1.5       // [0.5 1.0 1.5 2.0 3.0]
 #define NIGHT_LIGHT 1.00      // [0.60 0.80 1.00 1.20 1.40]
 #define WAVING                // wehende Blaetter und Pflanzen
-#define WAVE_STRENGTH 1.00    // [0.50 0.75 1.00 1.30 1.60]
+#define WAVE_STRENGTH 1.00    // [0.50 0.75 1.00 1.30 1.60 2.00]
 #define WATER_FX              // Wellen, Spiegelung und Sonnenglanz auf Wasser
 #define WATER_REFLECT 0.70    // [0.30 0.50 0.70 0.85 1.00]
+#define WATER_WAVES 1.00      // [0.50 0.75 1.00 1.50 2.00 2.50]
+#define WATER_DEPTH 1.00      // [0.50 0.75 1.00 1.50 2.00]
+#define WATER_FOAM            // Schaum am Ufer
 
 // Nachthimmel
 #define NEBULAS               // farbige Nebel am Nachthimmel
@@ -28,8 +31,8 @@
 #define CUSTOM_STARS          // funkelnde Sterne in leicht unterschiedlichen Farben
 #define STAR_AMOUNT 1.00      // [0.50 0.75 1.00 1.50 2.00]
 
-const int shadowMapResolution = 1536;   // [1024 1536 2048 3072]
-const float shadowDistance = 80.0;      // [48.0 64.0 80.0 96.0 128.0]
+const int shadowMapResolution = 1536;   // [1024 1536 2048 3072 4096]
+const float shadowDistance = 80.0;      // [48.0 64.0 80.0 96.0 128.0 160.0]
 const float shadowDistanceRenderMul = 1.0;
 const float sunPathRotation = -25.0;    // [-40.0 -30.0 -25.0 -15.0 0.0 15.0 25.0]
 const bool shadowtex1Nearest = true;
@@ -37,7 +40,7 @@ const bool shadowtex1Nearest = true;
 #define LIGHT_NEUTRAL 0.75    // [0.00 0.25 0.50 0.75 0.90 1.00]
 #define LIGHT_MODE 0          // [0 1 2 3]
 #define DEBUG_VIEW 0          // [0 1 2 3 4 5]
-#define PACK_VERSION 9        // [9]
+#define PACK_VERSION 10       // [10]
 
 float luma(vec3 c) {
 	return dot(c, vec3(0.2126, 0.7152, 0.0722));
