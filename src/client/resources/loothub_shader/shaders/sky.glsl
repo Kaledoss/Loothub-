@@ -97,23 +97,15 @@ vec3 skyDir(mat4 modelViewInverse) {
 	return normalize(mat3(modelViewInverse) * (v.xyz / v.w));
 }
 
-// Himmel zum Horizont hin weich in die Nebelfarbe uebergehen lassen (sonst harte Kante,
-// besonders mit Nachtsicht oder wo am Horizont noch keine Chunks geladen sind)
-vec3 horizonBlend(vec3 sky, vec3 fog, vec3 dir) {
-	return mix(fog, sky, smoothstep(-0.02, 0.32, dir.y));
-}
-
-// Beitrag zum Himmel fuer diesen Bildpunkt (0 am Tag)
-vec3 nightSky(mat4 modelViewInverse, vec3 sunView, float sunH, float rain) {
+// Nachthimmel (Nebel + Sterne) fuer eine Blickrichtung; 0 am Tag. Laeuft auch unter dem Horizont weiter,
+// damit Bereiche ohne geladene Chunks denselben Himmel zeigen.
+vec3 nightSkyDir(vec3 dir, vec3 sunWorld, float sunH, float rain) {
 	float night = 1.0 - smoothstep(-0.25, 0.05, sunH);
 	if (night <= 0.0) {
 		return vec3(0.0);
 	}
-	vec3 dir = skyDir(modelViewInverse);
-	vec3 sun = normalize(mat3(modelViewInverse) * sunView);
-	vec3 q = skyCoords(dir, sun);
-	// zum Horizont hin ausblenden, bei Regen fast weg
-	float fade = night * smoothstep(-0.02, 0.25, dir.y) * (1.0 - rain * 0.9);
+	vec3 q = skyCoords(dir, sunWorld);
+	float fade = night * (1.0 - rain * 0.9);
 	vec3 c = vec3(0.0);
 #ifdef NEBULAS
 	c += nebula(q) * NEBULA_STRENGTH;
@@ -122,4 +114,8 @@ vec3 nightSky(mat4 modelViewInverse, vec3 sunView, float sunH, float rain) {
 	c += stars(q, frameTimeCounter);
 #endif
 	return c * fade;
+}
+
+vec3 nightSky(mat4 modelViewInverse, vec3 sunView, float sunH, float rain) {
+	return nightSkyDir(skyDir(modelViewInverse), normalize(mat3(modelViewInverse) * sunView), sunH, rain);
 }

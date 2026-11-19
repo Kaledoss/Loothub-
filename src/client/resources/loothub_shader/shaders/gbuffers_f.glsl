@@ -9,6 +9,8 @@ uniform vec3 fogColor;
 uniform float fogStart;
 uniform float fogEnd;
 uniform float rainStrength;
+uniform int isEyeInWater;
+uniform float far;
 uniform vec3 sunPosition;
 uniform vec3 upPosition;
 uniform vec3 shadowLightPosition;
@@ -234,11 +236,9 @@ void main() {
 #ifdef MC_RENDER_STAGE_SKY
 	if (renderStage == MC_RENDER_STAGE_SKY) {
 		color.rgb += nightSky(gbufferModelViewInverse, sunPosition, sunHeight(), rainStrength);
-		color.rgb = horizonBlend(color.rgb, fogColor, skyDir(gbufferModelViewInverse));
 	}
 #else
 	color.rgb += nightSky(gbufferModelViewInverse, sunPosition, sunHeight(), rainStrength);
-	color.rgb = horizonBlend(color.rgb, fogColor, skyDir(gbufferModelViewInverse));
 #endif
 #endif
 
@@ -250,7 +250,9 @@ void main() {
 	color.rgb = vec3(lit);
 #endif
 #ifndef NOFOG
-	if (fogEnd > fogStart) {
+	// Vanilla-Nebel nur noch unter Wasser/Lava oder bei Blindheit/Dunkelheit; am Rand der Sichtweite blendet
+	// stattdessen der Composite-Schritt in den Himmel aus
+	if (fogEnd > fogStart && (isEyeInWater != 0 || fogEnd < far * 0.6)) {
 		// Nebel erst ganz am Rand der Sichtweite (sonst faerbt der Abendhimmel nahe Waende lila)
 		float start = max(fogStart, fogEnd * 0.85);
 		float f = clamp((fogDist - start) / (fogEnd - start), 0.0, 1.0);
@@ -265,6 +267,10 @@ void main() {
 #else
 	gl_FragData[1] = vec4(emissive, 0.0, 0.0, 1.0);
 #endif
+#elif defined CLOUD_MASK
+	/* RENDERTARGETS: 0,2 */
+	gl_FragData[0] = color;
+	gl_FragData[1] = vec4(0.5, 0.0, 0.0, 1.0); // Wolke: nicht in den Himmel ausblenden, nicht gluehen
 #else
 	/* RENDERTARGETS: 0 */
 	gl_FragData[0] = color;

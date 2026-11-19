@@ -1,11 +1,15 @@
 #version 120
 // Schritt 1: Dunst nach Entfernung und helle Stellen fuer das Gluehen heraussuchen
 #include "/common.glsl"
+#include "/sky.glsl"
 
 uniform sampler2D colortex0;
 uniform sampler2D depthtex0;
 uniform sampler2D colortex2;
-uniform mat4 gbufferProjectionInverse;
+uniform mat4 gbufferModelViewInverse;
+uniform vec3 sunPosition;
+uniform vec3 upPosition;
+uniform vec3 skyColor;
 uniform vec3 fogColor;
 uniform float far;
 uniform int isEyeInWater;
@@ -16,6 +20,26 @@ varying vec2 texcoord;
 void main() {
 	vec3 color = texture2D(colortex0, texcoord).rgb;
 	float depth = texture2D(depthtex0, texcoord).r;
+
+	// Himmel auch dort, wo nichts gezeichnet ist (unter dem Horizont, nicht geladene Chunks), und weit entfernte
+	// Landschaft am Rand der Sichtweite weich in diesen Himmel ausblenden – statt in die (mit Nachtsicht hellblaue) Nebelfarbe
+	float maskV = texture2D(colortex2, texcoord).r;
+	bool cloud = abs(maskV - 0.5) < 0.2;
+	if (isEyeInWater == 0 && !cloud) {
+		vec3 dir = skyDir(gbufferModelViewInverse);
+		float sunH = dot(normalize(sunPosition), normalize(upPosition));
+		float w;
+		if (depth >= 1.0) {
+			w = 1.0 - smoothstep(-0.04, 0.04, dir.y);
+		} else {
+			vec4 vp = gbufferProjectionInverse * vec4(texcoord * 2.0 - 1.0, depth * 2.0 - 1.0, 1.0);
+			w = smoothstep(far * 0.78, far * 0.98, length(vp.xyz / vp.w));
+		}
+		if (w > 0.0) {
+			vec3 fill = skyColor + nightSkyDir(dir, normalize(mat3(gbufferModelViewInverse) * sunPosition), sunH, rainStrength);
+			color = mix(color, fill, w);
+		}
+	}
 
 	// Dunst: nur auf Bloecken (nicht am Himmel), ueber Wasser, nimmt mit der Entfernung zu
 	if (depth < 1.0 && isEyeInWater == 0 && HAZE > 0.0) {
@@ -36,7 +60,7 @@ void main() {
 	float soft = clamp((l - BLOOM_THRESHOLD + knee) / (2.0 * knee), 0.0, 1.0);
 	float w = max(soft * soft * knee * 2.0, l - BLOOM_THRESHOLD) / max(l, 0.0001);
 	// nur Lichtquellen (Glowstone, Laternen, Lava, Sonne ...) - nicht jede weisse Wand
-	float mask = texture2D(colortex2, texcoord).r;
+	float mask = maskV > 0.75 ? 1.0 : 0.0; // nur echte Lichtquellen (Wolken sind mit 0,5 markiert)
 	bright = color * clamp(w, 0.0, 1.0) * mask;
 #endif
 
