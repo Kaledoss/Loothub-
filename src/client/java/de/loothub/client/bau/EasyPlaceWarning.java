@@ -112,14 +112,12 @@ public final class EasyPlaceWarning {
 		float a = age < 200 ? age / 200F : until - now < 400 ? (until - now) / 400F : 1F;
 		a = Math.max(0F, Math.min(1F, a));
 		int y = p[1] + (int) ((1 - Math.min(1F, age / 200F)) * -12);
-		de.loothub.client.streamer.Alerts.drawBox(g, mc.font, title, sub, 0xFFE23B3B, p[0] + 18, y, a);
-		g.renderItem(missing, p[0], y + (size[1] - 16) / 2);
+		de.loothub.client.streamer.Alerts.drawBox(g, mc.font, title, sub, 0xFFE23B3B, p[0], y, a, missing);
 	}
 
-	/** Größe der Einblendung (mit Platz für das Item links). */
+	/** Größe der Einblendung (mit Item-Rahmen links). */
 	private static int[] sampleBox(Minecraft mc, String title, String sub) {
-		int[] s = de.loothub.client.streamer.Alerts.boxSize(mc.font, title, sub);
-		return new int[]{s[0] + 18, s[1]};
+		return de.loothub.client.streamer.Alerts.boxSize(mc.font, title, sub, true);
 	}
 
 	/** Beispielgröße für „HUD-Positionen“. */

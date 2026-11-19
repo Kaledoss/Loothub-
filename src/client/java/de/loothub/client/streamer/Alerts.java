@@ -344,34 +344,173 @@ public final class Alerts {
 		return boxSize(font, "♥ Zuschauer123", "folgt jetzt");
 	}
 
+	// ------------------------------------------------------------------ Box im Rahmen-Stil (für alle Einblendungen)
+
+	/** Innenabstand und Größe des Symbol-Rahmens. */
+	private static final int PAD = 7, FRAME = 20;
+	/** Platz für die Verzierungen außen (oben/unten das Wappen, an den Seiten die Ecken). */
+	private static final int OUT_X = 3, OUT_Y = 6;
+
+	/** Verzierung oben in der Mitte; die letzte Zeile liegt auf der Rahmenlinie (unten gespiegelt). */
+	private static final String[] CREST = {
+			"..........#..........",
+			".........#o#.........",
+			"....###.#+++#.###....",
+			"...#...##+o+##...#...",
+			"..#.++...#+#...++.#..",
+			".#+...++..#..++...+#.",
+			"#####################"};
+	/** Ecke oben links; '*' liegt genau auf der Rahmenecke (die anderen Ecken gespiegelt). */
+	private static final String[] CORNER = {
+			"##.....",
+			"#o#....",
+			".#+#...",
+			"..#*###",
+			"...#+..",
+			"...#...",
+			"...#..."};
+
 	/** Größe einer Einblendung (Breite, Höhe) – auch für die Fang-Einblendung. */
 	public static int[] boxSize(Font font, String title, String sub) {
-		String s = RedemptionHud.fit(font, sub, 300);
-		int tw = (int) (font.width(title) * 1.5f);
-		return new int[]{Math.max(tw, font.width(s)) + 28, sub == null || sub.isBlank() ? 24 : 36};
+		return boxSize(font, title, sub, false);
 	}
 
-	/** Einblendung im Twitch-Stil zeichnen: dunkle Box, farbige Kante, großer Titel, Untertitel. */
-	public static void drawBox(GuiGraphics g, Font font, String title, String sub, int color, int x, int y, float a) {
-		int alpha = Math.max(8, (int) (a * 255)) << 24;
-		int[] size = boxSize(font, title, sub);
-		int w = size[0], h = size[1];
+	/** Größe mit Item-Symbol (z. B. der fehlende Block bei der Bau-Warnung). */
+	public static int[] boxSize(Font font, String title, String sub, boolean item) {
+		String[] t = splitIcon(title);
 		String s = RedemptionHud.fit(font, sub == null ? "" : sub, 300);
-		int tw = (int) (font.width(title) * 1.5f);
-		int bg = (int) (a * 0xD0) << 24 | 0x120A0C;
-		g.fill(x, y, x + w, y + h, bg);
-		g.fill(x, y + h - 2, x + w, y + h, alpha | (color & 0xFFFFFF));
-		g.fill(x, y, x + 2, y + h - 2, alpha | (color & 0xFFFFFF));
-		g.pose().pushMatrix();
-		g.pose().translate(x + (w - tw) / 2f, y + 5);
-		g.pose().scale(1.5f, 1.5f);
-		g.drawString(font, title, 0, 0, alpha | (color & 0xFFFFFF), true);
-		g.pose().popMatrix();
+		boolean frame = item || t[0] != null;
+		int textW = Math.max(font.width(t[1]), font.width(s));
+		int textH = s.isBlank() ? 9 : 9 + 6 + 9;
+		int w = Math.max(70, PAD * 2 + (frame ? FRAME + 7 : 0) + textW);
+		int h = PAD * 2 + Math.max(frame ? FRAME : 0, textH);
+		return new int[]{w + OUT_X * 2, h + OUT_Y * 2};
+	}
+
+	public static void drawBox(GuiGraphics g, Font font, String title, String sub, int color, int x, int y, float a) {
+		drawBox(g, font, title, sub, color, x, y, a, null);
+	}
+
+	/**
+	 * Einblendung im Rahmen-Stil: dunkle Tafel mit doppelter Rahmenlinie, verzierten Ecken und Wappen oben und unten,
+	 * links ein gerahmtes Symbol (Item oder das Zeichen vor dem Titel), daneben Titel, Trennlinie und Untertitel.
+	 * Rahmen, Verzierung und Titel tragen die Farbe des Anlasses (Abo lila, Raid rot, Fang je Seltenheit …).
+	 */
+	public static void drawBox(GuiGraphics g, Font font, String title, String sub, int color, int x, int y, float a,
+			net.minecraft.world.item.ItemStack item) {
+		boolean hasItem = item != null && !item.isEmpty();
+		int[] size = boxSize(font, title, sub, hasItem);
+		int bx = x + OUT_X, by = y + OUT_Y, bw = size[0] - OUT_X * 2, bh = size[1] - OUT_Y * 2;
+		String[] t = splitIcon(title);
+		String s = RedemptionHud.fit(font, sub == null ? "" : sub, 300);
+		int c = color & 0xFFFFFF;
+		int light = mix(c, 0xFFFFFF, 0.35F), dark = mix(c, 0x000000, 0.55F);
+		int alpha = Math.max(8, (int) (a * 255));
+
+		// Tafel: dunkles Braun mit sanftem Verlauf, oben ein Hauch der Anlass-Farbe
+		g.fillGradient(bx, by, bx + bw, by + bh, argb(a * 0.94F, 0x1C130D), argb(a * 0.94F, 0x0B0705));
+		g.fillGradient(bx + 1, by + 1, bx + bw - 1, by + bh / 2, argb(a * 0.16F, c), argb(0F, c));
+		// doppelte Rahmenlinie: außen in der Farbe, innen dunkler
+		rect(g, bx, by, bw, bh, argb(a, c));
+		rect(g, bx + 2, by + 2, bw - 4, bh - 4, argb(a * 0.75F, dark));
+		// Verzierungen
+		int cx = bx + bw / 2 - CREST[0].length() / 2;
+		pattern(g, CREST, cx, by - (CREST.length - 1), false, false, a, light, c, 0xFFFFFF);
+		pattern(g, CREST, cx, by + bh - 1, false, true, a, light, c, 0xFFFFFF);
+		pattern(g, CORNER, bx - 3, by - 3, false, false, a, light, c, 0xFFFFFF);
+		pattern(g, CORNER, bx + bw - 4, by - 3, true, false, a, light, c, 0xFFFFFF);
+		pattern(g, CORNER, bx - 3, by + bh - 4, false, true, a, light, c, 0xFFFFFF);
+		pattern(g, CORNER, bx + bw - 4, by + bh - 4, true, true, a, light, c, 0xFFFFFF);
+
+		int tx = bx + PAD;
+		if (hasItem || t[0] != null) {
+			// Symbol-Rahmen
+			int fx = bx + PAD, fy = by + (bh - FRAME) / 2;
+			g.fill(fx, fy, fx + FRAME, fy + FRAME, argb(a * 0.6F, 0x000000));
+			rect(g, fx, fy, FRAME, FRAME, argb(a, dark));
+			g.fill(fx + 1, fy + 1, fx + FRAME - 1, fy + 2, argb(a * 0.5F, c));
+			if (hasItem) {
+				g.renderItem(item, fx + 2, fy + 2);
+			} else {
+				g.pose().pushMatrix();
+				float gw = font.width(t[0]) * 1.5F;
+				g.pose().translate(fx + (FRAME - gw) / 2F + 0.5F, fy + (FRAME - 12) / 2F + 0.5F);
+				g.pose().scale(1.5F, 1.5F);
+				g.drawString(font, t[0], 0, 0, argb(a, light), true);
+				g.pose().popMatrix();
+			}
+			tx = fx + FRAME + 7;
+		}
+		int textH = s.isBlank() ? 8 : 8 + 6 + 9;
+		int ty = by + (bh - textH) / 2;
+		g.drawString(font, t[1], tx, ty, alpha << 24 | light, true);
 		if (!s.isBlank()) {
-			g.drawString(font, s, x + (w - font.width(s)) / 2, y + 22, alpha | 0xFFFFFF, true);
+			// Trennlinie, die nach rechts ausläuft
+			int lx1 = bx + bw - PAD;
+			int len = Math.max(1, lx1 - tx);
+			for (int k = 0; k < 4; k++) {
+				int sx = tx + len * k / 4, ex = tx + len * (k + 1) / 4;
+				g.fill(sx, ty + 11, ex, ty + 12, argb(a * (0.8F - k * 0.18F), c));
+			}
+			g.drawString(font, s, tx, ty + 15, alpha << 24 | 0xE6DED6, true);
 		}
 	}
 
+	/** „★ Name“ → {"★", "Name"}; ohne Zeichen vorn → {null, Titel}. */
+	private static String[] splitIcon(String title) {
+		if (title != null && title.length() > 2) {
+			int cp = title.codePointAt(0);
+			int n = Character.charCount(cp);
+			if (!Character.isLetterOrDigit(cp) && title.length() > n + 1 && title.charAt(n) == ' ') {
+				return new String[]{title.substring(0, n), title.substring(n + 1)};
+			}
+		}
+		return new String[]{null, title == null ? "" : title};
+	}
+
+	/** Pixel-Muster zeichnen: '#' hell, '+' Farbe, 'o' Glanzpunkt, '*' hell (Ecke); gespiegelt nach Bedarf. */
+	private static void pattern(GuiGraphics g, String[] rows, int x, int y, boolean flipX, boolean flipY, float a, int light,
+			int mid, int shine) {
+		int h = rows.length;
+		for (int r = 0; r < h; r++) {
+			String row = rows[r];
+			int w = row.length();
+			for (int k = 0; k < w; k++) {
+				char ch = row.charAt(k);
+				int col = switch (ch) {
+					case '#', '*' -> light;
+					case '+' -> mid;
+					case 'o' -> shine;
+					default -> -1;
+				};
+				if (col < 0) {
+					continue;
+				}
+				int px = x + (flipX ? w - 1 - k : k);
+				int py = y + (flipY ? h - 1 - r : r);
+				g.fill(px, py, px + 1, py + 1, argb(a, col));
+			}
+		}
+	}
+
+	private static void rect(GuiGraphics g, int x, int y, int w, int h, int argb) {
+		g.fill(x, y, x + w, y + 1, argb);
+		g.fill(x, y + h - 1, x + w, y + h, argb);
+		g.fill(x, y + 1, x + 1, y + h - 1, argb);
+		g.fill(x + w - 1, y + 1, x + w, y + h - 1, argb);
+	}
+
+	private static int argb(float a, int rgb) {
+		int al = Math.max(0, Math.min(255, (int) (a * 255)));
+		return al << 24 | (rgb & 0xFFFFFF);
+	}
+
+	private static int mix(int c1, int c2, float k) {
+		int r = (int) (((c1 >> 16) & 0xFF) * (1 - k) + ((c2 >> 16) & 0xFF) * k);
+		int gg = (int) (((c1 >> 8) & 0xFF) * (1 - k) + ((c2 >> 8) & 0xFF) * k);
+		int b = (int) ((c1 & 0xFF) * (1 - k) + (c2 & 0xFF) * k);
+		return r << 16 | gg << 8 | b;
+	}
 
 	private static void sound(Minecraft mc, Type t) {
 		if (!WidgetConfig.get().streamerSound || mc.player == null) {
