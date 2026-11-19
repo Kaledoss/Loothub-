@@ -550,6 +550,20 @@ public class SettingsScreen extends LoothubScreen {
 				}
 				y = section(y, INV_SUBS[2]);
 				{
+					{
+						// Hotbar-Animationen: an/aus + Stil (Auswahlliste)
+						int hY = y;
+						int hDescX = cl + labelW + 12;
+						Button style = addRenderableWidget(Button.builder(hotbarStyleLabel(), b -> openPicker(b,
+								new String[]{"smooth", "bouncy"}, "loothub.settings.hotbar_anim.style.", v -> {
+									WidgetConfig.get().hotbarAnimStyle = v;
+									WidgetConfig.get().save();
+									b.setMessage(hotbarStyleLabel());
+								})).bounds(hDescX, hY + 34, Math.min(160, cr - 8 - hDescX), 16).build());
+						buttons.add(style);
+						y = card(hY, 56, "loothub.settings.hotbar_anim", "loothub.settings.hotbar_anim.tooltip",
+								() -> c.hotbarAnim, v -> c.hotbarAnim = v);
+					}
 					y = card(y, 40, "loothub.settings.rarity_frames", "loothub.settings.rarity_frames.tooltip",
 							() -> c.rarityFrames, v -> c.rarityFrames = v);
 					y = card(y, 40, "loothub.settings.compressor_icon", "loothub.settings.compressor_icon.tooltip",
@@ -1028,6 +1042,11 @@ public class SettingsScreen extends LoothubScreen {
 	private String[] pickOptions;
 	private String pickKeyPrefix;
 	private Consumer<String> pickSet;
+
+	private static Component hotbarStyleLabel() {
+		return Component.translatable("loothub.settings.hotbar_anim.style")
+				.append(Component.translatable("loothub.settings.hotbar_anim.style." + WidgetConfig.get().hotbarAnimStyle)).append(" ▾");
+	}
 
 	private static Component timerSoundLabel() {
 		return Component.translatable("loothub.settings.timer_sound.pick")

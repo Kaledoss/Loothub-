@@ -119,6 +119,9 @@ public final class WidgetConfig {
 	public String pets = "";
 	/** Zwei Kopf-Plätze: Haustier-Art oder "minime" (durch Komma getrennt, leer = frei). */
 	public String headPets = "";
+	/** Hotbar-Animationen (gleitende Auswahl, hüpfende Items); Stil "smooth" oder "bouncy". */
+	public boolean hotbarAnim = false;
+	public String hotbarAnimStyle = "smooth";
 	/** Spielername je Kopf-Platz für ein Mini-Me mit fremdem Skin (leer = eigener Skin), durch Komma getrennt. */
 	public String headSkins = "";
 	public boolean miniMeEmotes = false;

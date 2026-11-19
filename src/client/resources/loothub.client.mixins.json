@@ -32,7 +32,8 @@
 		"TabListCrownMixin",
 		"FishSoundMixin",
 		"LevelRendererFirstPersonMixin",
-		"CommandTraceMixin"
+		"CommandTraceMixin",
+		"HotbarAnimMixin"
 	],
 	"injectors": {
 		"defaultRequire": 0
