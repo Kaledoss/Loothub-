@@ -291,10 +291,12 @@ public final class PetsLayer extends RenderLayer<AvatarRenderState, PlayerModel>
 			return; // in der Ego-Perspektive säße es direkt vor der Kamera
 		}
 		float scale = switch (type) {
-			case "dragon", "serpent" -> 0.18F;
-			case "donkey" -> 0.24F;
-			case "wolf", "red_panda" -> 0.3F;
-			default -> 0.28F;
+			// gut sichtbar, aber nicht breiter als der Kopf
+			case "dragon", "serpent" -> 0.34F;
+			case "donkey" -> 0.38F;
+			case "wolf", "red_panda" -> 0.46F;
+			case "bee", "allay", "vex" -> 0.5F;
+			default -> 0.44F;
 		};
 		boolean hover = type.equals("bee") || type.equals("allay") || type.equals("vex") || type.equals("serpent")
 				|| type.equals("dragon");
@@ -305,13 +307,13 @@ public final class PetsLayer extends RenderLayer<AvatarRenderState, PlayerModel>
 		if (lie > 0.5F) {
 			// Spieler legt sich hin (AFK): das Haustier springt herunter und legt sich neben ihn
 			BodyPose.undo(poseStack, state, true);
-			float s = scale * 2.0F;
+			float s = scale * 1.3F;
 			float side = slot == 0 ? 0.9F : -0.9F;
 			poseStack.translate(side, 1.5F - 1.5F * s + (hover ? -0.4F : 0.0F), 0.4F);
 			poseStack.mulPose(Axis.YP.rotationDegrees(slot == 0 ? -30.0F : 30.0F));
 			poseStack.scale(s, s, s);
 		} else {
-			float dx = both ? (slot == 0 ? -0.13F : 0.13F) : 0.0F;
+			float dx = both ? (slot == 0 ? -0.17F : 0.17F) : 0.0F;
 			float bob = hover ? -0.12F - (float) Math.sin(t * 0.12F + slot * 2.0F) * 0.04F : 0.02F;
 			// zu zweit auf dem Kopf: alle ~20 s spielen sie kurz miteinander – drehen sich zueinander und hüpfen
 			float turn = 0.0F;
