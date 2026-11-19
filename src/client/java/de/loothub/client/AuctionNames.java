@@ -140,6 +140,36 @@ public final class AuctionNames {
 		return n == 0 ? null : new Total(n, sum / n, min, max, since);
 	}
 
+	/** Verkäufe der letzten {@code days} Tage: Anzahl und Schnitt (Einzelverkäufe + zusammengefasste Tage), oder null. */
+	public static synchronized Total window(String key, int days) {
+		load();
+		if (key == null) {
+			return null;
+		}
+		long from = System.currentTimeMillis() - days * 24L * 3600_000;
+		String fromDay = java.time.LocalDate.now().minusDays(days).toString();
+		int n = 0;
+		double sum = 0, min = Double.MAX_VALUE, max = 0;
+		for (Sale s : sales.getOrDefault(key, List.of())) {
+			if (s.t >= from) {
+				n++;
+				sum += s.p;
+				min = Math.min(min, s.p);
+				max = Math.max(max, s.p);
+			}
+		}
+		for (Map.Entry<String, DaySum> e : older.getOrDefault(key, Map.of()).entrySet()) {
+			if (e.getKey().compareTo(fromDay) > 0) {
+				DaySum d = e.getValue();
+				n += d.n;
+				sum += d.sum;
+				min = Math.min(min, d.min);
+				max = Math.max(max, d.max);
+			}
+		}
+		return n == 0 ? null : new Total(n, sum / n, min, max, from);
+	}
+
 	public static double price(Sale s) {
 		return s.p;
 	}

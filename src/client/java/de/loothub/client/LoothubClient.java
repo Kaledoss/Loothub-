@@ -233,5 +233,12 @@ public class LoothubClient implements ClientModInitializer {
 		de.loothub.client.jobs.FishingLog.register();
 		// Preise gleich beim Start im Hintergrund laden, damit der erste Tooltip schon Daten hat
 		MarketPrices.refreshIfStale();
+		// Auktionshaus regelmäßig im Hintergrund abfragen (nur im Spiel), damit Verkäufe lückenlos mitgeschrieben
+		// werden – nicht nur, wenn gerade ein Tooltip offen ist
+		net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents.END_CLIENT_TICK.register(client -> {
+			if (client.player != null && client.level != null && client.player.tickCount % 200 == 0) {
+				AuctionPrices.refreshIfStale();
+			}
+		});
 	}
 }

@@ -71,7 +71,7 @@ public class ItemdexScreen extends LoothubScreen {
 			scroll = 0;
 			refresh();
 		}).bounds(cr - hiddenW, ct, hiddenW, 16).build());
-		listTop = ct + 22;
+		listTop = ct + 22 + 12; // Platz für die Spaltenköpfe
 		refresh();
 	}
 
@@ -168,7 +168,18 @@ public class ItemdexScreen extends LoothubScreen {
 			String right = Fmt.date(e.firstSeen, false) + " · " + Itemdex.clean(e.where);
 			String cat = Component.translatable(e.category.key).getString();
 			int rightW = font.width(right);
-			int catX = cr - 6 - rightW - 12 - font.width(cat);
+			// Auktionshaus nach Namen: Verkäufe und Schnitt (7 Tage / gesamt)
+			int ahX = ahColumnsX();
+			String ahKey = AuctionNames.key(Itemdex.clean(e.name));
+			AuctionNames.Total w7 = AuctionNames.window(ahKey, 7);
+			AuctionNames.Total all = AuctionNames.total(ahKey);
+			String[] ah = {w7 == null ? "–" : String.valueOf(w7.count()), w7 == null ? "–" : Fmt.compact(w7.avg()),
+					all == null ? "–" : String.valueOf(all.count()), all == null ? "–" : Fmt.compact(all.avg())};
+			for (int c = 0; c < ah.length; c++) {
+				int colRight = ahX + (c + 1) * AH_COL;
+				g.drawString(font, ah[c], colRight - 4 - font.width(ah[c]), y + 6, ah[c].equals("–") ? FAINT : (c % 2 == 1 ? 0xFFD98CFF : TEXT), false);
+			}
+			int catX = Math.min(cr - 6 - rightW - 12 - font.width(cat), ahX - 8 - font.width(cat));
 			int maxName = Math.max(30, catX - nameX - 8);
 			FormattedCharSequence clipped = font.split(name, maxName).isEmpty() ? FormattedCharSequence.EMPTY
 					: font.split(name, maxName).get(0);
@@ -177,6 +188,7 @@ public class ItemdexScreen extends LoothubScreen {
 			g.drawString(font, right, cr - 6 - rightW, y + 6, FAINT, false);
 		}
 		g.disableScissor();
+		drawAhHeaders(g, mouseX, mouseY);
 
 		if (hovered != null) {
 			List<FormattedCharSequence> tip = new ArrayList<>();
@@ -199,6 +211,36 @@ public class ItemdexScreen extends LoothubScreen {
 			g.setTooltipForNextFrame(font, tip, mouseX, mouseY);
 		}
 		drawDropdown(g, mouseX, mouseY);
+	}
+
+	// ------------------------------------------------------------------ Auktionshaus-Spalten
+
+	private static final int AH_COL = 52;
+	private static final String[] AH_HEADS = {"loothub.itemdex.ah.sales7", "loothub.itemdex.ah.avg7",
+			"loothub.itemdex.ah.sales_all", "loothub.itemdex.ah.avg_all"};
+
+	/** Linke Kante der vier AH-Spalten (links vom Datum/Fundort). */
+	private int ahColumnsX() {
+		int dateW = font.width("00.00.0000 · ") + 70;
+		return cr - 6 - dateW - 12 - AH_COL * AH_HEADS.length;
+	}
+
+	private void drawAhHeaders(GuiGraphics g, int mx, int my) {
+		int x = ahColumnsX();
+		int y = listTop - 11;
+		String tipKey = null;
+		for (int c = 0; c < AH_HEADS.length; c++) {
+			String h = Component.translatable(AH_HEADS[c]).getString();
+			int colRight = x + (c + 1) * AH_COL;
+			g.drawString(font, h, colRight - 4 - font.width(h), y, MUTED, false);
+			if (mx >= colRight - AH_COL && mx < colRight && my >= y - 1 && my < y + 10) {
+				tipKey = AH_HEADS[c] + ".tooltip";
+			}
+		}
+		g.fill(x, y + 9, x + AH_COL * AH_HEADS.length, y + 10, 0x40E2A13B);
+		if (tipKey != null) {
+			g.setTooltipForNextFrame(font, font.split(Component.translatable(tipKey), 220), mx, my);
+		}
 	}
 
 	// ------------------------------------------------------------------ Auswahlliste „Art“
