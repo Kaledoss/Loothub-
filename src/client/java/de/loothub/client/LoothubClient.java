@@ -238,6 +238,7 @@ public class LoothubClient implements ClientModInitializer {
 		net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents.END_CLIENT_TICK.register(client -> {
 			if (client.player != null && client.level != null && client.player.tickCount % 200 == 0) {
 				AuctionPrices.refreshIfStale();
+				AuctionNames.refreshServer(); // lückenloser Verlauf vom Loothub-Server
 			}
 		});
 	}

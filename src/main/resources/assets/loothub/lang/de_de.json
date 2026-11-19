@@ -221,6 +221,8 @@
 	"loothub.tooltip.ago.days": "vor %s Tagen",
 	"loothub.tooltip.ah.alltime": "Seit %s: ",
 	"loothub.tooltip.ah.alltime_values": "%s Verkäufe · Ø %s · %s – %s",
+	"loothub.tooltip.ah.week": "Letzte 7 Tage: ",
+	"loothub.tooltip.ah.week_values": "%s Verkäufe · Ø %s",
 	"loothub.tooltip.ah.header": "Auktionshaus",
 	"loothub.tooltip.ah.from": "Sofortkauf ab ",
 	"loothub.tooltip.ah.offers": "%s Angebote",

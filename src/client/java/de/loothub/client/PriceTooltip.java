@@ -132,7 +132,7 @@ public final class PriceTooltip {
 		return line;
 	}
 
-	/** Auktionshaus nach Item-Namen: günstigstes Angebot, letzter Verkauf, Schnitt der letzten Verkäufe. */
+	/** Auktionshaus nach Item-Name + Item-Art: günstigstes Angebot, letzter Verkauf, 7 Tage, gesamter Verlauf. */
 	private static void appendByName(ItemStack stack, List<Component> lines) {
 		String key = AuctionNames.keyOf(stack);
 		if (key == null) {
@@ -140,8 +140,10 @@ public final class PriceTooltip {
 		}
 		AuctionPrices.refreshIfStale();
 		AuctionNames.Now now = AuctionNames.now(key);
-		List<AuctionNames.Sale> sales = AuctionNames.sales(key);
-		if (now == null && sales.isEmpty()) {
+		double[] last = AuctionNames.last(key);
+		AuctionNames.Total week = AuctionNames.window(key, 7);
+		AuctionNames.Total total = AuctionNames.total(key);
+		if (now == null && last == null && total == null) {
 			return;
 		}
 		int count = stack.getCount();
@@ -158,29 +160,15 @@ public final class PriceTooltip {
 					.append(Component.translatable("loothub.tooltip.ah.offers", now.offers()).withStyle(ChatFormatting.DARK_GRAY));
 			lines.add(l);
 		}
-		if (!sales.isEmpty()) {
-			AuctionNames.Sale last = sales.get(0);
+		if (last != null) {
 			lines.add(Component.literal("  ").append(Component.translatable("loothub.tooltip.ah.last_sale").withStyle(ChatFormatting.GRAY))
-					.append(Component.literal(money(AuctionNames.price(last))).withStyle(ChatFormatting.WHITE))
-					.append(Component.literal(" (" + ago(AuctionNames.time(last)) + ")").withStyle(ChatFormatting.DARK_GRAY)));
-			int n = Math.min(10, sales.size());
-			double sum = 0;
-			for (int i = 0; i < n; i++) {
-				sum += AuctionNames.price(sales.get(i));
-			}
-			long week = System.currentTimeMillis() - 7L * 24 * 3600_000;
-			int inWeek = 0;
-			for (AuctionNames.Sale s : sales) {
-				if (AuctionNames.time(s) >= week) {
-					inWeek++;
-				}
-			}
-			lines.add(Component.literal("  ").append(Component.translatable("loothub.tooltip.ah.avg_sales", n).withStyle(ChatFormatting.GRAY))
-					.append(Component.literal(money(sum / n)).withStyle(ChatFormatting.WHITE))
-					.append(Component.literal(" · ").withStyle(ChatFormatting.DARK_GRAY))
-					.append(Component.translatable("loothub.tooltip.ah.sales_week", inWeek).withStyle(ChatFormatting.DARK_GRAY)));
+					.append(Component.literal(money(last[0])).withStyle(ChatFormatting.WHITE))
+					.append(Component.literal(" (" + ago((long) last[1]) + ")").withStyle(ChatFormatting.DARK_GRAY)));
 		}
-		AuctionNames.Total total = AuctionNames.total(key);
+		if (week != null) {
+			lines.add(Component.literal("  ").append(Component.translatable("loothub.tooltip.ah.week").withStyle(ChatFormatting.GRAY))
+					.append(Component.translatable("loothub.tooltip.ah.week_values", week.count(), money(week.avg())).withStyle(ChatFormatting.WHITE)));
+		}
 		if (total != null) {
 			String since = java.time.Instant.ofEpochMilli(total.since()).atZone(java.time.ZoneId.systemDefault()).toLocalDate()
 					.format(java.time.format.DateTimeFormatter.ofPattern("dd.MM.yyyy"));

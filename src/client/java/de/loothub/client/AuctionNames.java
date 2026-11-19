@@ -68,6 +68,93 @@ public final class AuctionNames {
 
 	private static Map<String, Map<String, DaySum>> older;
 	private static volatile Map<String, Now> current = Map.of();
+
+	// ------------------------------------------------------------------ Server (lückenloser Verlauf)
+
+	/** Zusammenfassung vom Loothub-Server je Schlüssel. */
+	private record Server(int n, double sum, double min, double max, long since, double lastP, long lastT,
+			Map<String, double[]> days, Now offers) {
+	}
+
+	private static volatile Map<String, Server> server = Map.of();
+	private static volatile long serverUpdated;
+	private static long serverFetched;
+	private static boolean serverLoading;
+	private static final java.net.http.HttpClient HTTP = java.net.http.HttpClient.newBuilder()
+			.connectTimeout(java.time.Duration.ofSeconds(8)).build();
+
+	/** Server-Daten frisch genug (Zeitplan lief in den letzten 20 Minuten)? Sonst gilt die eigene Mitschrift. */
+	private static boolean serverFresh() {
+		return System.currentTimeMillis() - serverUpdated < 20 * 60_000;
+	}
+
+	/** Alle 5 Minuten die Zusammenfassung vom Server holen (aus dem Client-Tick). */
+	public static synchronized void refreshServer() {
+		long now = System.currentTimeMillis();
+		if (serverLoading || now - serverFetched < 5 * 60_000 || de.loothub.client.cosmetics.CosmeticsServer.BASE.isBlank()) {
+			return;
+		}
+		serverLoading = true;
+		var req = java.net.http.HttpRequest.newBuilder(java.net.URI.create(de.loothub.client.cosmetics.CosmeticsServer.BASE + "/ah"))
+				.timeout(java.time.Duration.ofSeconds(20)).header("User-Agent", "Loothub-Mod").GET().build();
+		HTTP.sendAsync(req, java.net.http.HttpResponse.BodyHandlers.ofString()).whenComplete((res, err) -> {
+			try {
+				if (err == null && res.statusCode() == 200) {
+					parseServer(JsonParser.parseString(res.body()).getAsJsonObject());
+				}
+			} catch (RuntimeException e) {
+				Loothub.LOGGER.debug("AH-Server nicht lesbar: {}", e.toString());
+			} finally {
+				synchronized (AuctionNames.class) {
+					serverFetched = System.currentTimeMillis();
+					serverLoading = false;
+				}
+			}
+		});
+	}
+
+	private static void parseServer(JsonObject root) {
+		JsonObject items = root.has("items") && root.get("items").isJsonObject() ? root.getAsJsonObject("items") : new JsonObject();
+		Map<String, Server> out = new HashMap<>();
+		for (Map.Entry<String, JsonElement> e : items.entrySet()) {
+			if (!e.getValue().isJsonObject()) {
+				continue;
+			}
+			JsonObject o = e.getValue().getAsJsonObject();
+			Map<String, double[]> days = new HashMap<>();
+			if (o.has("d") && o.get("d").isJsonObject()) {
+				for (Map.Entry<String, JsonElement> d : o.getAsJsonObject("d").entrySet()) {
+					if (d.getValue().isJsonArray() && d.getValue().getAsJsonArray().size() >= 2) {
+						days.put(d.getKey(), new double[]{d.getValue().getAsJsonArray().get(0).getAsDouble(),
+								d.getValue().getAsJsonArray().get(1).getAsDouble()});
+					}
+				}
+			}
+			Now offers = null;
+			if (o.has("o") && o.get("o").isJsonArray() && o.getAsJsonArray("o").size() >= 2) {
+				offers = new Now(o.getAsJsonArray("o").get(0).getAsDouble(), o.getAsJsonArray("o").get(1).getAsInt());
+			}
+			out.put(e.getKey(), new Server((int) OpsuchtApi.num(o, "n"), OpsuchtApi.num(o, "s"), OpsuchtApi.num(o, "mn"),
+					OpsuchtApi.num(o, "mx"), (long) OpsuchtApi.num(o, "since"),
+					o.has("lp") ? OpsuchtApi.num(o, "lp") : Double.NaN, o.has("lt") ? (long) OpsuchtApi.num(o, "lt") : 0L,
+					days, offers));
+		}
+		server = out;
+		serverUpdated = (long) OpsuchtApi.num(root, "updated");
+	}
+
+	/** Letzter Verkauf: {Preis, Zeitpunkt} oder null. */
+	public static synchronized double[] last(String key) {
+		if (key == null) {
+			return null;
+		}
+		Server sv = serverFresh() ? server.get(key) : null;
+		if (sv != null && sv.lastT() > 0) {
+			return new double[]{sv.lastP(), sv.lastT()};
+		}
+		List<Sale> l = sales(key);
+		return l.isEmpty() ? null : new double[]{l.get(0).p, l.get(0).t};
+	}
 	private static Map<String, Listing> lastListings = Map.of();
 	private static Map<String, List<Sale>> sales;
 	private static boolean loggedSample;
@@ -81,7 +168,18 @@ public final class AuctionNames {
 		if (custom == null) {
 			return null;
 		}
-		return key(custom.getString());
+		return key(custom.getString(), net.minecraft.core.registries.BuiltInRegistries.ITEM.getKey(stack.getItem()).getPath());
+	}
+
+	/** Name + Item-Art („bohrer v3|diamond_pickaxe“): gleiche Namen auf anderen Items (z. B. umbenannte Fälschungen) zählen getrennt. */
+	public static String key(String name, String material) {
+		String n = key(name);
+		if (n == null) {
+			return null;
+		}
+		String m = material == null ? "" : material.toLowerCase(Locale.ROOT);
+		int colon = m.indexOf(':');
+		return n + "|" + (colon >= 0 ? m.substring(colon + 1) : m);
 	}
 
 	static String key(String name) {
@@ -93,7 +191,14 @@ public final class AuctionNames {
 	}
 
 	public static Now now(String key) {
-		return key == null ? null : current.get(key);
+		if (key == null) {
+			return null;
+		}
+		Server sv = serverFresh() ? server.get(key) : null;
+		if (sv != null) {
+			return sv.offers();
+		}
+		return current.get(key);
 	}
 
 	/** Verkäufe zu diesem Namen, neueste zuerst. */
@@ -113,6 +218,11 @@ public final class AuctionNames {
 		load();
 		if (key == null) {
 			return null;
+		}
+		Server sv = server.get(key);
+		if (sv != null && sv.n() > 0) {
+			// Server-Verlauf ist vollständiger als die eigene Mitschrift
+			return new Total(sv.n(), sv.sum() / sv.n(), sv.min(), sv.max(), sv.since());
 		}
 		int n = 0;
 		double sum = 0, min = Double.MAX_VALUE, max = 0;
@@ -145,6 +255,19 @@ public final class AuctionNames {
 		load();
 		if (key == null) {
 			return null;
+		}
+		Server sv = server.get(key);
+		if (sv != null && sv.n() > 0) {
+			String fromDayS = java.time.LocalDate.now(java.time.ZoneOffset.UTC).minusDays(days).toString();
+			int n = 0;
+			double sum = 0;
+			for (Map.Entry<String, double[]> d : sv.days().entrySet()) {
+				if (d.getKey().compareTo(fromDayS) > 0) {
+					n += (int) d.getValue()[0];
+					sum += d.getValue()[1];
+				}
+			}
+			return n == 0 ? null : new Total(n, sum / n, Double.NaN, Double.NaN, 0);
 		}
 		long from = System.currentTimeMillis() - days * 24L * 3600_000;
 		String fromDay = java.time.LocalDate.now().minusDays(days).toString();
@@ -199,7 +322,7 @@ public final class AuctionNames {
 				String sample = a.toString();
 				Loothub.LOGGER.info("[Loothub-AH] Beispiel-Angebot: {}", sample.length() > 1500 ? sample.substring(0, 1500) : sample);
 			}
-			String name = key(itemName(item));
+			String name = key(itemName(item), OpsuchtApi.str(item, "material"));
 			if (name == null) {
 				continue; // ohne eigenen Namen: das macht die Liste nach Item-Art
 			}

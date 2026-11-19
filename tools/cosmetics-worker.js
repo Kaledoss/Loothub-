@@ -337,7 +337,163 @@ async function handleBuild(url, request, env) {
 	return null;
 }
 
+
+// ======================================================================= Auktionshaus-Verlauf (lückenlos)
+//
+// Ein Zeitplan („Cron Trigger“, z. B. alle 3 Minuten) ruft die öffentliche OPSUCHT-Auktions-API ab – unabhängig
+// davon, ob jemand spielt. Verschwindet ein Sofortkauf-Angebot vor seinem Ende, gilt es als verkauft.
+// Gezählt wird je Item-Name + Item-Art („bohrer v3|diamond_pickaxe“). Gespeichert in einer D1-Datenbank (Bindung „AH“):
+//   state  – letzte Angebote (zum Vergleich)            → 1 Zeile
+//   sum    – fertige Zusammenfassung für die Mod (JSON)  → 1 Zeile, wird bei /ah unverändert ausgeliefert
+//   sales  – jeder einzelne Verkauf (für später)        → 1 Zeile je Verkauf
+// So bleibt jeder Lauf klein (wenig Rechenzeit, wenige Datenbankzeilen).
+
+const AH_API = "https://api.opsucht.net/auctions/active";
+const AH_DAYS = 8; // Tageswerte für „letzte 7 Tage“
+
+function ahText(e) {
+	if (e === null || e === undefined) return "";
+	if (typeof e === "string") {
+		const t = e.trim();
+		if (t.startsWith("{") || t.startsWith("[")) {
+			try { return ahText(JSON.parse(t)); } catch { return e; }
+		}
+		return e;
+	}
+	if (Array.isArray(e)) return e.map(ahText).join("");
+	if (typeof e === "object") return ahText(e.text) + ahText(e.extra);
+	return String(e);
+}
+
+function ahName(item) {
+	for (const k of ["displayName", "customName", "name", "display_name", "itemName"]) {
+		const s = ahText(item[k]);
+		if (s && s.trim()) return s;
+	}
+	for (const k of ["meta", "components", "itemMeta"]) {
+		const o = item[k];
+		if (o && typeof o === "object") {
+			const s = ahName(o) || ahText(o["minecraft:custom_name"]);
+			if (s && s.trim()) return s;
+		}
+	}
+	return "";
+}
+
+function ahKey(name, material) {
+	const n = name.replace(/[§&][0-9a-fk-orx]/gi, "").replace(/\s+/g, " ").trim().toLowerCase();
+	return n ? `${n}|${String(material || "").toLowerCase()}` : "";
+}
+
+function ahEnd(a) {
+	for (const k of ["endTime", "endsAt", "end", "expiresAt", "expiry", "endDate"]) {
+		const v = a[k];
+		if (typeof v === "number") return v < 1e10 ? v * 1000 : v;
+		if (typeof v === "string") { const t = Date.parse(v); if (!isNaN(t)) return t; }
+	}
+	return 0;
+}
+
+async function ahRun(env) {
+	if (!env.AH) return;
+	const db = env.AH;
+	await db.batch([
+		db.prepare("CREATE TABLE IF NOT EXISTS ah_kv (k TEXT PRIMARY KEY, v TEXT)"),
+		db.prepare("CREATE TABLE IF NOT EXISTS ah_sales (key TEXT, price REAL, t INTEGER)"),
+	]);
+	const res = await fetch(AH_API, { headers: { "User-Agent": "Loothub-Server/1.0" } });
+	if (!res.ok) return;
+	const list = await res.json();
+	if (!Array.isArray(list)) return;
+	const now = Date.now();
+	const cur = {};
+	const offers = {};
+	for (const a of list) {
+		const item = a && a.item;
+		const price = a && a.instantBuyPrice;
+		if (!item || !(price > 0)) continue;
+		const key = ahKey(ahName(item), item.material);
+		if (!key) continue;
+		const per = price / Math.max(1, item.amount || 1);
+		const o = offers[key] || (offers[key] = [per, 0]);
+		if (per < o[0]) o[0] = per;
+		o[1]++;
+		const id = a.id ?? a.uuid ?? a.auctionId ?? a.uid ?? a._id;
+		if (id !== undefined) cur[String(id)] = [key, per, ahEnd(a)];
+	}
+	const rows = await db.prepare("SELECT k, v FROM ah_kv WHERE k IN ('state', 'sum')").all();
+	let prev = {};
+	let sum = {};
+	for (const r of rows.results || []) {
+		try {
+			if (r.k === "state") prev = JSON.parse(r.v).prev || {};
+			if (r.k === "sum") sum = JSON.parse(r.v).items || {};
+		} catch { /* neu anfangen */ }
+	}
+	const day = new Date(now).toISOString().slice(0, 10);
+	const oldest = new Date(now - AH_DAYS * 86400000).toISOString().slice(0, 10);
+	const sold = [];
+	for (const id in prev) {
+		if (cur[id]) continue;
+		const [key, per, end] = prev[id];
+		if (end && end <= now + 60000) continue; // regulär abgelaufen, kein Verkauf
+		sold.push([key, per]);
+		const e = sum[key] || (sum[key] = { n: 0, s: 0, mn: per, mx: per, since: now, d: {} });
+		e.mn = e.n === 0 ? per : Math.min(e.mn, per);
+		e.mx = e.n === 0 ? per : Math.max(e.mx, per);
+		e.n++;
+		e.s += per;
+		e.lp = per;
+		e.lt = now;
+		const d = e.d[day] || (e.d[day] = [0, 0]);
+		d[0]++;
+		d[1] += per;
+	}
+	for (const key in sum) {
+		const e = sum[key];
+		for (const k in e.d) if (k < oldest) delete e.d[k];
+		if (offers[key]) e.o = offers[key]; else delete e.o;
+	}
+	for (const key in offers) {
+		if (!sum[key]) sum[key] = { n: 0, s: 0, mn: 0, mx: 0, since: now, d: {}, o: offers[key] };
+	}
+	const stmts = [
+		db.prepare("INSERT OR REPLACE INTO ah_kv (k, v) VALUES ('state', ?)").bind(JSON.stringify({ prev: cur })),
+		db.prepare("INSERT OR REPLACE INTO ah_kv (k, v) VALUES ('sum', ?)").bind(JSON.stringify({ updated: now, items: sum })),
+	];
+	// Einzelverkäufe in Päckchen (höchstens 100 Platzhalter je Anweisung)
+	for (let i = 0; i < sold.length; i += 30) {
+		const part = sold.slice(i, i + 30);
+		stmts.push(db.prepare("INSERT INTO ah_sales (key, price, t) VALUES " + part.map(() => "(?, ?, ?)").join(", "))
+			.bind(...part.flatMap(([k, p]) => [k, p, now])));
+	}
+	await db.batch(stmts.slice(0, 45));
+}
+
+async function ahServe(request, env, ctx) {
+	const cacheKey = new Request(new URL("/ah-cache", request.url).toString());
+	const hit = await caches.default.match(cacheKey);
+	if (hit) return hit;
+	if (!env.AH) return json({ error: "no-db" }, 503);
+	let body;
+	try {
+		const row = await env.AH.prepare("SELECT v FROM ah_kv WHERE k = 'sum'").first();
+		body = row ? row.v : JSON.stringify({ updated: 0, items: {} });
+	} catch {
+		return json({ error: "busy" }, 503);
+	}
+	const res = new Response(body, {
+		headers: { "content-type": "application/json; charset=utf-8", "cache-control": "public, max-age=120" },
+	});
+	ctx.waitUntil(caches.default.put(cacheKey, res.clone()));
+	return res;
+}
+
 export default {
+	async scheduled(controller, env, ctx) {
+		ctx.waitUntil(ahRun(env).catch(() => {}));
+	},
+
 	async fetch(request, env, ctx) {
 		const url = new URL(request.url);
 		const cacheKey = new Request(url.origin + "/all");
@@ -464,6 +620,10 @@ export default {
 				// z. B. Tageslimit von Cloudflare erreicht – verständlich antworten statt abzustürzen
 				return json({ error: "busy", detail: String(e && e.message || e).slice(0, 200) }, 503);
 			}
+		}
+
+		if (request.method === "GET" && url.pathname === "/ah") {
+			return ahServe(request, env, ctx);
 		}
 
 		return new Response("Loothub Cosmetics", { status: 200 });
