@@ -117,8 +117,8 @@ public final class WidgetConfig {
 	public boolean auraLevels = false;
 	/** Haustiere je Platz als „slime,allay“ ("" = keins). */
 	public String pets = "";
-	/** Platz je Haustier: "head" = auf dem Kopf, leer = folgt (durch Komma getrennt wie {@link #pets}). */
-	public String petPlace = "";
+	/** Zwei Kopf-Plätze: Haustier-Art oder "minime" (durch Komma getrennt, leer = frei). */
+	public String headPets = "";
 	public boolean miniMeEmotes = false;
 	/** Lebendigkeit der Mini-Mes in Prozent (Atmen, Blick, Nachschwingen, Reaktionen; 0 = steif wie früher). */
 	public int miniMeLife = 100;

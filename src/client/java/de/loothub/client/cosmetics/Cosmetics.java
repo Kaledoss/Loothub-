@@ -51,7 +51,8 @@ public final class Cosmetics {
 	/** Haustiere neben den Mini-Mes, Wert = "slime,allay" (je Platz). */
 	public static final String PETS = "pets";
 	/** Wo das Haustier je Platz ist: "head" = sitzt/liegt auf dem Kopf, sonst folgt es. */
-	public static final String PET_PLACE = "petplace";
+	/** Zwei Plätze auf dem Kopf: Haustier-Art oder "minime" (kleines Ich), durch Komma getrennt. */
+	public static final String HEAD_PETS = "headpets";
 	/** Mini-Mes winken, jubeln und gähnen. */
 	public static final String EMOTES = "emotes";
 	/** Energie-Kegel beim Hoch- und Runterfliegen. */
@@ -70,6 +71,8 @@ public final class Cosmetics {
 	public static final List<String> FOOTSTEP_STYLES = List.of("sparks", "flames");
 	public static final List<String> PET_TYPES = List.of("slime", "allay", "bee", "vex", "wolf", "penguin", "dragon", "panda", "zombie", "serpent", "red_panda", "donkey");
 	public static final int MAX_PETS = 2;
+	public static final int MAX_HEAD = 2;
+	public static final String HEAD_MINI = "minime";
 	/** Flügel-Stile (Textur textures/entity/wing_<stil>.png). */
 	public static final List<String> WING_STYLES = List.of("dragon", "devil", "angel", "drake");
 
@@ -283,7 +286,7 @@ public final class Cosmetics {
 	}
 
 	private static boolean isCompanion(String cosmetic) {
-		return MINI_ME.equals(cosmetic) || PETS.equals(cosmetic);
+		return MINI_ME.equals(cosmetic) || PETS.equals(cosmetic) || HEAD_PETS.equals(cosmetic);
 	}
 
 	/** Spieler-IDs, deren Begleiter gerade gezeigt werden dürfen (null = alle); alle 0,5 s neu bestimmt. */
@@ -351,10 +354,11 @@ public final class Cosmetics {
 		Map<String, String> values = r.values();
 		List<String> skins = r.skins();
 		String aura = r.aura();
-		if (set != null && (set.contains(MINI_ME) || set.contains(PETS)) && !companionsShown(p)) {
+		if (set != null && (set.contains(MINI_ME) || set.contains(PETS) || set.contains(HEAD_PETS)) && !companionsShown(p)) {
 			set = new HashSet<>(set);
 			set.remove(MINI_ME);
 			set.remove(PETS);
+			set.remove(HEAD_PETS);
 		}
 		if (set == null || set.isEmpty()) {
 			STATES.remove(state);
@@ -391,7 +395,7 @@ public final class Cosmetics {
 		putOwn(mine, values, MINI_WING_COLOR_OUTER, cfg.miniMeWingColorOuter);
 		putOwn(mine, values, FOOTSTEPS, cfg.footsteps);
 		putOwn(mine, values, PETS, cfg.pets == null || cfg.pets.replace(",", "").isBlank() ? "" : cfg.pets);
-		putOwn(mine, values, PET_PLACE, cfg.petPlace == null || cfg.petPlace.replace(",", "").isBlank() ? "" : cfg.petPlace);
+		putOwn(mine, values, HEAD_PETS, cfg.headPets == null || cfg.headPets.replace(",", "").isBlank() ? "" : cfg.headPets);
 		putOwn(mine, values, MINI_TRAITS, cfg.miniMeTraits == null || cfg.miniMeTraits.replace(",", "").isBlank() ? "" : cfg.miniMeTraits);
 		if (cfg.crown) {
 			mine.add(CROWN);
@@ -518,23 +522,26 @@ public final class Cosmetics {
 		return PET_TYPES.contains(s) ? s : null;
 	}
 
-	/** Sitzt das Haustier auf Platz {@code slot} auf dem Kopf (statt zu folgen)? */
-	public static boolean petOnHead(Object state, int slot) {
-		if (pet(state, slot) == null) {
-			return false;
-		}
-		String raw = raw(state, PET_PLACE);
+	/** Was sitzt auf Kopf-Platz {@code slot} (0 = links, 1 = rechts): Haustier-Art, {@link #HEAD_MINI} oder null. */
+	public static String headPet(Object state, int slot) {
+		String raw = raw(state, HEAD_PETS);
 		if (raw == null) {
-			return false;
+			return null;
 		}
 		String[] parts = raw.split(",", -1);
-		return slot < parts.length && "head".equalsIgnoreCase(parts[slot].strip());
+		String s = slot < parts.length ? parts[slot].strip().toLowerCase(Locale.ROOT) : "";
+		return PET_TYPES.contains(s) || HEAD_MINI.equals(s) ? s : null;
 	}
 
-	/** Irgendein Haustier auf dem Kopf? (Dann bleibt die Krone weg.) */
+	/** Sind beide Kopf-Plätze belegt? (Dann sitzen sie nebeneinander.) */
+	public static boolean headFull(Object state) {
+		return headPet(state, 0) != null && headPet(state, 1) != null;
+	}
+
+	/** Irgendetwas auf dem Kopf? (Dann bleibt die Krone weg.) */
 	public static boolean anyPetOnHead(Object state) {
-		for (int i = 0; i < MAX_PETS; i++) {
-			if (petOnHead(state, i)) {
+		for (int i = 0; i < MAX_HEAD; i++) {
+			if (headPet(state, i) != null) {
 				return true;
 			}
 		}

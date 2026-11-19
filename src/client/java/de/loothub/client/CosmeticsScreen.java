@@ -198,17 +198,20 @@ public class CosmeticsScreen extends LoothubScreen {
 			}
 			case PETS -> {
 				int dw = ddWidth();
-				// Haustiere (2 Plätze)
+				// Haustiere: 2 folgen dir (fliegen/laufen neben dir), 2 sitzen auf dem Kopf (Haustier oder Mini-Me)
 				for (int k = 0; k < Cosmetics.MAX_PETS; k++) {
 					final int slot = k;
 					dropdown(descX + k * (dw + 6), y + 30, dw,
 							Component.translatable(slot == 0 ? "loothub.cosmetics.pets.right" : "loothub.cosmetics.pets.left").getString(),
 							PET_OPTIONS, "loothub.cosmetics.pets.type.", () -> slotValue(c.pets, slot),
 							v -> c.pets = setSlot(c.pets, slot, v, Cosmetics.MAX_PETS));
-					// Platz: folgt dir oder sitzt auf dem Kopf (statt der Krone)
-					dropdown(descX + k * (dw + 6), y + 50, dw, Component.translatable("loothub.cosmetics.pets.place").getString(),
-							PET_PLACES, "loothub.cosmetics.pets.place.", () -> slotValue(c.petPlace, slot),
-							v -> c.petPlace = setSlot(c.petPlace, slot, v, Cosmetics.MAX_PETS));
+				}
+				for (int k = 0; k < Cosmetics.MAX_HEAD; k++) {
+					final int slot = k;
+					dropdown(descX + k * (dw + 6), y + 50, dw,
+							Component.translatable(slot == 0 ? "loothub.cosmetics.pets.head_left" : "loothub.cosmetics.pets.head_right").getString(),
+							HEAD_OPTIONS, "loothub.cosmetics.pets.type.", () -> slotValue(c.headPets, slot),
+							v -> c.headPets = setSlot(c.headPets, slot, v, Cosmetics.MAX_HEAD));
 				}
 				sections.add(new Section(y, 74, "loothub.cosmetics.pets", "loothub.cosmetics.pets.desc"));
 				y += 74 + GAP;
@@ -436,8 +439,8 @@ public class CosmeticsScreen extends LoothubScreen {
 	// ------------------------------------------------------------------ Auswahllisten
 
 	private static final String[] WING_OPTIONS = {"", "dragon", "devil", "angel", "drake"};
-	private static final String[] PET_PLACES = {"", "head"};
 	private static final String[] PET_OPTIONS = {"", "slime", "allay", "bee", "vex", "wolf", "penguin", "dragon", "panda", "red_panda", "donkey", "zombie", "serpent"};
+	private static final String[] HEAD_OPTIONS = {"", "minime", "slime", "allay", "bee", "vex", "wolf", "penguin", "dragon", "panda", "red_panda", "donkey", "zombie", "serpent"};
 	private static final String[] ARMOR_WHO = {"", "all"};
 	private static final String[] RANGE_OPTIONS = {"", "8", "16", "32", "64"};
 	private static final String[] MAX_OPTIONS = {"", "0", "1", "3", "5", "10"};
@@ -568,6 +571,7 @@ public class CosmeticsScreen extends LoothubScreen {
 		single(parts, Cosmetics.EYES, me, c.eyeColor);
 		single(parts, Cosmetics.FOOTSTEPS, me, c.footsteps);
 		perSlot(parts, Cosmetics.PETS, me, c.pets, Cosmetics.MAX_PETS);
+		perSlot(parts, Cosmetics.HEAD_PETS, me, c.headPets, Cosmetics.MAX_HEAD);
 		flag(parts, Cosmetics.CROWN, me, c.crown);
 		flag(parts, Cosmetics.FLY_TRAIL, me, c.flyTrail);
 		flag(parts, Cosmetics.EMOTES, me, c.miniMeEmotes);

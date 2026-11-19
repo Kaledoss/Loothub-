@@ -349,6 +349,7 @@ public final class MiniMeLayer extends RenderLayer<AvatarRenderState, PlayerMode
 		}
 		try {
 			draw(poseStack, collector, light, state, yRot, xRot);
+			drawOnHead(poseStack, collector, light, state);
 		} catch (RuntimeException | LinkageError e) {
 			LayerGuard.fail("Mini-Mes", e); // nur diese Ebene abschalten, nicht das Spiel abstürzen lassen
 		}
@@ -685,6 +686,51 @@ public final class MiniMeLayer extends RenderLayer<AvatarRenderState, PlayerMode
 	private static final float BED_X = 1.15F, BED_Z0 = -0.55F, BED_STEP = 0.22F, BED_H = 0.2F;
 
 	/** Dreht (x, z) um die Hochachse (Grad) – für das Hinterherschwenken. */
+	/** Größe eines Mini-Mes auf dem Kopf (etwas kleiner als auf der Schulter). */
+	private static final float HEAD_SCALE = 0.27F;
+
+	/**
+	 * Mini-Me auf einem Kopf-Platz: sitzt oben auf dem Kopf (Beine nach vorn), dreht und nickt mit. Sind beide Kopf-Plätze
+	 * belegt, sitzt es neben dem anderen. Legt sich der Spieler hin (AFK), legt es sich neben ihn.
+	 */
+	private void drawOnHead(PoseStack poseStack, SubmitNodeCollector collector, int light, AvatarRenderState state) {
+		if (state.isInvisible || state.skin == null || FirstPerson.is(state)) {
+			return; // Ego-Perspektive: säße direkt vor der Kamera
+		}
+		boolean both = Cosmetics.headFull(state);
+		float t = state.ageInTicks;
+		float lie = de.loothub.client.quick.AfkView.lying(state);
+		for (int slot = 0; slot < Cosmetics.MAX_HEAD; slot++) {
+			if (!Cosmetics.HEAD_MINI.equals(Cosmetics.headPet(state, slot))) {
+				continue;
+			}
+			float s = HEAD_SCALE;
+			AvatarRenderState mini = miniState(state.id, 8 + slot, state.skin, t);
+			poseStack.pushPose();
+			if (lie > 0.5F) {
+				mini.isPassenger = false;
+				BodyPose.undo(poseStack, state, true);
+				poseStack.translate(slot == 0 ? -0.9F : 0.9F, 1.5F - 0.25F * s, 0.4F);
+				poseStack.mulPose(Axis.XP.rotationDegrees(-90.0F)); // auf dem Rücken
+			} else {
+				mini.isPassenger = true; // Sitzhaltung: Beine nach vorn
+				getParentModel().head.translateAndRotate(poseStack);
+				float dx = both ? (slot == 0 ? -0.19F : 0.19F) : 0.0F;
+				// Hüfte (eine Rumpflänge unter dem Hals) genau auf die Kopfoberseite (8 Pixel über dem Drehpunkt)
+				poseStack.translate(dx, -0.5F - 0.75F * s + (float) Math.sin(t * 0.08F + slot) * 0.006F, 0.04F);
+				if (both) {
+					poseStack.mulPose(Axis.ZP.rotationDegrees(slot == 0 ? 6.0F : -6.0F)); // leicht zueinander geneigt
+				}
+			}
+			poseStack.scale(s, s, s);
+			PlayerSkin skin = state.skin;
+			PlayerModel model = skin.model() == PlayerModelType.SLIM ? slim : wide;
+			collector.submitModel(model, mini, poseStack, RenderTypes.entityTranslucent(skin.body().texturePath()), light,
+					OverlayTexture.NO_OVERLAY, 0, null);
+			poseStack.popPose();
+		}
+	}
+
 	private static float[] rotateY(float x, float z, float degrees) {
 		double a = Math.toRadians(degrees);
 		float c = (float) Math.cos(a), s = (float) Math.sin(a);
