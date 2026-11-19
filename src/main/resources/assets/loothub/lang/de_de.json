@@ -293,6 +293,8 @@
 	"loothub.changelog.error": "Changelog konnte nicht geladen werden: %s",
 	"loothub.tab.itemdex": "Itemdex",
 	"loothub.tab.itemdex.header": "Alle Server-Items, die dir begegnet sind",
+	"loothub.itemdex.ah.offer": "Angebot",
+	"loothub.itemdex.ah.offer.tooltip": "Derzeit günstigstes Sofortkauf-Angebot pro Stück im Auktionshaus",
 	"loothub.itemdex.ah.sales7": "AH 7T",
 	"loothub.itemdex.ah.avg7": "Ø 7T",
 	"loothub.itemdex.ah.sales_all": "AH ges.",

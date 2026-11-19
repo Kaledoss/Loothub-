@@ -173,11 +173,13 @@ public class ItemdexScreen extends LoothubScreen {
 			String ahKey = AuctionNames.key(Itemdex.clean(e.name), e.itemId);
 			AuctionNames.Total w7 = AuctionNames.window(ahKey, 7);
 			AuctionNames.Total all = AuctionNames.total(ahKey);
-			String[] ah = {w7 == null ? "–" : String.valueOf(w7.count()), w7 == null ? "–" : Fmt.compact(w7.avg()),
+			AuctionNames.Now offer = AuctionNames.now(ahKey);
+			String[] ah = {offer == null || offer.offers() <= 0 ? "–" : Fmt.compact(offer.minPerUnit()),
+					w7 == null ? "–" : String.valueOf(w7.count()), w7 == null ? "–" : Fmt.compact(w7.avg()),
 					all == null ? "–" : String.valueOf(all.count()), all == null ? "–" : Fmt.compact(all.avg())};
 			for (int c = 0; c < ah.length; c++) {
 				int colRight = ahX + (c + 1) * AH_COL;
-				g.drawString(font, ah[c], colRight - 4 - font.width(ah[c]), y + 6, ah[c].equals("–") ? FAINT : (c % 2 == 1 ? 0xFFD98CFF : TEXT), false);
+				g.drawString(font, ah[c], colRight - 4 - font.width(ah[c]), y + 6, ah[c].equals("–") ? FAINT : (c == 0 ? 0xFF7CE08A : (c % 2 == 0 ? 0xFFD98CFF : TEXT)), false);
 			}
 			int catX = Math.min(cr - 6 - rightW - 12 - font.width(cat), ahX - 8 - font.width(cat));
 			int maxName = Math.max(30, catX - nameX - 8);
@@ -216,10 +218,10 @@ public class ItemdexScreen extends LoothubScreen {
 	// ------------------------------------------------------------------ Auktionshaus-Spalten
 
 	private static final int AH_COL = 52;
-	private static final String[] AH_HEADS = {"loothub.itemdex.ah.sales7", "loothub.itemdex.ah.avg7",
+	private static final String[] AH_HEADS = {"loothub.itemdex.ah.offer", "loothub.itemdex.ah.sales7", "loothub.itemdex.ah.avg7",
 			"loothub.itemdex.ah.sales_all", "loothub.itemdex.ah.avg_all"};
 
-	/** Linke Kante der vier AH-Spalten (links vom Datum/Fundort). */
+	/** Linke Kante der fünf AH-Spalten (links vom Datum/Fundort). */
 	private int ahColumnsX() {
 		int dateW = font.width("00.00.0000 · ") + 70;
 		return cr - 6 - dateW - 12 - AH_COL * AH_HEADS.length;

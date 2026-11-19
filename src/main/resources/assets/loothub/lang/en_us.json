@@ -293,6 +293,8 @@
 	"loothub.changelog.error": "Changelog could not be loaded: %s",
 	"loothub.tab.itemdex": "Itemdex",
 	"loothub.tab.itemdex.header": "All server items you have come across",
+	"loothub.itemdex.ah.offer": "Offer",
+	"loothub.itemdex.ah.offer.tooltip": "Currently cheapest buy-now offer per item in the auction house",
 	"loothub.itemdex.ah.sales7": "AH 7d",
 	"loothub.itemdex.ah.avg7": "Avg 7d",
 	"loothub.itemdex.ah.sales_all": "AH all",
