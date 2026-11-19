@@ -137,10 +137,14 @@ public final class StatsTracker {
 		var custom = stack.get(net.minecraft.core.component.DataComponents.CUSTOM_NAME);
 		String name = custom == null ? null : net.minecraft.ChatFormatting.stripFormatting(custom.getString());
 		if (name != null && !(name = name.strip()).isEmpty()) {
-			StatsStore.add("picked.~" + (name.length() > 40 ? name.substring(0, 40).strip() : name), Math.max(1, amount));
+			String item = "~" + (name.length() > 40 ? name.substring(0, 40).strip() : name);
+			StatsStore.add("picked." + item, Math.max(1, amount));
+			countLoot(item, Math.max(1, amount));
 			return;
 		}
-		StatsStore.add("picked." + BuiltInRegistries.ITEM.getKey(stack.getItem()), Math.max(1, amount));
+		String item = BuiltInRegistries.ITEM.getKey(stack.getItem()).toString();
+		StatsStore.add("picked." + item, Math.max(1, amount));
+		countLoot(item, Math.max(1, amount));
 	}
 
 	/**
@@ -360,7 +364,7 @@ public final class StatsTracker {
 				return model;
 			}
 			// unsichtbarer Träger (z. B. Fledermaus als Trefferfläche) ohne lesbaren Namen: nicht als echtes Tier zählen
-			return living.isInvisible() ? "Server-Mob (" + living.getType().getDescription().getString() + ")" : null;
+			return living.isInvisible() ? "Server-Mob (" + GermanLang.entity(living.getType()) + ")" : null;
 		}
 		String n = net.minecraft.ChatFormatting.stripFormatting(name.getString());
 		if (n == null) {
@@ -373,6 +377,10 @@ public final class StatsTracker {
 				.replaceAll("\\s+", " ").strip();
 		if (n.length() < 2) {
 			return null;
+		}
+		String german = germanName(n, true); // englisches Namensschild („Rabbit Black“) eindeutschen
+		if (german != null) {
+			n = german;
 		}
 		return n.length() > 40 ? n.substring(0, 40).strip() : n;
 	}
@@ -524,6 +532,13 @@ public final class StatsTracker {
 			java.util.Map.entry("rhino", "Nashorn"),
 			java.util.Map.entry("rhinoceros", "Nashorn"),
 			java.util.Map.entry("lion", "Löwe"),
+			java.util.Map.entry("lioness", "Löwin"),
+			java.util.Map.entry("lionness", "Löwin"),
+			java.util.Map.entry("budgie", "Wellensittich"),
+			java.util.Map.entry("budgerigar", "Wellensittich"),
+			java.util.Map.entry("parakeet", "Sittich"),
+			java.util.Map.entry("cockatoo", "Kakadu"),
+			java.util.Map.entry("cockatiel", "Nymphensittich"),
 			java.util.Map.entry("tiger", "Tiger"),
 			java.util.Map.entry("leopard", "Leopard"),
 			java.util.Map.entry("snow leopard", "Schneeleopard"),
@@ -638,9 +653,18 @@ public final class StatsTracker {
 			java.util.Map.entry("mushroom", "Pilz"),
 			java.util.Map.entry("treant", "Baumgeist"),
 			java.util.Map.entry("ent", "Baumgeist"));
-	private static final java.util.Map<String, String> COLORS = java.util.Map.of("black", "schwarz", "white", "weiß",
-			"brown", "braun", "gray", "grau", "grey", "grau", "red", "rot", "golden", "golden", "gold", "golden",
-			"blue", "blau", "green", "grün");
+	private static final java.util.Map<String, String> COLORS = java.util.Map.ofEntries(
+			java.util.Map.entry("black", "schwarz"), java.util.Map.entry("white", "weiß"),
+			java.util.Map.entry("brown", "braun"), java.util.Map.entry("gray", "grau"), java.util.Map.entry("grey", "grau"),
+			java.util.Map.entry("red", "rot"), java.util.Map.entry("golden", "golden"), java.util.Map.entry("gold", "golden"),
+			java.util.Map.entry("blue", "blau"), java.util.Map.entry("green", "grün"), java.util.Map.entry("yellow", "gelb"),
+			java.util.Map.entry("orange", "orange"), java.util.Map.entry("pink", "rosa"), java.util.Map.entry("purple", "lila"),
+			java.util.Map.entry("violet", "violett"), java.util.Map.entry("skyblue", "himmelblau"),
+			java.util.Map.entry("lightblue", "hellblau"), java.util.Map.entry("darkblue", "dunkelblau"),
+			java.util.Map.entry("lightgreen", "hellgrün"), java.util.Map.entry("darkgreen", "dunkelgrün"),
+			java.util.Map.entry("silver", "silbern"), java.util.Map.entry("albino", "albino"),
+			java.util.Map.entry("spotted", "gefleckt"), java.util.Map.entry("striped", "gestreift"),
+			java.util.Map.entry("spangle", "gesprenkelt"), java.util.Map.entry("spangled", "gesprenkelt"));
 
 	/**
 	 * Deutscher Name aus einem Modellnamen: Hersteller-Kürzel (nm_, nocsy_, pet_ …) weg, bekannte Tiere übersetzen, Farben
@@ -654,6 +678,7 @@ public final class StatsTracker {
 	static String germanName(String words, boolean strict) {
 		String w = words.toLowerCase(java.util.Locale.ROOT)
 				.replaceAll("\\b(nm|nocsy|mm|me|pet|pets|custom|op|opsucht|mob|mobs)\\b", " ")
+				.replaceAll("\\b(sky|light|dark) (blue|green)\\b", "$1$2")
 				.replaceAll("\\s+", " ").strip();
 		if (GERMAN.containsKey(w)) {
 			return GERMAN.get(w); // ganzer Name zuerst („red panda“ → Roter Panda, nicht „Panda (rot)“)
@@ -716,11 +741,41 @@ public final class StatsTracker {
 		if (german != null) {
 			return german;
 		}
+		path = path.replaceAll("^((nm|nocsy|mm|me|pet|pets|custom|op|opsucht|mob|mobs) )+", "").strip();
+		if (path.length() < 2) {
+			return null;
+		}
 		StringBuilder out = new StringBuilder();
 		for (String w : path.split(" ")) {
 			out.append(out.length() > 0 ? " " : "").append(Character.toUpperCase(w.charAt(0))).append(w.substring(1));
 		}
 		return out.toString();
+	}
+
+	/** Letzter Kill: was kurz danach in der Nähe aufgesammelt wird, zählt als Loot dieses Mobs. */
+	private static final long LOOT_WINDOW_MS = 15_000;
+	private static String lastKillMob;
+	private static long lastKillAt;
+	private static double lastKillX, lastKillY, lastKillZ;
+
+	private static void countKill(Target t) {
+		String key = killKey(t);
+		StatsStore.add(key, 1);
+		lastKillMob = key.substring("killed.".length());
+		lastKillAt = System.currentTimeMillis();
+		lastKillX = t.x();
+		lastKillY = t.y();
+		lastKillZ = t.z();
+	}
+
+	private static void countLoot(String item, int amount) {
+		Minecraft mc = Minecraft.getInstance();
+		if (lastKillMob == null || mc.player == null || System.currentTimeMillis() - lastKillAt > LOOT_WINDOW_MS
+				|| mc.player.distanceToSqr(lastKillX, lastKillY, lastKillZ) > 16 * 16) {
+			return;
+		}
+		StatsStore.add("loot." + lastKillMob, amount);
+		StatsStore.add("lootitem." + lastKillMob + "|" + item, amount);
 	}
 
 	private static String killKey(Target t) {
@@ -997,7 +1052,7 @@ public final class StatsTracker {
 				// außer Sichtweite gelaufen), zählt das als Kill
 				boolean kill = now - t.lastHit() < VANISH_KILL_MS && mc.player.distanceToSqr(t.x(), t.y(), t.z()) < 24 * 24;
 				if (kill) {
-					StatsStore.add(killKey(t), 1);
+					countKill(t);
 				}
 				de.loothub.Loothub.LOGGER.info("[Loothub-Mobinfo] {} verschwunden {} ms nach dem letzten Treffer → {}",
 						killKey(t), now - t.lastHit(), kill ? "als Kill gezählt" : "nicht gezählt");
@@ -1009,7 +1064,7 @@ public final class StatsTracker {
 				StatsStore.add("general.damage_dealt", Math.round((t.lastHealth() - health) * 10));
 			}
 			if (living.isDeadOrDying()) {
-				StatsStore.add(killKey(t), 1);
+				countKill(t);
 				it.remove();
 			} else if (now - t.lastHit() > KILL_WINDOW_MS) {
 				it.remove();

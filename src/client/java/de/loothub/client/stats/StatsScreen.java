@@ -266,7 +266,7 @@ public class StatsScreen extends LoothubScreen {
 			case FOOD -> buildRows(new String[]{"mined.", "placed.", "picked.", "eaten."}, Kind.ITEM);
 			case ITEMS -> buildRows(new String[]{"picked.", "used."}, Kind.ITEM);
 			case TOOLS -> buildRows(new String[]{"tool_mined.", "tool_hits.", "tool_used.", "picked."}, Kind.ITEM);
-			case MOBS -> buildRows(new String[]{"killed."}, Kind.MOB);
+			case MOBS -> buildRows(new String[]{"killed.", "loot."}, Kind.MOB);
 			case CHART -> List.of();
 		};
 		clampScroll();
@@ -681,7 +681,7 @@ public class StatsScreen extends LoothubScreen {
 			case ITEMS -> List.of("loothub.stats.col.picked", "loothub.stats.col.used");
 			case TOOLS -> List.of("loothub.stats.col.tool_mined", "loothub.stats.col.tool_hits", "loothub.stats.col.tool_used",
 					"loothub.stats.col.picked");
-			case MOBS -> List.of("loothub.stats.col.killed");
+			case MOBS -> List.of("loothub.stats.col.killed", "loothub.stats.col.loot");
 			case GENERAL, CHART -> List.of();
 		};
 	}
@@ -712,6 +712,7 @@ public class StatsScreen extends LoothubScreen {
 			return;
 		}
 
+		Row hoveredRow = null;
 		g.enableScissor(tableX + 1, top, tableX + tableW - 1, bottom);
 		for (int i = Math.max(0, (int) (scroll / ROW_H)); i < rows.size(); i++) {
 			int ry = top + i * ROW_H - (int) scroll;
@@ -721,6 +722,7 @@ public class StatsScreen extends LoothubScreen {
 			Row row = rows.get(i);
 			if (mx >= tableX && mx < tableX + tableW && my >= Math.max(ry, top) && my < Math.min(ry + ROW_H, bottom)) {
 				g.fill(tableX + 1, ry, tableX + tableW - 1, ry + ROW_H, ROW_HOVER);
+				hoveredRow = row;
 			}
 			if (!row.icon().isEmpty()) {
 				g.renderItem(row.icon(), tableX + 4, ry + 1);
@@ -740,6 +742,12 @@ public class StatsScreen extends LoothubScreen {
 			}
 		}
 		g.disableScissor();
+		if (hoveredRow != null && category == Category.MOBS) {
+			List<net.minecraft.util.FormattedCharSequence> tip = lootTooltip(hoveredRow);
+			if (!tip.isEmpty()) {
+				g.setTooltipForNextFrame(font, tip, mx, my);
+			}
+		}
 
 		int contentH = rows.size() * ROW_H;
 		int viewH = bottom - top;
@@ -749,6 +757,34 @@ public class StatsScreen extends LoothubScreen {
 			g.fill(tableX + tableW - 4, top, tableX + tableW - 1, bottom, 0x33FFFFFF);
 			g.fill(tableX + tableW - 4, thumbY, tableX + tableW - 1, thumbY + thumbH, 0xAAFFFFFF);
 		}
+	}
+
+	/** Was dieser Mob fallen gelassen hat (kurz nach dem Kill in der Nähe aufgesammelt), meiste zuerst. */
+	private List<net.minecraft.util.FormattedCharSequence> lootTooltip(Row row) {
+		String prefix = "lootitem." + row.id() + "|";
+		List<Map.Entry<String, Long>> items = new ArrayList<>();
+		for (Map.Entry<String, Long> e : sums.entrySet()) {
+			if (e.getKey().startsWith(prefix) && e.getValue() > 0) {
+				items.add(Map.entry(e.getKey().substring(prefix.length()), e.getValue()));
+			}
+		}
+		List<net.minecraft.util.FormattedCharSequence> tip = new ArrayList<>();
+		if (items.isEmpty()) {
+			return tip;
+		}
+		items.sort(Map.Entry.<String, Long>comparingByValue().reversed());
+		tip.add(Component.translatable("loothub.stats.loot.title", row.name())
+				.withStyle(net.minecraft.ChatFormatting.GOLD).getVisualOrderText());
+		int shown = Math.min(items.size(), 12);
+		for (int i = 0; i < shown; i++) {
+			Map.Entry<String, Long> e = items.get(i);
+			tip.add(Component.literal(Fmt.whole(e.getValue()) + "× " + name(e.getKey(), Kind.ITEM)).getVisualOrderText());
+		}
+		if (items.size() > shown) {
+			tip.add(Component.translatable("loothub.stats.loot.more", items.size() - shown)
+					.withStyle(net.minecraft.ChatFormatting.GRAY).getVisualOrderText());
+		}
+		return tip;
 	}
 
 	private String arrow(int column) {
@@ -868,7 +904,7 @@ public class StatsScreen extends LoothubScreen {
 					case MOB -> {
 						EntityType<?> type = BuiltInRegistries.ENTITY_TYPE.getOptional(identifier).orElse(null);
 						if (type != null) {
-							return type.getDescription().getString();
+							return GermanLang.entity(type); // immer deutsch, auch bei englischer Spielsprache
 						}
 					}
 				}
