@@ -32,7 +32,8 @@ import de.loothub.Loothub;
  */
 public final class AuctionNames {
 	private static final Gson GSON = new GsonBuilder().create();
-	private static final int MAX_SALES = 60;
+	/** Einzelverkäufe je Name; ältere werden zu Tageswerten zusammengefasst (der Verlauf bleibt für immer). */
+	private static final int MAX_SALES = 300;
 
 	/** Aktuell: Name → günstigster Sofortkauf pro Stück, Anzahl Angebote. */
 	public record Now(double minPerUnit, int offers) {
@@ -53,6 +54,19 @@ public final class AuctionNames {
 	private record Listing(String name, double perUnit, long endsAt) {
 	}
 
+	/** Zusammengefasste ältere Verkäufe je Name und Tag: Summe, Anzahl, kleinster, größter Preis. */
+	static final class DaySum {
+		double sum;
+		int n;
+		double min = Double.MAX_VALUE;
+		double max;
+	}
+
+	/** Gesamtwerte seit Beginn der Aufzeichnung. */
+	public record Total(int count, double avg, double min, double max, long since) {
+	}
+
+	private static Map<String, Map<String, DaySum>> older;
 	private static volatile Map<String, Now> current = Map.of();
 	private static Map<String, Listing> lastListings = Map.of();
 	private static Map<String, List<Sale>> sales;
@@ -92,6 +106,38 @@ public final class AuctionNames {
 		List<Sale> out = new ArrayList<>(l);
 		out.sort((a, b) -> Long.compare(b.t, a.t));
 		return out;
+	}
+
+	/** Alle Verkäufe seit Beginn der Aufzeichnung (Einzelverkäufe + zusammengefasste Tage), oder null. */
+	public static synchronized Total total(String key) {
+		load();
+		if (key == null) {
+			return null;
+		}
+		int n = 0;
+		double sum = 0, min = Double.MAX_VALUE, max = 0;
+		long since = Long.MAX_VALUE;
+		for (Sale s : sales.getOrDefault(key, List.of())) {
+			n++;
+			sum += s.p;
+			min = Math.min(min, s.p);
+			max = Math.max(max, s.p);
+			since = Math.min(since, s.t);
+		}
+		for (Map.Entry<String, DaySum> e : older.getOrDefault(key, Map.of()).entrySet()) {
+			DaySum d = e.getValue();
+			n += d.n;
+			sum += d.sum;
+			min = Math.min(min, d.min);
+			max = Math.max(max, d.max);
+			try {
+				since = Math.min(since, java.time.LocalDate.parse(e.getKey()).atStartOfDay(java.time.ZoneId.systemDefault())
+						.toInstant().toEpochMilli());
+			} catch (RuntimeException ignored) {
+				// kaputter Tag
+			}
+		}
+		return n == 0 ? null : new Total(n, sum / n, min, max, since);
 	}
 
 	public static double price(Sale s) {
@@ -153,7 +199,18 @@ public final class AuctionNames {
 				List<Sale> list = sales.computeIfAbsent(l.name(), k -> new ArrayList<>());
 				list.add(new Sale(l.perUnit(), now));
 				if (list.size() > MAX_SALES) {
-					list.subList(0, list.size() - MAX_SALES).clear();
+					// die ältesten nicht wegwerfen, sondern zu Tageswerten zusammenfassen
+					List<Sale> drop = list.subList(0, list.size() - MAX_SALES);
+					Map<String, DaySum> days = older.computeIfAbsent(l.name(), k -> new HashMap<>());
+					for (Sale s : drop) {
+						String day = java.time.Instant.ofEpochMilli(s.t).atZone(java.time.ZoneId.systemDefault()).toLocalDate().toString();
+						DaySum d = days.computeIfAbsent(day, k -> new DaySum());
+						d.sum += s.p;
+						d.n++;
+						d.min = Math.min(d.min, s.p);
+						d.max = Math.max(d.max, s.p);
+					}
+					drop.clear();
 				}
 				changed = true;
 			}
@@ -266,17 +323,36 @@ public final class AuctionNames {
 		return FabricLoader.getInstance().getConfigDir().resolve("loothub-ah-namen.json");
 	}
 
+	/** Gespeicherte Form: Einzelverkäufe und zusammengefasste Tage. */
+	private static final class Store {
+		Map<String, List<Sale>> sales;
+		Map<String, Map<String, DaySum>> older;
+	}
+
 	private static synchronized void load() {
 		if (sales != null) {
 			return;
 		}
 		sales = new HashMap<>();
+		older = new HashMap<>();
 		Path p = file();
 		if (Files.exists(p)) {
 			try (Reader r = Files.newBufferedReader(p, StandardCharsets.UTF_8)) {
-				Map<String, List<Sale>> m = GSON.fromJson(r, new TypeToken<Map<String, List<Sale>>>() { }.getType());
-				if (m != null) {
-					sales.putAll(m);
+				JsonElement root = JsonParser.parseReader(r);
+				if (root != null && root.isJsonObject() && root.getAsJsonObject().has("sales")) {
+					Store st = GSON.fromJson(root, Store.class);
+					if (st.sales != null) {
+						sales.putAll(st.sales);
+					}
+					if (st.older != null) {
+						older.putAll(st.older);
+					}
+				} else if (root != null && root.isJsonObject()) {
+					// erste Fassung: nur Einzelverkäufe
+					Map<String, List<Sale>> m = GSON.fromJson(root, new TypeToken<Map<String, List<Sale>>>() { }.getType());
+					if (m != null) {
+						sales.putAll(m);
+					}
 				}
 			} catch (IOException | RuntimeException e) {
 				Loothub.LOGGER.warn("AH-Namensliste nicht lesbar", e);
@@ -285,6 +361,9 @@ public final class AuctionNames {
 	}
 
 	private static synchronized void save() {
-		AsyncSave.write(file(), GSON.toJson(sales));
+		Store st = new Store();
+		st.sales = sales;
+		st.older = older;
+		AsyncSave.write(file(), GSON.toJson(st));
 	}
 }

@@ -148,9 +148,7 @@ public final class AuctionPrices {
 			d.sum += n.minPerUnit();
 			d.count++;
 		});
-		// höchstens ein Jahr aufheben
-		String cutoff = LocalDate.now().minusDays(366).toString();
-		history.keySet().removeIf(day -> day.compareTo(cutoff) < 0);
+		// Verlauf bleibt für immer (Tageswerte sind klein)
 		historyDirty = true;
 		saveHistory();
 	}

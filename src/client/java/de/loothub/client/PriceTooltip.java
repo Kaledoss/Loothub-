@@ -180,6 +180,14 @@ public final class PriceTooltip {
 					.append(Component.literal(" · ").withStyle(ChatFormatting.DARK_GRAY))
 					.append(Component.translatable("loothub.tooltip.ah.sales_week", inWeek).withStyle(ChatFormatting.DARK_GRAY)));
 		}
+		AuctionNames.Total total = AuctionNames.total(key);
+		if (total != null) {
+			String since = java.time.Instant.ofEpochMilli(total.since()).atZone(java.time.ZoneId.systemDefault()).toLocalDate()
+					.format(java.time.format.DateTimeFormatter.ofPattern("dd.MM.yyyy"));
+			lines.add(Component.literal("  ").append(Component.translatable("loothub.tooltip.ah.alltime", since).withStyle(ChatFormatting.GRAY))
+					.append(Component.translatable("loothub.tooltip.ah.alltime_values", total.count(), money(total.avg()),
+							money(total.min()), money(total.max())).withStyle(ChatFormatting.WHITE)));
+		}
 	}
 
 	/** „vor 5 Min.“, „vor 3 Std.“, „vor 2 Tagen“ */
