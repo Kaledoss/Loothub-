@@ -39,9 +39,24 @@ public class SettingsScreen extends LoothubScreen {
 		}
 	}
 
-	/** Eine Karte: Titel + optionaler Schalter links, Beschreibung rechts. */
-	private record Card(int y, int h, String titleKey, String descKey, Toggle toggle) {
+	/**
+	 * Eine Karte: Titel + optionaler Schalter links, Beschreibung rechts. {@code compact}: einfache Zeile (Titel links,
+	 * Beschreibung einzeilig in der Mitte, ganze Beschreibung als Tooltip, Schalter rechts).
+	 */
+	private record Card(int y, int h, String titleKey, String descKey, Toggle toggle, boolean compact) {
+		int gap() {
+			return compact ? ROW_GAP : GAP;
+		}
 	}
+
+	/** Aufklappbare Gruppe: Kopfzeile bei {@code y}; {@code toggles} = Schalter darin (für „3 von 5 an“). */
+	private record Group(int y, String key, boolean open, List<BooleanSupplier> toggles) {
+	}
+
+	/** Höhe einer kompakten Zeile und Abstand dazwischen; Höhe der Gruppen-Kopfzeile. */
+	private static final int ROW_H = 22, ROW_GAP = 2, HEADER_H = 18;
+	/** Gruppen, die der Spieler gegenüber der Grundeinstellung auf- oder zugeklappt hat (gilt bis zum Neustart). */
+	private static final java.util.Set<String> FLIPPED = new java.util.HashSet<>();
 
 	/** Kästchen für eine Zeile des Job-Widgets. */
 	private record Check(int x, int y, int w, String label, BooleanSupplier get, Consumer<Boolean> set) {
@@ -53,6 +68,8 @@ public class SettingsScreen extends LoothubScreen {
 	private final List<Card> cards = new ArrayList<>();
 	/** Abschnitts-Überschriften: {y} und Schlüssel (bei der Suche ausgeblendet). */
 	private final List<Object[]> sections = new ArrayList<>();
+	/** Gruppen nach dem Aufbau (mit Zustand und Schaltern). */
+	private final List<Group> groups = new ArrayList<>();
 	private final List<Check> checks = new ArrayList<>();
 	private final List<net.minecraft.client.gui.components.AbstractWidget> buttons = new ArrayList<>();
 	/** Scroll-Position bleibt beim Neuaufbau (Fenstergröße, Scrollen) erhalten. */
@@ -77,7 +94,6 @@ public class SettingsScreen extends LoothubScreen {
 		CHAT("loothub.settings.tab.chat"),
 		INVENTORY("loothub.settings.tab.inventory"),
 		JOBS("loothub.settings.tab.jobs"),
-		SOUNDS("loothub.settings.tab.sounds"),
 		EXTRAS("loothub.settings.tab.extras");
 
 		final String key;
@@ -100,10 +116,9 @@ public class SettingsScreen extends LoothubScreen {
 
 	private static final int TAB_H = 22;
 	private static Tab tab = Tab.GENERAL;
-	/** Unterseiten des Inventar-Reiters. */
+	/** Gruppen des Inventar-Reiters. */
 	private static final String[] INV_SUBS = {"loothub.settings.inv.sub.menus", "loothub.settings.inv.sub.tools",
 			"loothub.settings.inv.sub.display", "loothub.settings.inv.sub.quick"};
-	private static int invSub;
 	/** Oberkante des scrollbaren Bereichs (unter den Reitern). */
 	private int top;
 
@@ -117,6 +132,7 @@ public class SettingsScreen extends LoothubScreen {
 		cards.clear();
 		checks.clear();
 		sections.clear();
+		groups.clear();
 		buttons.clear();
 		WidgetConfig c = WidgetConfig.get();
 		labelW = Math.min(130, cw / 3);
@@ -202,6 +218,7 @@ public class SettingsScreen extends LoothubScreen {
 				buttons.add(addRenderableWidget(Button.builder(Component.translatable("loothub.settings.update_now"), b -> Updater.checkAgain())
 						.bounds(cr - 8 - bw, versionY + 24, bw, 16).build()));
 				y = versionY + 50;
+				y = section(y, "loothub.settings.section.general");
 				y = card(y, 40, "loothub.settings.update_check", "loothub.settings.update_check.tooltip",
 						() -> c.updateCheck, v -> c.updateCheck = v);
 				{
@@ -218,6 +235,8 @@ public class SettingsScreen extends LoothubScreen {
 						() -> c.timersEnabled, v -> c.timersEnabled = v);
 				y = card(y, 40, "loothub.settings.itemdex", "loothub.settings.itemdex.tooltip",
 						() -> c.itemdexEnabled, v -> c.itemdexEnabled = v);
+				y = section(y, "loothub.settings.tab.sounds");
+				y = sounds(y, c);
 			}
 			case LOOK -> {
 				y = section(y, "loothub.settings.section.world");
@@ -441,22 +460,9 @@ public class SettingsScreen extends LoothubScreen {
 						() -> c.fishChatHide, v -> c.fishChatHide = v);
 			}
 			case INVENTORY -> {
-				// Unterseiten statt einer langen Liste (bei der Suche werden alle durchsucht)
-				if (!searching()) {
-					int sx = cl, sw = (cw - 3 * (INV_SUBS.length - 1)) / INV_SUBS.length;
-					for (int i = 0; i < INV_SUBS.length; i++) {
-						final int sub = i;
-						Button sb = Button.builder(Component.translatable(INV_SUBS[i]), b -> {
-							invSub = sub;
-							scroll = 0;
-							rebuildWidgets();
-						}).bounds(sx + i * (sw + 3), y, sw, 16).build();
-						sb.active = invSub != i;
-						buttons.add(addRenderableWidget(sb));
-					}
-					y += 22;
-				}
-				if (invSub(0)) {
+				// vier aufklappbare Gruppen statt einer langen Liste
+				y = section(y, INV_SUBS[0]);
+				{
 					y = card(y, 40, "loothub.settings.tooltip_prices", "loothub.settings.tooltip_prices.tooltip",
 							() -> c.tooltipPrices, v -> c.tooltipPrices = v);
 					y = card(y, 40, "loothub.settings.amount_shortcut", "loothub.settings.amount_shortcut.tooltip",
@@ -489,7 +495,8 @@ public class SettingsScreen extends LoothubScreen {
 								() -> c.auctionAlarm, v -> c.auctionAlarm = v);
 					}
 				}
-				if (invSub(1)) {
+				y = section(y, INV_SUBS[1]);
+				{
 					y = card(y, 40, "loothub.settings.inv_sort", "loothub.settings.inv_sort.tooltip",
 							() -> c.invSort, v -> c.invSort = v);
 					y = card(y, 40, "loothub.settings.inv_move", "loothub.settings.inv_move.tooltip",
@@ -541,7 +548,8 @@ public class SettingsScreen extends LoothubScreen {
 					y = card(y, 40, "loothub.settings.drop_protection", "loothub.settings.drop_protection.tooltip",
 							() -> c.dropProtection, v -> c.dropProtection = v);
 				}
-				if (invSub(2)) {
+				y = section(y, INV_SUBS[2]);
+				{
 					y = card(y, 40, "loothub.settings.rarity_frames", "loothub.settings.rarity_frames.tooltip",
 							() -> c.rarityFrames, v -> c.rarityFrames = v);
 					y = card(y, 40, "loothub.settings.compressor_icon", "loothub.settings.compressor_icon.tooltip",
@@ -587,7 +595,8 @@ public class SettingsScreen extends LoothubScreen {
 					y = card(y, 40, "loothub.settings.container_value", "loothub.settings.container_value.tooltip",
 							() -> c.containerValue, v -> c.containerValue = v);
 				}
-				if (invSub(3)) {
+				y = section(y, INV_SUBS[3]);
+				{
 					{
 						int oy = y;
 						int oDx = cl + labelW + 12;
@@ -734,54 +743,8 @@ public class SettingsScreen extends LoothubScreen {
 				y = card(y, 40, "loothub.settings.bait_warning", "loothub.settings.bait_warning.tooltip",
 						() -> c.baitWarning, v -> c.baitWarning = v);
 			}
-			case SOUNDS -> {
-				int descX = cl + labelW + 12;
-				int sW = Math.min(320, cr - 8 - descX);
-				int halfW = (sW - 4) / 2;
-				de.loothub.client.Sounds.Group[] groups = de.loothub.client.Sounds.Group.values();
-				int volY = y;
-				for (int i = 0; i < groups.length; i++) {
-					de.loothub.client.Sounds.Group grp = groups[i];
-					int sx = descX + (i % 2) * (halfW + 4);
-					int sy = volY + 30 + (i / 2) * 20;
-					buttons.add(addRenderableWidget(new net.minecraft.client.gui.components.AbstractSliderButton(
-							sx, sy, halfW, 16, Component.empty(), de.loothub.client.Sounds.volume(grp)) {
-						{
-							updateMessage();
-						}
-
-						@Override
-						protected void updateMessage() {
-							setMessage(Component.translatable(grp.key()).append(": " + (int) Math.round(value * 100) + " %"));
-						}
-
-						@Override
-						protected void applyValue() {
-							de.loothub.client.Sounds.setVolume(grp, (int) Math.round(value * 100));
-						}
-					}));
-				}
-				y = cardNoToggle(volY, 34 + ((groups.length + 1) / 2) * 20, "loothub.settings.sound_volume",
-						"loothub.settings.sound_volume.tooltip");
-				// Timer-Ton: Auswahl (Dropdown) + Anhören
-				int tY = y;
-				Button pick = addRenderableWidget(Button.builder(timerSoundLabel(), b -> {
-					openPicker(b, de.loothub.client.Sounds.TIMER_SOUNDS, "loothub.sound.timer.", v -> {
-						WidgetConfig.get().timerSoundType = v;
-						WidgetConfig.get().save();
-						b.setMessage(timerSoundLabel());
-						de.loothub.client.Sounds.timer(v);
-					});
-				}).bounds(descX, tY + 30, halfW, 16).build());
-				buttons.add(pick);
-				buttons.add(addRenderableWidget(Button.builder(Component.translatable("loothub.settings.sound.listen"),
-						b -> de.loothub.client.Sounds.timer(WidgetConfig.get().timerSoundType))
-						.bounds(descX + halfW + 4, tY + 30, halfW, 16).build()));
-				y = card(tY, 52, "loothub.settings.timer_sound", "loothub.settings.timer_sound.tooltip",
-						() -> c.timerSound, v -> c.timerSound = v);
-			}
 			case EXTRAS -> {
-				int descX = cl + labelW + 12;
+				y = section(y, "loothub.settings.section.music");
 				y = card(y, 70, "loothub.settings.music", "loothub.settings.music.tooltip",
 						() -> c.musicEnabled, v -> {
 							c.musicEnabled = v;
@@ -792,6 +755,7 @@ public class SettingsScreen extends LoothubScreen {
 								b -> minecraft.setScreen(new de.loothub.client.music.MusicEditScreen(this)))
 						.bounds(cl + labelW + 12, musicCardY + 48, Math.min(160, cr - 20 - cl - labelW), 16).build()));
 				// Pokémon Community Game (Twitch): nur der Schalter – Kanal, Name, Token & Co. stehen oben im Pokédex
+				y = section(y, "loothub.settings.section.twitch");
 				y = card(y, 40, "loothub.settings.pcg", "loothub.settings.pcg.tooltip",
 						() -> c.pcgEnabled, v -> {
 							c.pcgEnabled = v;
@@ -812,6 +776,8 @@ public class SettingsScreen extends LoothubScreen {
 
 		if (searching()) {
 			y -= hideUnmatched();
+		} else if (!indexing) {
+			y -= collapseGroups(y);
 		}
 		// Scrollen: Inhalt höher als der sichtbare Bereich?
 		contentH = y - GAP - contentStart;
@@ -826,6 +792,55 @@ public class SettingsScreen extends LoothubScreen {
 		if (cards.isEmpty() && searching()) {
 			versionY = -10000;
 		}
+	}
+
+	/** Klänge: Lautstärke je Gruppe und Timer-Ton (im Reiter „Allgemein“). */
+	private int sounds(int y, WidgetConfig c) {
+		int descX = cl + labelW + 12;
+		int sW = Math.min(320, cr - 8 - descX);
+		int halfW = (sW - 4) / 2;
+		de.loothub.client.Sounds.Group[] groups = de.loothub.client.Sounds.Group.values();
+		int volY = y;
+		for (int i = 0; i < groups.length; i++) {
+			de.loothub.client.Sounds.Group grp = groups[i];
+			int sx = descX + (i % 2) * (halfW + 4);
+			int sy = volY + 30 + (i / 2) * 20;
+			buttons.add(addRenderableWidget(new net.minecraft.client.gui.components.AbstractSliderButton(
+					sx, sy, halfW, 16, Component.empty(), de.loothub.client.Sounds.volume(grp)) {
+				{
+					updateMessage();
+				}
+
+				@Override
+				protected void updateMessage() {
+					setMessage(Component.translatable(grp.key()).append(": " + (int) Math.round(value * 100) + " %"));
+				}
+
+				@Override
+				protected void applyValue() {
+					de.loothub.client.Sounds.setVolume(grp, (int) Math.round(value * 100));
+				}
+			}));
+		}
+		y = cardNoToggle(volY, 34 + ((groups.length + 1) / 2) * 20, "loothub.settings.sound_volume",
+				"loothub.settings.sound_volume.tooltip");
+		// Timer-Ton: Auswahl (Dropdown) + Anhören
+		int tY = y;
+		Button pick = addRenderableWidget(Button.builder(timerSoundLabel(), b -> {
+			openPicker(b, de.loothub.client.Sounds.TIMER_SOUNDS, "loothub.sound.timer.", v -> {
+				WidgetConfig.get().timerSoundType = v;
+				WidgetConfig.get().save();
+				b.setMessage(timerSoundLabel());
+				de.loothub.client.Sounds.timer(v);
+			});
+		}).bounds(descX, tY + 30, halfW, 16).build());
+		buttons.add(pick);
+		buttons.add(addRenderableWidget(Button.builder(Component.translatable("loothub.settings.sound.listen"),
+				b -> de.loothub.client.Sounds.timer(WidgetConfig.get().timerSoundType))
+				.bounds(descX + halfW + 4, tY + 30, halfW, 16).build()));
+		y = card(tY, 52, "loothub.settings.timer_sound", "loothub.settings.timer_sound.tooltip",
+				() -> c.timerSound, v -> c.timerSound = v);
+		return y;
 	}
 
 	/** Ordner im Datei-Explorer öffnen (Windows, macOS, Linux). */
@@ -849,11 +864,6 @@ public class SettingsScreen extends LoothubScreen {
 	private static String rowLabel(String id) {
 		String s = Component.translatable("loothub.job.row." + id).getString();
 		return s.endsWith(":") ? s.substring(0, s.length() - 1) : s;
-	}
-
-	/** Gehört dieser Teil auf die gerade gewählte Unterseite? (Beim Suchen und für den Suchindex: alle.) */
-	private boolean invSub(int i) {
-		return indexing || searching() || invSub == i;
 	}
 
 	private static boolean searching() {
@@ -888,36 +898,86 @@ public class SettingsScreen extends LoothubScreen {
 	 * @return wie viele Pixel weggefallen sind
 	 */
 	private int hideUnmatched() {
-		// Bereiche, die wegfallen: nicht passende Karten und der Versionsblock
 		List<int[]> gone = new ArrayList<>();
 		if (tab == Tab.GENERAL) {
 			gone.add(new int[]{versionY, versionY + 50});
 		}
-		List<Card> keep = new ArrayList<>();
 		for (Card cd : cards) {
-			if (matches(cd.titleKey(), cd.descKey(), tab)) {
-				keep.add(cd);
-			} else {
-				gone.add(new int[]{cd.y(), cd.y() + cd.h() + GAP});
+			if (!matches(cd.titleKey(), cd.descKey(), tab)) {
+				gone.add(new int[]{cd.y(), cd.y() + cd.h() + cd.gap()});
 			}
 		}
-		java.util.function.IntUnaryOperator shift = yy -> {
-			int d = 0;
-			for (int[] g : gone) {
-				if (yy >= g[1]) {
-					d += g[1] - g[0];
-				} else if (yy >= g[0]) {
-					return -100000; // liegt in einem weggefallenen Bereich
+		versionY = -100000;
+		return removeRanges(gone);
+	}
+
+	/** Ist die Gruppe offen? Grundeinstellung: die erste Gruppe eines Reiters offen, die anderen zu. */
+	private static boolean groupOpen(String key, boolean first) {
+		return first != FLIPPED.contains(key);
+	}
+
+	/**
+	 * Gruppen bilden: jede Überschrift wird zur Kopfzeile (mit „x von n an“); zugeklappte Gruppen verschwinden samt
+	 * Inhalt, der Rest rückt nach oben.
+	 * @return wie viele Pixel weggefallen sind
+	 */
+	private int collapseGroups(int end) {
+		List<int[]> gone = new ArrayList<>();
+		for (int i = 0; i < sections.size(); i++) {
+			int gy = (int) sections.get(i)[0];
+			String key = (String) sections.get(i)[1];
+			int ge = i + 1 < sections.size() ? (int) sections.get(i + 1)[0] : end;
+			List<BooleanSupplier> toggles = new ArrayList<>();
+			for (Card cd : cards) {
+				if (cd.y() >= gy && cd.y() < ge && cd.toggle() != null) {
+					toggles.add(cd.toggle().get());
 				}
 			}
-			return yy - d;
-		};
+			boolean open = groupOpen(key, i == 0);
+			groups.add(new Group(gy, key, open, toggles));
+			if (!open) {
+				gone.add(new int[]{gy + HEADER_H + ROW_GAP, ge});
+			}
+		}
+		int removed = removeRanges(gone);
+		List<Group> moved = new ArrayList<>();
+		for (Group gr : groups) {
+			moved.add(new Group(shiftY(gone, gr.y()), gr.key(), gr.open(), gr.toggles()));
+		}
+		groups.clear();
+		groups.addAll(moved);
+		return removed;
+	}
+
+	/** Neue Lage einer Höhe, wenn die Bereiche {@code gone} wegfallen (-100000 = liegt in einem weggefallenen Bereich). */
+	private static int shiftY(List<int[]> gone, int yy) {
+		int d = 0;
+		for (int[] g : gone) {
+			if (yy >= g[1]) {
+				d += g[1] - g[0];
+			} else if (yy >= g[0]) {
+				return -100000;
+			}
+		}
+		return yy - d;
+	}
+
+	/** Bereiche entfernen: Karten, Kästchen und Knöpfe darin verschwinden, alles darunter rückt nach oben. */
+	private int removeRanges(List<int[]> gone) {
+		if (gone.isEmpty()) {
+			return 0;
+		}
+		java.util.function.IntUnaryOperator shift = yy -> shiftY(gone, yy);
+		List<Card> old = new ArrayList<>(cards);
 		cards.clear();
-		for (Card cd : keep) {
-			Toggle t = cd.toggle();
+		for (Card cd : old) {
 			int ny = shift.applyAsInt(cd.y());
+			if (ny < -50000) {
+				continue;
+			}
+			Toggle t = cd.toggle();
 			cards.add(new Card(ny, cd.h(), cd.titleKey(), cd.descKey(),
-					t == null ? null : new Toggle(t.x(), t.y() - cd.y() + ny, t.get(), t.set())));
+					t == null ? null : new Toggle(t.x(), t.y() - cd.y() + ny, t.get(), t.set()), cd.compact()));
 		}
 		List<Check> ch = new ArrayList<>(checks);
 		checks.clear();
@@ -940,7 +1000,9 @@ public class SettingsScreen extends LoothubScreen {
 		}
 		rowsLabelY = shift.applyAsInt(rowsLabelY);
 		musicCardY = shift.applyAsInt(musicCardY);
-		versionY = -100000;
+		if (versionY > -50000) {
+			versionY = shift.applyAsInt(versionY);
+		}
 		int total = 0;
 		for (int[] g : gone) {
 			total += g[1] - g[0];
@@ -955,7 +1017,7 @@ public class SettingsScreen extends LoothubScreen {
 
 	/** Karte ohne eigenen Schalter (Schalter liegen als Kästchen in der Karte). */
 	private int cardNoToggle(int y, int h, String titleKey, String descKey) {
-		cards.add(new Card(y, h, titleKey, descKey, null));
+		cards.add(new Card(y, h, titleKey, descKey, null, false));
 		return y + h + GAP;
 	}
 
@@ -1022,13 +1084,19 @@ public class SettingsScreen extends LoothubScreen {
 			return y;
 		}
 		sections.add(new Object[]{y, key});
-		return y + 16;
+		return y + HEADER_H + ROW_GAP;
 	}
 
 	private int card(int y, int h, String titleKey, String descKey, BooleanSupplier get, Consumer<Boolean> set) {
+		if (h == 40) {
+			// einfacher Schalter ohne weitere Knöpfe: kompakte Zeile
+			Toggle t = new Toggle(cr - 8 - Toggle.W, y + (ROW_H - Toggle.H) / 2, get, set);
+			cards.add(new Card(y, ROW_H, titleKey, descKey, t, true));
+			return y + ROW_H + ROW_GAP;
+		}
 		int tx = cl + 8 + (labelW - Toggle.W) / 2;
 		Toggle t = new Toggle(tx, y + 20, get, set);
-		cards.add(new Card(y, h, titleKey, descKey, t));
+		cards.add(new Card(y, h, titleKey, descKey, t, false));
 		return y + h + GAP;
 	}
 
@@ -1058,7 +1126,13 @@ public class SettingsScreen extends LoothubScreen {
 		}
 		for (Card card : cards) {
 			box(g, cl, card.y(), cw, card.h());
-			g.fill(cl + labelW + 6, card.y() + 5, cl + labelW + 7, card.y() + card.h() - 5, de.loothub.client.Theme.bg(CARD_EDGE));
+			if (!card.compact()) {
+				g.fill(cl + labelW + 6, card.y() + 5, cl + labelW + 7, card.y() + card.h() - 5, de.loothub.client.Theme.bg(CARD_EDGE));
+			}
+		}
+		for (Group gr : groups) {
+			g.fill(cl, gr.y(), cr, gr.y() + HEADER_H, de.loothub.client.Theme.bg(0xF0261719));
+			g.fill(cl, gr.y() + HEADER_H - 1, cr, gr.y() + HEADER_H, 0x80E2A13B);
 		}
 		g.disableScissor();
 	}
@@ -1070,17 +1144,46 @@ public class SettingsScreen extends LoothubScreen {
 		if (tab == Tab.GENERAL) {
 			renderVersion(g);
 		}
-		for (Object[] sec : sections) {
-			int sy = (int) sec[0];
-			Component t = Component.translatable((String) sec[1]);
-			g.drawString(font, t, cl + 2, sy + 4, 0xFFE2A13B, false);
-			g.fill(cl + 6 + font.width(t), sy + 8, cr, sy + 9, 0x40E2A13B);
+		for (Group gr : groups) {
+			boolean hover = mouseX >= cl && mouseX < cr && mouseY >= gr.y() && mouseY < gr.y() + HEADER_H
+					&& mouseY >= top && mouseY < cb;
+			if (hover) {
+				g.fill(cl, gr.y(), cr, gr.y() + HEADER_H - 1, 0x18FFFFFF);
+			}
+			g.drawString(font, gr.open() ? "▾" : "▸", cl + 6, gr.y() + 5, 0xFFE2A13B, false);
+			g.drawString(font, Component.translatable(gr.key()), cl + 18, gr.y() + 5, 0xFFE2A13B, false);
+			if (!gr.toggles().isEmpty()) {
+				int on = 0;
+				for (BooleanSupplier b : gr.toggles()) {
+					on += b.getAsBoolean() ? 1 : 0;
+				}
+				Component cnt = Component.translatable("loothub.settings.group.count", on, gr.toggles().size());
+				g.drawString(font, cnt, cr - 8 - font.width(cnt), gr.y() + 5, on > 0 ? MUTED : FAINT, false);
+			}
 		}
 		if (searching() && cards.isEmpty()) {
 			Component none = Component.translatable("loothub.settings.search.none");
 			g.drawString(font, none, cl + (cw - font.width(none)) / 2, top + 20, FAINT, false);
 		}
+		List<FormattedCharSequence> rowTip = null;
 		for (Card card : cards) {
+			if (card.compact()) {
+				// kompakte Zeile: Titel | Beschreibung (eine Zeile) | Schalter
+				String title = Component.translatable(card.titleKey()).getString();
+				g.drawString(font, ellipsize(title, labelW - 2), cl + 8, card.y() + 7, TEXT, false);
+				int descX = cl + labelW + 12;
+				String desc = Component.translatable(card.descKey()).getString();
+				g.drawString(font, ellipsize(desc, card.toggle().x() - 10 - descX), descX, card.y() + 7, MUTED, false);
+				drawToggle(g, card.toggle(), mouseX, mouseY, false);
+				if (mouseX >= cl && mouseX < card.toggle().x() - 4 && mouseY >= card.y() && mouseY < card.y() + card.h()
+						&& mouseY >= top && mouseY < cb) {
+					g.fill(cl, card.y(), cr, card.y() + card.h(), 0x10FFFFFF);
+					rowTip = new ArrayList<>();
+					rowTip.add(Component.literal(title).withStyle(ChatFormatting.GOLD).getVisualOrderText());
+					rowTip.addAll(font.split(Component.translatable(card.descKey()), 240));
+				}
+				continue;
+			}
 			Component title = Component.translatable(card.titleKey());
 			// Lange Titel umbrechen (höchstens zwei Zeilen), damit nichts in die Beschreibung ragt
 			List<FormattedCharSequence> titleLines = font.split(title, labelW - 6);
@@ -1093,7 +1196,7 @@ public class SettingsScreen extends LoothubScreen {
 				}
 			}
 			if (card.toggle() != null) {
-				drawToggle(g, card.toggle(), mouseX, mouseY);
+				drawToggle(g, card.toggle(), mouseX, mouseY, true);
 			}
 
 			int descX = cl + labelW + 12;
@@ -1155,6 +1258,9 @@ public class SettingsScreen extends LoothubScreen {
 		g.disableScissor();
 
 		renderPicker(g, mouseX, mouseY);
+		if (rowTip != null && pickButton == null) {
+			g.setTooltipForNextFrame(font, rowTip, mouseX, mouseY);
+		}
 
 		// Scrollleiste
 		int max = maxScroll();
@@ -1212,7 +1318,21 @@ public class SettingsScreen extends LoothubScreen {
 		g.drawString(font, status, sx + (w - font.width(status)) / 2, sy + 4, color, false);
 	}
 
-	private void drawToggle(GuiGraphics g, Toggle t, int mx, int my) {
+	private String ellipsize(String s, int maxWidth) {
+		if (maxWidth <= 0) {
+			return "";
+		}
+		if (font.width(s) <= maxWidth) {
+			return s;
+		}
+		int end = s.length();
+		while (end > 0 && font.width(s.substring(0, end)) + font.width("…") > maxWidth) {
+			end--;
+		}
+		return s.substring(0, end).stripTrailing() + "…";
+	}
+
+	private void drawToggle(GuiGraphics g, Toggle t, int mx, int my, boolean stateText) {
 		boolean on = t.get().getAsBoolean();
 		boolean hover = t.contains(mx, my);
 		int track = on ? RED : TRACK_OFF;
@@ -1220,8 +1340,10 @@ public class SettingsScreen extends LoothubScreen {
 		g.fill(t.x() + 1, t.y() + 1, t.x() + Toggle.W - 1, t.y() + Toggle.H - 1, track);
 		int knobX = on ? t.x() + Toggle.W - 11 : t.x() + 1;
 		g.fill(knobX, t.y() + 1, knobX + 10, t.y() + Toggle.H - 1, 0xFFE8E0E0);
-		Component state = Component.translatable(on ? "loothub.settings.on" : "loothub.settings.off");
-		g.drawString(font, state, t.x() + Toggle.W + 5, t.y() + 2, on ? TEXT : FAINT, false);
+		if (stateText) {
+			Component state = Component.translatable(on ? "loothub.settings.on" : "loothub.settings.off");
+			g.drawString(font, state, t.x() + Toggle.W + 5, t.y() + 2, on ? TEXT : FAINT, false);
+		}
 	}
 
 	private static void box(GuiGraphics g, int x, int y, int w, int h) {
@@ -1242,6 +1364,17 @@ public class SettingsScreen extends LoothubScreen {
 			return true;
 		}
 		if (event.button() == 0 && event.y() >= top && event.y() < cb) {
+			for (Group gr : groups) {
+				if (event.x() >= cl && event.x() < cr && event.y() >= gr.y() && event.y() < gr.y() + HEADER_H) {
+					if (!FLIPPED.remove(gr.key())) {
+						FLIPPED.add(gr.key());
+					}
+					minecraft.getSoundManager().play(net.minecraft.client.resources.sounds.SimpleSoundInstance.forUI(
+							net.minecraft.sounds.SoundEvents.UI_BUTTON_CLICK, 1.0F));
+					rebuildWidgets();
+					return true;
+				}
+			}
 			for (Check ch : checks) {
 				if (ch.contains(event.x(), event.y())) {
 					ch.set().accept(!ch.get().getAsBoolean());
@@ -1251,7 +1384,10 @@ public class SettingsScreen extends LoothubScreen {
 			}
 			for (Card card : cards) {
 				Toggle t = card.toggle();
-				if (t != null && t.contains(event.x(), event.y())) {
+				// kompakte Zeile: Klick irgendwo auf die Zeile schaltet um
+				boolean onRow = card.compact() && event.x() >= cl && event.x() < cr && event.y() >= card.y()
+						&& event.y() < card.y() + card.h();
+				if (t != null && (onRow || t.contains(event.x(), event.y()))) {
 					t.set().accept(!t.get().getAsBoolean());
 					WidgetConfig.get().save();
 					return true;
