@@ -32,6 +32,7 @@ public class InventoryHudEditScreen extends Screen {
 	@Override
 	public void render(GuiGraphics g, int mx, int my, float delta) {
 		super.render(g, mx, my, delta);
+		de.loothub.client.CenterGuide.draw(g, width, height); // Kreuz: Fenstermitte
 		g.drawString(font, getTitle(), (width - font.width(getTitle())) / 2, 12, 0xFFFFFFFF, true);
 		Component hint = Component.translatable("loothub.job.editor.hint");
 		g.drawString(font, hint, (width - font.width(hint)) / 2, 24, 0xFFAAAAAA, true);

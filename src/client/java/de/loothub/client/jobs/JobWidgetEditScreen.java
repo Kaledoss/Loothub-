@@ -47,6 +47,7 @@ public class JobWidgetEditScreen extends Screen {
 	@Override
 	public void render(GuiGraphics g, int mouseX, int mouseY, float delta) {
 		super.render(g, mouseX, mouseY, delta);
+		de.loothub.client.CenterGuide.draw(g, width, height); // Kreuz: Fenstermitte
 
 		Component title = getTitle();
 		g.drawString(font, title, (width - font.width(title)) / 2, 12, TEXT, true);

@@ -36,6 +36,7 @@ public class MusicEditScreen extends Screen {
 	@Override
 	public void render(GuiGraphics g, int mouseX, int mouseY, float delta) {
 		super.render(g, mouseX, mouseY, delta);
+		de.loothub.client.CenterGuide.draw(g, width, height); // Kreuz: Fenstermitte
 		g.drawString(font, getTitle(), (width - font.width(getTitle())) / 2, 12, 0xFFFFFFFF, true);
 		Component hint = Component.translatable("loothub.job.editor.hint");
 		g.drawString(font, hint, (width - font.width(hint)) / 2, 24, 0xFFAAAAAA, true);

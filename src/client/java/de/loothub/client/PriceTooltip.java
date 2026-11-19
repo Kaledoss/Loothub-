@@ -40,6 +40,8 @@ public final class PriceTooltip {
 		}
 		// Umbenannte Items und Sonder-/OP-Items (eigenes Modell) werden nicht am Marktplatz gehandelt
 		if (stack.get(DataComponents.CUSTOM_NAME) != null || stack.get(DataComponents.CUSTOM_MODEL_DATA) != null) {
+			// OP-/Sonder-Items: Auktionshaus nach Namen (Angebote und Verkäufe)
+			appendByName(stack, lines);
 			// Sonderitems (z. B. Gräbergemisch) haben keinen Marktpreis, aber evtl. einen Shard-Wert
 			double special = ShardValue.perItem(stack);
 			if (!Double.isNaN(special)) {
@@ -128,6 +130,68 @@ public final class PriceTooltip {
 				.append(Component.translatable("loothub.tooltip.orders", side.activeOrders())
 						.withStyle(ChatFormatting.DARK_GRAY));
 		return line;
+	}
+
+	/** Auktionshaus nach Item-Namen: günstigstes Angebot, letzter Verkauf, Schnitt der letzten Verkäufe. */
+	private static void appendByName(ItemStack stack, List<Component> lines) {
+		String key = AuctionNames.keyOf(stack);
+		if (key == null) {
+			return;
+		}
+		AuctionPrices.refreshIfStale();
+		AuctionNames.Now now = AuctionNames.now(key);
+		List<AuctionNames.Sale> sales = AuctionNames.sales(key);
+		if (now == null && sales.isEmpty()) {
+			return;
+		}
+		int count = stack.getCount();
+		lines.add(Component.empty());
+		lines.add(Component.translatable("loothub.tooltip.ah.byname").withStyle(ChatFormatting.LIGHT_PURPLE));
+		if (now != null) {
+			MutableComponent l = Component.literal("  ")
+					.append(Component.translatable("loothub.tooltip.ah.from").withStyle(ChatFormatting.GRAY))
+					.append(Component.literal(money(now.minPerUnit())).withStyle(ChatFormatting.LIGHT_PURPLE));
+			if (count > 1) {
+				l.append(Component.literal(" (" + count + "× = " + money(now.minPerUnit() * count) + ")").withStyle(ChatFormatting.DARK_GRAY));
+			}
+			l.append(Component.literal(" · ").withStyle(ChatFormatting.DARK_GRAY))
+					.append(Component.translatable("loothub.tooltip.ah.offers", now.offers()).withStyle(ChatFormatting.DARK_GRAY));
+			lines.add(l);
+		}
+		if (!sales.isEmpty()) {
+			AuctionNames.Sale last = sales.get(0);
+			lines.add(Component.literal("  ").append(Component.translatable("loothub.tooltip.ah.last_sale").withStyle(ChatFormatting.GRAY))
+					.append(Component.literal(money(AuctionNames.price(last))).withStyle(ChatFormatting.WHITE))
+					.append(Component.literal(" (" + ago(AuctionNames.time(last)) + ")").withStyle(ChatFormatting.DARK_GRAY)));
+			int n = Math.min(10, sales.size());
+			double sum = 0;
+			for (int i = 0; i < n; i++) {
+				sum += AuctionNames.price(sales.get(i));
+			}
+			long week = System.currentTimeMillis() - 7L * 24 * 3600_000;
+			int inWeek = 0;
+			for (AuctionNames.Sale s : sales) {
+				if (AuctionNames.time(s) >= week) {
+					inWeek++;
+				}
+			}
+			lines.add(Component.literal("  ").append(Component.translatable("loothub.tooltip.ah.avg_sales", n).withStyle(ChatFormatting.GRAY))
+					.append(Component.literal(money(sum / n)).withStyle(ChatFormatting.WHITE))
+					.append(Component.literal(" · ").withStyle(ChatFormatting.DARK_GRAY))
+					.append(Component.translatable("loothub.tooltip.ah.sales_week", inWeek).withStyle(ChatFormatting.DARK_GRAY)));
+		}
+	}
+
+	/** „vor 5 Min.“, „vor 3 Std.“, „vor 2 Tagen“ */
+	private static String ago(long t) {
+		long min = Math.max(0, (System.currentTimeMillis() - t) / 60_000);
+		if (min < 60) {
+			return Component.translatable("loothub.tooltip.ago.min", Math.max(1, min)).getString();
+		}
+		if (min < 48 * 60) {
+			return Component.translatable("loothub.tooltip.ago.hours", min / 60).getString();
+		}
+		return Component.translatable("loothub.tooltip.ago.days", min / (24 * 60)).getString();
 	}
 
 	private static Component ageLine() {

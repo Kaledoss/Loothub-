@@ -67,6 +67,7 @@ public final class AuctionPrices {
 				if (error == null && json != null && json.isJsonArray()) {
 					Map<String, Now> next = parse(json);
 					current = next;
+					AuctionNames.update(json); // Liste nach Item-Namen (OP-/Sonder-Items) samt Verkäufen
 					record(next);
 				}
 			} catch (RuntimeException e) {

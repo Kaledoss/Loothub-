@@ -139,6 +139,10 @@ public class HudLayoutScreen extends Screen {
 	@Override
 	public void render(GuiGraphics g, int mouseX, int mouseY, float delta) {
 		super.render(g, mouseX, mouseY, delta);
+		Hud guideFor = dragging != null ? dragging : selected;
+		int[] gr = guideFor != null ? rect(guideFor) : null;
+		CenterGuide.draw(g, width, height, gr != null && CenterGuide.onCenter(gr[0], gr[2], width),
+				gr != null && CenterGuide.onCenter(gr[1], gr[3], height));
 		Component hint = Component.translatable("loothub.hud_layout.hint");
 		g.drawCenteredString(font, hint, width / 2, 8, 0xFFE0E0E0);
 		for (Hud h : huds) {
@@ -194,7 +198,9 @@ public class HudLayoutScreen extends Screen {
 	@Override
 	public boolean mouseDragged(MouseButtonEvent e, double dx, double dy) {
 		if (dragging != null) {
-			moveTo(dragging, e.x() - grabX, e.y() - grabY);
+			int[] sz = dragging.size().get();
+			// nahe der Fenstermitte einrasten, damit Anzeigen genau mittig sitzen
+			moveTo(dragging, CenterGuide.snap(e.x() - grabX, sz[0], width), CenterGuide.snap(e.y() - grabY, sz[1], height));
 			return true;
 		}
 		return super.mouseDragged(e, dx, dy);
