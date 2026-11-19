@@ -122,6 +122,8 @@ public final class WidgetConfig {
 	/** Hotbar-Animationen (gleitende Auswahl, hüpfende Items); Stil "smooth" oder "bouncy". */
 	public boolean hotbarAnim = false;
 	public String hotbarAnimStyle = "smooth";
+	/** Lebendige Inventare (Items unter der Maus größer, passende schweben, getragenes Item wackelt, Funkenspur). */
+	public boolean inventoryAnim = false;
 	/** Spielername je Kopf-Platz für ein Mini-Me mit fremdem Skin (leer = eigener Skin), durch Komma getrennt. */
 	public String headSkins = "";
 	public boolean miniMeEmotes = false;

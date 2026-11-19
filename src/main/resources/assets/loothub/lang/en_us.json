@@ -431,6 +431,8 @@
 	"loothub.settings.hotbar_anim.style": "Style: ",
 	"loothub.settings.hotbar_anim.style.smooth": "Smooth",
 	"loothub.settings.hotbar_anim.style.bouncy": "Bouncy",
+	"loothub.settings.inventory_anim": "Lively inventories",
+	"loothub.settings.inventory_anim.tooltip": "Items under the cursor grow slightly. While carrying an item, matching items in the container float gently. The carried item sways when moved quickly, and rare items leave a spark trail in their rarity color.",
 	"loothub.settings.rarity_frames": "Rarity frames",
 	"loothub.settings.rarity_frames.tooltip": "Items with “Rarity » …” in their tooltip get a frame in the colour of their rarity in the inventory (e.g. Legendary).",
 	"loothub.settings.chat_time": "Chat: time",

@@ -564,6 +564,8 @@ public class SettingsScreen extends LoothubScreen {
 						y = card(hY, 56, "loothub.settings.hotbar_anim", "loothub.settings.hotbar_anim.tooltip",
 								() -> c.hotbarAnim, v -> c.hotbarAnim = v);
 					}
+					y = card(y, 40, "loothub.settings.inventory_anim", "loothub.settings.inventory_anim.tooltip",
+							() -> c.inventoryAnim, v -> c.inventoryAnim = v);
 					y = card(y, 40, "loothub.settings.rarity_frames", "loothub.settings.rarity_frames.tooltip",
 							() -> c.rarityFrames, v -> c.rarityFrames = v);
 					y = card(y, 40, "loothub.settings.compressor_icon", "loothub.settings.compressor_icon.tooltip",

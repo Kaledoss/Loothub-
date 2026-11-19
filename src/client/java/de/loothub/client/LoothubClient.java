@@ -131,6 +131,7 @@ public class LoothubClient implements ClientModInitializer {
 		de.loothub.client.quick.ConnectedTextures.register();
 		de.loothub.client.quick.LookInfo.register();
 		de.loothub.client.quick.RarityFrames.register();
+		de.loothub.client.quick.InvAnim.register();
 		de.loothub.client.quick.Timers.register();
 		de.loothub.client.Sounds.register();
 		de.loothub.client.quick.CustomChat.register();

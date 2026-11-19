@@ -33,7 +33,8 @@
 		"FishSoundMixin",
 		"LevelRendererFirstPersonMixin",
 		"CommandTraceMixin",
-		"HotbarAnimMixin"
+		"HotbarAnimMixin",
+		"InvAnimMixin"
 	],
 	"injectors": {
 		"defaultRequire": 0

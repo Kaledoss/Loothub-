@@ -431,6 +431,8 @@
 	"loothub.settings.hotbar_anim.style": "Stil: ",
 	"loothub.settings.hotbar_anim.style.smooth": "Weich",
 	"loothub.settings.hotbar_anim.style.bouncy": "Federnd",
+	"loothub.settings.inventory_anim": "Lebendige Inventare",
+	"loothub.settings.inventory_anim.tooltip": "Items unter dem Mauszeiger werden etwas größer. Trägst du ein Item, schweben gleiche Items im Container sanft auf und ab. Das getragene Item wackelt bei schnellen Bewegungen nach, und seltene Items ziehen eine Funkenspur in ihrer Seltenheitsfarbe hinter sich her.",
 	"loothub.settings.rarity_frames": "Seltenheits-Rahmen",
 	"loothub.settings.rarity_frames.tooltip": "Items mit „Seltenheit » …“ im Tooltip bekommen im Inventar einen Rahmen in der Farbe ihrer Seltenheit (z. B. Legendär).",
 	"loothub.settings.chat_time": "Chat: Uhrzeit",
