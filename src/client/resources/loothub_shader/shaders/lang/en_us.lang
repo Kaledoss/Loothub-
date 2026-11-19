@@ -86,3 +86,10 @@ option.ICE_FX.comment=Ice turns cool and clear, reflects the sky, shines in the 
 option.ICE_SPARKLE=Ice: sparkle
 option.TEX_SMOOTH=Smooth distant textures
 option.TEX_SMOOTH.comment=Stops distant floors and walls from turning into a flickering grid. Costs some performance.
+option.AUTO_EXPOSURE=Auto exposure
+option.AUTO_EXPOSURE.comment=Adapts brightness like an eye: bright rooms get darker, dark caves brighter. 0 = off.
+value.AUTO_EXPOSURE.0=Off
+value.AUTO_EXPOSURE.1=Light
+value.AUTO_EXPOSURE.2=Medium
+value.AUTO_EXPOSURE.3=Strong
+value.AUTO_EXPOSURE.4=Very strong

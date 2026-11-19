@@ -5,6 +5,7 @@
 #include "/blur.glsl"
 
 uniform sampler2D colortex0;
+uniform sampler2D colortex3;
 
 // filmische Kurve (ACES-Naeherung)
 vec3 filmic(vec3 x) {
@@ -31,6 +32,8 @@ void main() {
 	color += glow * BLOOM_STRENGTH;
 #endif
 	color *= EXPOSURE;
+	// automatische Belichtung (in composite1 nachgefuehrt)
+	color *= max(texture2D(colortex3, vec2(0.5)).r, 0.05);
 
 	// Farbbearbeitung in Lichtwerten (linear) statt in Bildschirmwerten – wirkt wie eine Kamera, nicht wie ein Gemaelde
 	vec3 lin = pow(max(color, 0.0), vec3(2.2));

@@ -88,3 +88,10 @@ option.ICE_FX.comment=Eis wird k\u00fchl und klar, spiegelt den Himmel, gl\u00e4
 option.ICE_SPARKLE=Eis: Funkeln
 option.TEX_SMOOTH=Texturen in der Ferne gl\u00e4tten
 option.TEX_SMOOTH.comment=Verhindert, dass B\u00f6den und W\u00e4nde in der Ferne zu einem flimmernden Gitter werden. Kostet etwas Leistung.
+option.AUTO_EXPOSURE=Automatische Belichtung
+option.AUTO_EXPOSURE.comment=Passt die Helligkeit wie ein Auge an: helle R\u00e4ume werden abgedunkelt, dunkle H\u00f6hlen aufgehellt. 0 = aus.
+value.AUTO_EXPOSURE.0=Aus
+value.AUTO_EXPOSURE.1=Leicht
+value.AUTO_EXPOSURE.2=Mittel
+value.AUTO_EXPOSURE.3=Stark
+value.AUTO_EXPOSURE.4=Sehr stark
