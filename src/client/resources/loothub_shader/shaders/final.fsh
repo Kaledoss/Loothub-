@@ -6,6 +6,11 @@
 
 uniform sampler2D colortex0;
 
+// filmische Kurve (ACES-Naeherung)
+vec3 filmic(vec3 x) {
+	return clamp((x * (2.51 * x + 0.03)) / (x * (2.43 * x + 0.59) + 0.14), 0.0, 1.0);
+}
+
 vec3 tonemap(vec3 x) {
 	// dunkle und mittlere Toene bleiben unveraendert, Spitzlichter laufen weich gegen Weiss aus
 	// (ueber den hellsten Farbkanal, damit sich Farbtoene nicht verschieben)
@@ -27,15 +32,22 @@ void main() {
 #endif
 	color *= EXPOSURE;
 
+	// Farbbearbeitung in Lichtwerten (linear) statt in Bildschirmwerten – wirkt wie eine Kamera, nicht wie ein Gemaelde
+	vec3 lin = pow(max(color, 0.0), vec3(2.2));
 	// Waerme: Rot/Gelb leicht anheben, Blau leicht senken (oder umgekehrt)
-	color *= vec3(1.0 + WARMTH, 1.0 + WARMTH * 0.35, 1.0 - WARMTH);
-
-	// Kontrast um Mittelgrau, Saettigung ueber die Helligkeit
-	color = (color - 0.5) * CONTRAST + 0.5;
-	float l = luma(color);
-	color = mix(vec3(l), color, SATURATION);
-
-	color = tonemap(max(color, 0.0));
+	lin *= vec3(1.0 + WARMTH, 1.0 + WARMTH * 0.35, 1.0 - WARMTH);
+	// Kontrast um 18 % Grau (wie Belichtung: dunkle Stellen dunkler, helle heller, ohne Farben zu verschieben)
+	lin = 0.18 * pow(lin / 0.18 + 1e-5, vec3(CONTRAST));
+	float l = luma(lin);
+	lin = max(mix(vec3(l), lin, SATURATION), 0.0);
+	// sehr knallige Farben (Gras, Erde, rosa Schweine) natuerlich daempfen
+	float mx = max(lin.r, max(lin.g, lin.b));
+	float mn = min(lin.r, min(lin.g, lin.b));
+	float chroma = (mx - mn) / max(mx, 1e-4);
+	lin = mix(lin, vec3(luma(lin)), smoothstep(0.45, 1.0, chroma) * 0.22);
+	// filmische Kurve: Mitten fast unveraendert, Lichter laufen weich aus und entsaettigen leicht
+	lin = filmic(lin * 0.8) / filmic(vec3(1.28)).x;
+	color = pow(clamp(lin, 0.0, 1.0), vec3(1.0 / 2.2));
 
 	// luftig: Schatten etwas anheben und leicht kuehl-weiss toenen (heller, klarer Look)
 	vec3 airTint = vec3(0.97, 0.98, 1.0);
