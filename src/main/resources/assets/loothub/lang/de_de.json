@@ -1059,7 +1059,7 @@
 	"loothub.lh.q.streak.login": "☀ Login: %s Tage am Stück",
 	"loothub.lh.q.streak.best_days": "beste: %s Tage",
 	"loothub.lh.q.streak.login.today": "✔ heute dabei",
-	"loothub.lh.q.streak.login.hint": "Jeden Tag einmal online sein – die tägliche Belohnung steigt mit jeder Stufe der Serie um 2 Taler (1, 3, 7, 14, 30, 50, 75, 100 Tage). Jede Stufe gibt außerdem einen Login-Schutz.",
+	"loothub.lh.q.streak.login.hint": "Jeden Tag einmal online sein – die tägliche Belohnung steigt mit jeder Stufe der Serie um 2 Taler (1, 3, 7, 14, 30 … Tage). Jede Stufe gibt außerdem einen Login-Schutz.",
 	"loothub.lh.toast.login": "☀ Login-Serie: %s Tage",
 	"loothub.lh.board.login": "Login-Serie",
 	"loothub.lh.stat.login": "Beste Login-Serie (Tage)",

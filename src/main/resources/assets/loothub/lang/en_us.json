@@ -1059,7 +1059,7 @@
 	"loothub.lh.q.streak.login": "☀ Login: %s days in a row",
 	"loothub.lh.q.streak.best_days": "best: %s days",
 	"loothub.lh.q.streak.login.today": "✔ here today",
-	"loothub.lh.q.streak.login.hint": "Be online once every day – the daily reward goes up by 2 Taler with every streak tier (1, 3, 7, 14, 30, 50, 75, 100 days). Every tier also gives a login protection.",
+	"loothub.lh.q.streak.login.hint": "Be online once every day – the daily reward goes up by 2 Taler with every streak tier (1, 3, 7, 14, 30 … days). Every tier also gives a login protection.",
 	"loothub.lh.toast.login": "☀ Login streak: %s days",
 	"loothub.lh.board.login": "Login streak",
 	"loothub.lh.stat.login": "Best login streak (days)",
