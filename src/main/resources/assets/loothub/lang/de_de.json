@@ -1108,5 +1108,6 @@
 	"loothub.lh.admin.error.bad board": "Unbekannte Rangliste.",
 	"loothub.lh.admin.error.bad op": "Unbekannte Aktion.",
 	"loothub.lh.admin.error.not admin": "Du bist kein Admin.",
-	"loothub.lh.admin.error.busy": "Der Loothub-Server ist gerade ausgelastet."
+	"loothub.lh.admin.error.busy": "Der Loothub-Server ist gerade ausgelastet.",
+	"loothub.lh.ach.tier": "★ Stufe %s/%s"
 }

@@ -388,13 +388,10 @@ public class ProgressScreen extends LoothubScreen {
 				default -> tot.has(stat) ? tot.get(stat).getAsLong() : 0;
 			};
 			g.drawString(font, Texts.stat(stat), cl + 2, y + 2, tier > 0 ? TEXT : MUTED, false);
-			// Stufen als Sterne
-			StringBuilder stars = new StringBuilder();
-			for (int i = 0; i < tiers.size(); i++) {
-				stars.append(i < tier ? "★" : "☆");
-			}
+			// Stufe als „★ 12/30“
 			int starsX = cl + Math.min(170, cw / 3);
-			g.drawString(font, stars.toString(), starsX, y + 2, 0xFFF2C14E, false);
+			g.drawString(font, Component.translatable("loothub.lh.ach.tier", tier, tiers.size()), starsX, y + 2,
+					tier > 0 ? 0xFFF2C14E : FAINT, false);
 			String unit = stat;
 			String right;
 			double f;

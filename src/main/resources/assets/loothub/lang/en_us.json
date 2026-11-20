@@ -1108,5 +1108,6 @@
 	"loothub.lh.admin.error.bad board": "Unknown leaderboard.",
 	"loothub.lh.admin.error.bad op": "Unknown action.",
 	"loothub.lh.admin.error.not admin": "You are not an admin.",
-	"loothub.lh.admin.error.busy": "The Loothub server is busy right now."
+	"loothub.lh.admin.error.busy": "The Loothub server is busy right now.",
+	"loothub.lh.ach.tier": "★ Tier %s/%s"
 }
