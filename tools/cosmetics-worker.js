@@ -560,7 +560,6 @@ const LH_Q = {
 	play: [[30, 60, 120], [300, 600, 1200]],
 	jumps: [[200, 500, 1000], [3000, 8000, 20000]],
 	eat: [[10, 25, 50], [100, 250, 500]],
-	treasures: [[1, 3, 6], null], // Jobschätze nicht als Wochenquest
 };
 const LH_Q_POINTS = [[10, 20, 40], [100, 175, 300]];
 const LH_COMM = { blocks: 500000, mobs: 50000, fish: 5000, placed: 250000 };
