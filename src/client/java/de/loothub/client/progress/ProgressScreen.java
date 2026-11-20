@@ -383,7 +383,6 @@ public class ProgressScreen extends LoothubScreen {
 			int tier = mine.has(stat) ? mine.get(stat).getAsInt() : 0;
 			long v = switch (stat) {
 				case "dquests" -> s.get("dquests").getAsLong();
-				case "clean" -> s.has("clean") ? s.get("clean").getAsLong() : 0;
 				case "wquests" -> s.get("wquests").getAsLong();
 				case "login" -> s.getAsJsonObject("login").get("best").getAsLong();
 				default -> tot.has(stat) ? tot.get(stat).getAsLong() : 0;

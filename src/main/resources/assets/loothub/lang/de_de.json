@@ -1086,7 +1086,6 @@
 	"loothub.lh.board.dropped": "Am wenigsten weggeworfen",
 	"loothub.lh.board.dropped.hint": "nur mit mind. %s Spielzeit im Zeitraum",
 	"loothub.lh.stat.picked": "Aufgesammelte Items",
-	"loothub.lh.stat.clean": "Spielzeit ohne Wegwerfen",
 	"loothub.lh.tab.admin": "Admin",
 	"loothub.lh.admin.player": "Spielername",
 	"loothub.lh.admin.amount": "Taler",

@@ -540,7 +540,6 @@ const LH_ACH = {
 	blocks: [1000, 10000, 50000, 250000, 1000000, 5000000],
 	placed: [500, 5000, 25000, 100000, 500000],
 	picked: [1000, 10000, 100000, 500000, 1000000, 5000000],
-	clean: [60, 300, 600, 1500, 3000, 6000, 15000, 30000], // Spielminuten ohne Wegwerfen
 	mobs: [100, 1000, 5000, 25000, 100000],
 	fish: [50, 500, 2500, 10000, 50000],
 	play: [600, 3000, 12000, 30000, 60000],
@@ -597,7 +596,7 @@ async function lhInit(db) {
 	]);
 	// später dazugekommene Spalten: Ranglisten-Werte gesamt und je Tag/Woche/Monat samt Zeitraum-Kennung
 	const have = new Set(((await db.prepare("PRAGMA table_info(lh_player)").all()).results || []).map((c) => c.name));
-	const want = [...LH_BOARDS, "clean", "points_a", "pd", "pw", "pm"];
+	const want = [...LH_BOARDS, "points_a", "pd", "pw", "pm"];
 	for (const b of LH_BOARDS) for (const p of LH_PERIODS) want.push(`${b}_${p}`);
 	for (const col of want) {
 		if (!have.has(col)) {
@@ -779,12 +778,8 @@ async function lhProgress(db, d, now) {
 	if (jd.day !== dayNow) { jd.day = dayNow; jd.start = tot.jobmoney || 0; }
 	jd.best = Math.max(jd.best, (tot.jobmoney || 0) - jd.start);
 
-	// Spielzeit ohne Wegwerfen: Spielminuten aus Abgleichen, in denen nichts weggeworfen wurde
-	d.clean = d.clean || 0;
-	if (!d.first && (d.delta.dropped || 0) === 0) d.clean += d.delta.play || 0;
-
 	// Erfolge
-	const metas = { dquests: d.dq, wquests: d.wq, login: d.login.best, clean: d.clean };
+	const metas = { dquests: d.dq, wquests: d.wq, login: d.login.best };
 	for (const stat of Object.keys(LH_ACH)) {
 		const v = stat in metas ? metas[stat] : (tot[stat] || 0);
 		const t = lhTier(stat, v);
@@ -811,7 +806,7 @@ function lhView(row, d, extra, now) {
 	return {
 		now, points: row.points, balance: row.points - row.spent, title: row.title, badge: row.badge,
 		tot: lhCopy(d.tot), ach: d.ach, quests: d.quests,
-		clean: d.clean || 0, dquests: d.dq || 0, wquests: d.wq || 0, jobday: Math.floor((d.jd && d.jd.best) || 0),
+		dquests: d.dq || 0, wquests: d.wq || 0, jobday: Math.floor((d.jd && d.jd.best) || 0),
 		login: { cur: (d.login || {}).cur || 0, best: (d.login || {}).best || 0, freeze: d.freeze || 0 },
 		slot: { ends: lhSlotEnd(slot), list: q4 },
 		week: { ends: lhWeekEnd(week), list: qw },
@@ -836,7 +831,7 @@ async function lhSave(db, row, d, now, name, resets) {
 	const bv = lhBoardValues(d, row, achCount, now, resets || await lhResets(db));
 	const cols = {
 		...bv.all, uuid: row.uuid, name: name || row.name || "", data: JSON.stringify(d), spent: row.spent || 0,
-		title: row.title || "", badge: row.badge || "", quests: d.quests || 0, jobmoney: tot.jobmoney || 0, clean: d.clean || 0, updated: now,
+		title: row.title || "", badge: row.badge || "", quests: d.quests || 0, jobmoney: tot.jobmoney || 0, updated: now,
 		pd: bv.ids.d, pw: bv.ids.w, pm: bv.ids.m,
 	};
 	// „points“ = alle je verdienten Taler (für das Guthaben); die Rangliste „gesamt“ liest points_a (nach Rücksetzung neu)

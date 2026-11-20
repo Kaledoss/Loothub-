@@ -1086,7 +1086,6 @@
 	"loothub.lh.board.dropped": "Fewest items thrown away",
 	"loothub.lh.board.dropped.hint": "only with at least %s play time in the period",
 	"loothub.lh.stat.picked": "Items picked up",
-	"loothub.lh.stat.clean": "Play time without throwing away",
 	"loothub.lh.tab.admin": "Admin",
 	"loothub.lh.admin.player": "Player name",
 	"loothub.lh.admin.amount": "Talers",
