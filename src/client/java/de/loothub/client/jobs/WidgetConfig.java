@@ -282,6 +282,8 @@ public final class WidgetConfig {
 	public boolean progress = true;
 	/** Titel und Abzeichen anderer Spieler über dem Kopf und in der Tab-Liste zeigen. */
 	public boolean progressTitles = true;
+	/** Loothub-Fenster mit Texturen (Goldrahmen, Holz, Leder-Knöpfe). */
+	public boolean menuSkin = true;
 	/** Verbundene Texturen (Glas ohne Ränder zwischen gleichen Blöcken). */
 	public boolean connectedTextures = true;
 	/** Streamer-Modus: eigene Menüseite mit Twitch-Konto, Twitch-Chat im Minecraft-Chat und Kanalbelohnungen. */

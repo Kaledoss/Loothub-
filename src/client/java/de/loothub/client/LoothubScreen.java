@@ -113,7 +113,7 @@ public abstract class LoothubScreen extends Screen {
 
 	@Override
 	protected final void init() {
-		int margin = Mth.clamp(Math.min(width, height) / 24, 4, 24);
+		int margin = Mth.clamp(Math.min(width, height) / 24, MenuSkin.on() ? MenuSkin.FRAME_OUT + 3 : 4, 24);
 		frameX = margin;
 		frameY = margin;
 		frameW = width - 2 * margin;
@@ -151,11 +151,27 @@ public abstract class LoothubScreen extends Screen {
 
 	// ------------------------------------------------------------------ Zeichnen
 
+	@Override
+	public void render(GuiGraphics g, int mouseX, int mouseY, float delta) {
+		super.render(g, mouseX, mouseY, delta);
+		if (MenuSkin.on()) {
+			// Knöpfe im Leder-Stil über die Vanilla-Knöpfe legen
+			g.nextStratum();
+			MenuSkin.skinButtons(g, font, children().stream()
+					.filter(c -> c instanceof net.minecraft.client.gui.components.Renderable)
+					.map(c -> (net.minecraft.client.gui.components.Renderable) c).toList());
+		}
+	}
+
 	/** Fenster, Titelleiste, Kategorien und Kopfzeile – alles unter den Knöpfen. */
 	@Override
 	public void renderBackground(GuiGraphics g, int mouseX, int mouseY, float delta) {
 		g.nextStratum();
 		g.fill(0, 0, width, height, de.loothub.client.Theme.bg(0xA0000000));
+		if (MenuSkin.on()) {
+			renderSkinned(g, mouseX, mouseY);
+			return;
+		}
 
 		// Rahmen (doppelt: außen dunkelrot, innen schwarz)
 		g.fill(frameX - 1, frameY - 1, frameX + frameW + 1, frameY + frameH + 1, de.loothub.client.Theme.bg(RED_DARK));
@@ -223,6 +239,72 @@ public abstract class LoothubScreen extends Screen {
 		Component right = headerRight();
 		if (right != null) {
 			g.drawString(font, right, cr - font.width(right), frameY + TITLE_H + 5, FAINT, false);
+		}
+	}
+
+	/** Verziertes Fenster: Ornament-Rahmen, Holz-Leiste, Karte für den Inhalt, goldene Trennlinien. */
+	private void renderSkinned(GuiGraphics g, int mouseX, int mouseY) {
+		MenuSkin.frame(g, frameX, frameY, frameW, frameH);
+
+		// Titel und Trennlinie
+		Component title = Component.literal("LOOTHUB").withStyle(ChatFormatting.BOLD)
+				.append(Component.literal("+").withStyle(ChatFormatting.BOLD))
+				.withStyle(s -> s.withColor(MenuSkin.GOLD & 0xFFFFFF))
+				.append(Component.literal("  von Kaledoss").withStyle(s -> s.withColor(MUTED & 0xFFFFFF).withBold(false)));
+		int titleW = 16 + font.width(title);
+		int tx = frameX + (frameW - titleW) / 2;
+		g.blit(RenderPipelines.GUI_TEXTURED, ICON, tx, frameY + 2, 0f, 0f, 13, 13, 128, 128, 128, 128);
+		g.drawString(font, title, tx + 16, frameY + 5, TEXT, true);
+		MenuSkin.divider(g, frameX + 8, frameX + frameW - 8, frameY + TITLE_H - 2);
+
+		// Kategorien auf Holz
+		int sx = frameX + 4;
+		int sy = frameY + TITLE_H + 4;
+		int sh = frameH - TITLE_H - 8;
+		MenuSkin.wood(g, sx, sy, sidebarW, sh);
+		g.fill(sx + sidebarW, sy, sx + sidebarW + 1, sy + sh, 0xFF2A1A12);
+		boolean compact = sidebarW < 60;
+		int ey = sy + 6;
+		if (!compact) {
+			Component cat = Component.translatable("loothub.menu.categories");
+			g.drawString(font, cat, sx + (sidebarW - font.width(cat)) / 2, ey, MenuSkin.GOLD, true);
+			ey += 16;
+		}
+		Page hoveredPage = null;
+		for (Page p : Page.values()) {
+			if (!p.shown()) {
+				continue;
+			}
+			boolean selected = p == page;
+			boolean hover = mouseX >= sx && mouseX < sx + sidebarW && mouseY >= ey && mouseY < ey + ENTRY_H;
+			if (hover) {
+				hoveredPage = p;
+			}
+			if (selected) {
+				MenuSkin.button(g, sx + 2, ey, sidebarW - 4, ENTRY_H, true, false);
+			} else if (hover) {
+				g.fill(sx + 2, ey + 1, sx + sidebarW - 2, ey + ENTRY_H - 1, 0x30F2C14E);
+			}
+			g.renderItem(new ItemStack(p.icon), sx + 7, ey + 3);
+			if (!compact) {
+				g.drawString(font, Component.translatable(p.translationKey), sx + 28, ey + 7,
+						selected ? TEXT : hover ? 0xFFF5E6C8 : 0xFFC9B79C, true);
+			}
+			ey += ENTRY_H + 2;
+		}
+		if (compact && hoveredPage != null) {
+			g.setTooltipForNextFrame(font, Component.translatable(hoveredPage.translationKey), mouseX, mouseY);
+		}
+
+		// Inhalt in einer Karte mit Goldrand
+		int hx = cl - 4;
+		MenuSkin.card(g, hx - 2, frameY + TITLE_H + 2, cr + 6 - (hx - 2), cb + 6 - (frameY + TITLE_H + 2));
+		Component pageTitle = Component.translatable(page.translationKey + ".header");
+		g.drawString(font, pageTitle, cl, frameY + TITLE_H + 6, TEXT, true);
+		g.fill(cl, ct - 3, cr, ct - 2, 0xFF6B4A22);
+		Component right = headerRight();
+		if (right != null) {
+			g.drawString(font, right, cr - font.width(right), frameY + TITLE_H + 6, FAINT, false);
 		}
 	}
 

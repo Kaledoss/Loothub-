@@ -294,6 +294,11 @@ public class SettingsScreen extends LoothubScreen {
 				}
 				y = card(y, 40, "loothub.settings.crown", "loothub.settings.crown.tooltip",
 						() -> c.loothubCrown, v -> c.loothubCrown = v);
+				y = card(y, 40, "loothub.settings.menu_skin", "loothub.settings.menu_skin.tooltip",
+						() -> c.menuSkin, v -> {
+							c.menuSkin = v;
+							minecraft.execute(() -> rebuildWidgets());
+						});
 				y = card(y, 40, "loothub.settings.progress", "loothub.settings.progress.tooltip",
 						() -> c.progress, v -> c.progress = v);
 				y = card(y, 40, "loothub.settings.progress_titles", "loothub.settings.progress_titles.tooltip",
