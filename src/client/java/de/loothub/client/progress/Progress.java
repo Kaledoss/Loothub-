@@ -369,6 +369,10 @@ public final class Progress {
 						Texts.goal(stat, n.get("goal").getAsLong()).getString() + " · " + plus, 0x55E06A));
 				case "streak" -> TOASTS.add(new Toast(
 						Component.translatable("loothub.lh.toast.streak", n.get("n").getAsInt()).getString(), plus, 0xFFD166));
+				case "login" -> TOASTS.add(new Toast(
+						Component.translatable("loothub.lh.toast.login", n.get("n").getAsInt()).getString(), plus, 0xFFB833));
+				case "wstreak" -> TOASTS.add(new Toast(
+						Component.translatable("loothub.lh.toast.wstreak", n.get("n").getAsInt()).getString(), plus, 0xFF9B3B));
 				case "comm" -> TOASTS.add(new Toast(Component.translatable("loothub.lh.toast.comm").getString(),
 						Texts.stat(stat).getString() + " · " + plus, 0x6BD5FF));
 				case "ach" -> TOASTS.add(new Toast(

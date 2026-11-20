@@ -549,6 +549,8 @@ const LH_ACH = {
 	jumps: [1000, 10000, 100000, 500000],
 	quests: [10, 100, 500, 2000],
 	streak: [3, 7, 30, 100],
+	login: [7, 30, 100, 365],
+	weekstreak: [2, 4, 12, 52],
 };
 // Quest-Ziele: [leicht, mittel, schwer] je 4 Stunden bzw. je Woche
 const LH_Q = {
@@ -579,7 +581,7 @@ const LH_SHOP = [
 const LH_SHOP_MAP = Object.fromEntries(LH_SHOP.map(([id, kind, cost]) => [id, { kind, cost }]));
 // Fußspuren-Stile aus dem Shop (Wert in den Cosmetics → nötiger Shop-Artikel)
 const LH_STEP_ITEMS = { hearts: "c_hearts", notes: "c_notes", snow: "c_snow", magic: "c_magic", soul: "c_soul", stars: "c_stars" };
-const LH_BOARDS = ["points", "ach", "quests", "streak", "blocks", "mobs", "fish", "play", "dist", "jobmoney", "itemdex"];
+const LH_BOARDS = ["points", "ach", "quests", "login", "streak", "weekstreak", "blocks", "mobs", "fish", "play", "dist", "jobmoney", "itemdex"];
 
 let lhReady = false;
 async function lhInit(db) {
@@ -591,6 +593,10 @@ async function lhInit(db) {
 			dist INTEGER DEFAULT 0, jobmoney INTEGER DEFAULT 0, itemdex INTEGER DEFAULT 0, updated INTEGER DEFAULT 0)`),
 		db.prepare("CREATE TABLE IF NOT EXISTS lh_comm (week INTEGER PRIMARY KEY, stat TEXT, goal INTEGER, sum INTEGER DEFAULT 0)"),
 	]);
+	// später dazugekommene Spalten (Fehler = gibt es schon)
+	for (const col of ["login", "weekstreak"]) {
+		try { await db.prepare(`ALTER TABLE lh_player ADD COLUMN ${col} INTEGER DEFAULT 0`).run(); } catch { /* vorhanden */ }
+	}
 	lhReady = true;
 }
 
@@ -679,6 +685,19 @@ async function lhProgress(db, d, now) {
 	d.ach = d.ach || {};
 	d.quests = d.quests || 0;
 	d.streak = d.streak || { cur: 0, best: 0, day: -1, today: -1, todayDone: 0 };
+	d.login = d.login || { cur: 0, best: 0, day: -1 };
+	d.wstreak = d.wstreak || { cur: 0, best: 0, week: -1 };
+
+	// Login-Serie: jeden Tag mindestens einmal online
+	const day0 = lhDayId(now);
+	if (d.login.day !== day0) {
+		d.login.cur = d.login.day === day0 - 1 ? d.login.cur + 1 : 1;
+		d.login.day = day0;
+		d.login.best = Math.max(d.login.best, d.login.cur);
+		const bonus = 2 * Math.min(d.login.cur, 10);
+		earned += bonus;
+		news.push({ k: "login", n: d.login.cur, p: bonus });
+	}
 
 	// 4-Stunden-Quests
 	const slot = lhSlotId(now);
@@ -727,6 +746,16 @@ async function lhProgress(db, d, now) {
 			news.push({ k: "week", stat: q.stat, goal: q.goal, p: q.points });
 		}
 	});
+	// Wochenquest-Serie: alle drei Wochenquests geschafft
+	if (d.week.done.every(Boolean) && d.wstreak.week !== week) {
+		d.wstreak.cur = d.wstreak.week === week - 1 ? d.wstreak.cur + 1 : 1;
+		d.wstreak.week = week;
+		d.wstreak.best = Math.max(d.wstreak.best, d.wstreak.cur);
+		const bonus = 25 * Math.min(d.wstreak.cur, 8);
+		earned += bonus;
+		news.push({ k: "wstreak", n: d.wstreak.cur, p: bonus });
+	}
+	if (d.wstreak.week < week - 1) d.wstreak.cur = 0;
 	const cq = lhCommunity(week);
 	const mine = Math.max(0, (tot[cq.stat] || 0) - (d.week.base[cq.stat] || 0));
 	const add = mine - (d.week.comm || 0);
@@ -745,7 +774,7 @@ async function lhProgress(db, d, now) {
 	}
 
 	// Erfolge
-	const metas = { quests: d.quests, streak: d.streak.best };
+	const metas = { quests: d.quests, streak: d.streak.best, login: d.login.best, weekstreak: d.wstreak.best };
 	for (const stat of Object.keys(LH_ACH)) {
 		const v = stat in metas ? metas[stat] : (tot[stat] || 0);
 		const t = lhTier(stat, v);
@@ -768,6 +797,9 @@ function lhView(row, d, extra, now) {
 		now, points: row.points, balance: row.points - row.spent, title: row.title, badge: row.badge,
 		tot: lhCopy(d.tot), ach: d.ach, quests: d.quests,
 		streak: { cur: d.streak.cur, best: d.streak.best, todayDone: d.streak.todayDone, kept: d.streak.day === lhDayId(now) },
+		login: { cur: (d.login || {}).cur || 0, best: (d.login || {}).best || 0 },
+		wstreak: { cur: (d.wstreak || {}).cur || 0, best: (d.wstreak || {}).best || 0, kept: (d.wstreak || {}).week === week,
+			done: d.week.done.filter(Boolean).length },
 		slot: { ends: lhSlotEnd(slot), list: q4 },
 		week: { ends: lhWeekEnd(week), list: qw },
 		comm: extra ? { stat: extra.cq.stat, goal: extra.cq.goal, sum: extra.commSum, mine: d.week.comm || 0,
@@ -821,14 +853,14 @@ async function lhHandle(request, env) {
 	if (!error) {
 		const tot = d.tot;
 		const achCount = Object.values(d.ach || {}).reduce((a, n) => a + n, 0);
-		await db.prepare(`INSERT INTO lh_player (uuid, name, data, points, spent, title, badge, ach, quests, streak, blocks, mobs, fish, play, dist, jobmoney, itemdex, updated)
-			VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+		await db.prepare(`INSERT INTO lh_player (uuid, name, data, points, spent, title, badge, ach, quests, streak, login, weekstreak, blocks, mobs, fish, play, dist, jobmoney, itemdex, updated)
+			VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 			ON CONFLICT(uuid) DO UPDATE SET name = excluded.name, data = excluded.data, points = excluded.points, spent = excluded.spent,
-			title = excluded.title, badge = excluded.badge, ach = excluded.ach, quests = excluded.quests, streak = excluded.streak,
+			title = excluded.title, badge = excluded.badge, ach = excluded.ach, quests = excluded.quests, streak = excluded.streak, login = excluded.login, weekstreak = excluded.weekstreak,
 			blocks = excluded.blocks, mobs = excluded.mobs, fish = excluded.fish, play = excluded.play, dist = excluded.dist,
 			jobmoney = excluded.jobmoney, itemdex = excluded.itemdex, updated = excluded.updated`)
 			.bind(uuid, name || row.name || "", JSON.stringify(d), row.points, row.spent, row.title || "", row.badge || "", achCount,
-				d.quests || 0, (d.streak && d.streak.best) || 0, tot.blocks || 0, tot.mobs || 0, tot.fish || 0, tot.play || 0,
+				d.quests || 0, (d.streak && d.streak.best) || 0, (d.login && d.login.best) || 0, (d.wstreak && d.wstreak.best) || 0, tot.blocks || 0, tot.mobs || 0, tot.fish || 0, tot.play || 0,
 				tot.dist || 0, tot.jobmoney || 0, tot.itemdex || 0, now).run();
 	}
 	const view = lhView(row, d, extra, now);
