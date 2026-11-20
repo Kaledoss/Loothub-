@@ -117,6 +117,9 @@ public final class Progress {
 			}
 			for (JsonElement e : part.getAsJsonArray("list")) {
 				String key = pinKey(kind, e.getAsJsonObject());
+				if (e.getAsJsonObject().get("done").getAsBoolean() || ALERTED.contains(key)) {
+					continue; // geschafft: angepinnte Quest verschwindet
+				}
 				present.add(key);
 				if (list.contains(key)) {
 					out.add(new Object[]{kind, e.getAsJsonObject()});
@@ -296,6 +299,9 @@ public final class Progress {
 							Texts.goal(stat, goal).getString() + " · "
 									+ Component.translatable("loothub.lh.toast.points", q.get("points").getAsInt()).getString(), 0x55E06A));
 					creditSoon = true;
+					if (pins().remove(key)) {
+						WidgetConfig.get().save(); // geschafft: nicht mehr angepinnt
+					}
 				}
 			}
 		}
