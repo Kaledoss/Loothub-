@@ -237,6 +237,14 @@ public final class Progress {
 			if (!busy && now - joinedAt > FIRST_DELAY_MS && now - lastSync > SYNC_MS) {
 				sync();
 			}
+			if (now - lastQuestCheck > 1000) {
+				lastQuestCheck = now;
+				checkQuestsDone();
+			}
+			if (creditSoon && !busy && now - lastSync > 15_000L) {
+				creditSoon = false;
+				sync(); // geschaffte Quest gleich gutschreiben lassen
+			}
 			if (WidgetConfig.get().progressTitles && now - lastTags > TAGS_MS) {
 				lastTags = now;
 				fetchTags();
@@ -248,6 +256,48 @@ public final class Progress {
 	public static void syncSoon() {
 		if (enabled() && !busy && System.currentTimeMillis() - lastSync > 60_000L && Minecraft.getInstance().player != null) {
 			sync();
+		}
+	}
+
+	// ------------------------------------------------------------------ Quest geschafft (sofort, ohne auf den Abgleich zu warten)
+
+	private static long lastQuestCheck;
+	private static boolean creditSoon;
+	/** Schon gemeldete Quests („s|blocks|300“), je Abschnitt bzw. Woche. */
+	private static final java.util.Set<String> ALERTED = new java.util.HashSet<>();
+	private static long alertedSlot, alertedWeek;
+
+	private static void checkQuestsDone() {
+		JsonObject s = state;
+		if (s == null || !s.has("slot") || !s.has("week")) {
+			return;
+		}
+		long slotEnds = s.getAsJsonObject("slot").get("ends").getAsLong();
+		long weekEnds = s.getAsJsonObject("week").get("ends").getAsLong();
+		if (slotEnds != alertedSlot) {
+			alertedSlot = slotEnds;
+			ALERTED.removeIf(k -> k.startsWith("s|"));
+		}
+		if (weekEnds != alertedWeek) {
+			alertedWeek = weekEnds;
+			ALERTED.removeIf(k -> k.startsWith("w|"));
+		}
+		for (String kind : new String[]{"s", "w"}) {
+			for (JsonElement e : s.getAsJsonObject(kind.equals("s") ? "slot" : "week").getAsJsonArray("list")) {
+				JsonObject q = e.getAsJsonObject();
+				String key = pinKey(kind, q);
+				if (q.get("done").getAsBoolean()) {
+					continue; // schon vom Server bestätigt – dessen Einblendung kommt mit dem Abgleich
+				}
+				String stat = q.get("stat").getAsString();
+				long goal = q.get("goal").getAsLong();
+				if (liveHave(stat, q.get("have").getAsLong()) >= goal && ALERTED.add(key)) {
+					TOASTS.add(new Toast(Component.translatable(kind.equals("w") ? "loothub.lh.toast.week" : "loothub.lh.toast.quest").getString(),
+							Texts.goal(stat, goal).getString() + " · "
+									+ Component.translatable("loothub.lh.toast.points", q.get("points").getAsInt()).getString(), 0x55E06A));
+					creditSoon = true;
+				}
+			}
 		}
 	}
 
@@ -536,9 +586,14 @@ public final class Progress {
 			String plus = Component.translatable("loothub.lh.toast.points", p).getString();
 			String stat = n.has("stat") ? n.get("stat").getAsString() : "";
 			switch (k) {
-				case "quest", "week" -> TOASTS.add(new Toast(
+				case "quest", "week" -> {
+					if (ALERTED.contains((k.equals("week") ? "w|" : "s|") + stat + "|" + n.get("goal").getAsLong())) {
+						break; // schon beim Schaffen eingeblendet
+					}
+					TOASTS.add(new Toast(
 						Component.translatable(k.equals("week") ? "loothub.lh.toast.week" : "loothub.lh.toast.quest").getString(),
 						Texts.goal(stat, n.get("goal").getAsLong()).getString() + " · " + plus, 0x55E06A));
+				}
 				case "login" -> TOASTS.add(new Toast(
 						Component.translatable("loothub.lh.toast.login", n.get("n").getAsInt()).getString(), plus, 0xFFB833));
 				case "freeze" -> TOASTS.add(new Toast(Component.translatable("loothub.lh.toast.freeze").getString(),
