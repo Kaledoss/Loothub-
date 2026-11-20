@@ -824,6 +824,10 @@ public final class StatsTracker {
 		// Spielzeit
 		if (lastTickTime > 0) {
 			StatsStore.add("general.play_time", Math.min(now - lastTickTime, 1000));
+			if (!OpsuchtAfk.afk(mc)) {
+				// aktive Spielzeit: nur, solange OPSUCHT einen nicht als AFK meldet (für Quests und Rangliste)
+				StatsStore.add("general.active_time", Math.min(now - lastTickTime, 1000));
+			}
 		}
 		lastTickTime = now;
 

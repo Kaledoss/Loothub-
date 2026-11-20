@@ -327,6 +327,7 @@ public class ProgressScreen extends LoothubScreen {
 		return switch (b) {
 			case "points", "ach", "dquests", "wquests" -> Fmt.whole(v);
 			case "login" -> Component.translatable("loothub.lh.days", v).getString();
+			case "jobday" -> Texts.value("jobmoney", v);
 			default -> Texts.value(b, v);
 		};
 	}

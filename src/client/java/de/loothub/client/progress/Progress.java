@@ -143,7 +143,7 @@ public final class Progress {
 		o.addProperty("placed", placed);
 		o.addProperty("mobs", mobs);
 		o.addProperty("fish", de.loothub.client.jobs.FishingLog.all().size());
-		o.addProperty("play", all.getOrDefault("general.play_time", 0L) / 60_000L);
+		o.addProperty("play", all.getOrDefault("general.active_time", 0L) / 60_000L); // ohne AFK-Zeit
 		o.addProperty("dist", distCm / 100L);
 		o.addProperty("treasures", all.getOrDefault("general.treasures", 0L));
 		o.addProperty("jobmoney", (long) Math.max(0, money));
