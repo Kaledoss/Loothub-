@@ -110,7 +110,8 @@ public final class InvTools {
 	static boolean realContainer(AbstractContainerScreen<?> screen) {
 		AbstractContainerMenu menu = screen.getMenu();
 		if (!(menu instanceof ChestMenu) && !(menu instanceof ShulkerBoxMenu)
-				&& !(menu instanceof net.minecraft.world.inventory.HopperMenu)) {
+				&& !(menu instanceof net.minecraft.world.inventory.HopperMenu)
+				&& !(menu instanceof net.minecraft.world.inventory.DispenserMenu)) {
 			return false;
 		}
 		if (screen.getTitle().getContents() instanceof TranslatableContents t && t.getKey().startsWith("container.")) {
@@ -138,7 +139,8 @@ public final class InvTools {
 				|| block instanceof net.minecraft.world.level.block.BarrelBlock
 				|| block instanceof net.minecraft.world.level.block.ShulkerBoxBlock
 				|| block instanceof net.minecraft.world.level.block.EnderChestBlock
-				|| block instanceof net.minecraft.world.level.block.HopperBlock;
+				|| block instanceof net.minecraft.world.level.block.HopperBlock
+				|| block instanceof net.minecraft.world.level.block.DispenserBlock; // auch Werfer (DropperBlock erbt davon)
 	}
 
 	/**
@@ -223,7 +225,9 @@ public final class InvTools {
 			return;
 		}
 		// ganze Höhe des Menüs (im Tresor inkl. Menü-Reihe), damit die Knöpfe über dem Inventar sitzen
-		int containerRows = menu instanceof ChestMenu chest ? chest.getRowCount() : (containerSlots(menu).size() + 8) / 9;
+		int containerRows = menu instanceof ChestMenu chest ? chest.getRowCount()
+				: menu instanceof net.minecraft.world.inventory.DispenserMenu ? 3 // 3×3-Raster, Fenster so hoch wie eine kleine Kiste
+				: (containerSlots(menu).size() + 8) / 9;
 		int invY = top + 17 + containerRows * 18 + 1; // Höhe der Beschriftung „Inventar“
 		if (menu instanceof net.minecraft.world.inventory.HopperMenu) {
 			invY = top + 38; // Trichter: niedrigeres Fenster, „Inventar“ steht bei 40
