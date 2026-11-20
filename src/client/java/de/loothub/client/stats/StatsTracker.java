@@ -53,6 +53,15 @@ public final class StatsTracker {
 
 	// ------------------------------------------------------------------ Ereignisse
 
+	/** Weggeworfene Items zählen (Q in der Welt, Q im Inventar, aus dem Fenster ziehen). */
+	public static void onDropped(net.minecraft.world.item.ItemStack stack, int amount) {
+		Minecraft mc = Minecraft.getInstance();
+		if (!tracking(mc) || stack == null || stack.isEmpty() || amount <= 0) {
+			return;
+		}
+		StatsStore.add("dropped." + BuiltInRegistries.ITEM.getKey(stack.getItem()), Math.min(amount, stack.getCount()));
+	}
+
 	public static void onBlockBroken(net.minecraft.core.BlockPos pos, BlockState state) {
 		net.minecraft.core.BlockPos p = pos.immutable();
 		long now = System.currentTimeMillis();

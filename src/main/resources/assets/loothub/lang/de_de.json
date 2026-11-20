@@ -978,7 +978,7 @@
 	"loothub.lh.board.fish": "Gefangene Fische",
 	"loothub.lh.board.play": "Spielzeit (ohne AFK)",
 	"loothub.lh.stat.blocks": "Abgebaute Blöcke",
-	"loothub.lh.stat.placed": "Gesetzte Blöcke",
+	"loothub.lh.stat.placed": "Gebaute Blöcke",
 	"loothub.lh.stat.mobs": "Besiegte Mobs",
 	"loothub.lh.stat.fish": "Gefangene Fische",
 	"loothub.lh.stat.play": "Spielzeit (ohne AFK)",
@@ -1080,5 +1080,11 @@
 	"loothub.lh.period.d": "Heute",
 	"loothub.lh.period.w": "Diese Woche",
 	"loothub.lh.period.m": "Dieser Monat",
-	"loothub.lh.period.a": "Gesamt"
+	"loothub.lh.period.a": "Gesamt",
+	"loothub.lh.board.placed": "Gebaute Blöcke",
+	"loothub.lh.board.picked": "Aufgesammelte Items",
+	"loothub.lh.board.dropped": "Am wenigsten weggeworfen",
+	"loothub.lh.board.dropped.hint": "nur mit mind. %s Spielzeit im Zeitraum",
+	"loothub.lh.stat.picked": "Aufgesammelte Items",
+	"loothub.lh.stat.clean": "Spielzeit ohne Wegwerfen"
 }

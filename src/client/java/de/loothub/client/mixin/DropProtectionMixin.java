@@ -15,8 +15,11 @@ public abstract class DropProtectionMixin {
 	@Inject(method = "drop(Z)Z", at = @At("HEAD"), cancellable = true)
 	private void loothub$protect(boolean fullStack, CallbackInfoReturnable<Boolean> cir) {
 		LocalPlayer self = (LocalPlayer) (Object) this;
-		if (!DropProtection.allow(self.getInventory().getSelectedItem())) {
+		var held = self.getInventory().getSelectedItem();
+		if (!DropProtection.allow(held)) {
 			cir.setReturnValue(false);
+			return;
 		}
+		de.loothub.client.stats.StatsTracker.onDropped(held, fullStack ? held.getCount() : 1);
 	}
 }

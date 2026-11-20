@@ -115,7 +115,7 @@ public final class Progress {
 	/** Summen der eigenen Statistik, wie der Server sie erwartet. */
 	static JsonObject counters() {
 		Map<String, Long> all = StatsStore.sum(StatsStore.Range.TOTAL);
-		long blocks = 0, placed = 0, mobs = 0, eat = 0;
+		long blocks = 0, placed = 0, mobs = 0, eat = 0, picked = 0, dropped = 0;
 		for (Map.Entry<String, Long> e : all.entrySet()) {
 			String k = e.getKey();
 			long v = e.getValue();
@@ -127,6 +127,10 @@ public final class Progress {
 				mobs += v;
 			} else if (k.startsWith("eaten.")) {
 				eat += v;
+			} else if (k.startsWith("picked.")) {
+				picked += v;
+			} else if (k.startsWith("dropped.")) {
+				dropped += v;
 			}
 		}
 		long distCm = 0;
@@ -150,6 +154,8 @@ public final class Progress {
 		o.addProperty("itemdex", de.loothub.client.itemdex.Itemdex.entries().size());
 		o.addProperty("eat", eat);
 		o.addProperty("jumps", all.getOrDefault("general.jumps", 0L));
+		o.addProperty("picked", picked);
+		o.addProperty("dropped", dropped);
 		return o;
 	}
 

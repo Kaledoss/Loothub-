@@ -528,17 +528,19 @@ function lhTz(now) {
 	return Math.round((local - Math.floor(now / 60000) * 60000) / LH_HOUR) * LH_HOUR;
 }
 const LH_SLOT = 4 * LH_HOUR;
-const LH_STATS = ["blocks", "placed", "mobs", "fish", "play", "dist", "treasures", "jobmoney", "itemdex", "eat", "jumps"];
+const LH_STATS = ["blocks", "placed", "mobs", "fish", "play", "dist", "treasures", "jobmoney", "itemdex", "eat", "jumps", "picked", "dropped"];
 // höchstens so viel Zuwachs pro Sekunde zwischen zwei Meldungen (dazu ein Puffer von 2 Minuten)
 const LH_RATE = { blocks: 25, placed: 25, mobs: 6, fish: 0.3, play: 0.025, dist: 120, treasures: 1, jobmoney: 50000,
-	itemdex: 5, eat: 2, jumps: 6 };
+	itemdex: 5, eat: 2, jumps: 6, picked: 60, dropped: 60 };
 const LH_FIRST_MAX = { blocks: 5e7, placed: 5e7, mobs: 5e6, fish: 1e6, play: 2e6, dist: 5e8, treasures: 1e6,
-	jobmoney: 1e12, itemdex: 1e5, eat: 1e6, jumps: 5e7 };
+	jobmoney: 1e12, itemdex: 1e5, eat: 1e6, jumps: 5e7, picked: 1e8, dropped: 1e8 };
 const LH_TIER_POINTS = [10, 25, 50, 100, 200, 400, 800];
 const LH_HISTORY_SHARE = 0.25; // Anteil der Taler für Erfolgsstufen, die beim ersten Abgleich schon erreicht sind
 const LH_ACH = {
 	blocks: [1000, 10000, 50000, 250000, 1000000, 5000000],
 	placed: [500, 5000, 25000, 100000, 500000],
+	picked: [1000, 10000, 100000, 500000, 1000000, 5000000],
+	clean: [60, 300, 600, 1500, 3000, 6000, 15000, 30000], // Spielminuten ohne Wegwerfen
 	mobs: [100, 1000, 5000, 25000, 100000],
 	fish: [50, 500, 2500, 10000, 50000],
 	play: [600, 3000, 12000, 30000, 60000],
@@ -578,8 +580,9 @@ const LH_SHOP = [
 const LH_SHOP_MAP = Object.fromEntries(LH_SHOP.map(([id, kind, cost]) => [id, { kind, cost }]));
 // Fußspuren-Stile aus dem Shop (Wert in den Cosmetics → nötiger Shop-Artikel)
 const LH_STEP_ITEMS = { hearts: "c_hearts", notes: "c_notes", snow: "c_snow", magic: "c_magic", soul: "c_soul", stars: "c_stars" };
-const LH_BOARDS = ["points", "ach", "login", "dquests", "wquests", "blocks", "mobs", "fish", "play", "jobday"];
+const LH_BOARDS = ["points", "ach", "login", "dquests", "wquests", "blocks", "placed", "picked", "dropped", "mobs", "fish", "play", "jobday"];
 
+const LH_DROP_MIN_PLAY = { d: 30, w: 180, m: 600, a: 1200 }; // Mindest-Spielminuten für „am wenigsten weggeworfen“
 const LH_PERIODS = ["d", "w", "m"]; // täglich, wöchentlich, monatlich (dazu „a“ = gesamt)
 let lhReady = false;
 async function lhInit(db) {
@@ -593,7 +596,7 @@ async function lhInit(db) {
 	]);
 	// später dazugekommene Spalten: Ranglisten-Werte gesamt und je Tag/Woche/Monat samt Zeitraum-Kennung
 	const have = new Set(((await db.prepare("PRAGMA table_info(lh_player)").all()).results || []).map((c) => c.name));
-	const want = ["login", "dquests", "wquests", "jobday", "pd", "pw", "pm"];
+	const want = [...LH_BOARDS, "clean", "pd", "pw", "pm"];
 	for (const b of LH_BOARDS) for (const p of LH_PERIODS) want.push(`${b}_${p}`);
 	for (const col of want) {
 		if (!have.has(col)) {
@@ -663,6 +666,7 @@ function lhAbsorb(d, reported, now) {
 	d.raw = d.raw || {};
 	d.tot = d.tot || {};
 	const first = !d.last;
+	d.delta = {};
 	d.first = first; // erster Abgleich: Erfolge aus alter Statistik bringen nur einen Teil der Taler
 	const secs = Math.min(6 * 3600, Math.max(0, (now - (d.last || now)) / 1000)) + 120;
 	for (const s of LH_STATS) {
@@ -676,6 +680,7 @@ function lhAbsorb(d, reported, now) {
 		if (!first && prev !== undefined) delta = Math.min(delta, Math.ceil(LH_RATE[s] * secs));
 		d.raw[s] = v;
 		d.tot[s] = (d.tot[s] || 0) + delta;
+		d.delta[s] = first ? 0 : delta;
 	}
 	d.last = now;
 }
@@ -773,8 +778,12 @@ async function lhProgress(db, d, now) {
 	if (jd.day !== dayNow) { jd.day = dayNow; jd.start = tot.jobmoney || 0; }
 	jd.best = Math.max(jd.best, (tot.jobmoney || 0) - jd.start);
 
+	// Spielzeit ohne Wegwerfen: Spielminuten aus Abgleichen, in denen nichts weggeworfen wurde
+	d.clean = d.clean || 0;
+	if (!d.first && (d.delta.dropped || 0) === 0) d.clean += d.delta.play || 0;
+
 	// Erfolge
-	const metas = { dquests: d.dq, wquests: d.wq, login: d.login.best };
+	const metas = { dquests: d.dq, wquests: d.wq, login: d.login.best, clean: d.clean };
 	for (const stat of Object.keys(LH_ACH)) {
 		const v = stat in metas ? metas[stat] : (tot[stat] || 0);
 		const t = lhTier(stat, v);
@@ -801,7 +810,7 @@ function lhView(row, d, extra, now) {
 	return {
 		now, points: row.points, balance: row.points - row.spent, title: row.title, badge: row.badge,
 		tot: lhCopy(d.tot), ach: d.ach, quests: d.quests,
-		dquests: d.dq || 0, wquests: d.wq || 0, jobday: Math.floor((d.jd && d.jd.best) || 0),
+		clean: d.clean || 0, dquests: d.dq || 0, wquests: d.wq || 0, jobday: Math.floor((d.jd && d.jd.best) || 0),
 		login: { cur: (d.login || {}).cur || 0, best: (d.login || {}).best || 0, freeze: d.freeze || 0 },
 		slot: { ends: lhSlotEnd(slot), list: q4 },
 		week: { ends: lhWeekEnd(week), list: qw },
@@ -862,7 +871,7 @@ async function lhHandle(request, env) {
 		const bv = lhBoardValues(d, row, achCount, now);
 		const cols = {
 			uuid, name: name || row.name || "", data: JSON.stringify(d), points: row.points, spent: row.spent,
-			title: row.title || "", badge: row.badge || "", quests: d.quests || 0, jobmoney: tot.jobmoney || 0, updated: now,
+			title: row.title || "", badge: row.badge || "", quests: d.quests || 0, jobmoney: tot.jobmoney || 0, clean: d.clean || 0, updated: now,
 			...bv.all, pd: bv.ids.d, pw: bv.ids.w, pm: bv.ids.m,
 		};
 		for (const p of LH_PERIODS) for (const b of LH_BOARDS) cols[`${b}_${p}`] = bv.per[p][b];
@@ -887,7 +896,8 @@ function lhBoardValues(d, row, achCount, now) {
 	const today = Math.max(0, (tot.jobmoney || 0) - (jd.start || 0));
 	const all = {
 		points: row.points || 0, ach: achCount, login: (d.login && d.login.best) || 0, dquests: d.dq || 0, wquests: d.wq || 0,
-		blocks: tot.blocks || 0, mobs: tot.mobs || 0, fish: tot.fish || 0, play: tot.play || 0, jobday: Math.floor(jd.best || 0),
+		blocks: tot.blocks || 0, placed: tot.placed || 0, picked: tot.picked || 0, dropped: tot.dropped || 0,
+		mobs: tot.mobs || 0, fish: tot.fish || 0, play: tot.play || 0, jobday: Math.floor(jd.best || 0),
 	};
 	const ids = { d: lhDayId(now), w: lhWeekId(now), m: lhMonthId(now) };
 	d.per = d.per || {};
@@ -928,9 +938,16 @@ async function lhBoard(request, env, ctx, url) {
 	const id = p === "d" ? lhDayId(now) : p === "w" ? lhWeekId(now) : p === "m" ? lhMonthId(now) : 0;
 	return lhCached(request, ctx, `/lh-board-cache/${b}/${p}/${id}`, 300, async () => {
 		const col = p === "a" ? b : `${b}_${p}`;
-		const where = p === "a" ? `${col} > 0` : `p${p} = ${id} AND ${col} > 0`;
-		const r = await env.AH.prepare(`SELECT uuid, name, badge, ${col} AS v FROM lh_player WHERE ${where} ORDER BY ${col} DESC LIMIT 50`).all();
-		return { b, p, t: Date.now(), list: (r.results || []).map((x) => [x.uuid, x.name, x.badge || "", x.v]) };
+		let where = p === "a" ? `${col} > 0` : `p${p} = ${id} AND ${col} > 0`;
+		let order = `${col} DESC`;
+		if (b === "dropped") {
+			// wer am wenigsten wegwirft – aber nur mit genug Spielzeit im Zeitraum
+			const play = p === "a" ? "play" : `play_${p}`;
+			where = `${p === "a" ? "1 = 1" : `p${p} = ${id}`} AND ${play} >= ${LH_DROP_MIN_PLAY[p]}`;
+			order = `${col} ASC, ${play} DESC`;
+		}
+		const r = await env.AH.prepare(`SELECT uuid, name, badge, ${col} AS v FROM lh_player WHERE ${where} ORDER BY ${order} LIMIT 50`).all();
+		return { b, p, t: Date.now(), minPlay: b === "dropped" ? LH_DROP_MIN_PLAY[p] : 0, list: (r.results || []).map((x) => [x.uuid, x.name, x.badge || "", x.v]) };
 	});
 }
 

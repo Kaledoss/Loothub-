@@ -19,10 +19,16 @@ import de.loothub.client.quick.DropProtection;
 public abstract class DropProtectionScreenMixin {
 	@Inject(method = "slotClicked", at = @At("HEAD"), cancellable = true)
 	private void loothub$protect(@Nullable Slot slot, int slotId, int button, ClickType type, CallbackInfo ci) {
+		Minecraft mc = Minecraft.getInstance();
+		if (type == ClickType.PICKUP && slot == null && slotId == -999 && mc.player != null) {
+			// getragenes Item aus dem Fenster ziehen: links alles, rechts eins
+			ItemStack carried = mc.player.containerMenu.getCarried();
+			de.loothub.client.stats.StatsTracker.onDropped(carried, button == 0 ? carried.getCount() : 1);
+			return;
+		}
 		if (type != ClickType.THROW) {
 			return;
 		}
-		Minecraft mc = Minecraft.getInstance();
 		ItemStack st;
 		if (slot != null) {
 			st = slot.getItem();
@@ -31,6 +37,9 @@ public abstract class DropProtectionScreenMixin {
 		}
 		if (!DropProtection.allow(st)) {
 			ci.cancel();
+			return;
 		}
+		// Q über dem Slot: eins, Strg+Q: ganzer Stapel
+		de.loothub.client.stats.StatsTracker.onDropped(st, slot != null && button == 1 ? st.getCount() : slot != null ? 1 : st.getCount());
 	}
 }

@@ -285,6 +285,7 @@ public class ProgressScreen extends LoothubScreen {
 			int tier = mine.has(stat) ? mine.get(stat).getAsInt() : 0;
 			long v = switch (stat) {
 				case "dquests" -> s.get("dquests").getAsLong();
+				case "clean" -> s.has("clean") ? s.get("clean").getAsLong() : 0;
 				case "wquests" -> s.get("wquests").getAsLong();
 				case "login" -> s.getAsJsonObject("login").get("best").getAsLong();
 				default -> tot.has(stat) ? tot.get(stat).getAsLong() : 0;
@@ -320,8 +321,11 @@ public class ProgressScreen extends LoothubScreen {
 
 	private int drawBoard(GuiGraphics g, JsonObject s, int y) {
 		JsonObject b = Progress.board(board, period);
+		Component hint = board.equals("dropped") && b != null && b.has("minPlay")
+				? Component.translatable("loothub.lh.board.dropped.hint", Texts.value("play", b.get("minPlay").getAsLong()))
+				: Component.translatable("loothub.lh.board.hint");
 		y = section(g, Component.translatable("loothub.lh.board." + board).append(" · ")
-				.append(Component.translatable("loothub.lh.period." + period)), Component.translatable("loothub.lh.board.hint"), y);
+				.append(Component.translatable("loothub.lh.period." + period)), hint, y);
 		if (b == null) {
 			g.drawString(font, Component.translatable("loothub.lh.loading"), cl + 8, y + 4, MUTED, false);
 			return y + 20;
