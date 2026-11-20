@@ -219,6 +219,20 @@ public class SettingsScreen extends LoothubScreen {
 						.bounds(cr - 8 - bw, versionY + 24, bw, 16).build()));
 				y = versionY + 50;
 				y = section(y, "loothub.settings.section.general");
+				// Sprache von Loothub (Dropdown)
+				{
+					int lY = y;
+					int lDescX = cl + labelW + 12;
+					int lW = Math.min(200, cr - 8 - lDescX);
+					buttons.add(addRenderableWidget(Button.builder(languageLabel(), b -> openPicker(b,
+							new String[]{"auto", "de_de", "en_us"}, "loothub.settings.language.", v -> {
+								WidgetConfig.get().loothubLanguage = v;
+								WidgetConfig.get().save();
+								LoothubLanguage.tick();
+								rebuildWidgets();
+							})).bounds(lDescX, lY + 20, lW, 16).build()));
+					y = cardNoToggle(lY, 40, "loothub.settings.language", "loothub.settings.language.tooltip");
+				}
 				y = card(y, 40, "loothub.settings.update_check", "loothub.settings.update_check.tooltip",
 						() -> c.updateCheck, v -> c.updateCheck = v);
 				{
@@ -1057,6 +1071,10 @@ public class SettingsScreen extends LoothubScreen {
 	private static Component hotbarStyleLabel() {
 		return Component.translatable("loothub.settings.hotbar_anim.style")
 				.append(Component.translatable("loothub.settings.hotbar_anim.style." + WidgetConfig.get().hotbarAnimStyle)).append(" ▾");
+	}
+
+	private static Component languageLabel() {
+		return Component.translatable("loothub.settings.language." + LoothubLanguage.choice()).append(" ▾");
 	}
 
 	private static Component timerSoundLabel() {

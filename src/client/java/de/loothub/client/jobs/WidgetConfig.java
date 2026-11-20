@@ -284,6 +284,8 @@ public final class WidgetConfig {
 	public boolean progressTitles = true;
 	/** Loothub-Fenster mit Texturen (Goldrahmen, Holz, Leder-Knöpfe). */
 	public boolean menuSkin = true;
+	/** Sprache von Loothub: "auto" (wie Minecraft), "de_de" oder "en_us". */
+	public String loothubLanguage = "auto";
 	/** Verbundene Texturen (Glas ohne Ränder zwischen gleichen Blöcken). */
 	public boolean connectedTextures = true;
 	/** Streamer-Modus: eigene Menüseite mit Twitch-Konto, Twitch-Chat im Minecraft-Chat und Kanalbelohnungen. */

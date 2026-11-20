@@ -1116,5 +1116,10 @@
 	"loothub.lh.preview.hint.badge": "So steht das Abzeichen vor deinem Namen – mit der Maus ziehen zum Drehen, Mausrad zum Zoomen",
 	"loothub.lh.preview.hint.steps": "So ungefähr sehen die Fußspuren aus – mit der Maus ziehen zum Drehen, Mausrad zum Zoomen",
 	"loothub.settings.menu_skin": "Verziertes Menü",
-	"loothub.settings.menu_skin.tooltip": "Loothub-Fenster mit goldenem Ornament-Rahmen, Holz-Leiste und Leder-Knöpfen. Aus = schlichtes, flaches Design."
+	"loothub.settings.menu_skin.tooltip": "Loothub-Fenster mit goldenem Ornament-Rahmen, Holz-Leiste und Leder-Knöpfen. Aus = schlichtes, flaches Design.",
+	"loothub.settings.language": "Sprache von Loothub",
+	"loothub.settings.language.tooltip": "Sprache aller Loothub-Texte, unabhängig von der Minecraft-Sprache. „Automatisch“ nimmt die Sprache von Minecraft.",
+	"loothub.settings.language.auto": "Automatisch (wie Minecraft)",
+	"loothub.settings.language.de_de": "Deutsch",
+	"loothub.settings.language.en_us": "English"
 }

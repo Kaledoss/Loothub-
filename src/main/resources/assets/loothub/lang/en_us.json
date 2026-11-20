@@ -1116,5 +1116,10 @@
 	"loothub.lh.preview.hint.badge": "This is how the badge shows in front of your name – drag to rotate, scroll to zoom",
 	"loothub.lh.preview.hint.steps": "Roughly how the footsteps look – drag to rotate, scroll to zoom",
 	"loothub.settings.menu_skin": "Decorated menu",
-	"loothub.settings.menu_skin.tooltip": "Loothub window with a golden ornate frame, wooden sidebar and leather buttons. Off = plain, flat design."
+	"loothub.settings.menu_skin.tooltip": "Loothub window with a golden ornate frame, wooden sidebar and leather buttons. Off = plain, flat design.",
+	"loothub.settings.language": "Loothub language",
+	"loothub.settings.language.tooltip": "Language of all Loothub texts, independent of the Minecraft language. “Automatic” uses Minecraft's language.",
+	"loothub.settings.language.auto": "Automatic (like Minecraft)",
+	"loothub.settings.language.de_de": "Deutsch",
+	"loothub.settings.language.en_us": "English"
 }

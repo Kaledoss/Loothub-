@@ -173,6 +173,8 @@ public class LoothubClient implements ClientModInitializer {
 				Identifier.fromNamespaceAndPath(Loothub.MOD_ID, "progress_toasts"), de.loothub.client.progress.Progress::renderHud);
 		de.loothub.client.progress.Progress.register();
 		de.loothub.client.stats.OpsuchtAfk.register();
+		// eigene Sprache für Loothub (Einstellung), unabhängig von Minecraft
+		net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents.END_CLIENT_TICK.register(mc -> LoothubLanguage.tick());
 		de.loothub.client.jobs.FishAlert.register();
 		de.loothub.client.quick.AuctionWatch.register();
 		de.loothub.client.music.YtMusic.ensure(de.loothub.client.jobs.WidgetConfig.get().musicEnabled);
