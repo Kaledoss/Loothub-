@@ -580,7 +580,7 @@ const LH_SHOP = [
 const LH_SHOP_MAP = Object.fromEntries(LH_SHOP.map(([id, kind, cost]) => [id, { kind, cost }]));
 // Fußspuren-Stile aus dem Shop (Wert in den Cosmetics → nötiger Shop-Artikel)
 const LH_STEP_ITEMS = { hearts: "c_hearts", notes: "c_notes", snow: "c_snow", magic: "c_magic", soul: "c_soul", stars: "c_stars" };
-const LH_BOARDS = ["points", "ach", "login", "dquests", "wquests", "blocks", "mobs", "fish", "play", "dist", "jobmoney", "itemdex"];
+const LH_BOARDS = ["points", "ach", "login", "dquests", "wquests", "blocks", "mobs", "fish", "jobmoney", "itemdex"];
 
 let lhReady = false;
 async function lhInit(db) {
