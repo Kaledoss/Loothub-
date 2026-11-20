@@ -49,11 +49,11 @@ public abstract class LoothubScreen extends Screen {
 		STATS("loothub.tab.stats", Items.FILLED_MAP),
 		POKEDEX("loothub.tab.pokedex", Items.KNOWLEDGE_BOOK),
 		ITEMDEX("loothub.tab.itemdex", Items.NETHER_STAR),
-		QUESTS("loothub.tab.quests", Items.EXPERIENCE_BOTTLE),
 		COSMETICS("loothub.tab.cosmetics", Items.ARMOR_STAND),
 		ALLTAG("loothub.tab.alltag", Items.CLOCK),
 		BUILD("loothub.tab.build", Items.BRICKS),
 		STREAMER("loothub.tab.streamer", Items.AMETHYST_CLUSTER),
+		QUESTS("loothub.tab.quests", Items.EXPERIENCE_BOTTLE),
 		CHANGELOG("loothub.tab.changelog", Items.BOOK),
 		SETTINGS("loothub.tab.settings", Items.COMPARATOR);
 

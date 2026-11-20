@@ -32,6 +32,8 @@ public class ShopPreviewScreen extends Screen {
 	private final List<Spark> sparks = new ArrayList<>();
 	private final Random random = new Random();
 	private float angle = 200.0F;
+	/** Zoom per Mausrad (1 = ganzer Spieler). */
+	private float zoom = 1.0F;
 	private boolean dragging;
 	private long lastFrame = System.currentTimeMillis();
 	private long lastDrag;
@@ -73,7 +75,7 @@ public class ShopPreviewScreen extends Screen {
 			return;
 		}
 		int x0 = 20, x1 = width - 20, y0 = 56, y1 = height - 36;
-		float size = Math.min((x1 - x0) / 1.8F, (y1 - y0) / 2.4F);
+		float size = Math.min((x1 - x0) / 1.8F, (y1 - y0) / 2.4F) * zoom;
 		EntityRenderState st = minecraft.getEntityRenderDispatcher().getRenderer(minecraft.player)
 				.createRenderState(minecraft.player, 1.0F);
 		st.lightCoords = 0xF000F0;
@@ -161,6 +163,12 @@ public class ShopPreviewScreen extends Screen {
 			return true;
 		}
 		return super.mouseDragged(e, dx, dy);
+	}
+
+	@Override
+	public boolean mouseScrolled(double mx, double my, double horizontal, double vertical) {
+		zoom = Math.max(0.6F, Math.min(3.0F, zoom * (vertical > 0 ? 1.15F : 1.0F / 1.15F)));
+		return true;
 	}
 
 	@Override
