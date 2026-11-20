@@ -514,7 +514,7 @@ async function ahServe(request, env, ctx) {
 // und kappt unplausible Sprünge.
 //
 // POST /lh         → unterschrieben: {payload: "{op: sync|buy|equip, …}"} → eigener Stand
-// GET  /lh/board?b=points|ach|login|dquests|wquests|blocks|mobs|fish|play|jobday → beste 50 (5 min zwischengespeichert)
+// GET  /lh/board?b=points|ach|login|dquests|wquests|blocks|mobs|fish|play|jobday&p=d|w|m|a → beste 50 (5 min zwischengespeichert)
 // GET  /lh/tags    → {uuid: [titel, abzeichen]} aller Spieler, die etwas angelegt haben (5 min)
 
 const LH_HOUR = 3600_000;
@@ -579,6 +579,7 @@ const LH_SHOP_MAP = Object.fromEntries(LH_SHOP.map(([id, kind, cost]) => [id, { 
 const LH_STEP_ITEMS = { hearts: "c_hearts", notes: "c_notes", snow: "c_snow", magic: "c_magic", soul: "c_soul", stars: "c_stars" };
 const LH_BOARDS = ["points", "ach", "login", "dquests", "wquests", "blocks", "mobs", "fish", "play", "jobday"];
 
+const LH_PERIODS = ["d", "w", "m"]; // täglich, wöchentlich, monatlich (dazu „a“ = gesamt)
 let lhReady = false;
 async function lhInit(db) {
 	if (lhReady) return;
@@ -589,9 +590,14 @@ async function lhInit(db) {
 			dist INTEGER DEFAULT 0, jobmoney INTEGER DEFAULT 0, itemdex INTEGER DEFAULT 0, updated INTEGER DEFAULT 0)`),
 		db.prepare("CREATE TABLE IF NOT EXISTS lh_comm (week INTEGER PRIMARY KEY, stat TEXT, goal INTEGER, sum INTEGER DEFAULT 0)"),
 	]);
-	// später dazugekommene Spalten (Fehler = gibt es schon)
-	for (const col of ["login", "dquests", "wquests", "jobday"]) {
-		try { await db.prepare(`ALTER TABLE lh_player ADD COLUMN ${col} INTEGER DEFAULT 0`).run(); } catch { /* vorhanden */ }
+	// später dazugekommene Spalten: Ranglisten-Werte gesamt und je Tag/Woche/Monat samt Zeitraum-Kennung
+	const have = new Set(((await db.prepare("PRAGMA table_info(lh_player)").all()).results || []).map((c) => c.name));
+	const want = ["login", "dquests", "wquests", "jobday", "pd", "pw", "pm"];
+	for (const b of LH_BOARDS) for (const p of LH_PERIODS) want.push(`${b}_${p}`);
+	for (const col of want) {
+		if (!have.has(col)) {
+			try { await db.prepare(`ALTER TABLE lh_player ADD COLUMN ${col} INTEGER DEFAULT 0`).run(); } catch { /* vorhanden */ }
+		}
 	}
 	lhReady = true;
 }
@@ -616,6 +622,7 @@ function lhSlotId(now) { return Math.floor((now + lhTz(now)) / LH_SLOT); }
 function lhDayId(now) { return Math.floor((now + lhTz(now)) / LH_DAY); }
 function lhWeekId(now) { return Math.floor((lhDayId(now) - 4) / 7); } // Wochen ab Montag 0 Uhr
 function lhLocalToUtc(t) { return t - lhTz(t - LH_HOUR); }
+function lhMonthId(now) { const t = new Date(now + lhTz(now)); return t.getUTCFullYear() * 12 + t.getUTCMonth(); }
 function lhSlotEnd(slot) { return lhLocalToUtc((slot + 1) * LH_SLOT); }
 function lhWeekEnd(week) { return lhLocalToUtc(((week + 1) * 7 + 4) * LH_DAY); }
 
@@ -849,19 +856,52 @@ async function lhHandle(request, env) {
 	if (!error) {
 		const tot = d.tot;
 		const achCount = Object.values(d.ach || {}).reduce((a, n) => a + n, 0);
-		await db.prepare(`INSERT INTO lh_player (uuid, name, data, points, spent, title, badge, ach, quests, login, dquests, wquests, jobday, blocks, mobs, fish, play, dist, jobmoney, itemdex, updated)
-			VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-			ON CONFLICT(uuid) DO UPDATE SET name = excluded.name, data = excluded.data, points = excluded.points, spent = excluded.spent,
-			title = excluded.title, badge = excluded.badge, ach = excluded.ach, quests = excluded.quests, login = excluded.login, dquests = excluded.dquests, wquests = excluded.wquests, jobday = excluded.jobday,
-			blocks = excluded.blocks, mobs = excluded.mobs, fish = excluded.fish, play = excluded.play, dist = excluded.dist,
-			jobmoney = excluded.jobmoney, itemdex = excluded.itemdex, updated = excluded.updated`)
-			.bind(uuid, name || row.name || "", JSON.stringify(d), row.points, row.spent, row.title || "", row.badge || "", achCount,
-				d.quests || 0, (d.login && d.login.best) || 0, d.dq || 0, d.wq || 0, Math.floor((d.jd && d.jd.best) || 0), tot.blocks || 0, tot.mobs || 0, tot.fish || 0, tot.play || 0,
-				tot.dist || 0, tot.jobmoney || 0, tot.itemdex || 0, now).run();
+		const bv = lhBoardValues(d, row, achCount, now);
+		const cols = {
+			uuid, name: name || row.name || "", data: JSON.stringify(d), points: row.points, spent: row.spent,
+			title: row.title || "", badge: row.badge || "", quests: d.quests || 0, jobmoney: tot.jobmoney || 0, updated: now,
+			...bv.all, pd: bv.ids.d, pw: bv.ids.w, pm: bv.ids.m,
+		};
+		for (const p of LH_PERIODS) for (const b of LH_BOARDS) cols[`${b}_${p}`] = bv.per[p][b];
+		const names = Object.keys(cols);
+		await db.prepare(`INSERT INTO lh_player (${names.join(", ")}) VALUES (${names.map(() => "?").join(", ")})
+			ON CONFLICT(uuid) DO UPDATE SET ${names.filter((n) => n !== "uuid").map((n) => `${n} = excluded.${n}`).join(", ")}`)
+			.bind(...names.map((n) => cols[n])).run();
 	}
 	const view = lhView(row, d, extra, now);
 	if (error) view.error = error;
 	return json(view);
+}
+
+/**
+ * Ranglisten-Werte: gesamt und für den laufenden Tag, die Woche und den Monat. Zähler zählen ab Beginn des Zeitraums
+ * (Stand beim ersten Abgleich darin), die Login-Serie zählt mit ihrer aktuellen Länge, der beste Job-Tag als bester
+ * Tag im Zeitraum (täglich: heute).
+ */
+function lhBoardValues(d, row, achCount, now) {
+	const tot = d.tot || {};
+	const jd = d.jd || { day: -1, start: 0, best: 0 };
+	const today = Math.max(0, (tot.jobmoney || 0) - (jd.start || 0));
+	const all = {
+		points: row.points || 0, ach: achCount, login: (d.login && d.login.best) || 0, dquests: d.dq || 0, wquests: d.wq || 0,
+		blocks: tot.blocks || 0, mobs: tot.mobs || 0, fish: tot.fish || 0, play: tot.play || 0, jobday: Math.floor(jd.best || 0),
+	};
+	const ids = { d: lhDayId(now), w: lhWeekId(now), m: lhMonthId(now) };
+	d.per = d.per || {};
+	const out = { all, ids, per: {} };
+	for (const p of LH_PERIODS) {
+		let pe = d.per[p];
+		if (!pe || pe.id !== ids[p]) pe = d.per[p] = { id: ids[p], base: { ...all }, job: 0 };
+		pe.job = Math.max(pe.job || 0, today);
+		const v = {};
+		for (const b of LH_BOARDS) {
+			if (b === "login") v[b] = (d.login && d.login.cur) || 0;
+			else if (b === "jobday") v[b] = Math.floor(p === "d" ? today : pe.job);
+			else v[b] = Math.max(0, (all[b] || 0) - (pe.base[b] || 0));
+		}
+		out.per[p] = v;
+	}
+	return out;
 }
 
 async function lhCached(request, ctx, key, ttl, make) {
@@ -878,11 +918,16 @@ async function lhCached(request, ctx, key, ttl, make) {
 async function lhBoard(request, env, ctx, url) {
 	if (!env.AH) return json({ error: "no-db" }, 503);
 	const b = url.searchParams.get("b") || "points";
-	if (!LH_BOARDS.includes(b)) return json({ error: "unknown board" }, 400);
+	const p = url.searchParams.get("p") || "a";
+	if (!LH_BOARDS.includes(b) || !(p === "a" || LH_PERIODS.includes(p))) return json({ error: "unknown board" }, 400);
 	await lhInit(env.AH);
-	return lhCached(request, ctx, `/lh-board-cache/${b}`, 300, async () => {
-		const r = await env.AH.prepare(`SELECT uuid, name, badge, ${b} AS v FROM lh_player WHERE ${b} > 0 ORDER BY ${b} DESC LIMIT 50`).all();
-		return { b, t: Date.now(), list: (r.results || []).map((x) => [x.uuid, x.name, x.badge || "", x.v]) };
+	const now = Date.now();
+	const id = p === "d" ? lhDayId(now) : p === "w" ? lhWeekId(now) : p === "m" ? lhMonthId(now) : 0;
+	return lhCached(request, ctx, `/lh-board-cache/${b}/${p}/${id}`, 300, async () => {
+		const col = p === "a" ? b : `${b}_${p}`;
+		const where = p === "a" ? `${col} > 0` : `p${p} = ${id} AND ${col} > 0`;
+		const r = await env.AH.prepare(`SELECT uuid, name, badge, ${col} AS v FROM lh_player WHERE ${where} ORDER BY ${col} DESC LIMIT 50`).all();
+		return { b, p, t: Date.now(), list: (r.results || []).map((x) => [x.uuid, x.name, x.badge || "", x.v]) };
 	});
 }
 

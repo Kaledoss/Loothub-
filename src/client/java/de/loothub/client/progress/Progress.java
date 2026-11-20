@@ -249,19 +249,20 @@ public final class Progress {
 		t.start();
 	}
 
-	/** Rangliste (zwischengespeichert); lädt im Hintergrund nach, wenn sie älter als 5 Minuten ist. */
-	public static JsonObject board(String b) {
+	/** Rangliste für einen Zeitraum (d/w/m/a, zwischengespeichert); lädt im Hintergrund nach, wenn sie älter als 5 Minuten ist. */
+	public static JsonObject board(String b, String period) {
+		String key = b + "/" + period;
 		long now = System.currentTimeMillis();
-		Long at = BOARD_AT.get(b);
+		Long at = BOARD_AT.get(key);
 		if (at == null || now - at > BOARD_MS) {
-			BOARD_AT.put(b, now);
-			get("/lh/board?b=" + b, e -> {
+			BOARD_AT.put(key, now);
+			get("/lh/board?b=" + b + "&p=" + period, e -> {
 				if (e.isJsonObject() && e.getAsJsonObject().has("list")) {
-					BOARDS.put(b, e.getAsJsonObject());
+					BOARDS.put(key, e.getAsJsonObject());
 				}
 			});
 		}
-		return BOARDS.get(b);
+		return BOARDS.get(key);
 	}
 
 	private static void fetchTags() {

@@ -32,10 +32,15 @@ public class ProgressScreen extends LoothubScreen {
 
 	private static Tab tab = Tab.QUESTS;
 	private static String board = "points";
+	/** Zeitraum der Rangliste: d = heute, w = Woche, m = Monat, a = gesamt. */
+	private static String period = "w";
+	private static final String[] PERIODS = {"d", "w", "m", "a"};
 	private final List<Hit> hits = new ArrayList<>();
 	private final List<Button> tabButtons = new ArrayList<>();
 	private Button boardButton;
-	private boolean boardOpen;
+	private Button periodButton;
+	/** Offene Auswahlliste: 0 keine, 1 Rangliste, 2 Zeitraum. */
+	private int open;
 	private int scroll;
 	private int listTop;
 	private int contentH;
@@ -67,7 +72,7 @@ public class ProgressScreen extends LoothubScreen {
 			Button b = addRenderableWidget(Button.builder(label, btn -> {
 				tab = t;
 				scroll = 0;
-				boardOpen = false;
+				open = 0;
 				rebuildWidgets();
 			}).bounds(x, ct, w, 16).build());
 			b.active = tab != t;
@@ -75,16 +80,40 @@ public class ProgressScreen extends LoothubScreen {
 			x += w + 4;
 		}
 		if (tab == Tab.BOARD) {
-			boardButton = addRenderableWidget(Button.builder(boardLabel(), b -> boardOpen = !boardOpen)
-					.bounds(cr - 170, ct, 170, 16).build());
+			periodButton = addRenderableWidget(Button.builder(periodLabel(), b -> open = open == 2 ? 0 : 2)
+					.bounds(cr - 100, ct, 100, 16).build());
+			boardButton = addRenderableWidget(Button.builder(boardLabel(), b -> open = open == 1 ? 0 : 1)
+					.bounds(cr - 100 - 4 - 190, ct, 190, 16).build());
 		} else {
 			boardButton = null;
+			periodButton = null;
 		}
 		listTop = ct + 24;
 	}
 
 	private Component boardLabel() {
 		return Component.translatable("loothub.lh.board." + board).append(" ▾");
+	}
+
+	private Component periodLabel() {
+		return Component.translatable("loothub.lh.period." + period).append(" ▾");
+	}
+
+	/** Einträge der offenen Auswahlliste. */
+	private List<String> options(JsonObject s) {
+		List<String> out = new ArrayList<>();
+		if (open == 1) {
+			for (JsonElement e : s.getAsJsonObject("cat").getAsJsonArray("boards")) {
+				out.add(e.getAsString());
+			}
+		} else if (open == 2) {
+			out.addAll(List.of(PERIODS));
+		}
+		return out;
+	}
+
+	private Button openButton() {
+		return open == 1 ? boardButton : open == 2 ? periodButton : null;
 	}
 
 	@Override
@@ -130,8 +159,8 @@ public class ProgressScreen extends LoothubScreen {
 			Component m = Component.literal(message);
 			g.drawString(font, m, cr - font.width(m), ct + 4, RED, false);
 		}
-		if (boardOpen && boardButton != null) {
-			drawBoardDropdown(g, s, mouseX, mouseY);
+		if (open != 0 && openButton() != null) {
+			drawDropdown(g, s, mouseX, mouseY);
 			return;
 		}
 		for (Hit h : hits) {
@@ -290,8 +319,9 @@ public class ProgressScreen extends LoothubScreen {
 	}
 
 	private int drawBoard(GuiGraphics g, JsonObject s, int y) {
-		JsonObject b = Progress.board(board);
-		y = section(g, Component.translatable("loothub.lh.board." + board), Component.translatable("loothub.lh.board.hint"), y);
+		JsonObject b = Progress.board(board, period);
+		y = section(g, Component.translatable("loothub.lh.board." + board).append(" · ")
+				.append(Component.translatable("loothub.lh.period." + period)), Component.translatable("loothub.lh.board.hint"), y);
 		if (b == null) {
 			g.drawString(font, Component.translatable("loothub.lh.loading"), cl + 8, y + 4, MUTED, false);
 			return y + 20;
@@ -332,20 +362,23 @@ public class ProgressScreen extends LoothubScreen {
 		};
 	}
 
-	private void drawBoardDropdown(GuiGraphics g, JsonObject s, int mx, int my) {
-		JsonArray boards = s.getAsJsonObject("cat").getAsJsonArray("boards");
-		int x = boardButton.getX(), y = boardButton.getY() + 17, w = boardButton.getWidth();
+	private void drawDropdown(GuiGraphics g, JsonObject s, int mx, int my) {
+		Button btn = openButton();
+		List<String> opts = options(s);
+		int x = btn.getX(), y = btn.getY() + 17, w = btn.getWidth();
 		g.nextStratum();
-		g.fill(x - 1, y - 1, x + w + 1, y + boards.size() * 12 + 1, RED_DARK);
-		g.fill(x, y, x + w, y + boards.size() * 12, 0xFF150D0F);
-		for (int i = 0; i < boards.size(); i++) {
-			String b = boards.get(i).getAsString();
+		g.fill(x - 1, y - 1, x + w + 1, y + opts.size() * 12 + 1, RED_DARK);
+		g.fill(x, y, x + w, y + opts.size() * 12, 0xFF150D0F);
+		for (int i = 0; i < opts.size(); i++) {
+			String o = opts.get(i);
 			int ry = y + i * 12;
 			boolean hover = mx >= x && mx < x + w && my >= ry && my < ry + 12;
 			if (hover) {
 				g.fill(x, ry, x + w, ry + 12, 0x40E23B3B);
 			}
-			g.drawString(font, Component.translatable("loothub.lh.board." + b), x + 4, ry + 2, b.equals(board) ? RED : TEXT, false);
+			boolean sel = open == 1 ? o.equals(board) : o.equals(period);
+			g.drawString(font, Component.translatable((open == 1 ? "loothub.lh.board." : "loothub.lh.period.") + o), x + 4, ry + 2,
+					sel ? RED : TEXT, false);
 		}
 	}
 
@@ -454,21 +487,28 @@ public class ProgressScreen extends LoothubScreen {
 
 	@Override
 	public boolean mouseClicked(MouseButtonEvent event, boolean doubleClick) {
-		if (boardOpen && boardButton != null) {
+		Button btn = openButton();
+		if (open != 0 && btn != null) {
 			JsonObject s = Progress.state();
 			if (s != null) {
-				JsonArray boards = s.getAsJsonObject("cat").getAsJsonArray("boards");
-				int x = boardButton.getX(), y = boardButton.getY() + 17, w = boardButton.getWidth();
-				if (event.x() >= x && event.x() < x + w && event.y() >= y && event.y() < y + boards.size() * 12) {
-					board = boards.get((int) ((event.y() - y) / 12)).getAsString();
-					boardButton.setMessage(boardLabel());
-					boardOpen = false;
+				List<String> opts = options(s);
+				int x = btn.getX(), y = btn.getY() + 17, w = btn.getWidth();
+				if (event.x() >= x && event.x() < x + w && event.y() >= y && event.y() < y + opts.size() * 12) {
+					String o = opts.get((int) ((event.y() - y) / 12));
+					if (open == 1) {
+						board = o;
+						boardButton.setMessage(boardLabel());
+					} else {
+						period = o;
+						periodButton.setMessage(periodLabel());
+					}
+					open = 0;
 					scroll = 0;
 					return true;
 				}
 			}
-			if (!boardButton.isMouseOver(event.x(), event.y())) {
-				boardOpen = false;
+			if (!btn.isMouseOver(event.x(), event.y())) {
+				open = 0;
 				return true;
 			}
 		}
