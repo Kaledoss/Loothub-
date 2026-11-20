@@ -48,6 +48,8 @@ public final class PetsLayer extends RenderLayer<AvatarRenderState, PlayerModel>
 	private static final Identifier PANDA_TEX = Identifier.withDefaultNamespace("textures/entity/panda/panda.png");
 	private static final Identifier ZOMBIE_TEX = Identifier.withDefaultNamespace("textures/entity/zombie/zombie.png");
 	private static final Identifier RED_PANDA_TEX = Identifier.fromNamespaceAndPath("loothub", "textures/entity/red_panda.png");
+	private static final Identifier TURTLE_TEX = Identifier.fromNamespaceAndPath("loothub", "textures/entity/turtle.png");
+	private static final Identifier HUMMINGBIRD_TEX = Identifier.fromNamespaceAndPath("loothub", "textures/entity/hummingbird.png");
 	private static final Identifier SERPENT_TEX = Identifier.fromNamespaceAndPath("loothub", "textures/entity/sky_serpent.png");
 
 	private final SlimeModel slimeInner;
@@ -60,6 +62,8 @@ public final class PetsLayer extends RenderLayer<AvatarRenderState, PlayerModel>
 	private final PetModels.Dragon dragon = new PetModels.Dragon();
 	private final PetModels.Serpent serpent = new PetModels.Serpent();
 	private final PetModels.RedPanda redPanda = new PetModels.RedPanda();
+	private final PetModels.Turtle turtle = new PetModels.Turtle();
+	private final PetModels.Hummingbird hummingbird = new PetModels.Hummingbird();
 	private final PandaModel panda;
 	private final net.minecraft.client.model.animal.equine.DonkeyModel donkey;
 	@SuppressWarnings("rawtypes")
@@ -132,6 +136,8 @@ public final class PetsLayer extends RenderLayer<AvatarRenderState, PlayerModel>
 				case "red_panda" -> 0.6F;
 				case "donkey" -> 0.6F;
 				case "zombie" -> 0.6F;
+				case "turtle" -> 0.7F;
+				case "hummingbird" -> 0.75F;
 				default -> 0.65F;
 			};
 			float tx = side * 1.35F, tz = 0.35F;
@@ -272,6 +278,14 @@ public final class PetsLayer extends RenderLayer<AvatarRenderState, PlayerModel>
 					s.isAggressive = playing; // jagt mit hochgerissenen Armen
 					submit(collector, poseStack, zombie, s, ZOMBIE_TEX);
 				}
+				case "turtle" -> {
+					PetModels.TurtleState s = base(new PetModels.TurtleState(), t,
+							Math.min(1F, Math.max(state.walkAnimationSpeed * 1.5F, p[4] * 2.5F)));
+					s.hide = Mth.clamp((lie - 0.3F) / 0.4F, 0F, 1F); // AFK: Kopf und Beine einziehen
+					submit(collector, poseStack, turtle, s, TURTLE_TEX);
+				}
+				case "hummingbird" -> submit(collector, poseStack, hummingbird,
+						base(new LivingEntityRenderState(), t + slot * 11.0F, 0.0F), HUMMINGBIRD_TEX);
 				case "serpent" -> submit(collector, poseStack, serpent, base(new LivingEntityRenderState(), t + slot * 17.0F, 0.0F),
 						SERPENT_TEX);
 				case "dragon" -> {
@@ -301,11 +315,13 @@ public final class PetsLayer extends RenderLayer<AvatarRenderState, PlayerModel>
 			case "dragon", "serpent" -> 0.34F;
 			case "donkey" -> 0.38F;
 			case "wolf", "red_panda" -> 0.46F;
+			case "turtle" -> 0.5F;
+			case "hummingbird" -> 0.6F;
 			case "bee", "allay", "vex" -> 0.5F;
 			default -> 0.44F;
 		};
 		boolean hover = type.equals("bee") || type.equals("allay") || type.equals("vex") || type.equals("serpent")
-				|| type.equals("dragon");
+				|| type.equals("dragon") || type.equals("hummingbird");
 		boolean both = Cosmetics.headFull(state);
 		float lie = de.loothub.client.quick.AfkView.lying(state);
 		poseStack.pushPose();
@@ -383,6 +399,13 @@ public final class PetsLayer extends RenderLayer<AvatarRenderState, PlayerModel>
 				s.isBaby = true;
 				submit(collector, poseStack, zombie, s, ZOMBIE_TEX);
 			}
+			case "turtle" -> {
+				PetModels.TurtleState s = base(new PetModels.TurtleState(), t, 0.0F);
+				s.hide = lie > 0.5F ? 1.0F : 0.0F;
+				submit(collector, poseStack, turtle, s, TURTLE_TEX);
+			}
+			case "hummingbird" -> submit(collector, poseStack, hummingbird, base(new LivingEntityRenderState(), t + slot * 11.0F, 0.0F),
+					HUMMINGBIRD_TEX);
 			case "serpent" -> submit(collector, poseStack, serpent, base(new LivingEntityRenderState(), t + slot * 17.0F, 0.0F),
 					SERPENT_TEX);
 			case "dragon" -> submit(collector, poseStack, dragon, base(new LivingEntityRenderState(), t + slot * 13.0F, 0.0F),

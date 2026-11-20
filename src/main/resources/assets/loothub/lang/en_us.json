@@ -1125,5 +1125,7 @@
 	"loothub.lh.pin.on": "Pin – show in game",
 	"loothub.lh.pin.off": "Unpin",
 	"loothub.lh.pin.max": "You can pin at most %s quests.",
-	"loothub.hud.quests": "Pinned quests"
+	"loothub.hud.quests": "Pinned quests",
+	"loothub.cosmetics.pets.type.turtle": "Turtle",
+	"loothub.cosmetics.pets.type.hummingbird": "Hummingbird"
 }

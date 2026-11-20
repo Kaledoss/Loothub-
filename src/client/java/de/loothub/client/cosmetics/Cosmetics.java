@@ -69,7 +69,7 @@ public final class Cosmetics {
 	public static final String MINI_TRAITS = "minimetraits";
 	public static final List<String> TRAITS = List.of("playful", "shy", "brave", "lazy", "curious");
 	public static final List<String> FOOTSTEP_STYLES = List.of("sparks", "flames", "hearts", "notes", "snow", "magic", "soul", "stars");
-	public static final List<String> PET_TYPES = List.of("slime", "allay", "bee", "vex", "wolf", "penguin", "dragon", "panda", "zombie", "serpent", "red_panda", "donkey");
+	public static final List<String> PET_TYPES = List.of("slime", "allay", "bee", "vex", "wolf", "penguin", "dragon", "panda", "zombie", "serpent", "red_panda", "donkey", "turtle", "hummingbird");
 	public static final int MAX_PETS = 2;
 	public static final int MAX_HEAD = 2;
 	public static final String HEAD_MINI = "minime";

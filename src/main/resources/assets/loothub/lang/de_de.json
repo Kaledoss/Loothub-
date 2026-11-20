@@ -1125,5 +1125,7 @@
 	"loothub.lh.pin.on": "Anpinnen – im Spiel anzeigen",
 	"loothub.lh.pin.off": "Nicht mehr anpinnen",
 	"loothub.lh.pin.max": "Höchstens %s Quests anpinnen.",
-	"loothub.hud.quests": "Angepinnte Quests"
+	"loothub.hud.quests": "Angepinnte Quests",
+	"loothub.cosmetics.pets.type.turtle": "Schildkröte",
+	"loothub.cosmetics.pets.type.hummingbird": "Kolibri"
 }

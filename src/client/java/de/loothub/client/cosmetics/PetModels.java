@@ -369,4 +369,128 @@ final class PetModels {
 			}
 		}
 	}
+
+	/**
+	 * Kleine Schildkröte im Minecraft-Stil (Würfel, 64×64-Pixeltextur): gewölbter grüner Panzer mit Muster, heller
+	 * Bauchpanzer, Kopf mit Augen, vier Flossen-Beine und kurzer Schwanz. Läuft gemütlich, zieht beim AFK den Kopf ein.
+	 */
+	static final class TurtleState extends LivingEntityRenderState {
+		float hide;
+	}
+
+	static final class Turtle extends EntityModel<TurtleState> {
+		private final ModelPart shell, head, tail;
+		private final ModelPart[] legs = new ModelPart[4];
+
+		Turtle() {
+			this(create().bakeRoot());
+		}
+
+		private Turtle(ModelPart root) {
+			super(root);
+			shell = root.getChild("shell");
+			head = root.getChild("head");
+			tail = root.getChild("tail");
+			for (int i = 0; i < 4; i++) {
+				legs[i] = root.getChild("leg" + i);
+			}
+		}
+
+		static LayerDefinition create() {
+			MeshDefinition mesh = new MeshDefinition();
+			PartDefinition r = mesh.getRoot();
+			// Panzer: unterer Teil breit, darauf eine schmalere Kuppel
+			PartDefinition shell = r.addOrReplaceChild("shell", CubeListBuilder.create().texOffs(0, 0)
+					.addBox(-5F, -3F, -6F, 10F, 3F, 12F), PartPose.offset(0F, 22F, 0F));
+			shell.addOrReplaceChild("dome", CubeListBuilder.create().texOffs(0, 15).addBox(-3.5F, -2F, -4.5F, 7F, 2F, 9F),
+					PartPose.offset(0F, -3F, 0F));
+			shell.addOrReplaceChild("belly", CubeListBuilder.create().texOffs(0, 26).addBox(-4F, 0F, -5F, 8F, 1F, 10F),
+					PartPose.ZERO);
+			r.addOrReplaceChild("head", CubeListBuilder.create().texOffs(36, 15).addBox(-2F, -2F, -4F, 4F, 3F, 4F),
+					PartPose.offset(0F, 21F, -6F));
+			r.addOrReplaceChild("tail", CubeListBuilder.create().texOffs(36, 22).addBox(-0.5F, -0.5F, 0F, 1F, 1F, 2F),
+					PartPose.offset(0F, 22F, 6F));
+			float[][] at = {{-4F, -4.5F}, {4F, -4.5F}, {-4F, 4.5F}, {4F, 4.5F}};
+			for (int i = 0; i < 4; i++) {
+				boolean left = at[i][0] > 0;
+				r.addOrReplaceChild("leg" + i, CubeListBuilder.create().texOffs(36 + (i % 2) * 12, 26 + (i / 2) * 6)
+						.addBox(left ? 0F : -4F, -0.5F, -1F, 4F, 1F, 2F), PartPose.offset(at[i][0], 22.5F, at[i][1]));
+			}
+			return LayerDefinition.create(mesh, 64, 64);
+		}
+
+		@Override
+		public void setupAnim(TurtleState s) {
+			super.setupAnim(s);
+			float t = s.ageInTicks;
+			float walk = Math.min(1F, s.walkAnimationSpeed);
+			float ph = s.walkAnimationPos * 0.9F;
+			float hide = s.hide;
+			// Paddeln: diagonale Beine abwechselnd vor und zurück
+			for (int i = 0; i < 4; i++) {
+				float sw = Mth.sin(ph + (i == 0 || i == 3 ? 0F : Mth.PI)) * 0.6F * walk;
+				legs[i].yRot = (i % 2 == 0 ? sw : -sw);
+				legs[i].visible = hide < 0.5F;
+			}
+			shell.zRot = Mth.sin(ph) * 0.04F * walk; // schaukelt leicht
+			head.yRot = Mth.sin(t * 0.03F) * 0.35F * (1F - walk);
+			head.xRot = Mth.sin(t * 0.05F) * 0.08F;
+			head.z = -6F + 3F * hide; // Kopf einziehen
+			tail.yRot = Mth.sin(ph * 1.3F) * 0.3F * walk;
+		}
+	}
+
+	/**
+	 * Kolibri im Minecraft-Stil (Würfel, 64×64-Pixeltextur): schillernd grüner Körper mit roter Kehle, langer dünner
+	 * Schnabel, Fächerschwanz und sehr schnell schlagende Flügel. Schwebt und zuckt ab und zu ein Stück zur Seite.
+	 */
+	static final class Hummingbird extends EntityModel<LivingEntityRenderState> {
+		private final ModelPart body, head, leftWing, rightWing, tail;
+
+		Hummingbird() {
+			this(create().bakeRoot());
+		}
+
+		private Hummingbird(ModelPart root) {
+			super(root);
+			body = root.getChild("body");
+			head = body.getChild("head");
+			leftWing = body.getChild("left_wing");
+			rightWing = body.getChild("right_wing");
+			tail = body.getChild("tail");
+		}
+
+		static LayerDefinition create() {
+			MeshDefinition mesh = new MeshDefinition();
+			PartDefinition r = mesh.getRoot();
+			PartDefinition body = r.addOrReplaceChild("body", CubeListBuilder.create().texOffs(0, 0)
+					.addBox(-1.5F, -1.5F, -2.5F, 3F, 3F, 5F), PartPose.offsetAndRotation(0F, 18F, 0F, 0.45F, 0F, 0F));
+			PartDefinition head = body.addOrReplaceChild("head", CubeListBuilder.create().texOffs(0, 10)
+					.addBox(-1.5F, -3F, -2F, 3F, 3F, 3F), PartPose.offsetAndRotation(0F, -0.5F, -2.5F, -0.45F, 0F, 0F));
+			head.addOrReplaceChild("beak", CubeListBuilder.create().texOffs(12, 10).addBox(-0.5F, -1.5F, -6F, 1F, 1F, 4F),
+					PartPose.ZERO);
+			body.addOrReplaceChild("left_wing", CubeListBuilder.create().texOffs(0, 18).addBox(0F, 0F, -1.5F, 6F, 0F, 4F),
+					PartPose.offset(1.5F, -1F, -0.5F));
+			body.addOrReplaceChild("right_wing", CubeListBuilder.create().mirror().texOffs(0, 18).addBox(-6F, 0F, -1.5F, 6F, 0F, 4F),
+					PartPose.offset(-1.5F, -1F, -0.5F));
+			body.addOrReplaceChild("tail", CubeListBuilder.create().texOffs(0, 24).addBox(-2F, 0F, 0F, 4F, 0F, 4F),
+					PartPose.offsetAndRotation(0F, 0.5F, 2.5F, 0.3F, 0F, 0F));
+			return LayerDefinition.create(mesh, 64, 64);
+		}
+
+		@Override
+		public void setupAnim(LivingEntityRenderState s) {
+			super.setupAnim(s);
+			float t = s.ageInTicks;
+			// Flügel: sehr schnell, fast ein Flirren
+			float flap = Mth.sin(t * 3.3F) * 1.1F;
+			leftWing.zRot = -0.2F + flap;
+			rightWing.zRot = 0.2F - flap;
+			// Schweben mit kleinem Ruck zur Seite, Kopf schaut sich um
+			body.y = 18F + Mth.sin(t * 0.25F) * 0.6F;
+			body.x = Mth.sin(t * 0.07F) > 0.92F ? Mth.sin(t * 0.9F) * 1.5F : 0F;
+			head.yRot = Mth.sin(t * 0.045F) * 0.5F;
+			tail.xRot = 0.3F + Mth.sin(t * 0.5F) * 0.12F;
+		}
+	}
 }
