@@ -21,7 +21,7 @@ import de.loothub.client.jobs.WidgetConfig;
 /** Menüseite „Quests“: Reiter Quests, Erfolge, Rangliste und Shop. */
 public class ProgressScreen extends LoothubScreen {
 	private enum Tab {
-		QUESTS, ACH, BOARD, SHOP
+		QUESTS, ACH, BOARD, SHOP, ADMIN
 	}
 
 	private record Hit(int x, int y, int w, int h, Runnable action, Component tip) {
@@ -66,7 +66,13 @@ public class ProgressScreen extends LoothubScreen {
 		}
 		Progress.syncSoon();
 		int x = cl;
+		if (tab == Tab.ADMIN && !Progress.isAdmin()) {
+			tab = Tab.QUESTS;
+		}
 		for (Tab t : Tab.values()) {
+			if (t == Tab.ADMIN && !Progress.isAdmin()) {
+				continue;
+			}
 			Component label = Component.translatable("loothub.lh.tab." + t.name().toLowerCase(java.util.Locale.ROOT));
 			int w = font.width(label) + 16;
 			Button b = addRenderableWidget(Button.builder(label, btn -> {
@@ -79,6 +85,11 @@ public class ProgressScreen extends LoothubScreen {
 			tabButtons.add(b);
 			x += w + 4;
 		}
+		if (tab == Tab.ADMIN) {
+			initAdmin();
+			listTop = ct + 24;
+			return;
+		}
 		if (tab == Tab.BOARD) {
 			periodButton = addRenderableWidget(Button.builder(periodLabel(), b -> open = open == 2 ? 0 : 2)
 					.bounds(cr - 100, ct, 100, 16).build());
@@ -89,6 +100,92 @@ public class ProgressScreen extends LoothubScreen {
 			periodButton = null;
 		}
 		listTop = ct + 24;
+	}
+
+	// ------------------------------------------------------------------ Admin
+
+	private net.minecraft.client.gui.components.EditBox talerName, talerAmount, resetName;
+	private int adminY;
+
+	private void initAdmin() {
+		adminY = ct + 24;
+		int y = adminY + 14;
+		talerName = addRenderableWidget(new net.minecraft.client.gui.components.EditBox(font, cl, y, 130, 16,
+				Component.translatable("loothub.lh.admin.player")));
+		talerName.setHint(Component.translatable("loothub.lh.admin.player").withStyle(ChatFormatting.DARK_GRAY));
+		talerName.setMaxLength(16);
+		talerAmount = addRenderableWidget(new net.minecraft.client.gui.components.EditBox(font, cl + 136, y, 80, 16,
+				Component.translatable("loothub.lh.admin.amount")));
+		talerAmount.setHint(Component.translatable("loothub.lh.admin.amount").withStyle(ChatFormatting.DARK_GRAY));
+		talerAmount.setFilter(t -> t.matches("\\d{0,9}"));
+		int bx = cl + 222;
+		for (String mode : new String[]{"add", "remove", "set"}) {
+			Component label = Component.translatable("loothub.lh.admin." + mode);
+			int w = font.width(label) + 14;
+			addRenderableWidget(Button.builder(label, b -> adminTaler(mode)).bounds(bx, y, w, 16).build());
+			bx += w + 4;
+		}
+		int ry = adminY + 70;
+		boardButton = addRenderableWidget(Button.builder(boardLabel(), b -> open = open == 1 ? 0 : 1).bounds(cl, ry, 190, 16).build());
+		periodButton = addRenderableWidget(Button.builder(periodLabel(), b -> open = open == 2 ? 0 : 2).bounds(cl + 194, ry, 100, 16).build());
+		resetName = addRenderableWidget(new net.minecraft.client.gui.components.EditBox(font, cl + 298, ry, 120, 16,
+				Component.translatable("loothub.lh.admin.reset.player")));
+		resetName.setHint(Component.translatable("loothub.lh.admin.reset.player").withStyle(ChatFormatting.DARK_GRAY));
+		resetName.setMaxLength(16);
+		Component rl = Component.translatable("loothub.lh.admin.reset");
+		addRenderableWidget(Button.builder(rl, b -> adminReset()).bounds(cl + 422, ry, font.width(rl) + 14, 16).build());
+	}
+
+	private void adminTaler(String mode) {
+		String name = talerName.getValue().strip();
+		String amount = talerAmount.getValue().strip();
+		if (name.isEmpty() || amount.isEmpty()) {
+			message = Component.translatable("loothub.lh.admin.missing").getString();
+			return;
+		}
+		long n = Long.parseLong(amount);
+		JsonObject p = new JsonObject();
+		p.addProperty("op", "admin_taler");
+		p.addProperty("target", name);
+		p.addProperty("mode", mode.equals("set") ? "set" : "add");
+		p.addProperty("amount", mode.equals("remove") ? -n : n);
+		message = "";
+		Progress.admin(p, res -> message = res == null ? Component.translatable("loothub.lh.error.offline").getString()
+				: res.has("ok") ? Component.translatable("loothub.lh.admin.taler.done", res.get("name").getAsString(),
+						Fmt.whole(res.get("balance").getAsLong())).getString()
+				: Component.translatable("loothub.lh.admin.error." + res.get("error").getAsString()).getString());
+	}
+
+	private void adminReset() {
+		String name = resetName.getValue().strip();
+		Component what = Component.translatable("loothub.lh.board." + board).append(" · ").append(Component.translatable("loothub.lh.period." + period));
+		Component who = name.isEmpty() ? Component.translatable("loothub.lh.admin.reset.all") : Component.literal(name);
+		minecraft.setScreen(new ConfirmScreen(this, Component.translatable("loothub.lh.admin.reset"),
+				Component.translatable("loothub.lh.admin.reset.confirm", what, who), () -> {
+					JsonObject p = new JsonObject();
+					p.addProperty("op", "admin_reset");
+					p.addProperty("board", board);
+					p.addProperty("period", period);
+					if (!name.isEmpty()) {
+						p.addProperty("target", name);
+					}
+					message = "";
+					Progress.admin(p, res -> message = res == null ? Component.translatable("loothub.lh.error.offline").getString()
+							: res.has("ok") ? Component.translatable("loothub.lh.admin.reset.done").getString()
+							: Component.translatable("loothub.lh.admin.error." + res.get("error").getAsString()).getString());
+					minecraft.setScreen(this);
+				}));
+	}
+
+	private int drawAdmin(GuiGraphics g, int y) {
+		y = section(g, Component.translatable("loothub.lh.admin.taler"), null, y);
+		y += 22;
+		g.drawString(font, Component.translatable("loothub.lh.admin.taler.hint"), cl, y, FAINT, false);
+		y += 14;
+		y = section(g, Component.translatable("loothub.lh.admin.reset.title"), null, y);
+		y += 22;
+		g.drawString(font, Component.translatable("loothub.lh.admin.reset.hint"), cl, y, FAINT, false);
+		return y + 14;
 	}
 
 	private Component boardLabel() {
@@ -152,6 +249,7 @@ public class ProgressScreen extends LoothubScreen {
 			case ACH -> drawAch(g, s, y);
 			case BOARD -> drawBoard(g, s, y);
 			case SHOP -> drawShop(g, s, y);
+			case ADMIN -> drawAdmin(g, listTop);
 		};
 		g.disableScissor();
 		contentH = y - start;

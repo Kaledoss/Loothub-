@@ -72,6 +72,12 @@ public final class Progress {
 		return stateAt;
 	}
 
+	/** Ist man laut Server Admin (Taler ändern, Ranglisten zurücksetzen)? */
+	public static boolean isAdmin() {
+		JsonObject s = state;
+		return s != null && s.has("admin") && s.get("admin").getAsBoolean();
+	}
+
 	public static boolean busy() {
 		return busy;
 	}
@@ -192,6 +198,15 @@ public final class Progress {
 
 	/** Unterschriebene Anfrage im Hintergrund; done bekommt null (ok) oder einen Fehlerschlüssel. */
 	private static void send(JsonObject payload, Consumer<String> done) {
+		send(payload, done, null);
+	}
+
+	/** Admin: Taler eines Spielers ändern bzw. eine Rangliste zurücksetzen; result bekommt die Antwort (oder null). */
+	public static void admin(JsonObject payload, Consumer<JsonObject> result) {
+		send(payload, null, result);
+	}
+
+	private static void send(JsonObject payload, Consumer<String> done, Consumer<JsonObject> adminResult) {
 		busy = true;
 		Minecraft mc = Minecraft.getInstance();
 		Thread t = new Thread(() -> {
@@ -222,7 +237,16 @@ public final class Progress {
 						.header("User-Agent", "Loothub-Mod")
 						.POST(HttpRequest.BodyPublishers.ofString(body.toString(), StandardCharsets.UTF_8)).build(),
 						HttpResponse.BodyHandlers.ofString(StandardCharsets.UTF_8));
-				if (r.statusCode() == 200) {
+				if (adminResult != null) {
+					JsonObject s = null;
+					try {
+						s = JsonParser.parseString(r.body()).getAsJsonObject();
+					} catch (RuntimeException ignored) {
+						// keine lesbare Antwort
+					}
+					JsonObject res = s;
+					mc.execute(() -> adminResult.accept(res));
+				} else if (r.statusCode() == 200) {
 					JsonObject s = JsonParser.parseString(r.body()).getAsJsonObject();
 					if (s.has("error")) {
 						error = s.get("error").getAsString();
@@ -241,6 +265,9 @@ public final class Progress {
 				}
 			} catch (Exception e) {
 				Loothub.LOGGER.debug("Loothub-Fortschritt: Server nicht erreichbar", e);
+				if (adminResult != null) {
+					mc.execute(() -> adminResult.accept(null));
+				}
 				error = "offline";
 				status = "offline";
 			} finally {

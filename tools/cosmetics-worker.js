@@ -593,10 +593,11 @@ async function lhInit(db) {
 			streak INTEGER DEFAULT 0, blocks INTEGER DEFAULT 0, mobs INTEGER DEFAULT 0, fish INTEGER DEFAULT 0, play INTEGER DEFAULT 0,
 			dist INTEGER DEFAULT 0, jobmoney INTEGER DEFAULT 0, itemdex INTEGER DEFAULT 0, updated INTEGER DEFAULT 0)`),
 		db.prepare("CREATE TABLE IF NOT EXISTS lh_comm (week INTEGER PRIMARY KEY, stat TEXT, goal INTEGER, sum INTEGER DEFAULT 0)"),
+		db.prepare("CREATE TABLE IF NOT EXISTS lh_meta (k TEXT PRIMARY KEY, v TEXT)"),
 	]);
 	// später dazugekommene Spalten: Ranglisten-Werte gesamt und je Tag/Woche/Monat samt Zeitraum-Kennung
 	const have = new Set(((await db.prepare("PRAGMA table_info(lh_player)").all()).results || []).map((c) => c.name));
-	const want = [...LH_BOARDS, "clean", "pd", "pw", "pm"];
+	const want = [...LH_BOARDS, "clean", "points_a", "pd", "pw", "pm"];
 	for (const b of LH_BOARDS) for (const p of LH_PERIODS) want.push(`${b}_${p}`);
 	for (const col of want) {
 		if (!have.has(col)) {
@@ -820,6 +821,90 @@ function lhView(row, d, extra, now) {
 	};
 }
 
+/** Rücksetzungen aller Spieler: {"board|zeitraum": Zeitpunkt}. */
+async function lhResets(db) {
+	try {
+		const r = await db.prepare("SELECT v FROM lh_meta WHERE k = 'resets'").first();
+		return r ? JSON.parse(r.v) : {};
+	} catch { return {}; }
+}
+
+/** Spieler-Zeile mit allen Ranglisten-Werten speichern. */
+async function lhSave(db, row, d, now, name, resets) {
+	const tot = d.tot || {};
+	const achCount = Object.values(d.ach || {}).reduce((a, n) => a + n, 0);
+	const bv = lhBoardValues(d, row, achCount, now, resets || await lhResets(db));
+	const cols = {
+		...bv.all, uuid: row.uuid, name: name || row.name || "", data: JSON.stringify(d), spent: row.spent || 0,
+		title: row.title || "", badge: row.badge || "", quests: d.quests || 0, jobmoney: tot.jobmoney || 0, clean: d.clean || 0, updated: now,
+		pd: bv.ids.d, pw: bv.ids.w, pm: bv.ids.m,
+	};
+	// „points“ = alle je verdienten Taler (für das Guthaben); die Rangliste „gesamt“ liest points_a (nach Rücksetzung neu)
+	cols.points_a = bv.all.points;
+	cols.points = row.points || 0;
+	for (const p of LH_PERIODS) for (const b of LH_BOARDS) cols[`${b}_${p}`] = bv.per[p][b];
+	const names = Object.keys(cols);
+	await db.prepare(`INSERT INTO lh_player (${names.join(", ")}) VALUES (${names.map(() => "?").join(", ")})
+		ON CONFLICT(uuid) DO UPDATE SET ${names.filter((n) => n !== "uuid").map((n) => `${n} = excluded.${n}`).join(", ")}`)
+		.bind(...names.map((n) => cols[n])).run();
+}
+
+/** Ist diese UUID Admin? Liste in der Cloudflare-Variable LH_ADMINS (UUIDs, durch Komma getrennt). */
+function lhIsAdmin(env, uuid) {
+	const list = String(env.LH_ADMINS || "").toLowerCase().split(/[\s,;]+/).map((x) => x.replace(/-/g, "")).filter(Boolean);
+	return list.includes(uuid.replace(/-/g, "").toLowerCase());
+}
+
+/** Admin: Taler eines Spielers ändern, Ranglisten zurücksetzen. Gibt {ok, msg} oder {error}. */
+async function lhAdmin(db, env, p, now) {
+	const target = async () => {
+		if (typeof p.target !== "string" || !NAME.test(p.target)) return null;
+		const t = await db.prepare("SELECT * FROM lh_player WHERE lower(name) = lower(?) ORDER BY updated DESC LIMIT 1").bind(p.target).first();
+		if (!t) return null;
+		let td;
+		try { td = JSON.parse(t.data || "{}"); } catch { td = {}; }
+		return [t, td];
+	};
+	if (p.op === "admin_taler") {
+		const amount = Math.trunc(Number(p.amount));
+		if (!Number.isFinite(amount) || Math.abs(amount) > 1e9 || !["add", "set"].includes(p.mode)) return { error: "bad amount" };
+		const found = await target();
+		if (!found) return { error: "no player" };
+		const [t, td] = found;
+		const balance = (t.points || 0) - (t.spent || 0);
+		// Guthaben über „ausgegeben“ ändern – die verdienten Taler (Rangliste) bleiben gleich
+		const want = p.mode === "set" ? Math.max(0, amount) : Math.max(0, balance + amount);
+		t.spent = (t.points || 0) - want;
+		await lhSave(db, t, td, now, t.name);
+		return { ok: true, name: t.name, balance: want };
+	}
+	if (p.op === "admin_reset") {
+		const b = p.board, per = p.period;
+		if (!LH_BOARDS.includes(b) || !(per === "a" || LH_PERIODS.includes(per))) return { error: "bad board" };
+		const key = `${b}|${per}`;
+		const col = per === "a" ? (b === "points" ? "points_a" : b) : `${b}_${per}`;
+		if (p.target) {
+			const found = await target();
+			if (!found) return { error: "no player" };
+			const [t, td] = found;
+			const resets = { ...(await lhResets(db)), [key]: now };
+			td.rs = { ...(td.rs || {}) };
+			delete td.rs[key];
+			td.delta = {}; // kein Abgleich: nichts Neues dazugekommen
+			await lhSave(db, t, td, now, t.name, resets);
+			return { ok: true, name: t.name };
+		}
+		const resets = await lhResets(db);
+		resets[key] = now;
+		await db.batch([
+			db.prepare("INSERT OR REPLACE INTO lh_meta (k, v) VALUES ('resets', ?)").bind(JSON.stringify(resets)),
+			db.prepare(`UPDATE lh_player SET ${col} = 0`),
+		]);
+		return { ok: true };
+	}
+	return { error: "bad op" };
+}
+
 async function lhHandle(request, env) {
 	if (!env.AH) return json({ error: "no-db" }, 503);
 	const [body, err] = await signedBody(request, env, async (b) =>
@@ -840,6 +925,10 @@ async function lhHandle(request, env) {
 	let extra = null;
 	let error = null;
 
+	if (typeof p.op === "string" && p.op.startsWith("admin_")) {
+		if (!lhIsAdmin(env, uuid)) return json({ error: "not admin" }, 403);
+		return json(await lhAdmin(db, env, p, now));
+	}
 	if (p.op === "sync") {
 		if (!p.stats || typeof p.stats !== "object") return json({ error: "bad payload" }, 400);
 		lhAbsorb(d, p.stats, now);
@@ -865,22 +954,9 @@ async function lhHandle(request, env) {
 			return json({ error: "bad op" }, 400);
 		}
 	}
-	if (!error) {
-		const tot = d.tot;
-		const achCount = Object.values(d.ach || {}).reduce((a, n) => a + n, 0);
-		const bv = lhBoardValues(d, row, achCount, now);
-		const cols = {
-			uuid, name: name || row.name || "", data: JSON.stringify(d), points: row.points, spent: row.spent,
-			title: row.title || "", badge: row.badge || "", quests: d.quests || 0, jobmoney: tot.jobmoney || 0, clean: d.clean || 0, updated: now,
-			...bv.all, pd: bv.ids.d, pw: bv.ids.w, pm: bv.ids.m,
-		};
-		for (const p of LH_PERIODS) for (const b of LH_BOARDS) cols[`${b}_${p}`] = bv.per[p][b];
-		const names = Object.keys(cols);
-		await db.prepare(`INSERT INTO lh_player (${names.join(", ")}) VALUES (${names.map(() => "?").join(", ")})
-			ON CONFLICT(uuid) DO UPDATE SET ${names.filter((n) => n !== "uuid").map((n) => `${n} = excluded.${n}`).join(", ")}`)
-			.bind(...names.map((n) => cols[n])).run();
-	}
+	if (!error) await lhSave(db, row, d, now, name);
 	const view = lhView(row, d, extra, now);
+	if (lhIsAdmin(env, uuid)) view.admin = true;
 	if (error) view.error = error;
 	return json(view);
 }
@@ -890,17 +966,44 @@ async function lhHandle(request, env) {
  * (Stand beim ersten Abgleich darin), die Login-Serie zählt mit ihrer aktuellen Länge, der beste Job-Tag als bester
  * Tag im Zeitraum (täglich: heute).
  */
-function lhBoardValues(d, row, achCount, now) {
+function lhBoardValues(d, row, achCount, now, resets = {}) {
 	const tot = d.tot || {};
 	const jd = d.jd || { day: -1, start: 0, best: 0 };
 	const today = Math.max(0, (tot.jobmoney || 0) - (jd.start || 0));
-	const all = {
+	const raw = {
 		points: row.points || 0, ach: achCount, login: (d.login && d.login.best) || 0, dquests: d.dq || 0, wquests: d.wq || 0,
 		blocks: tot.blocks || 0, placed: tot.placed || 0, picked: tot.picked || 0, dropped: tot.dropped || 0,
 		mobs: tot.mobs || 0, fish: tot.fish || 0, play: tot.play || 0, jobday: Math.floor(jd.best || 0),
 	};
 	const ids = { d: lhDayId(now), w: lhWeekId(now), m: lhMonthId(now) };
 	d.per = d.per || {};
+	// Rücksetzungen durch einen Admin (alle Spieler über lh_meta, einzelne direkt): ab jetzt wieder bei 0 zählen
+	d.rs = d.rs || {};
+	d.off = d.off || {};
+	if (d.created === undefined) d.created = d.first ? now : 0; // wer erst nach einer Rücksetzung dazukommt, ist nicht betroffen
+	for (const key of Object.keys(resets)) {
+		if ((d.rs[key] || 0) >= resets[key]) continue;
+		if (resets[key] < d.created) { d.rs[key] = resets[key]; continue; }
+		d.rs[key] = resets[key];
+		const [b, p] = key.split("|");
+		if (p === "a") {
+			if (b === "login") { if (d.login) d.login.best = d.login.cur || 0; }
+			else if (b === "jobday") { if (d.jd) d.jd.best = 0; raw.jobday = 0; }
+			else {
+				// ab jetzt bei 0 – was seit dem letzten Abgleich dazukam, zählt schon; Tag/Woche/Monat laufen weiter
+				const newOff = Math.max(0, (raw[b] || 0) - ((d.delta && d.delta[b]) || 0));
+				const shift = newOff - (d.off[b] || 0);
+				d.off[b] = newOff;
+				for (const q of LH_PERIODS) if (d.per[q] && d.per[q].base) d.per[q].base[b] = (d.per[q].base[b] || 0) - shift;
+			}
+		} else if (d.per[p] && d.per[p].id === ids[p]) {
+			if (b === "jobday") d.per[p].job = 0;
+			else d.per[p].base[b] = (raw[b] || 0) - (d.off[b] || 0) - ((d.delta && d.delta[b]) || 0);
+		}
+	}
+	const all = {};
+	for (const b of Object.keys(raw)) all[b] = Math.max(0, (raw[b] || 0) - (b === "login" || b === "jobday" ? 0 : (d.off[b] || 0)));
+	all.login = (d.login && d.login.best) || 0;
 	const out = { all, ids, per: {} };
 	for (const p of LH_PERIODS) {
 		let pe = d.per[p];
@@ -937,7 +1040,7 @@ async function lhBoard(request, env, ctx, url) {
 	const now = Date.now();
 	const id = p === "d" ? lhDayId(now) : p === "w" ? lhWeekId(now) : p === "m" ? lhMonthId(now) : 0;
 	return lhCached(request, ctx, `/lh-board-cache/${b}/${p}/${id}`, 300, async () => {
-		const col = p === "a" ? b : `${b}_${p}`;
+		const col = p === "a" ? (b === "points" ? "points_a" : b) : `${b}_${p}`;
 		let where = p === "a" ? `${col} > 0` : `p${p} = ${id} AND ${col} > 0`;
 		let order = `${col} DESC`;
 		if (b === "dropped") {
