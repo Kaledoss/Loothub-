@@ -73,6 +73,11 @@ jobs:
           if [ "${{ github.ref }}" = "refs/heads/main" ]; then
             VERSION="$NEXT"
           elif [ "${{ github.ref }}" = "refs/heads/test" ]; then
+            # Optional eigene Testreihe: .github/test-base (z. B. 1.0.82), gilt nur, wenn sie höher ist
+            if [ -f .github/test-base ]; then
+              BASE=$(tr -d ' \r\n' < .github/test-base)
+              if [ -n "$BASE" ] && [ "$(printf '%s\n%s\n' "$NEXT" "$BASE" | sort -V | tail -1)" = "$BASE" ]; then NEXT="$BASE"; fi
+            fi
             PREV=$(gh api "repos/${{ github.repository }}/releases/tags/test-build" -q .name 2>/dev/null | grep -oE "$NEXT-test\.[0-9]+" | grep -oE '[0-9]+$' || true)
             VERSION="$NEXT-test.$(( ${PREV:-0} + 1 ))"
           else
