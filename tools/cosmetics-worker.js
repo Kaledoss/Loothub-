@@ -535,6 +535,7 @@ const LH_RATE = { blocks: 25, placed: 25, mobs: 6, fish: 0.3, play: 0.025, dist:
 const LH_FIRST_MAX = { blocks: 5e7, placed: 5e7, mobs: 5e6, fish: 1e6, play: 2e6, dist: 5e8, treasures: 1e6,
 	jobmoney: 1e12, itemdex: 1e5, eat: 1e6, jumps: 5e7 };
 const LH_TIER_POINTS = [10, 25, 50, 100, 200, 400, 800];
+const LH_HISTORY_SHARE = 0.25; // Anteil der Taler für Erfolgsstufen, die beim ersten Abgleich schon erreicht sind
 const LH_ACH = {
 	blocks: [1000, 10000, 50000, 250000, 1000000, 5000000],
 	placed: [500, 5000, 25000, 100000, 500000],
@@ -564,15 +565,15 @@ const LH_Q_POINTS = [[10, 20, 40], [100, 175, 300]];
 const LH_COMM = { blocks: 500000, mobs: 50000, fish: 5000, placed: 250000 };
 const LH_COMM_REWARD = 150;
 const LH_SHOP = [
-	["t_miner", "title", 300], ["t_hunter", "title", 300], ["t_angler", "title", 300], ["t_builder", "title", 300],
-	["t_explorer", "title", 300], ["t_collector", "title", 500], ["t_night", "title", 500], ["t_trader", "title", 800],
-	["t_lootking", "title", 2000], ["t_legend", "title", 3000],
-	["b_star", "badge", 150], ["b_heart", "badge", 150], ["b_diamond", "badge", 150], ["b_sun", "badge", 200],
-	["b_moon", "badge", 200], ["b_flower", "badge", 200], ["b_sword", "badge", 250], ["b_bolt", "badge", 250],
-	["b_note", "badge", 250], ["b_skull", "badge", 400], ["b_crown", "badge", 1000],
-	["c_hearts", "steps", 400], ["c_notes", "steps", 400], ["c_snow", "steps", 500], ["c_magic", "steps", 600],
-	["c_soul", "steps", 700], ["c_stars", "steps", 800],
-	["s_freeze", "freeze", 250], // Login-Schutz: verbrauchbar, mehrfach kaufbar
+	["s_freeze", "freeze", 400], // Login-Schutz: verbrauchbar, mehrfach kaufbar
+	["t_miner", "title", 2000], ["t_hunter", "title", 2000], ["t_angler", "title", 2000], ["t_builder", "title", 2000],
+	["t_explorer", "title", 2000], ["t_collector", "title", 4000], ["t_night", "title", 4000], ["t_trader", "title", 7000],
+	["t_lootking", "title", 16000], ["t_legend", "title", 30000],
+	["b_star", "badge", 600], ["b_heart", "badge", 600], ["b_diamond", "badge", 600], ["b_sun", "badge", 1000],
+	["b_moon", "badge", 1000], ["b_flower", "badge", 1000], ["b_sword", "badge", 1600], ["b_bolt", "badge", 1600],
+	["b_note", "badge", 1600], ["b_skull", "badge", 3000], ["b_crown", "badge", 10000],
+	["c_hearts", "steps", 2400], ["c_notes", "steps", 2400], ["c_snow", "steps", 3600], ["c_magic", "steps", 5000],
+	["c_soul", "steps", 7000], ["c_stars", "steps", 10000],
 ];
 const LH_SHOP_MAP = Object.fromEntries(LH_SHOP.map(([id, kind, cost]) => [id, { kind, cost }]));
 // Fußspuren-Stile aus dem Shop (Wert in den Cosmetics → nötiger Shop-Artikel)
@@ -662,6 +663,7 @@ function lhAbsorb(d, reported, now) {
 	d.raw = d.raw || {};
 	d.tot = d.tot || {};
 	const first = !d.last;
+	d.first = first; // erster Abgleich: Erfolge aus alter Statistik bringen nur einen Teil der Taler
 	const secs = Math.min(6 * 3600, Math.max(0, (now - (d.last || now)) / 1000)) + 120;
 	for (const s of LH_STATS) {
 		let v = Number(reported[s]);
@@ -778,7 +780,8 @@ async function lhProgress(db, d, now) {
 		const t = lhTier(stat, v);
 		const had = d.ach[stat] || 0;
 		for (let k = had; k < t; k++) {
-			const p = LH_TIER_POINTS[Math.min(k, LH_TIER_POINTS.length - 1)];
+			const full = LH_TIER_POINTS[Math.min(k, LH_TIER_POINTS.length - 1)];
+			const p = d.first ? Math.round(full * LH_HISTORY_SHARE) : full;
 			earned += p;
 			news.push({ k: "ach", stat, tier: k + 1, p });
 			if (stat === "login") {
