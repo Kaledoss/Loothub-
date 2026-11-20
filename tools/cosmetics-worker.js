@@ -548,9 +548,9 @@ const LH_ACH = {
 	eat: [100, 1000, 5000, 20000],
 	jumps: [1000, 10000, 100000, 500000],
 	quests: [10, 100, 500, 2000],
-	streak: [3, 7, 30, 100],
-	login: [7, 30, 100, 365],
-	weekstreak: [2, 4, 12, 52],
+	streak: [1, 3, 5, 10, 25, 50, 75, 100],
+	login: [1, 3, 7, 14, 30, 50, 75, 100],
+	weekstreak: [1, 3, 6, 10, 20, 30, 40, 50, 60, 70, 80, 90, 100],
 };
 // Quest-Ziele: [leicht, mittel, schwer] je 4 Stunden bzw. je Woche
 const LH_Q = {
