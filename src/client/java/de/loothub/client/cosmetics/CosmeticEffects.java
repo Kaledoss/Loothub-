@@ -17,6 +17,11 @@ public final class CosmeticEffects {
 	private CosmeticEffects() {
 	}
 
+	/** Fußspuren-Stile aus dem Loothub-Shop. */
+	private static final java.util.Map<String, net.minecraft.core.particles.SimpleParticleType> SHOP_STEPS = java.util.Map.of(
+			"hearts", ParticleTypes.HEART, "notes", ParticleTypes.NOTE, "snow", ParticleTypes.SNOWFLAKE,
+			"magic", ParticleTypes.WITCH, "soul", ParticleTypes.SOUL_FIRE_FLAME, "stars", ParticleTypes.END_ROD);
+
 	public static void register() {
 		ClientTickEvents.END_CLIENT_TICK.register(CosmeticEffects::tick);
 	}
@@ -74,6 +79,17 @@ public final class CosmeticEffects {
 					}
 					if (r.nextInt(2) == 0) {
 						mc.level.addParticle(ParticleTypes.FLAME, x, y, z, 0.0, 0.008, 0.0);
+					}
+				} else if (SHOP_STEPS.containsKey(steps)) {
+					// Fußspuren aus dem Loothub-Shop
+					var type = SHOP_STEPS.get(steps);
+					int n = steps.equals("hearts") || steps.equals("notes") ? 1 : 2;
+					if (n == 2 || p.tickCount % 4 == 0) {
+						for (int i = 0; i < n; i++) {
+							double vy = steps.equals("snow") || steps.equals("stars") ? 0.01 : 0.03;
+							mc.level.addParticle(type, x + (r.nextDouble() - 0.5) * 0.2, y + (steps.equals("notes") ? 0.3 : 0.05),
+									z + (r.nextDouble() - 0.5) * 0.2, steps.equals("notes") ? r.nextDouble() : 0.0, vy, 0.0);
+						}
 					}
 				} else if (steps.equals("sparks")) {
 					for (int i = 0; i < 4; i++) {

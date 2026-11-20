@@ -168,6 +168,10 @@ public class LoothubClient implements ClientModInitializer {
 		// Fang-Einblendung (gefangener Fisch), im Chat verschiebbar
 		HudElementRegistry.attachElementBefore(VanillaHudElements.CHAT,
 				Identifier.fromNamespaceAndPath(Loothub.MOD_ID, "fish_alert"), de.loothub.client.jobs.FishAlert::renderHud);
+		// Erfolge, Quests, Punkte: Abgleich mit dem Loothub-Server und Einblendungen
+		HudElementRegistry.attachElementBefore(VanillaHudElements.CHAT,
+				Identifier.fromNamespaceAndPath(Loothub.MOD_ID, "progress_toasts"), de.loothub.client.progress.Progress::renderHud);
+		de.loothub.client.progress.Progress.register();
 		de.loothub.client.jobs.FishAlert.register();
 		de.loothub.client.quick.AuctionWatch.register();
 		de.loothub.client.music.YtMusic.ensure(de.loothub.client.jobs.WidgetConfig.get().musicEnabled);

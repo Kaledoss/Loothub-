@@ -278,6 +278,10 @@ public final class WidgetConfig {
 	public boolean pokedexPage = true;
 	/** Krönchen vor Loothub-Nutzern in der Tab-Liste. */
 	public boolean loothubCrown = true;
+	/** Erfolge, Quests, Punkte, Shop und Ranglisten über den Loothub-Server. */
+	public boolean progress = true;
+	/** Titel und Abzeichen anderer Spieler über dem Kopf und in der Tab-Liste zeigen. */
+	public boolean progressTitles = true;
 	/** Verbundene Texturen (Glas ohne Ränder zwischen gleichen Blöcken). */
 	public boolean connectedTextures = true;
 	/** Streamer-Modus: eigene Menüseite mit Twitch-Konto, Twitch-Chat im Minecraft-Chat und Kanalbelohnungen. */
@@ -375,6 +379,7 @@ public final class WidgetConfig {
 		streamerChat = false;
 		connectedTextures = false;
 		loothubCrown = false;
+		progress = false;
 		fishAlert = false;
 		baitWarning = false;
 		auctionAlarm = false;

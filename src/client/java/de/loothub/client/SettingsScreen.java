@@ -294,6 +294,10 @@ public class SettingsScreen extends LoothubScreen {
 				}
 				y = card(y, 40, "loothub.settings.crown", "loothub.settings.crown.tooltip",
 						() -> c.loothubCrown, v -> c.loothubCrown = v);
+				y = card(y, 40, "loothub.settings.progress", "loothub.settings.progress.tooltip",
+						() -> c.progress, v -> c.progress = v);
+				y = card(y, 40, "loothub.settings.progress_titles", "loothub.settings.progress_titles.tooltip",
+						() -> c.progressTitles, v -> c.progressTitles = v);
 				y = card(y, 40, "loothub.settings.connected_textures", "loothub.settings.connected_textures.tooltip",
 						() -> c.connectedTextures, v -> {
 							c.connectedTextures = v;

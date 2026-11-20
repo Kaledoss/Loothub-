@@ -10,6 +10,7 @@
 // POST /share-drop → eine mit mir geteilte Schematic ablehnen/entfernen
 // POST /unshare    → Teilen mit einem Spieler beenden (nur der Absender)
 // Alle Bau-Anfragen sind wie /profile unterschrieben.
+// POST /lh, GET /lh/board, GET /lh/tags → Erfolge, Quests, Punkte, Shop, Ranglisten (D1, Bindung AH)
 
 const MAX_SET = 30;
 const MAX_VALUES = 30;
@@ -507,6 +508,378 @@ async function ahServe(request, env, ctx) {
 	return res;
 }
 
+// ------------------------------------------------------------------ Loothub-Fortschritt
+// Erfolge, Quests (alle 4 Stunden, wöchentlich, Gemeinschaft), Streak, Punkte, Shop, Ranglisten.
+// Speicher: D1 (Bindung AH). Die Mod meldet nur Zähler-Summen; der Server rechnet Fortschritt und Punkte selbst
+// und kappt unplausible Sprünge.
+//
+// POST /lh         → unterschrieben: {payload: "{op: sync|buy|equip, …}"} → eigener Stand
+// GET  /lh/board?b=points|ach|quests|streak|blocks|… → beste 50 (5 min zwischengespeichert)
+// GET  /lh/tags    → {uuid: [titel, abzeichen]} aller Spieler, die etwas angelegt haben (5 min)
+
+const LH_HOUR = 3600_000;
+const LH_DAY = 24 * LH_HOUR;
+const LH_TZ = LH_HOUR; // Zeitzone für Tages-/Quest-Grenzen: MEZ
+const LH_SLOT = 4 * LH_HOUR;
+const LH_STATS = ["blocks", "placed", "mobs", "fish", "play", "dist", "treasures", "jobmoney", "itemdex", "eat", "jumps"];
+// höchstens so viel Zuwachs pro Sekunde zwischen zwei Meldungen (dazu ein Puffer von 2 Minuten)
+const LH_RATE = { blocks: 25, placed: 25, mobs: 6, fish: 0.3, play: 0.025, dist: 120, treasures: 1, jobmoney: 50000,
+	itemdex: 5, eat: 2, jumps: 6 };
+const LH_FIRST_MAX = { blocks: 5e7, placed: 5e7, mobs: 5e6, fish: 1e6, play: 2e6, dist: 5e8, treasures: 1e6,
+	jobmoney: 1e12, itemdex: 1e5, eat: 1e6, jumps: 5e7 };
+const LH_TIER_POINTS = [10, 25, 50, 100, 200, 400, 800];
+const LH_ACH = {
+	blocks: [1000, 10000, 50000, 250000, 1000000, 5000000],
+	placed: [500, 5000, 25000, 100000, 500000],
+	mobs: [100, 1000, 5000, 25000, 100000],
+	fish: [50, 500, 2500, 10000, 50000],
+	play: [600, 3000, 12000, 30000, 60000],
+	dist: [10000, 100000, 500000, 2000000, 10000000],
+	treasures: [10, 100, 500, 2500],
+	jobmoney: [100000, 1000000, 10000000, 100000000, 1000000000],
+	itemdex: [50, 200, 500, 1000, 2000],
+	eat: [100, 1000, 5000, 20000],
+	jumps: [1000, 10000, 100000, 500000],
+	quests: [10, 100, 500, 2000],
+	streak: [3, 7, 30, 100],
+};
+// Quest-Ziele: [leicht, mittel, schwer] je 4 Stunden bzw. je Woche
+const LH_Q = {
+	blocks: [[300, 1000, 3000], [10000, 25000, 60000]],
+	placed: [[200, 600, 1500], [5000, 15000, 40000]],
+	mobs: [[30, 100, 250], [800, 2000, 5000]],
+	fish: [[10, 30, 60], [150, 400, 900]],
+	play: [[30, 60, 120], [300, 600, 1200]],
+	dist: [[1000, 3000, 8000], [20000, 50000, 120000]],
+	jumps: [[200, 500, 1000], [3000, 8000, 20000]],
+	eat: [[10, 25, 50], [100, 250, 500]],
+	treasures: [[1, 3, 6], [10, 25, 60]],
+};
+const LH_Q_POINTS = [[10, 20, 40], [100, 175, 300]];
+const LH_STREAK_NEED = 3; // so viele 4-Stunden-Quests an einem Tag halten die Serie
+const LH_COMM = { blocks: 500000, mobs: 50000, fish: 5000, dist: 1500000, placed: 250000 };
+const LH_COMM_REWARD = 150;
+const LH_SHOP = [
+	["t_miner", "title", 300], ["t_hunter", "title", 300], ["t_angler", "title", 300], ["t_builder", "title", 300],
+	["t_explorer", "title", 300], ["t_collector", "title", 500], ["t_night", "title", 500], ["t_trader", "title", 800],
+	["t_lootking", "title", 2000], ["t_legend", "title", 3000],
+	["b_star", "badge", 150], ["b_heart", "badge", 150], ["b_diamond", "badge", 150], ["b_sun", "badge", 200],
+	["b_moon", "badge", 200], ["b_flower", "badge", 200], ["b_sword", "badge", 250], ["b_bolt", "badge", 250],
+	["b_note", "badge", 250], ["b_skull", "badge", 400], ["b_crown", "badge", 1000],
+	["c_hearts", "steps", 400], ["c_notes", "steps", 400], ["c_snow", "steps", 500], ["c_magic", "steps", 600],
+	["c_soul", "steps", 700], ["c_stars", "steps", 800],
+];
+const LH_SHOP_MAP = Object.fromEntries(LH_SHOP.map(([id, kind, cost]) => [id, { kind, cost }]));
+// Fußspuren-Stile aus dem Shop (Wert in den Cosmetics → nötiger Shop-Artikel)
+const LH_STEP_ITEMS = { hearts: "c_hearts", notes: "c_notes", snow: "c_snow", magic: "c_magic", soul: "c_soul", stars: "c_stars" };
+const LH_BOARDS = ["points", "ach", "quests", "streak", "blocks", "mobs", "fish", "play", "dist", "jobmoney", "itemdex"];
+
+let lhReady = false;
+async function lhInit(db) {
+	if (lhReady) return;
+	await db.batch([
+		db.prepare(`CREATE TABLE IF NOT EXISTS lh_player (uuid TEXT PRIMARY KEY, name TEXT, data TEXT, points INTEGER DEFAULT 0,
+			spent INTEGER DEFAULT 0, title TEXT DEFAULT '', badge TEXT DEFAULT '', ach INTEGER DEFAULT 0, quests INTEGER DEFAULT 0,
+			streak INTEGER DEFAULT 0, blocks INTEGER DEFAULT 0, mobs INTEGER DEFAULT 0, fish INTEGER DEFAULT 0, play INTEGER DEFAULT 0,
+			dist INTEGER DEFAULT 0, jobmoney INTEGER DEFAULT 0, itemdex INTEGER DEFAULT 0, updated INTEGER DEFAULT 0)`),
+		db.prepare("CREATE TABLE IF NOT EXISTS lh_comm (week INTEGER PRIMARY KEY, stat TEXT, goal INTEGER, sum INTEGER DEFAULT 0)"),
+	]);
+	lhReady = true;
+}
+
+// Zufall mit festem Startwert: alle Spieler bekommen dieselben Quests
+function lhRand(seed) {
+	let h = 1779033703 ^ seed.length;
+	for (let i = 0; i < seed.length; i++) {
+		h = Math.imul(h ^ seed.charCodeAt(i), 3432918353);
+		h = (h << 13) | (h >>> 19);
+	}
+	let a = h >>> 0;
+	return () => {
+		a = (a + 0x6D2B79F5) | 0;
+		let t = Math.imul(a ^ (a >>> 15), 1 | a);
+		t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+		return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+	};
+}
+
+function lhSlotId(now) { return Math.floor((now + LH_TZ) / LH_SLOT); }
+function lhDayId(now) { return Math.floor((now + LH_TZ) / LH_DAY); }
+function lhWeekId(now) { return Math.floor((lhDayId(now) - 4) / 7); } // Wochen ab Montag
+function lhSlotEnd(slot) { return (slot + 1) * LH_SLOT - LH_TZ; }
+function lhWeekEnd(week) { return ((week + 1) * 7 + 4) * LH_DAY - LH_TZ; }
+
+/** Drei Quests (je eine leichte, mittlere, schwere) für einen 4-Stunden-Abschnitt (kind 0) oder eine Woche (kind 1). */
+function lhQuests(kind, id) {
+	const rnd = lhRand(`lh-${kind}-${id}`);
+	const stats = Object.keys(LH_Q);
+	const out = [];
+	for (let d = 0; d < 3; d++) {
+		let s;
+		do { s = stats[Math.floor(rnd() * stats.length)]; } while (out.some((q) => q.stat === s));
+		out.push({ stat: s, goal: LH_Q[s][kind][d], points: LH_Q_POINTS[kind][d], diff: d });
+	}
+	return out;
+}
+
+function lhCommunity(week) {
+	const stats = Object.keys(LH_COMM);
+	const s = stats[Math.floor(lhRand(`lh-comm-${week}`)() * stats.length)];
+	return { stat: s, goal: LH_COMM[s] };
+}
+
+function lhCatalog() {
+	return { ach: LH_ACH, tierPoints: LH_TIER_POINTS, shop: LH_SHOP, boards: LH_BOARDS, streakNeed: LH_STREAK_NEED,
+		commReward: LH_COMM_REWARD };
+}
+
+function lhTier(stat, v) {
+	const t = LH_ACH[stat];
+	let n = 0;
+	while (n < t.length && v >= t[n]) n++;
+	return n;
+}
+
+/** Gemeldete Summen übernehmen: Zuwachs je Zähler, gekappt; nach einem Zurücksetzen der Statistik zählt der neue Wert. */
+function lhAbsorb(d, reported, now) {
+	d.raw = d.raw || {};
+	d.tot = d.tot || {};
+	const first = !d.last;
+	const secs = Math.min(6 * 3600, Math.max(0, (now - (d.last || now)) / 1000)) + 120;
+	for (const s of LH_STATS) {
+		let v = Number(reported[s]);
+		if (!Number.isFinite(v) || v < 0) continue;
+		v = Math.floor(v);
+		const prev = d.raw[s];
+		let delta;
+		if (first || prev === undefined) delta = Math.min(v, LH_FIRST_MAX[s]);
+		else delta = v >= prev ? v - prev : v; // kleiner als vorher: Statistik zurückgesetzt
+		if (!first && prev !== undefined) delta = Math.min(delta, Math.ceil(LH_RATE[s] * secs));
+		d.raw[s] = v;
+		d.tot[s] = (d.tot[s] || 0) + delta;
+	}
+	d.last = now;
+}
+
+function lhCopy(tot) { return Object.fromEntries(LH_STATS.map((s) => [s, tot[s] || 0])); }
+
+/** Fortschritt durchrechnen: Erfolge, Quests, Streak, Gemeinschaft. Gibt die neu verdienten Punkte und Neuigkeiten. */
+async function lhProgress(db, d, now) {
+	const news = [];
+	let earned = 0;
+	const tot = d.tot;
+	d.ach = d.ach || {};
+	d.quests = d.quests || 0;
+	d.streak = d.streak || { cur: 0, best: 0, day: -1, today: -1, todayDone: 0 };
+
+	// 4-Stunden-Quests
+	const slot = lhSlotId(now);
+	if (!d.slot || d.slot.id !== slot) d.slot = { id: slot, base: lhCopy(tot), done: [false, false, false] };
+	const today = lhDayId(now);
+	if (d.streak.today !== today) { d.streak.today = today; d.streak.todayDone = 0; }
+	lhQuests(0, slot).forEach((q, i) => {
+		if (d.slot.done[i]) return;
+		if ((tot[q.stat] || 0) - (d.slot.base[q.stat] || 0) >= q.goal) {
+			d.slot.done[i] = true;
+			earned += q.points;
+			d.quests++;
+			d.streak.todayDone++;
+			news.push({ k: "quest", stat: q.stat, goal: q.goal, p: q.points });
+		}
+	});
+	// Streak: genug Quests an einem Tag
+	if (d.streak.todayDone >= LH_STREAK_NEED && d.streak.day !== today) {
+		d.streak.cur = d.streak.day === today - 1 ? d.streak.cur + 1 : 1;
+		d.streak.day = today;
+		d.streak.best = Math.max(d.streak.best, d.streak.cur);
+		const bonus = 5 * Math.min(d.streak.cur, 10);
+		earned += bonus;
+		news.push({ k: "streak", n: d.streak.cur, p: bonus });
+	}
+	if (d.streak.day < today - 1) d.streak.cur = 0; // Serie gerissen
+
+	// Wochenquests und Gemeinschaftsquest
+	const week = lhWeekId(now);
+	if (d.week && d.week.id !== week) {
+		// Belohnung der vergangenen Woche nachholen, falls das Ziel erreicht wurde
+		const old = await db.prepare("SELECT stat, goal, sum FROM lh_comm WHERE week = ?").bind(d.week.id).first();
+		if (old && !d.week.paid && old.sum >= old.goal && (d.week.comm || 0) >= Math.ceil(old.goal / 200)) {
+			earned += LH_COMM_REWARD;
+			news.push({ k: "comm", stat: old.stat, p: LH_COMM_REWARD });
+		}
+		d.week = null;
+	}
+	if (!d.week) d.week = { id: week, base: lhCopy(tot), done: [false, false, false], comm: 0, paid: false };
+	lhQuests(1, week).forEach((q, i) => {
+		if (d.week.done[i]) return;
+		if ((tot[q.stat] || 0) - (d.week.base[q.stat] || 0) >= q.goal) {
+			d.week.done[i] = true;
+			earned += q.points;
+			d.quests++;
+			news.push({ k: "week", stat: q.stat, goal: q.goal, p: q.points });
+		}
+	});
+	const cq = lhCommunity(week);
+	const mine = Math.max(0, (tot[cq.stat] || 0) - (d.week.base[cq.stat] || 0));
+	const add = mine - (d.week.comm || 0);
+	let comm = await db.prepare("SELECT sum FROM lh_comm WHERE week = ?").bind(week).first();
+	if (add > 0) {
+		await db.prepare("INSERT INTO lh_comm (week, stat, goal, sum) VALUES (?, ?, ?, ?) ON CONFLICT(week) DO UPDATE SET sum = sum + excluded.sum")
+			.bind(week, cq.stat, cq.goal, add).run();
+		comm = { sum: (comm ? comm.sum : 0) + add };
+	}
+	d.week.comm = mine;
+	const commSum = comm ? comm.sum : 0;
+	if (!d.week.paid && commSum >= cq.goal && mine >= Math.ceil(cq.goal / 200)) {
+		d.week.paid = true;
+		earned += LH_COMM_REWARD;
+		news.push({ k: "comm", stat: cq.stat, p: LH_COMM_REWARD });
+	}
+
+	// Erfolge
+	const metas = { quests: d.quests, streak: d.streak.best };
+	for (const stat of Object.keys(LH_ACH)) {
+		const v = stat in metas ? metas[stat] : (tot[stat] || 0);
+		const t = lhTier(stat, v);
+		const had = d.ach[stat] || 0;
+		for (let k = had; k < t; k++) {
+			const p = LH_TIER_POINTS[Math.min(k, LH_TIER_POINTS.length - 1)];
+			earned += p;
+			news.push({ k: "ach", stat, tier: k + 1, p });
+		}
+		if (t > had) d.ach[stat] = t;
+	}
+	return { earned, news, commSum, cq };
+}
+
+function lhView(row, d, extra, now) {
+	const slot = lhSlotId(now), week = lhWeekId(now);
+	const q4 = lhQuests(0, slot).map((q, i) => ({ ...q, have: Math.max(0, (d.tot[q.stat] || 0) - (d.slot.base[q.stat] || 0)), done: !!d.slot.done[i] }));
+	const qw = lhQuests(1, week).map((q, i) => ({ ...q, have: Math.max(0, (d.tot[q.stat] || 0) - (d.week.base[q.stat] || 0)), done: !!d.week.done[i] }));
+	return {
+		now, points: row.points, balance: row.points - row.spent, title: row.title, badge: row.badge,
+		tot: lhCopy(d.tot), ach: d.ach, quests: d.quests,
+		streak: { cur: d.streak.cur, best: d.streak.best, todayDone: d.streak.todayDone, kept: d.streak.day === lhDayId(now) },
+		slot: { ends: lhSlotEnd(slot), list: q4 },
+		week: { ends: lhWeekEnd(week), list: qw },
+		comm: extra ? { stat: extra.cq.stat, goal: extra.cq.goal, sum: extra.commSum, mine: d.week.comm || 0,
+			need: Math.ceil(extra.cq.goal / 200), paid: !!d.week.paid, reward: LH_COMM_REWARD } : null,
+		owned: d.owned || [], news: extra ? extra.news : [], cat: lhCatalog(),
+	};
+}
+
+async function lhHandle(request, env) {
+	if (!env.AH) return json({ error: "no-db" }, 503);
+	const [body, err] = await signedBody(request, env, async (b) =>
+		typeof b.payload === "string" && b.payload.length < 4000 ? `loothub-lh\n${b.uuid}\n${b.ts}\n${b.payload}` : null);
+	if (err) return err;
+	let p;
+	try { p = JSON.parse(body.payload); } catch { return json({ error: "bad payload" }, 400); }
+	const db = env.AH;
+	await lhInit(db);
+	const uuid = body.uuid;
+	const name = typeof body.me === "string" && NAME.test(body.me) ? body.me : "";
+	const now = Date.now();
+	let row = await db.prepare("SELECT * FROM lh_player WHERE uuid = ?").bind(uuid).first();
+	if (!row) row = { uuid, name, data: "{}", points: 0, spent: 0, title: "", badge: "" };
+	let d;
+	try { d = JSON.parse(row.data || "{}"); } catch { d = {}; }
+	d.owned = Array.isArray(d.owned) ? d.owned : [];
+	let extra = null;
+	let error = null;
+
+	if (p.op === "sync") {
+		if (!p.stats || typeof p.stats !== "object") return json({ error: "bad payload" }, 400);
+		lhAbsorb(d, p.stats, now);
+		extra = await lhProgress(db, d, now);
+		row.points = (row.points || 0) + extra.earned;
+	} else {
+		if (!d.tot || !d.slot || !d.week) return json({ error: "sync first" }, 409);
+		if (p.op === "buy") {
+			const item = LH_SHOP_MAP[p.item];
+			if (!item) error = "unknown";
+			else if (d.owned.includes(p.item)) error = "owned";
+			else if (row.points - row.spent < item.cost) error = "poor";
+			else { d.owned.push(p.item); row.spent += item.cost; }
+		} else if (p.op === "equip") {
+			const t = typeof p.title === "string" ? p.title : row.title;
+			const b = typeof p.badge === "string" ? p.badge : row.badge;
+			if ((t && !(d.owned.includes(t) && LH_SHOP_MAP[t].kind === "title")) || (b && !(d.owned.includes(b) && LH_SHOP_MAP[b].kind === "badge"))) error = "not owned";
+			else { row.title = t; row.badge = b; }
+		} else {
+			return json({ error: "bad op" }, 400);
+		}
+	}
+	if (!error) {
+		const tot = d.tot;
+		const achCount = Object.values(d.ach || {}).reduce((a, n) => a + n, 0);
+		await db.prepare(`INSERT INTO lh_player (uuid, name, data, points, spent, title, badge, ach, quests, streak, blocks, mobs, fish, play, dist, jobmoney, itemdex, updated)
+			VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+			ON CONFLICT(uuid) DO UPDATE SET name = excluded.name, data = excluded.data, points = excluded.points, spent = excluded.spent,
+			title = excluded.title, badge = excluded.badge, ach = excluded.ach, quests = excluded.quests, streak = excluded.streak,
+			blocks = excluded.blocks, mobs = excluded.mobs, fish = excluded.fish, play = excluded.play, dist = excluded.dist,
+			jobmoney = excluded.jobmoney, itemdex = excluded.itemdex, updated = excluded.updated`)
+			.bind(uuid, name || row.name || "", JSON.stringify(d), row.points, row.spent, row.title || "", row.badge || "", achCount,
+				d.quests || 0, (d.streak && d.streak.best) || 0, tot.blocks || 0, tot.mobs || 0, tot.fish || 0, tot.play || 0,
+				tot.dist || 0, tot.jobmoney || 0, tot.itemdex || 0, now).run();
+	}
+	const view = lhView(row, d, extra, now);
+	if (error) view.error = error;
+	return json(view);
+}
+
+async function lhCached(request, ctx, key, ttl, make) {
+	const cacheKey = new Request(new URL(key, request.url).toString());
+	const hit = await caches.default.match(cacheKey);
+	if (hit) return hit;
+	const res = new Response(JSON.stringify(await make()), {
+		headers: { "content-type": "application/json; charset=utf-8", "cache-control": `public, max-age=${ttl}` },
+	});
+	ctx.waitUntil(caches.default.put(cacheKey, res.clone()));
+	return res;
+}
+
+async function lhBoard(request, env, ctx, url) {
+	if (!env.AH) return json({ error: "no-db" }, 503);
+	const b = url.searchParams.get("b") || "points";
+	if (!LH_BOARDS.includes(b)) return json({ error: "unknown board" }, 400);
+	await lhInit(env.AH);
+	return lhCached(request, ctx, `/lh-board-cache/${b}`, 300, async () => {
+		const r = await env.AH.prepare(`SELECT uuid, name, badge, ${b} AS v FROM lh_player WHERE ${b} > 0 ORDER BY ${b} DESC LIMIT 50`).all();
+		return { b, t: Date.now(), list: (r.results || []).map((x) => [x.uuid, x.name, x.badge || "", x.v]) };
+	});
+}
+
+async function lhTags(request, env, ctx) {
+	if (!env.AH) return json({});
+	await lhInit(env.AH);
+	return lhCached(request, ctx, "/lh-tags-cache", 300, async () => {
+		const r = await env.AH.prepare("SELECT uuid, title, badge FROM lh_player WHERE title != '' OR badge != ''").all();
+		const out = {};
+		for (const x of r.results || []) out[x.uuid] = [x.title || "", x.badge || ""];
+		return out;
+	});
+}
+
+/** Shop-Fußspuren nur für Besitzer: nicht gekaufte Stile aus dem Cosmetics-Profil entfernen. */
+async function lhCheckProfile(env, uuid, profile) {
+	const steps = profile && profile.values && profile.values.footsteps;
+	const need = steps && LH_STEP_ITEMS[steps];
+	if (!need) return;
+	let owned = [];
+	try {
+		if (env.AH) {
+			await lhInit(env.AH);
+			const row = await env.AH.prepare("SELECT data FROM lh_player WHERE uuid = ?").bind(uuid).first();
+			owned = row ? (JSON.parse(row.data).owned || []) : [];
+		}
+	} catch { owned = []; }
+	if (!owned.includes(need)) {
+		delete profile.values.footsteps;
+		profile.set = (profile.set || []).filter((s) => s !== "footsteps");
+	}
+}
+
 export default {
 	async scheduled(controller, env, ctx) {
 		ctx.waitUntil(ahRun(env).catch(() => {}));
@@ -567,6 +940,7 @@ export default {
 			}
 			const all = JSON.parse((await env.COSMETICS.get("all")) || "{}");
 			const profile = clean(parsed);
+			if (profile) await lhCheckProfile(env, uuid, profile);
 			if (profile) {
 				all[uuid] = { ...profile, name, t: now };
 			} else {
@@ -642,6 +1016,20 @@ export default {
 
 		if (request.method === "GET" && url.pathname === "/ah") {
 			return ahServe(request, env, ctx);
+		}
+
+		if (url.pathname === "/lh" && request.method === "POST") {
+			try {
+				return await lhHandle(request, env);
+			} catch (e) {
+				return json({ error: "busy", detail: String(e && e.message || e).slice(0, 200) }, 503);
+			}
+		}
+		if (url.pathname === "/lh/board" && request.method === "GET") {
+			try { return await lhBoard(request, env, ctx, url); } catch { return json({ error: "busy" }, 503); }
+		}
+		if (url.pathname === "/lh/tags" && request.method === "GET") {
+			try { return await lhTags(request, env, ctx); } catch { return json({}); }
 		}
 
 		return new Response("Loothub Cosmetics", { status: 200 });

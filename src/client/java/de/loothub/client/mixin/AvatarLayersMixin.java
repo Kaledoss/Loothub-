@@ -46,6 +46,13 @@ public abstract class AvatarLayersMixin {
 			de.loothub.client.cosmetics.FirstPerson.unmark(state);
 		}
 		de.loothub.client.cosmetics.ArmorHide.apply(entity, state); // Rüstung nur in der Darstellung ausblenden
+		// Titel aus dem Loothub-Shop als Zeile am Namensschild (nur, wenn der Server dort nichts anzeigt)
+		if (state.scoreText == null && state.nameTag != null && entity instanceof net.minecraft.world.entity.player.Player pl) {
+			net.minecraft.network.chat.Component title = de.loothub.client.progress.Progress.titleLine(pl.getUUID());
+			if (title != null) {
+				state.scoreText = title;
+			}
+		}
 		if (de.loothub.client.cosmetics.CosmeticsPreviewScreen.rendering() && entity == mc.player) {
 			de.loothub.client.cosmetics.CosmeticsPreviewScreen.mark(state);
 		}

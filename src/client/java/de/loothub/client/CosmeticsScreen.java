@@ -324,7 +324,7 @@ public class CosmeticsScreen extends LoothubScreen {
 			}
 			case EFFECTS -> {
 				dropdown(descX, y + 30, ddWidth(), Component.translatable("loothub.cosmetics.footsteps.label").getString(),
-						STEP_OPTIONS, "loothub.cosmetics.footsteps.style.", () -> c.footsteps == null ? "" : c.footsteps,
+						stepOptions(), "loothub.cosmetics.footsteps.style.", () -> c.footsteps == null ? "" : c.footsteps,
 						v -> c.footsteps = v);
 				sections.add(new Section(y, 54, "loothub.cosmetics.footsteps", "loothub.cosmetics.footsteps.desc"));
 				y += 54 + GAP;
@@ -488,7 +488,12 @@ public class CosmeticsScreen extends LoothubScreen {
 	private static final String[] RANGE_OPTIONS = {"", "8", "16", "32", "64"};
 	private static final String[] MAX_OPTIONS = {"", "0", "1", "3", "5", "10"};
 	private static final String[] TRAIT_OPTIONS = {"", "playful", "shy", "brave", "lazy", "curious"};
-	private static final String[] STEP_OPTIONS = {"", "sparks", "flames"};
+	private static final String[] STEP_OPTIONS = {"", "sparks", "flames", "hearts", "notes", "snow", "magic", "soul", "stars"};
+
+	/** Fußspuren: freie Stile und die im Loothub-Shop gekauften. */
+	private static String[] stepOptions() {
+		return java.util.Arrays.stream(STEP_OPTIONS).filter(de.loothub.client.progress.Shop::stepAllowed).toArray(String[]::new);
+	}
 
 	/** Knopf „Präfix: Wahl ▾“, Klick klappt die Optionen darunter auf. */
 	private static final class Dropdown {

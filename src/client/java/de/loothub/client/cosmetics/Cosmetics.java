@@ -68,7 +68,7 @@ public final class Cosmetics {
 	/** Charakter je Mini-Me („playful,shy,,…“). */
 	public static final String MINI_TRAITS = "minimetraits";
 	public static final List<String> TRAITS = List.of("playful", "shy", "brave", "lazy", "curious");
-	public static final List<String> FOOTSTEP_STYLES = List.of("sparks", "flames");
+	public static final List<String> FOOTSTEP_STYLES = List.of("sparks", "flames", "hearts", "notes", "snow", "magic", "soul", "stars");
 	public static final List<String> PET_TYPES = List.of("slime", "allay", "bee", "vex", "wolf", "penguin", "dragon", "panda", "zombie", "serpent", "red_panda", "donkey");
 	public static final int MAX_PETS = 2;
 	public static final int MAX_HEAD = 2;
@@ -141,7 +141,7 @@ public final class Cosmetics {
 	}
 
 	/** cosmetics.json und die Daten vom Cosmetics-Server zusammenführen (der Server gewinnt je Spieler). */
-	static synchronized void rebuild() {
+	public static synchronized void rebuild() {
 		Map<String, List<String>> skins = new HashMap<>();
 		Map<String, String> auras = new HashMap<>();
 		Map<String, Map<String, String>> single = new HashMap<>();
