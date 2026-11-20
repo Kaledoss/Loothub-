@@ -1127,5 +1127,12 @@
 	"loothub.lh.pin.max": "You can pin at most %s quests.",
 	"loothub.hud.quests": "Pinned quests",
 	"loothub.cosmetics.pets.type.turtle": "Turtle",
-	"loothub.cosmetics.pets.type.hummingbird": "Hummingbird"
+	"loothub.cosmetics.pets.type.hummingbird": "Hummingbird",
+	"loothub.lh.day": "%s day",
+	"loothub.lh.card.open": "Click for the player card",
+	"loothub.lh.card.none": "No values for this player yet.",
+	"loothub.lh.card.earned": "Taler earned",
+	"loothub.lh.card.ach": "Achievement tiers",
+	"loothub.lh.card.login": "Login streak",
+	"loothub.lh.card.login.value": "%s (best: %s)"
 }

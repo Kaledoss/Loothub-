@@ -486,6 +486,14 @@ public final class Progress {
 		return BOARDS.get(key);
 	}
 
+	/** Spielerkarte (öffentliche Werte) laden; done bekommt die Antwort oder null. */
+	public static void card(String uuid, Consumer<JsonObject> done) {
+		get("/lh/card?u=" + uuid.toLowerCase(Locale.ROOT), e -> {
+			JsonObject o = e.isJsonObject() && !e.getAsJsonObject().has("error") ? e.getAsJsonObject() : null;
+			Minecraft.getInstance().execute(() -> done.accept(o));
+		});
+	}
+
 	private static void fetchTags() {
 		get("/lh/tags", e -> {
 			if (!e.isJsonObject()) {

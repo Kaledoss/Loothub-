@@ -1049,6 +1049,28 @@ async function lhBoard(request, env, ctx, url) {
 	});
 }
 
+/** Spielerkarte: öffentliche Werte eines Spielers (für die Rangliste). */
+async function lhCard(request, env, ctx, url) {
+	if (!env.AH) return json({ error: "no-db" }, 503);
+	const u = String(url.searchParams.get("u") || "").toLowerCase();
+	if (!UUID_RE.test(u)) return json({ error: "bad uuid" }, 400);
+	await lhInit(env.AH);
+	return lhCached(request, ctx, `/lh-card-cache/${u}`, 60, async () => {
+		const x = await env.AH.prepare(`SELECT name, title, badge, points_a, points, ach, login, dquests, wquests, blocks, placed,
+			picked, mobs, fish, play, jobday, updated, data FROM lh_player WHERE uuid = ?`).bind(u).first();
+		if (!x) return { error: "unknown" };
+		let d = {};
+		try { d = JSON.parse(x.data || "{}"); } catch { d = {}; }
+		return {
+			name: x.name, title: x.title || "", badge: x.badge || "", earned: x.points || 0, ach: x.ach || 0,
+			achMax: Object.values(LH_ACH).reduce((a, t) => a + t.length, 0),
+			loginCur: (d.login && d.login.cur) || 0, loginBest: x.login || 0, dquests: x.dquests || 0, wquests: x.wquests || 0,
+			blocks: x.blocks || 0, placed: x.placed || 0, picked: x.picked || 0, mobs: x.mobs || 0, fish: x.fish || 0,
+			play: x.play || 0, jobday: x.jobday || 0, owned: (d.owned || []).length, updated: x.updated || 0,
+		};
+	});
+}
+
 async function lhTags(request, env, ctx) {
 	if (!env.AH) return json({});
 	await lhInit(env.AH);
@@ -1226,6 +1248,9 @@ export default {
 		}
 		if (url.pathname === "/lh/board" && request.method === "GET") {
 			try { return await lhBoard(request, env, ctx, url); } catch { return json({ error: "busy" }, 503); }
+		}
+		if (url.pathname === "/lh/card" && request.method === "GET") {
+			try { return await lhCard(request, env, ctx, url); } catch { return json({ error: "busy" }, 503); }
 		}
 		if (url.pathname === "/lh/tags" && request.method === "GET") {
 			try { return await lhTags(request, env, ctx); } catch { return json({}); }

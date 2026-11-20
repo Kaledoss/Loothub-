@@ -456,6 +456,10 @@ public class ProgressScreen extends LoothubScreen {
 			Component badge = Shop.badge(r.get(2).getAsString());
 			Component line = badge == null ? name : Component.empty().append(badge).append(" ").append(name);
 			g.drawString(font, line, cl + 34, y + 1, me ? TEXT : 0xFFE8D8DA, false);
+			String cardUuid = r.get(0).getAsString(), cardName = r.get(1).getAsString();
+			hits.add(new Hit(cl + 30, y - 1, font.width(line) + 8, 12,
+					() -> minecraft.setScreen(new PlayerCardScreen(this, cardUuid, cardName)),
+					Component.translatable("loothub.lh.card.open")));
 			String v = boardValue(board, r.get(3).getAsLong());
 			g.drawString(font, v, cr - 4 - font.width(v), y + 1, me ? TEXT : MUTED, false);
 			y += 13;
@@ -466,7 +470,7 @@ public class ProgressScreen extends LoothubScreen {
 	private static String boardValue(String b, long v) {
 		return switch (b) {
 			case "points", "ach", "dquests", "wquests" -> Fmt.whole(v);
-			case "login" -> Component.translatable("loothub.lh.days", v).getString();
+			case "login" -> Component.translatable(v == 1 ? "loothub.lh.day" : "loothub.lh.days", v).getString();
 			case "jobday" -> Texts.value("jobmoney", v);
 			default -> Texts.value(b, v);
 		};

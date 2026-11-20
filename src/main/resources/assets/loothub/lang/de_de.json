@@ -1127,5 +1127,12 @@
 	"loothub.lh.pin.max": "Höchstens %s Quests anpinnen.",
 	"loothub.hud.quests": "Angepinnte Quests",
 	"loothub.cosmetics.pets.type.turtle": "Schildkröte",
-	"loothub.cosmetics.pets.type.hummingbird": "Kolibri"
+	"loothub.cosmetics.pets.type.hummingbird": "Kolibri",
+	"loothub.lh.day": "%s Tag",
+	"loothub.lh.card.open": "Klicken für die Spielerkarte",
+	"loothub.lh.card.none": "Für diesen Spieler gibt es noch keine Werte.",
+	"loothub.lh.card.earned": "Verdiente Taler",
+	"loothub.lh.card.ach": "Erfolgsstufen",
+	"loothub.lh.card.login": "Login-Serie",
+	"loothub.lh.card.login.value": "%s (beste: %s)"
 }
