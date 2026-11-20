@@ -519,7 +519,14 @@ async function ahServe(request, env, ctx) {
 
 const LH_HOUR = 3600_000;
 const LH_DAY = 24 * LH_HOUR;
-const LH_TZ = LH_HOUR; // Zeitzone für Tages-/Quest-Grenzen: MEZ
+// Tages- und Quest-Grenzen nach deutscher Uhrzeit (0, 4, 8 … Uhr), mit Sommer- und Winterzeit
+const LH_FMT = new Intl.DateTimeFormat("en-US", { timeZone: "Europe/Berlin", hourCycle: "h23", year: "numeric",
+	month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit" });
+function lhTz(now) {
+	const p = Object.fromEntries(LH_FMT.formatToParts(new Date(now)).map((x) => [x.type, x.value]));
+	const local = Date.UTC(+p.year, +p.month - 1, +p.day, +p.hour, +p.minute);
+	return Math.round((local - Math.floor(now / 60000) * 60000) / LH_HOUR) * LH_HOUR;
+}
 const LH_SLOT = 4 * LH_HOUR;
 const LH_STATS = ["blocks", "placed", "mobs", "fish", "play", "dist", "treasures", "jobmoney", "itemdex", "eat", "jumps"];
 // höchstens so viel Zuwachs pro Sekunde zwischen zwei Meldungen (dazu ein Puffer von 2 Minuten)
@@ -603,11 +610,12 @@ function lhRand(seed) {
 	};
 }
 
-function lhSlotId(now) { return Math.floor((now + LH_TZ) / LH_SLOT); }
-function lhDayId(now) { return Math.floor((now + LH_TZ) / LH_DAY); }
-function lhWeekId(now) { return Math.floor((lhDayId(now) - 4) / 7); } // Wochen ab Montag
-function lhSlotEnd(slot) { return (slot + 1) * LH_SLOT - LH_TZ; }
-function lhWeekEnd(week) { return ((week + 1) * 7 + 4) * LH_DAY - LH_TZ; }
+function lhSlotId(now) { return Math.floor((now + lhTz(now)) / LH_SLOT); }
+function lhDayId(now) { return Math.floor((now + lhTz(now)) / LH_DAY); }
+function lhWeekId(now) { return Math.floor((lhDayId(now) - 4) / 7); } // Wochen ab Montag 0 Uhr
+function lhLocalToUtc(t) { return t - lhTz(t - LH_HOUR); }
+function lhSlotEnd(slot) { return lhLocalToUtc((slot + 1) * LH_SLOT); }
+function lhWeekEnd(week) { return lhLocalToUtc(((week + 1) * 7 + 4) * LH_DAY); }
 
 /** Drei Quests (je eine leichte, mittlere, schwere) für einen 4-Stunden-Abschnitt (kind 0) oder eine Woche (kind 1). */
 function lhQuests(kind, id) {
