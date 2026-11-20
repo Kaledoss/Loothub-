@@ -1109,5 +1109,10 @@
 	"loothub.lh.admin.error.bad op": "Unknown action.",
 	"loothub.lh.admin.error.not admin": "You are not an admin.",
 	"loothub.lh.admin.error.busy": "The Loothub server is busy right now.",
-	"loothub.lh.ach.tier": "★ Tier %s/%s"
+	"loothub.lh.ach.tier": "★ Tier %s/%s",
+	"loothub.lh.preview.title": "Preview",
+	"loothub.lh.preview.click": "Click for a preview",
+	"loothub.lh.preview.hint.title": "This is how the title shows above your head – drag to rotate",
+	"loothub.lh.preview.hint.badge": "This is how the badge shows in front of your name – drag to rotate",
+	"loothub.lh.preview.hint.steps": "Roughly how the footsteps look – drag to rotate"
 }

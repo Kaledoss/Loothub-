@@ -554,6 +554,10 @@ public class ProgressScreen extends LoothubScreen {
 				if (action != null || tip != null) {
 					hits.add(new Hit(bx, y + 1, btnW, 14, action, tip));
 				}
+				// Klick auf die Zeile: Vorschau am eigenen Spieler
+				String pk = kind;
+				hits.add(new Hit(cl, y, bx - 10 - cl, 16, () -> minecraft.setScreen(new ShopPreviewScreen(this, id, pk, cost)),
+						Component.translatable("loothub.lh.preview.click")));
 				y += 18;
 			}
 			y += 6;

@@ -1109,5 +1109,10 @@
 	"loothub.lh.admin.error.bad op": "Unbekannte Aktion.",
 	"loothub.lh.admin.error.not admin": "Du bist kein Admin.",
 	"loothub.lh.admin.error.busy": "Der Loothub-Server ist gerade ausgelastet.",
-	"loothub.lh.ach.tier": "★ Stufe %s/%s"
+	"loothub.lh.ach.tier": "★ Stufe %s/%s",
+	"loothub.lh.preview.title": "Vorschau",
+	"loothub.lh.preview.click": "Klicken für eine Vorschau",
+	"loothub.lh.preview.hint.title": "So steht der Titel über deinem Kopf – mit der Maus ziehen zum Drehen",
+	"loothub.lh.preview.hint.badge": "So steht das Abzeichen vor deinem Namen – mit der Maus ziehen zum Drehen",
+	"loothub.lh.preview.hint.steps": "So ungefähr sehen die Fußspuren aus – mit der Maus ziehen zum Drehen"
 }
