@@ -1,7 +1,9 @@
 package de.loothub.client.progress;
 
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
@@ -42,6 +44,8 @@ public class ProgressScreen extends LoothubScreen {
 	/** Offene Auswahlliste: 0 keine, 1 Rangliste, 2 Zeitraum. */
 	private int open;
 	private int scroll;
+	/** Aufgeklappte Erfolge (zeigen alle Stufen). */
+	private final Set<String> expanded = new HashSet<>();
 	private int listTop;
 	private int contentH;
 	private String message = "";
@@ -399,7 +403,15 @@ public class ProgressScreen extends LoothubScreen {
 				case "login" -> s.getAsJsonObject("login").get("best").getAsLong();
 				default -> tot.has(stat) ? tot.get(stat).getAsLong() : 0;
 			};
-			g.drawString(font, Texts.stat(stat), cl + 2, y + 2, tier > 0 ? TEXT : MUTED, false);
+			boolean isOpen = expanded.contains(stat);
+			g.drawString(font, Component.literal(isOpen ? "▾ " : "▸ ").append(Texts.stat(stat)), cl + 2, y + 2,
+					tier > 0 ? TEXT : MUTED, false);
+			String key = stat;
+			hits.add(new Hit(cl, y, cw, 20, () -> {
+				if (!expanded.remove(key)) {
+					expanded.add(key);
+				}
+			}, Component.translatable(isOpen ? "loothub.lh.ach.collapse" : "loothub.lh.ach.expand")));
 			// Stufe als „★ 12/30“
 			int starsX = cl + Math.min(170, cw / 3);
 			g.drawString(font, Component.translatable("loothub.lh.ach.tier", tier, tiers.size()), starsX, y + 2,
@@ -421,8 +433,32 @@ public class ProgressScreen extends LoothubScreen {
 			g.drawString(font, right, cr - font.width(right), y + 2, MUTED, false);
 			bar(g, cl + 2, y + 13, cw - 4, f, tier >= tiers.size() ? 0xFF55E06A : 0xFFF2C14E);
 			y += 22;
+			if (isOpen) {
+				y = drawTiers(g, unit, tiers, tierPoints, tier, y);
+			}
 		}
 		return y;
+	}
+
+	/** Alle Stufen eines Erfolgs als Raster: geschafft (grün ✔), als Nächstes (gold ★), noch offen (blass). */
+	private int drawTiers(GuiGraphics g, String unit, JsonArray tiers, JsonArray tierPoints, int tier, int y) {
+		int cellW = 150, cellH = 12;
+		int cols = Math.max(1, (cw - 12) / cellW);
+		int rows = (tiers.size() + cols - 1) / cols;
+		g.fill(cl + 2, y - 4, cr - 2, y + rows * cellH + 2, 0x40000000);
+		for (int k = 0; k < tiers.size(); k++) {
+			int col = k / rows, row = k % rows; // spaltenweise, damit die Reihenfolge von oben nach unten läuft
+			int x = cl + 8 + col * cellW, cy = y + row * cellH;
+			boolean done = k < tier, next = k == tier;
+			int p = tierPoints.get(Math.min(k, tierPoints.size() - 1)).getAsInt();
+			String mark = done ? "✔" : next ? "★" : "·";
+			String nr = (k + 1 < 10 ? " " : "") + (k + 1) + ". ";
+			int color = done ? 0xFF55E06A : next ? 0xFFF2C14E : FAINT;
+			g.drawString(font, mark + " " + nr + Texts.value(unit, tiers.get(k).getAsLong()), x, cy, color, false);
+			String pts = Component.translatable("loothub.lh.toast.points", p).getString();
+			g.drawString(font, pts, x + cellW - 12 - font.width(pts), cy, done ? 0xFF55E06A : next ? MUTED : FAINT, false);
+		}
+		return y + rows * cellH + 8;
 	}
 
 	private int drawBoard(GuiGraphics g, JsonObject s, int y) {

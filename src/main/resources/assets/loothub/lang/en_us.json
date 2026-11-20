@@ -1107,6 +1107,8 @@
 	"loothub.lh.admin.error.bad op": "Unknown action.",
 	"loothub.lh.admin.error.not admin": "You are not an admin.",
 	"loothub.lh.admin.error.busy": "The Loothub server is busy right now.",
+	"loothub.lh.ach.expand": "Click to see all tiers",
+	"loothub.lh.ach.collapse": "Click to collapse",
 	"loothub.lh.ach.tier": "★ Tier %s/%s",
 	"loothub.lh.preview.title": "Preview",
 	"loothub.lh.preview.click": "Click for a preview",

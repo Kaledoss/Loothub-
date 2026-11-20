@@ -1107,6 +1107,8 @@
 	"loothub.lh.admin.error.bad op": "Unbekannte Aktion.",
 	"loothub.lh.admin.error.not admin": "Du bist kein Admin.",
 	"loothub.lh.admin.error.busy": "Der Loothub-Server ist gerade ausgelastet.",
+	"loothub.lh.ach.expand": "Klicken, um alle Stufen zu sehen",
+	"loothub.lh.ach.collapse": "Klicken zum Zuklappen",
 	"loothub.lh.ach.tier": "★ Stufe %s/%s",
 	"loothub.lh.preview.title": "Vorschau",
 	"loothub.lh.preview.click": "Klicken für eine Vorschau",
