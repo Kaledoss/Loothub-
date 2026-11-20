@@ -560,7 +560,7 @@ const LH_Q = {
 	play: [[30, 60, 120], [300, 600, 1200]],
 	jumps: [[200, 500, 1000], [3000, 8000, 20000]],
 	eat: [[10, 25, 50], [100, 250, 500]],
-	treasures: [[1, 3, 6], [10, 25, 60]],
+	treasures: [[1, 3, 6], null], // Jobschätze nicht als Wochenquest
 };
 const LH_Q_POINTS = [[10, 20, 40], [100, 175, 300]];
 const LH_COMM = { blocks: 500000, mobs: 50000, fish: 5000, placed: 250000 };
@@ -633,7 +633,7 @@ function lhWeekEnd(week) { return lhLocalToUtc(((week + 1) * 7 + 4) * LH_DAY); }
 /** Drei Quests (je eine leichte, mittlere, schwere) für einen 4-Stunden-Abschnitt (kind 0) oder eine Woche (kind 1). */
 function lhQuests(kind, id) {
 	const rnd = lhRand(`lh-${kind}-${id}`);
-	const stats = Object.keys(LH_Q);
+	const stats = Object.keys(LH_Q).filter((s) => LH_Q[s][kind]);
 	const out = [];
 	for (let d = 0; d < 3; d++) {
 		let s;
