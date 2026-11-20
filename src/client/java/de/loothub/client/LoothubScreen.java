@@ -59,10 +59,14 @@ public abstract class LoothubScreen extends Screen {
 
 		final String translationKey;
 		final Item icon;
+		/** Eigenes Pixel-Icon (Ludo) in der Kategorie-Leiste. */
+		final Identifier sprite;
 
 		Page(String translationKey, Item icon) {
 			this.translationKey = translationKey;
 			this.icon = icon;
+			String key = translationKey.substring(translationKey.lastIndexOf('.') + 1);
+			this.sprite = Identifier.fromNamespaceAndPath(Loothub.MOD_ID, "icons/" + key);
 		}
 
 		/** Seite in der Leiste zeigen? „Streamer“ nur bei eingeschaltetem Streamer-Modus. */
@@ -218,7 +222,7 @@ public abstract class LoothubScreen extends Screen {
 			} else if (hover) {
 				g.fill(sx, ey, sx + sidebarW, ey + ENTRY_H, 0x18FFFFFF);
 			}
-			g.renderItem(new ItemStack(p.icon), sx + 7, ey + 3);
+			g.blitSprite(RenderPipelines.GUI_TEXTURED, p.sprite, sx + 7, ey + 3, 16, 16);
 			if (!compact) {
 				g.drawString(font, Component.translatable(p.translationKey), sx + 28, ey + 7,
 						selected ? TEXT : hover ? 0xFFE8D8DA : MUTED, false);
@@ -285,7 +289,7 @@ public abstract class LoothubScreen extends Screen {
 			} else if (hover) {
 				g.fill(sx + 2, ey + 1, sx + sidebarW - 2, ey + ENTRY_H - 1, 0x30F2C14E);
 			}
-			g.renderItem(new ItemStack(p.icon), sx + 7, ey + 3);
+			g.blitSprite(RenderPipelines.GUI_TEXTURED, p.sprite, sx + 7, ey + 3, 16, 16);
 			if (!compact) {
 				g.drawString(font, Component.translatable(p.translationKey), sx + 28, ey + 7,
 						selected ? TEXT : hover ? 0xFFF5E6C8 : 0xFFC9B79C, true);

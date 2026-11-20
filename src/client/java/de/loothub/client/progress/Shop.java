@@ -9,19 +9,6 @@ import com.google.gson.JsonObject;
 
 /** Shop-Artikel: Titel, Abzeichen und Fußspuren-Stile. Preise und Liste kommen vom Server. */
 public final class Shop {
-	/** Abzeichen: Zeichen und Farbe. */
-	private static final Map<String, Object[]> BADGES = Map.ofEntries(
-			Map.entry("b_star", new Object[]{"★", 0xFFE066}),
-			Map.entry("b_heart", new Object[]{"♥", 0xFF5577}),
-			Map.entry("b_diamond", new Object[]{"♦", 0x55DDFF}),
-			Map.entry("b_sun", new Object[]{"☀", 0xFFB833}),
-			Map.entry("b_moon", new Object[]{"☽", 0xB8C4FF}),
-			Map.entry("b_flower", new Object[]{"✿", 0xFF8AD8}),
-			Map.entry("b_sword", new Object[]{"⚔", 0xE0E0E0}),
-			Map.entry("b_bolt", new Object[]{"⚡", 0xFFE14D}),
-			Map.entry("b_note", new Object[]{"♪", 0x7CE08A}),
-			Map.entry("b_skull", new Object[]{"☠", 0xC9C9C9}),
-			Map.entry("b_crown", new Object[]{"♛", 0xF2C14E}));
 	/** Fußspuren-Stile aus dem Shop: Artikel → Wert in den Cosmetics. */
 	public static final Map<String, String> STEPS = Map.of("c_hearts", "hearts", "c_notes", "notes", "c_snow", "snow",
 			"c_magic", "magic", "c_soul", "soul", "c_stars", "stars");
@@ -29,14 +16,20 @@ public final class Shop {
 	private Shop() {
 	}
 
-	/** Abzeichen als farbiges Zeichen, oder null. */
+	/** Abzeichen der Reihe nach als Zeichen der Schrift loothub:badges (Pixel-Icons von Ludo). */
+	private static final java.util.List<String> BADGE_ORDER = java.util.List.of("b_star", "b_heart", "b_diamond", "b_sun",
+			"b_moon", "b_flower", "b_sword", "b_bolt", "b_note", "b_skull", "b_crown");
+	private static final net.minecraft.resources.Identifier BADGE_FONT =
+			net.minecraft.resources.Identifier.fromNamespaceAndPath("loothub", "badges");
+
+	/** Abzeichen als Pixel-Icon (eigene Schrift), oder null. */
 	public static Component badge(String id) {
-		Object[] b = id == null ? null : BADGES.get(id);
-		if (b == null) {
+		int i = id == null ? -1 : BADGE_ORDER.indexOf(id);
+		if (i < 0) {
 			return null;
 		}
-		int color = (Integer) b[1];
-		return Component.literal((String) b[0]).withStyle(s -> s.withColor(color));
+		return Component.literal(String.valueOf((char) (0xE000 + i)))
+				.withStyle(s -> s.withFont(new net.minecraft.network.chat.FontDescription.Resource(BADGE_FONT)));
 	}
 
 	/** Titel als goldener Text, oder null. */
