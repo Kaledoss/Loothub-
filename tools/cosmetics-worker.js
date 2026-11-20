@@ -577,6 +577,7 @@ const LH_SHOP = [
 	["b_note", "badge", 250], ["b_skull", "badge", 400], ["b_crown", "badge", 1000],
 	["c_hearts", "steps", 400], ["c_notes", "steps", 400], ["c_snow", "steps", 500], ["c_magic", "steps", 600],
 	["c_soul", "steps", 700], ["c_stars", "steps", 800],
+	["s_freeze", "freeze", 250], // Login-Schutz: verbrauchbar, mehrfach kaufbar
 ];
 const LH_SHOP_MAP = Object.fromEntries(LH_SHOP.map(([id, kind, cost]) => [id, { kind, cost }]));
 // Fußspuren-Stile aus dem Shop (Wert in den Cosmetics → nötiger Shop-Artikel)
@@ -686,11 +687,19 @@ async function lhProgress(db, d, now) {
 	d.quests = d.quests || 0;
 	d.streak = d.streak || { cur: 0, best: 0, day: -1, today: -1, todayDone: 0 };
 	d.login = d.login || { cur: 0, best: 0, day: -1 };
+	d.freeze = d.freeze || 0;
 	d.wstreak = d.wstreak || { cur: 0, best: 0, week: -1 };
 
 	// Login-Serie: jeden Tag mindestens einmal online
 	const day0 = lhDayId(now);
 	if (d.login.day !== day0) {
+		// verpasste Tage mit Login-Schutz überbrücken (ein Schutz je verpasstem Tag)
+		const missed = d.login.day >= 0 ? day0 - d.login.day - 1 : 0;
+		if (missed > 0 && d.login.cur > 0 && missed <= d.freeze) {
+			d.freeze -= missed;
+			d.login.day = day0 - 1;
+			news.push({ k: "freeze_used", n: missed, p: 0 });
+		}
 		d.login.cur = d.login.day === day0 - 1 ? d.login.cur + 1 : 1;
 		d.login.day = day0;
 		d.login.best = Math.max(d.login.best, d.login.cur);
@@ -783,6 +792,10 @@ async function lhProgress(db, d, now) {
 			const p = LH_TIER_POINTS[Math.min(k, LH_TIER_POINTS.length - 1)];
 			earned += p;
 			news.push({ k: "ach", stat, tier: k + 1, p });
+			if (stat === "login") {
+				d.freeze = (d.freeze || 0) + 1; // jede Login-Erfolgsstufe gibt einen Login-Schutz
+				news.push({ k: "freeze", n: 1, p: 0 });
+			}
 		}
 		if (t > had) d.ach[stat] = t;
 	}
@@ -797,7 +810,7 @@ function lhView(row, d, extra, now) {
 		now, points: row.points, balance: row.points - row.spent, title: row.title, badge: row.badge,
 		tot: lhCopy(d.tot), ach: d.ach, quests: d.quests,
 		streak: { cur: d.streak.cur, best: d.streak.best, todayDone: d.streak.todayDone, kept: d.streak.day === lhDayId(now) },
-		login: { cur: (d.login || {}).cur || 0, best: (d.login || {}).best || 0 },
+		login: { cur: (d.login || {}).cur || 0, best: (d.login || {}).best || 0, freeze: d.freeze || 0 },
 		wstreak: { cur: (d.wstreak || {}).cur || 0, best: (d.wstreak || {}).best || 0, kept: (d.wstreak || {}).week === week,
 			done: d.week.done.filter(Boolean).length },
 		slot: { ends: lhSlotEnd(slot), list: q4 },
@@ -838,7 +851,10 @@ async function lhHandle(request, env) {
 		if (p.op === "buy") {
 			const item = LH_SHOP_MAP[p.item];
 			if (!item) error = "unknown";
-			else if (d.owned.includes(p.item)) error = "owned";
+			else if (item.kind === "freeze") {
+				if (row.points - row.spent < item.cost) error = "poor";
+				else { d.freeze = (d.freeze || 0) + 1; row.spent += item.cost; }
+			} else if (d.owned.includes(p.item)) error = "owned";
 			else if (row.points - row.spent < item.cost) error = "poor";
 			else { d.owned.push(p.item); row.spent += item.cost; }
 		} else if (p.op === "equip") {

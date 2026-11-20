@@ -222,8 +222,11 @@ public class ProgressScreen extends LoothubScreen {
 		int need = s.getAsJsonObject("cat").get("streakNeed").getAsInt();
 		y = section(g, Component.translatable("loothub.lh.q.streaks"), null, y);
 		JsonObject login = s.getAsJsonObject("login");
+		int freeze = login.has("freeze") ? login.get("freeze").getAsInt() : 0;
 		y = streakRow(g, y, "login", login.get("cur").getAsInt(), login.get("best").getAsInt(), true,
-				Component.translatable("loothub.lh.q.streak.login.today"), Component.translatable("loothub.lh.q.streak.login.hint"));
+				Component.translatable("loothub.lh.q.streak.login.today").append(Component.literal("  ·  ").withStyle(ChatFormatting.DARK_GRAY))
+						.append(Component.translatable("loothub.lh.freeze.count", freeze).withStyle(st2 -> st2.withColor(0x7FB3FF))),
+				Component.translatable("loothub.lh.q.streak.login.hint"));
 		JsonObject st = s.getAsJsonObject("streak");
 		boolean kept = st.get("kept").getAsBoolean();
 		y = streakRow(g, y, "daily", st.get("cur").getAsInt(), st.get("best").getAsInt(), kept,
@@ -364,7 +367,7 @@ public class ProgressScreen extends LoothubScreen {
 		JsonArray shop = s.getAsJsonObject("cat").getAsJsonArray("shop");
 		long balance = s.get("balance").getAsLong();
 		String title = s.get("title").getAsString(), badge = s.get("badge").getAsString();
-		for (String kind : new String[]{"title", "badge", "steps"}) {
+		for (String kind : new String[]{"freeze", "title", "badge", "steps"}) {
 			y = section(g, Component.translatable("loothub.lh.shop.section." + kind),
 					kind.equals("steps") ? Component.translatable("loothub.lh.shop.steps.hint") : null, y);
 			for (JsonElement e : shop) {
@@ -375,6 +378,23 @@ public class ProgressScreen extends LoothubScreen {
 				String id = a.get(0).getAsString();
 				int cost = a.get(2).getAsInt();
 				boolean owned = Shop.owned(id);
+				if (kind.equals("freeze")) {
+					// verbrauchbar: immer kaufbar, Anzahl daneben
+					int have = s.getAsJsonObject("login").has("freeze") ? s.getAsJsonObject("login").get("freeze").getAsInt() : 0;
+					g.drawString(font, Component.literal("❄ ").withStyle(st2 -> st2.withColor(0x7FB3FF)).append(Shop.name(id))
+							.append(Component.translatable("loothub.lh.freeze.have", have).withStyle(ChatFormatting.GRAY)), cl + 8, y + 4, TEXT, false);
+					String price = Component.translatable("loothub.lh.shop.cost", Fmt.whole(cost)).getString();
+					int bw = 74, bx2 = cr - bw;
+					g.drawString(font, price, bx2 - 10 - font.width(price), y + 4, 0xFFF2C14E, false);
+					boolean can = balance >= cost;
+					Component label = Component.translatable("loothub.lh.shop.buy");
+					g.fill(bx2, y + 1, cr, y + 15, can ? 0xFFE23B3B : 0xFF4A3A3C);
+					g.drawString(font, label, bx2 + (bw - font.width(label)) / 2, y + 4, TEXT, false);
+					hits.add(new Hit(bx2, y + 1, bw, 14, can ? () -> confirmBuy(id, cost) : null,
+							can ? Component.translatable("loothub.lh.freeze.tip") : Component.translatable("loothub.lh.shop.poor", Fmt.whole(cost - balance))));
+					y += 18;
+					continue;
+				}
 				Component preview = switch (kind) {
 					case "title" -> Shop.titleText(id);
 					case "badge" -> Component.empty().append(Shop.badge(id) == null ? Component.literal("?") : Shop.badge(id)).append("  ")

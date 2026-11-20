@@ -1076,7 +1076,7 @@
 	"loothub.lh.q.streak.best_days": "best: %s days",
 	"loothub.lh.q.streak.best_weeks": "best: %s weeks",
 	"loothub.lh.q.streak.login.today": "✔ here today",
-	"loothub.lh.q.streak.login.hint": "Be online once every day – +2 Talers per streak day, up to +20.",
+	"loothub.lh.q.streak.login.hint": "Be online once every day – +2 Talers per streak day, up to +20. Every achievement tier gives a login protection.",
 	"loothub.lh.q.streak.daily.hint": "Finish %s quests (every 4 hours) in one day – +5 Talers per streak day, up to +50.",
 	"loothub.lh.q.streak.week_kept": "✔ done this week",
 	"loothub.lh.q.streak.week_today": "this week %s/3",
@@ -1087,5 +1087,14 @@
 	"loothub.lh.board.login": "Best login streak",
 	"loothub.lh.board.weekstreak": "Best weekly quest streak",
 	"loothub.lh.stat.login": "Best login streak (days)",
-	"loothub.lh.stat.weekstreak": "Best weekly quest streak (weeks)"
+	"loothub.lh.stat.weekstreak": "Best weekly quest streak (weeks)",
+	"loothub.lh.shop.s_freeze": "Login protection",
+	"loothub.lh.shop.section.freeze": "Protection for your login streak",
+	"loothub.lh.freeze.have": "  (you have %s)",
+	"loothub.lh.freeze.count": "❄ %s protection",
+	"loothub.lh.freeze.tip": "Saves your login streak if you weren't online for a day – one protection is used per missed day. You can own several.",
+	"loothub.lh.toast.freeze": "❄ Login protection received",
+	"loothub.lh.toast.freeze.sub": "for a new login streak tier",
+	"loothub.lh.toast.freeze_used": "❄ Login streak saved",
+	"loothub.lh.toast.freeze_used.sub": "%s login protection used"
 }

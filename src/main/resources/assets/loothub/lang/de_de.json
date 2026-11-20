@@ -1076,7 +1076,7 @@
 	"loothub.lh.q.streak.best_days": "beste: %s Tage",
 	"loothub.lh.q.streak.best_weeks": "beste: %s Wochen",
 	"loothub.lh.q.streak.login.today": "✔ heute dabei",
-	"loothub.lh.q.streak.login.hint": "Jeden Tag einmal online sein – je Serientag +2 Taler, höchstens +20.",
+	"loothub.lh.q.streak.login.hint": "Jeden Tag einmal online sein – je Serientag +2 Taler, höchstens +20. Jede Erfolgsstufe gibt einen Login-Schutz.",
 	"loothub.lh.q.streak.daily.hint": "An einem Tag %s Quests (alle 4 Stunden) erledigen – je Serientag +5 Taler, höchstens +50.",
 	"loothub.lh.q.streak.week_kept": "✔ diese Woche geschafft",
 	"loothub.lh.q.streak.week_today": "diese Woche %s/3",
@@ -1087,5 +1087,14 @@
 	"loothub.lh.board.login": "Beste Login-Serie",
 	"loothub.lh.board.weekstreak": "Beste Wochenquest-Serie",
 	"loothub.lh.stat.login": "Beste Login-Serie (Tage)",
-	"loothub.lh.stat.weekstreak": "Beste Wochenquest-Serie (Wochen)"
+	"loothub.lh.stat.weekstreak": "Beste Wochenquest-Serie (Wochen)",
+	"loothub.lh.shop.s_freeze": "Login-Schutz",
+	"loothub.lh.shop.section.freeze": "Schutz für die Login-Serie",
+	"loothub.lh.freeze.have": "  (du hast %s)",
+	"loothub.lh.freeze.count": "❄ %s Schutz",
+	"loothub.lh.freeze.tip": "Rettet deine Login-Serie, wenn du einen Tag nicht online warst – je verpasstem Tag wird ein Schutz verbraucht. Du kannst mehrere besitzen.",
+	"loothub.lh.toast.freeze": "❄ Login-Schutz erhalten",
+	"loothub.lh.toast.freeze.sub": "für eine neue Stufe der Login-Serie",
+	"loothub.lh.toast.freeze_used": "❄ Login-Serie gerettet",
+	"loothub.lh.toast.freeze_used.sub": "%s Login-Schutz verbraucht"
 }

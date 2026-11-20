@@ -371,6 +371,10 @@ public final class Progress {
 						Component.translatable("loothub.lh.toast.streak", n.get("n").getAsInt()).getString(), plus, 0xFFD166));
 				case "login" -> TOASTS.add(new Toast(
 						Component.translatable("loothub.lh.toast.login", n.get("n").getAsInt()).getString(), plus, 0xFFB833));
+				case "freeze" -> TOASTS.add(new Toast(Component.translatable("loothub.lh.toast.freeze").getString(),
+						Component.translatable("loothub.lh.toast.freeze.sub").getString(), 0x7FB3FF));
+				case "freeze_used" -> TOASTS.add(new Toast(Component.translatable("loothub.lh.toast.freeze_used").getString(),
+						Component.translatable("loothub.lh.toast.freeze_used.sub", n.get("n").getAsInt()).getString(), 0x7FB3FF));
 				case "wstreak" -> TOASTS.add(new Toast(
 						Component.translatable("loothub.lh.toast.wstreak", n.get("n").getAsInt()).getString(), plus, 0xFF9B3B));
 				case "comm" -> TOASTS.add(new Toast(Component.translatable("loothub.lh.toast.comm").getString(),
