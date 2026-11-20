@@ -701,7 +701,8 @@ async function lhProgress(db, d, now) {
 		d.login.cur = d.login.day === day0 - 1 ? d.login.cur + 1 : 1;
 		d.login.day = day0;
 		d.login.best = Math.max(d.login.best, d.login.cur);
-		const bonus = 2 * Math.min(d.login.cur, 10);
+		// Tagesbelohnung steigt nur mit jeder erreichten Stufe der Login-Serie (1, 3, 7, 14 … Tage): +2 Taler je Stufe
+		const bonus = 2 * Math.max(1, lhTier("login", d.login.cur));
 		earned += bonus;
 		news.push({ k: "login", n: d.login.cur, p: bonus });
 	}
