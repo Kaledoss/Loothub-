@@ -218,8 +218,7 @@ public class ProgressScreen extends LoothubScreen {
 			y += 18;
 		}
 
-		// Serien: Login, Tagesquests, Wochenquests
-		int need = s.getAsJsonObject("cat").get("streakNeed").getAsInt();
+		// Login-Serie (mit Login-Schutz)
 		y = section(g, Component.translatable("loothub.lh.q.streaks"), null, y);
 		JsonObject login = s.getAsJsonObject("login");
 		int freeze = login.has("freeze") ? login.get("freeze").getAsInt() : 0;
@@ -227,25 +226,13 @@ public class ProgressScreen extends LoothubScreen {
 				Component.translatable("loothub.lh.q.streak.login.today").append(Component.literal("  ·  ").withStyle(ChatFormatting.DARK_GRAY))
 						.append(Component.translatable("loothub.lh.freeze.count", freeze).withStyle(st2 -> st2.withColor(0x7FB3FF))),
 				Component.translatable("loothub.lh.q.streak.login.hint"));
-		JsonObject st = s.getAsJsonObject("streak");
-		boolean kept = st.get("kept").getAsBoolean();
-		y = streakRow(g, y, "daily", st.get("cur").getAsInt(), st.get("best").getAsInt(), kept,
-				kept ? Component.translatable("loothub.lh.q.streak.kept")
-						: Component.translatable("loothub.lh.q.streak.today", Math.min(need, st.get("todayDone").getAsInt()), need),
-				Component.translatable("loothub.lh.q.streak.daily.hint", need));
-		JsonObject ws = s.getAsJsonObject("wstreak");
-		boolean wk = ws.get("kept").getAsBoolean();
-		y = streakRow(g, y, "weekly", ws.get("cur").getAsInt(), ws.get("best").getAsInt(), wk,
-				wk ? Component.translatable("loothub.lh.q.streak.week_kept")
-						: Component.translatable("loothub.lh.q.streak.week_today", ws.get("done").getAsInt()),
-				Component.translatable("loothub.lh.q.streak.weekly.hint"));
 		return y + 4;
 	}
 
 	private int streakRow(GuiGraphics g, int y, String kind, int cur, int best, boolean kept, Component state, Component hint) {
 		g.drawString(font, Component.translatable("loothub.lh.q.streak." + kind, cur), cl + 8, y + 2, 0xFFFFD166, false);
 		Component right = Component.empty().append(state).append(Component.literal("  ·  ").withStyle(ChatFormatting.DARK_GRAY))
-				.append(Component.translatable("loothub.lh.q.streak.best_" + (kind.equals("weekly") ? "weeks" : "days"), best));
+				.append(Component.translatable("loothub.lh.q.streak.best_days", best));
 		g.drawString(font, right, cr - font.width(right), y + 2, kept ? 0xFF55E06A : MUTED, false);
 		g.drawString(font, hint, cl + 8, y + 13, FAINT, false);
 		return y + 26;
@@ -268,10 +255,9 @@ public class ProgressScreen extends LoothubScreen {
 			JsonArray tiers = ach.getAsJsonArray(stat);
 			int tier = mine.has(stat) ? mine.get(stat).getAsInt() : 0;
 			long v = switch (stat) {
-				case "quests" -> s.get("quests").getAsLong();
-				case "streak" -> s.getAsJsonObject("streak").get("best").getAsLong();
+				case "dquests" -> s.get("dquests").getAsLong();
+				case "wquests" -> s.get("wquests").getAsLong();
 				case "login" -> s.getAsJsonObject("login").get("best").getAsLong();
-				case "weekstreak" -> s.getAsJsonObject("wstreak").get("best").getAsLong();
 				default -> tot.has(stat) ? tot.get(stat).getAsLong() : 0;
 			};
 			g.drawString(font, Texts.stat(stat), cl + 2, y + 2, tier > 0 ? TEXT : MUTED, false);
@@ -339,9 +325,8 @@ public class ProgressScreen extends LoothubScreen {
 
 	private static String boardValue(String b, long v) {
 		return switch (b) {
-			case "points", "ach", "quests" -> Fmt.whole(v);
-			case "streak", "login" -> Component.translatable("loothub.lh.days", v).getString();
-			case "weekstreak" -> Component.translatable("loothub.lh.weeks", v).getString();
+			case "points", "ach", "dquests", "wquests" -> Fmt.whole(v);
+			case "login" -> Component.translatable("loothub.lh.days", v).getString();
 			default -> Texts.value(b, v);
 		};
 	}
