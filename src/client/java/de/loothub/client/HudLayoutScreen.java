@@ -72,6 +72,9 @@ public class HudLayoutScreen extends Screen {
 		huds.add(new Hud("loothub.hud.stream_alerts", () -> de.loothub.client.streamer.Alerts.sampleSize(font),
 				() -> c.streamAlertX, () -> c.streamAlertY, v -> c.streamAlertX = v, v -> c.streamAlertY = v, 0, false,
 				0.5, 0.03, () -> c.streamerMode && c.streamerAlerts));
+		huds.add(new Hud("loothub.hud.quests", () -> new int[]{de.loothub.client.progress.Progress.PIN_W,
+				de.loothub.client.progress.Progress.pinHeight(2)}, () -> c.questHudX, () -> c.questHudY, v -> c.questHudX = v,
+				v -> c.questHudY = v, 0, false, 0.0, 0.3, () -> c.progress && c.pinnedQuests != null && !c.pinnedQuests.isEmpty()));
 		huds.add(new Hud("loothub.hud.fish", () -> de.loothub.client.jobs.FishAlert.sampleSize(font),
 				() -> c.fishAlertX, () -> c.fishAlertY, v -> c.fishAlertX = v, v -> c.fishAlertY = v, 0, false, 0.5, 0.2,
 				() -> c.fishAlert));

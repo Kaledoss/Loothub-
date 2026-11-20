@@ -286,6 +286,10 @@ public final class WidgetConfig {
 	public boolean menuSkin = true;
 	/** Sprache von Loothub: "auto" (wie Minecraft), "de_de" oder "en_us". */
 	public String loothubLanguage = "auto";
+	/** Angepinnte Quests (höchstens 2) und Lage ihrer Anzeige. */
+	public java.util.List<String> pinnedQuests = new java.util.ArrayList<>();
+	public double questHudX = 0.0;
+	public double questHudY = 0.3;
 	/** Verbundene Texturen (Glas ohne Ränder zwischen gleichen Blöcken). */
 	public boolean connectedTextures = true;
 	/** Streamer-Modus: eigene Menüseite mit Twitch-Konto, Twitch-Chat im Minecraft-Chat und Kanalbelohnungen. */

@@ -45,6 +45,141 @@ public final class Progress {
 	private static final long TAGS_MS = 5 * 60_000L;
 	private static final long BOARD_MS = 5 * 60_000L;
 
+	/** Zähler zum letzten Abgleich – für den Live-Fortschritt angepinnter Quests. */
+	private static volatile JsonObject atSync;
+	private static JsonObject liveCounters;
+	private static long liveAt;
+
+	/** Fortschritt einer Quest jetzt: Stand vom Server plus was seit dem Abgleich dazukam. */
+	public static long liveHave(String stat, long serverHave) {
+		JsonObject base = atSync;
+		if (base == null || !base.has(stat)) {
+			return serverHave;
+		}
+		long now = System.currentTimeMillis();
+		if (liveCounters == null || now - liveAt > 1000) {
+			liveCounters = counters();
+			liveAt = now;
+		}
+		long cur = liveCounters.has(stat) ? liveCounters.get(stat).getAsLong() : 0;
+		return serverHave + Math.max(0, cur - base.get(stat).getAsLong());
+	}
+
+	// ------------------------------------------------------------------ angepinnte Quests (höchstens 2)
+
+	public static final int MAX_PINS = 2;
+
+	/** Schlüssel einer Quest: „s|blocks|300“ (4 Stunden) bzw. „w|…“ (Woche). */
+	public static String pinKey(String kind, JsonObject q) {
+		return kind + "|" + q.get("stat").getAsString() + "|" + q.get("goal").getAsLong();
+	}
+
+	private static java.util.List<String> pins() {
+		WidgetConfig c = WidgetConfig.get();
+		if (c.pinnedQuests == null) {
+			c.pinnedQuests = new java.util.ArrayList<>();
+		}
+		return c.pinnedQuests;
+	}
+
+	public static boolean pinned(String key) {
+		return pins().contains(key);
+	}
+
+	/** An-/abpinnen; false, wenn schon zwei angepinnt sind. */
+	public static boolean togglePin(String key) {
+		var list = pins();
+		if (list.remove(key)) {
+			WidgetConfig.get().save();
+			return true;
+		}
+		if (list.size() >= MAX_PINS) {
+			return false;
+		}
+		list.add(key);
+		WidgetConfig.get().save();
+		return true;
+	}
+
+	/** Angepinnte Quests, die es gerade gibt: [Art, Quest]. Veraltete werden entfernt. */
+	public static java.util.List<Object[]> pinnedQuests() {
+		java.util.List<Object[]> out = new java.util.ArrayList<>();
+		JsonObject s = state;
+		if (s == null) {
+			return out;
+		}
+		var list = pins();
+		java.util.Set<String> present = new java.util.HashSet<>();
+		for (String kind : new String[]{"s", "w"}) {
+			JsonObject part = s.getAsJsonObject(kind.equals("s") ? "slot" : "week");
+			if (part == null) {
+				continue;
+			}
+			for (JsonElement e : part.getAsJsonArray("list")) {
+				String key = pinKey(kind, e.getAsJsonObject());
+				present.add(key);
+				if (list.contains(key)) {
+					out.add(new Object[]{kind, e.getAsJsonObject()});
+				}
+			}
+		}
+		if (list.removeIf(k -> !present.contains(k))) {
+			WidgetConfig.get().save(); // Abschnitt bzw. Woche vorbei
+		}
+		return out;
+	}
+
+	/** Anzeige der angepinnten Quests im Spiel (verschiebbar über „HUD verschieben“). */
+	public static void renderPins(GuiGraphics g, DeltaTracker delta) {
+		Minecraft mc = Minecraft.getInstance();
+		if (!enabled() || mc.options.hideGui || mc.player == null || mc.screen instanceof de.loothub.client.HudLayoutScreen) {
+			return;
+		}
+		java.util.List<Object[]> pins = pinnedQuests();
+		if (pins.isEmpty()) {
+			return;
+		}
+		drawPins(g, mc.font, pins, -1, -1);
+	}
+
+	public static final int PIN_W = 160;
+
+	public static int pinHeight(int n) {
+		return 4 + n * 24;
+	}
+
+	/** Zeichnet die Liste; x/y = -1 nimmt die gespeicherte Lage. */
+	public static void drawPins(GuiGraphics g, net.minecraft.client.gui.Font font, java.util.List<Object[]> pins, int x, int y) {
+		WidgetConfig c = WidgetConfig.get();
+		int h = pinHeight(pins.size());
+		if (x < 0) {
+			x = (int) Math.round(c.questHudX * (g.guiWidth() - PIN_W));
+			y = (int) Math.round(c.questHudY * (g.guiHeight() - h));
+		}
+		g.fill(x, y, x + PIN_W, y + h, 0x90000000);
+		g.fill(x, y, x + 2, y + h, 0xFFF2C14E);
+		int ry = y + 3;
+		for (Object[] p : pins) {
+			JsonObject q = (JsonObject) p[1];
+			String stat = q.get("stat").getAsString();
+			long goal = q.get("goal").getAsLong();
+			boolean done = q.get("done").getAsBoolean();
+			long have = done ? goal : Math.min(goal, liveHave(stat, q.get("have").getAsLong()));
+			String label = (p[0].equals("w") ? "W · " : "") + Texts.goal(stat, goal).getString();
+			if (font.width(label) > PIN_W - 12) {
+				label = font.plainSubstrByWidth(label, PIN_W - 16) + "…";
+			}
+			g.drawString(font, label, x + 6, ry + 1, done ? 0xFF55E06A : 0xFFFFFFFF, true);
+			int bw = PIN_W - 12;
+			double f = goal == 0 ? 1 : have / (double) goal;
+			g.fill(x + 6, ry + 12, x + 6 + bw, ry + 15, 0xFF2A1B1E);
+			g.fill(x + 6, ry + 12, x + 6 + (int) Math.round(bw * Math.min(1, f)), ry + 15, done ? 0xFF55E06A : 0xFFE23B3B);
+			String prog = done ? "✔" : Texts.value(stat, have) + " / " + Texts.value(stat, goal);
+			g.drawString(font, prog, x + PIN_W - 6 - font.width(prog), ry + 16, 0xFFB9A9AB, false);
+			ry += 24;
+		}
+	}
+
 	/** Letzter Stand vom Server (oder null). */
 	private static volatile JsonObject state;
 	private static volatile long stateAt;
@@ -253,6 +388,9 @@ public final class Progress {
 					}
 					state = s;
 					stateAt = System.currentTimeMillis();
+					if ("sync".equals(payload.get("op").getAsString())) {
+						atSync = payload.getAsJsonObject("stats"); // Stand der Zähler zu diesem Abgleich
+					}
 					status = "";
 					mc.execute(() -> announce(s));
 				} else if (r.statusCode() == 503) {

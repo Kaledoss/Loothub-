@@ -171,6 +171,8 @@ public class LoothubClient implements ClientModInitializer {
 		// Erfolge, Quests, Punkte: Abgleich mit dem Loothub-Server und Einblendungen
 		HudElementRegistry.attachElementBefore(VanillaHudElements.CHAT,
 				Identifier.fromNamespaceAndPath(Loothub.MOD_ID, "progress_toasts"), de.loothub.client.progress.Progress::renderHud);
+		HudElementRegistry.attachElementBefore(VanillaHudElements.CHAT,
+				Identifier.fromNamespaceAndPath(Loothub.MOD_ID, "quest_pins"), de.loothub.client.progress.Progress::renderPins);
 		de.loothub.client.progress.Progress.register();
 		de.loothub.client.stats.OpsuchtAfk.register();
 		// eigene Sprache für Loothub (Einstellung), unabhängig von Minecraft

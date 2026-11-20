@@ -290,12 +290,13 @@ public class ProgressScreen extends LoothubScreen {
 
 	private static final int[] DIFF = {0xFF55E06A, 0xFFFFD166, 0xFFFF6B6B};
 
-	private int quests(GuiGraphics g, JsonArray list, int y) {
+	private int quests(GuiGraphics g, JsonArray list, int y, String kind) {
 		for (JsonElement e : list) {
 			JsonObject q = e.getAsJsonObject();
+			String pinKey = Progress.pinKey(kind, q);
 			String stat = q.get("stat").getAsString();
 			long goal = q.get("goal").getAsLong();
-			long have = Math.min(goal, q.get("have").getAsLong());
+			long have = q.get("done").getAsBoolean() ? goal : Math.min(goal, Progress.liveHave(stat, q.get("have").getAsLong()));
 			boolean done = q.get("done").getAsBoolean();
 			int diff = q.get("diff").getAsInt();
 			g.fill(cl, y + 1, cl + 3, y + 17, DIFF[Math.max(0, Math.min(2, diff))]);
@@ -304,6 +305,17 @@ public class ProgressScreen extends LoothubScreen {
 			String right = done ? "✔ " + Component.translatable("loothub.lh.toast.points", q.get("points").getAsInt()).getString()
 					: Component.translatable("loothub.lh.toast.points", q.get("points").getAsInt()).getString();
 			g.drawString(font, right, cr - font.width(right), y + 2, done ? 0xFF55E06A : 0xFFF2C14E, false);
+			// Anpinnen (Fähnchen links neben den Talern)
+			boolean pin = Progress.pinned(pinKey);
+			int px = cr - font.width(right) - 14;
+			g.drawString(font, "⚑", px, y + 2, pin ? 0xFFF2C14E : 0xFF6A5A5C, false);
+			hits.add(new Hit(px - 2, y, 12, 12, () -> {
+				if (!Progress.togglePin(pinKey)) {
+					message = Component.translatable("loothub.lh.pin.max", Progress.MAX_PINS).getString();
+				} else {
+					message = "";
+				}
+			}, Component.translatable(pin ? "loothub.lh.pin.off" : "loothub.lh.pin.on")));
 			String prog = Texts.value(stat, have) + " / " + Texts.value(stat, goal);
 			int barW = Math.max(40, cw - 8 - font.width(prog) - 12);
 			bar(g, cl + 8, y + 13, barW, goal == 0 ? 1 : have / (double) goal, done ? 0xFF55E06A : RED);
@@ -318,12 +330,12 @@ public class ProgressScreen extends LoothubScreen {
 		JsonObject slot = s.getAsJsonObject("slot");
 		y = section(g, Component.translatable("loothub.lh.q.slot"),
 				Component.translatable("loothub.lh.q.new_in", Texts.left(slot.get("ends").getAsLong() - now)), y);
-		y = quests(g, slot.getAsJsonArray("list"), y) + 6;
+		y = quests(g, slot.getAsJsonArray("list"), y, "s") + 6;
 
 		JsonObject week = s.getAsJsonObject("week");
 		y = section(g, Component.translatable("loothub.lh.q.week"),
 				Component.translatable("loothub.lh.q.ends_in", Texts.left(week.get("ends").getAsLong() - now)), y);
-		y = quests(g, week.getAsJsonArray("list"), y) + 6;
+		y = quests(g, week.getAsJsonArray("list"), y, "w") + 6;
 
 		if (s.has("comm") && s.get("comm").isJsonObject()) {
 			JsonObject c = s.getAsJsonObject("comm");
