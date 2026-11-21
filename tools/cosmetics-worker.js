@@ -994,7 +994,8 @@ async function lhAdmin(db, env, p, now) {
 async function lhHandle(request, env) {
 	if (!env.AH) return json({ error: "no-db" }, 503);
 	const [body, err] = await signedBody(request, env, async (b) =>
-		typeof b.payload === "string" && b.payload.length < 4000 ? `loothub-lh\n${b.uuid}\n${b.ts}\n${b.payload}` : null);
+		typeof b.payload === "string" && b.payload.length < 64000 ? // mit Sammlung (Zähler je Block und Mob) deutlich größer
+		 `loothub-lh\n${b.uuid}\n${b.ts}\n${b.payload}` : null);
 	if (err) return err;
 	let p;
 	try { p = JSON.parse(body.payload); } catch { return json({ error: "bad payload" }, 400); }
