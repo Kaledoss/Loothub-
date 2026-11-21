@@ -950,6 +950,8 @@
 	"loothub.lh.balance": "◆ %s Looterianische Taler",
 	"loothub.lh.off": "Quests, Erfolge, Ranglisten und Shop sind aus.",
 	"loothub.lh.off.hint": "Deine Statistik-Summen werden dafür an den Loothub-Server geschickt.",
+	"loothub.lh.stats_off": "⚠ Deine Statistik ist aus – Aufgaben und Erfolge zählen nicht.",
+	"loothub.lh.stats_off.button": "Statistik einschalten",
 	"loothub.lh.enable": "Einschalten",
 	"loothub.lh.loading": "Lade vom Loothub-Server …",
 	"loothub.lh.status.busy": "Der Loothub-Server ist gerade ausgelastet – gleich nochmal.",

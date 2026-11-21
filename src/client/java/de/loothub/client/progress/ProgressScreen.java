@@ -131,7 +131,7 @@ public class ProgressScreen extends LoothubScreen {
 				});
 				boardButton = null;
 				periodButton = null;
-				listTop = ct + 40;
+				listTop = statsWarning(ct + 40);
 				return;
 			}
 		}
@@ -144,8 +144,29 @@ public class ProgressScreen extends LoothubScreen {
 			boardButton = null;
 			periodButton = null;
 		}
-		listTop = ct + 24;
+		listTop = statsWarning(ct + 24);
 	}
+
+	/** Statistik aus: Hinweis mit Knopf über der Liste (Aufgaben und Erfolge zählen dann nicht). */
+	private int statsWarning(int top) {
+		statsWarnY = -1;
+		if (WidgetConfig.get().statsEnabled) {
+			return top;
+		}
+		statsWarnY = top;
+		Component label = Component.translatable("loothub.lh.stats_off.button");
+		int w = font.width(label) + 16;
+		addRenderableWidget(Button.builder(label, b -> {
+			WidgetConfig c = WidgetConfig.get();
+			c.statsEnabled = true;
+			c.save();
+			Progress.syncSoon();
+			rebuildWidgets();
+		}).bounds(cr - w - 4, top + 2, w, 16).build());
+		return top + 24;
+	}
+
+	private int statsWarnY = -1;
 
 	// ------------------------------------------------------------------ Admin
 
@@ -285,6 +306,12 @@ public class ProgressScreen extends LoothubScreen {
 			centered(g, Component.translatable(st.isEmpty() ? "loothub.lh.loading" : "loothub.lh.status." + st), listTop + 20,
 					st.isEmpty() ? MUTED : RED);
 			return;
+		}
+		if (statsWarnY >= 0) {
+			g.fill(cl, statsWarnY, cr, statsWarnY + 20, 0x40FF5555);
+			g.fill(cl, statsWarnY, cl + 2, statsWarnY + 20, 0xFFFF5555);
+			g.drawString(font, font.plainSubstrByWidth(Component.translatable("loothub.lh.stats_off").getString(), cw - 140),
+					cl + 8, statsWarnY + 6, 0xFFFFB0B0, false);
 		}
 		int y = listTop - scroll;
 		g.enableScissor(cl, listTop, cr, cb);

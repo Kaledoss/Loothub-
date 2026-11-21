@@ -950,6 +950,8 @@
 	"loothub.lh.balance": "◆ %s Looterian Taler",
 	"loothub.lh.off": "Quests, achievements, leaderboards and shop are off.",
 	"loothub.lh.off.hint": "Your statistics totals are sent to the Loothub server for this.",
+	"loothub.lh.stats_off": "⚠ Your statistics are off – quests and achievements don't count.",
+	"loothub.lh.stats_off.button": "Turn on statistics",
 	"loothub.lh.enable": "Turn on",
 	"loothub.lh.loading": "Loading from the Loothub server …",
 	"loothub.lh.status.busy": "The Loothub server is busy right now – try again in a moment.",
