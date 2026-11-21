@@ -120,6 +120,9 @@ final class Collection {
 		return id.equals("azalea") || id.equals("flowering_azalea");
 	}
 
+	/** Einträge, die nur über aufgesammelte Items zählen (z. B. Weizen). */
+	private static final List<String> PICKED_ONLY = List.of("wheat");
+
 	private static List<Entry> blocks, mobs;
 	/** Block-ID → Schlüssel der Sammlung (ID des Items). */
 	private static final Map<String, String> BLOCK_KEY = new HashMap<>();
@@ -145,6 +148,12 @@ final class Collection {
 					continue;
 				}
 				BLOCK_KEY.put(id.getPath(), key);
+				ItemStack stack = new ItemStack(item);
+				out.putIfAbsent(key, new Entry(key, stack.getHoverName().getString(), stack));
+			}
+			// nur als aufgesammeltes Item gezählt (Ernte), nicht als abgebauter Block
+			for (String key : PICKED_ONLY) {
+				Item item = BuiltInRegistries.ITEM.getValue(Identifier.withDefaultNamespace(key));
 				ItemStack stack = new ItemStack(item);
 				out.putIfAbsent(key, new Entry(key, stack.getHoverName().getString(), stack));
 			}
@@ -193,6 +202,8 @@ final class Collection {
 				if (key != null) {
 					b.merge(key, v, Long::sum);
 				}
+			} else if (k.startsWith("picked.minecraft:") && PICKED_ONLY.contains(k.substring("picked.minecraft:".length()))) {
+				b.merge(k.substring("picked.minecraft:".length()), v, Long::sum);
 			} else if (k.startsWith("killed.minecraft:")) {
 				String mob = k.substring("killed.minecraft:".length()); // „killed.~Name“ = Custom-Mob, zählt nicht
 				if (!NO_MOBS.contains(mob)) {
