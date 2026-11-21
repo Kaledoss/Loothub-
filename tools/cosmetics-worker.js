@@ -413,17 +413,71 @@ function ahEnd(a) {
 	return 0;
 }
 
+// Ein D1-Wert darf höchstens ~2 MB groß sein: große JSON-Daten werden auf mehrere Zeilen verteilt
+const AH_PART = 700_000;
+
+/** Objekt {schlüssel: wert} in Teile zerlegen, die serialisiert je unter AH_PART bleiben. */
+function ahSplit(items) {
+	const parts = [];
+	let cur = {}, size = 2;
+	for (const k of Object.keys(items)) {
+		const len = k.length + JSON.stringify(items[k]).length + 4;
+		if (size + len > AH_PART && size > 2) { parts.push(cur); cur = {}; size = 2; }
+		cur[k] = items[k];
+		size += len;
+	}
+	parts.push(cur);
+	return parts;
+}
+
+/** Gespeichertes, ggf. aufgeteiltes Objekt lesen: Zeilen name, name.1, name.2 … */
+async function ahLoad(db, name, field) {
+	const rows = await db.prepare("SELECT k, v FROM ah_kv WHERE k = ? OR k LIKE ?").bind(name, `${name}.%`).all();
+	const out = {};
+	let meta = {};
+	for (const r of rows.results || []) {
+		try {
+			const o = JSON.parse(r.v);
+			if (r.k === name) meta = o;
+			Object.assign(out, o[field] || {});
+		} catch { /* kaputter Teil: überspringen */ }
+	}
+	return { meta, items: out };
+}
+
+/** Objekt aufgeteilt speichern; alte überzählige Teile löschen. */
+function ahStore(db, name, field, items, extra) {
+	const parts = ahSplit(items);
+	const stmts = parts.map((part, i) => db.prepare("INSERT OR REPLACE INTO ah_kv (k, v) VALUES (?, ?)")
+		.bind(i === 0 ? name : `${name}.${i}`, JSON.stringify(i === 0 ? { ...extra, parts: parts.length, [field]: part } : { [field]: part })));
+	stmts.push(db.prepare("DELETE FROM ah_kv WHERE k LIKE ? AND CAST(substr(k, ?) AS INTEGER) >= ?")
+		.bind(`${name}.%`, name.length + 2, parts.length));
+	return stmts;
+}
+
 async function ahRun(env) {
 	if (!env.AH) return;
 	const db = env.AH;
+	try {
+		await ahCollect(db);
+	} catch (e) {
+		// Fehler merken, damit /ah ihn anzeigt (statt still veraltete Daten zu liefern)
+		try {
+			await db.prepare("INSERT OR REPLACE INTO ah_kv (k, v) VALUES ('err', ?)")
+				.bind(JSON.stringify({ t: Date.now(), e: String(e && e.message || e).slice(0, 300) })).run();
+		} catch { /* nichts zu machen */ }
+	}
+}
+
+async function ahCollect(db) {
 	await db.batch([
 		db.prepare("CREATE TABLE IF NOT EXISTS ah_kv (k TEXT PRIMARY KEY, v TEXT)"),
 		db.prepare("CREATE TABLE IF NOT EXISTS ah_sales (key TEXT, price REAL, t INTEGER)"),
 	]);
 	const res = await fetch(AH_API, { headers: { "User-Agent": "Loothub-Server/1.0" } });
-	if (!res.ok) return;
+	if (!res.ok) throw new Error(`OPSUCHT-API antwortet mit ${res.status}`);
 	const list = await res.json();
-	if (!Array.isArray(list)) return;
+	if (!Array.isArray(list)) throw new Error("OPSUCHT-API: unerwartetes Format");
 	const now = Date.now();
 	const cur = {};
 	const offers = {};
@@ -440,15 +494,8 @@ async function ahRun(env) {
 		const id = a.id ?? a.uuid ?? a.auctionId ?? a.uid ?? a._id;
 		if (id !== undefined) cur[String(id)] = [key, per, ahEnd(a)];
 	}
-	const rows = await db.prepare("SELECT k, v FROM ah_kv WHERE k IN ('state', 'sum')").all();
-	let prev = {};
-	let sum = {};
-	for (const r of rows.results || []) {
-		try {
-			if (r.k === "state") prev = JSON.parse(r.v).prev || {};
-			if (r.k === "sum") sum = JSON.parse(r.v).items || {};
-		} catch { /* neu anfangen */ }
-	}
+	const prev = (await ahLoad(db, "state", "prev")).items;
+	const sum = (await ahLoad(db, "sum", "items")).items;
 	const day = new Date(now).toISOString().slice(0, 10);
 	const oldest = new Date(now - AH_DAYS * 86400000).toISOString().slice(0, 10);
 	const sold = [];
@@ -472,13 +519,19 @@ async function ahRun(env) {
 		const e = sum[key];
 		for (const k in e.d) if (k < oldest) delete e.d[k];
 		if (offers[key]) e.o = offers[key]; else delete e.o;
+		// nie verkauft und gerade nicht im Angebot: nichts zu merken
+		if (!e.n && !e.o) { delete sum[key]; continue; }
+		// Zahlen kürzen (spart Platz)
+		e.s = Math.round(e.s * 100) / 100;
+		for (const k in e.d) e.d[k][1] = Math.round(e.d[k][1] * 100) / 100;
 	}
 	for (const key in offers) {
 		if (!sum[key]) sum[key] = { n: 0, s: 0, mn: 0, mx: 0, since: now, d: {}, o: offers[key] };
 	}
 	const stmts = [
-		db.prepare("INSERT OR REPLACE INTO ah_kv (k, v) VALUES ('state', ?)").bind(JSON.stringify({ prev: cur })),
-		db.prepare("INSERT OR REPLACE INTO ah_kv (k, v) VALUES ('sum', ?)").bind(JSON.stringify({ updated: now, items: sum })),
+		...ahStore(db, "state", "prev", cur, {}),
+		...ahStore(db, "sum", "items", sum, { updated: now }),
+		db.prepare("DELETE FROM ah_kv WHERE k = 'err'"),
 	];
 	// Einzelverkäufe in Päckchen (höchstens 100 Platzhalter je Anweisung)
 	for (let i = 0; i < sold.length; i += 30) {
@@ -486,7 +539,7 @@ async function ahRun(env) {
 		stmts.push(db.prepare("INSERT INTO ah_sales (key, price, t) VALUES " + part.map(() => "(?, ?, ?)").join(", "))
 			.bind(...part.flatMap(([k, p]) => [k, p, now])));
 	}
-	await db.batch(stmts.slice(0, 45));
+	await db.batch(stmts.slice(0, 80));
 }
 
 async function ahServe(request, env, ctx) {
@@ -496,8 +549,9 @@ async function ahServe(request, env, ctx) {
 	if (!env.AH) return json({ error: "no-db" }, 503);
 	let body;
 	try {
-		const row = await env.AH.prepare("SELECT v FROM ah_kv WHERE k = 'sum'").first();
-		body = row ? row.v : JSON.stringify({ updated: 0, items: {} });
+		const { meta, items } = await ahLoad(env.AH, "sum", "items");
+		const err = await env.AH.prepare("SELECT v FROM ah_kv WHERE k = 'err'").first();
+		body = JSON.stringify({ updated: meta.updated || 0, error: err ? JSON.parse(err.v) : undefined, items });
 	} catch {
 		return json({ error: "busy" }, 503);
 	}
