@@ -485,6 +485,8 @@
 	"loothub.alltag.preset.hour": "+ Jede Stunde",
 	"loothub.alltag.preset.hour_name": "Stündlich",
 	"loothub.alltag.start": "Start",
+	"loothub.alltag.pause": "Pausieren",
+	"loothub.alltag.resume": "Weiterlaufen lassen",
 	"loothub.alltag.stop": "Stopp",
 	"loothub.alltag.empty": "Noch keine Timer – oben einen anlegen.",
 	"loothub.alltag.info.daily": "täglich um %s",

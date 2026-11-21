@@ -160,10 +160,20 @@ public class AlltagScreen extends LoothubScreen {
 				}).bounds(cr - 20, ry + 2, 18, 16).build());
 				continue;
 			}
+			// Pause (nur Countdown-Timer, die gerade laufen)
+			if (!t.daily() && t.enabled && t.nextAt > 0) {
+				addRenderableWidget(Button.builder(Component.literal(t.paused() ? "▶" : "⏸"), b -> {
+					Timers.togglePause(t);
+					WidgetConfig.get().save();
+					rebuildWidgets();
+				}).bounds(cr - 104, ry + 2, 20, 16).tooltip(net.minecraft.client.gui.components.Tooltip.create(
+						Component.translatable(t.paused() ? "loothub.alltag.resume" : "loothub.alltag.pause"))).build());
+			}
 			addRenderableWidget(Button.builder(Component.translatable(t.enabled ? "loothub.alltag.stop" : "loothub.alltag.start"), b -> {
 				if (t.enabled) {
 					t.enabled = false;
 					t.nextAt = 0;
+					t.pausedLeft = 0;
 				} else {
 					Timers.start(t);
 				}
@@ -289,8 +299,8 @@ public class AlltagScreen extends LoothubScreen {
 			String info = t.daily() ? Component.translatable("loothub.alltag.info.daily", t.time).getString()
 					: Component.translatable(t.repeat ? "loothub.alltag.info.repeat" : "loothub.alltag.info.once", t.minutes).getString();
 			g.drawString(font, info, nx, ry + 11, FAINT, false);
-			String left = t.enabled && t.nextAt > 0 ? Timers.format(t.nextAt - now) : "–";
-			g.drawString(font, left, cr - 90 - font.width(left), ry + 6, t.enabled ? GOLD : FAINT, false);
+			String left = t.enabled && t.nextAt > 0 ? Timers.format(Timers.left(t)) + (t.paused() ? " ⏸" : "") : "–";
+			g.drawString(font, left, cr - 112 - font.width(left), ry + 6, t.enabled && !t.paused() ? GOLD : FAINT, false);
 		}
 		if (System.currentTimeMillis() < limitUntil) {
 			Component m = Component.translatable("loothub.alltag.shown.limit", Timers.MAX_SHOWN);

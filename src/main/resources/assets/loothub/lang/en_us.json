@@ -485,6 +485,8 @@
 	"loothub.alltag.preset.hour": "+ Every hour",
 	"loothub.alltag.preset.hour_name": "Hourly",
 	"loothub.alltag.start": "Start",
+	"loothub.alltag.pause": "Pause",
+	"loothub.alltag.resume": "Resume",
 	"loothub.alltag.stop": "Stop",
 	"loothub.alltag.empty": "No timers yet – create one above.",
 	"loothub.alltag.info.daily": "daily at %s",

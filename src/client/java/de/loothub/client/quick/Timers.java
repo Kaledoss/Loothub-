@@ -39,6 +39,12 @@ public final class Timers {
 		public boolean enabled = true;
 		/** Nächster Ablauf (Epoch-ms), 0 = nicht gestartet. */
 		public long nextAt = 0;
+		/** Pausiert: verbleibende Zeit in ms (0 = läuft). */
+		public long pausedLeft = 0;
+
+		public boolean paused() {
+			return pausedLeft > 0;
+		}
 		/** In der Anzeige (HUD) eingeblendet? Höchstens {@link #MAX_SHOWN} gleichzeitig. */
 		public boolean shown = true;
 		/** Gemerkte Auktion (Schlüssel aus {@link AuctionWatch}), sonst null. Läuft von selbst mit der Merkliste. */
@@ -99,7 +105,24 @@ public final class Timers {
 	/** Startet bzw. setzt einen Timer neu. */
 	public static void start(Timer t) {
 		t.enabled = true;
+		t.pausedLeft = 0;
 		t.nextAt = next(t, System.currentTimeMillis());
+	}
+
+	/** Pausieren bzw. weiterlaufen lassen (nur Countdown-Timer). */
+	public static void togglePause(Timer t) {
+		long now = System.currentTimeMillis();
+		if (t.paused()) {
+			t.nextAt = now + t.pausedLeft;
+			t.pausedLeft = 0;
+		} else if (t.enabled && t.nextAt > now) {
+			t.pausedLeft = t.nextAt - now;
+		}
+	}
+
+	/** Restzeit jetzt (bei Pause die eingefrorene). */
+	public static long left(Timer t) {
+		return t.paused() ? t.pausedLeft : t.nextAt - System.currentTimeMillis();
 	}
 
 	static long next(Timer t, long now) {
@@ -137,8 +160,8 @@ public final class Timers {
 		}
 		boolean changed = false;
 		for (Timer t : c.timers) {
-			if (!t.enabled || t.isAuction()) {
-				continue; // Auktionen meldet der Auktions-Alarm
+			if (!t.enabled || t.isAuction() || t.paused()) {
+				continue; // Auktionen meldet der Auktions-Alarm; pausierte Timer stehen still
 			}
 			if (t.nextAt == 0) {
 				t.nextAt = next(t, now);
@@ -222,6 +245,8 @@ public final class Timers {
 				String name = t.name.length() > 22 ? t.name.substring(0, 21) + "…" : t.name;
 				out.add(new Line(name + "  " + (left <= 0 ? Component.translatable("loothub.alltag.auction.ended").getString() : (t.approx ? "≥ " : "") + format(left)),
 						left <= 0 ? 0xFF9A9A9A : color(left), left));
+			} else if (t.paused()) {
+				out.add(new Line(t.name + "  " + format(t.pausedLeft) + " ⏸", 0xFF9A9A9A, t.pausedLeft));
 			} else {
 				out.add(new Line(t.name + "  " + format(left), color(left), left));
 			}
