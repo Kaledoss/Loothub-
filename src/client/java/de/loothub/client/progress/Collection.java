@@ -78,6 +78,12 @@ final class Collection {
 				|| id.endsWith("_concrete_powder")) {
 			return true;
 		}
+		// tote Korallen, Töpfe, getrockneter Seetang, End- und Blitzstäbe, Froschlaich, Büsche, Wurzeln, Honigwaben, Druckplatten
+		if (id.startsWith("dead_") || id.equals("decorated_pot") || id.equals("dried_kelp_block") || id.equals("end_rod")
+				|| id.equals("frogspawn") || id.equals("bush") || id.endsWith("_bush") || id.endsWith("_roots")
+				|| id.equals("honeycomb_block") || id.endsWith("_pressure_plate")) {
+			return true;
+		}
 		// Kupfer: nur die Erze zählen
 		if (id.contains("copper") && !id.endsWith("copper_ore")) {
 			return true;
