@@ -405,6 +405,7 @@ public class ProgressScreen extends LoothubScreen {
 				String reward = Component.translatable("loothub.lh.toast.points", cur.get(2).getAsInt()).getString();
 				g.drawString(font, Texts.goal(st, goal), cl + 8, y + 2, TEXT, false);
 				g.drawString(font, reward, cr - font.width(reward), y + 2, 0xFFF2C14E, false);
+				pinFlag(g, "k|" + cid, cr - font.width(reward) - 14, y + 2);
 				String prog = Texts.value(st, Math.min(have, goal)) + " / " + Texts.value(st, goal);
 				int barW = Math.max(40, cw - 8 - font.width(prog) - 12);
 				bar(g, cl + 8, y + 13, barW, goal == 0 ? 1 : have / (double) goal, 0xFFB07CFF);
@@ -422,6 +423,9 @@ public class ProgressScreen extends LoothubScreen {
 			y = section(g, Component.translatable("loothub.lh.q.comm"),
 					Component.translatable("loothub.lh.toast.points", c.get("reward").getAsInt()), y);
 			g.drawString(font, Component.translatable("loothub.lh.q.comm.goal", Texts.goal(stat, goal)), cl + 8, y + 2, TEXT, false);
+			if (sum < goal) {
+				pinFlag(g, "c|" + stat + "|" + goal, cr - 12, y + 2);
+			}
 			String prog = Texts.value(stat, Math.min(sum, goal)) + " / " + Texts.value(stat, goal);
 			int barW = Math.max(40, cw - 8 - font.width(prog) - 12);
 			bar(g, cl + 8, y + 13, barW, goal == 0 ? 1 : sum / (double) goal, 0xFF6BD5FF);
@@ -708,6 +712,19 @@ public class ProgressScreen extends LoothubScreen {
 			y += Math.max(box, opts.size() * 18) + 10;
 		}
 		return y;
+	}
+
+	/** Fähnchen zum An- und Abpinnen. */
+	private void pinFlag(GuiGraphics g, String key, int px, int py) {
+		boolean pin = Progress.pinned(key);
+		g.drawString(font, "⚑", px, py, pin ? 0xFFF2C14E : 0xFF6A5A5C, false);
+		hits.add(new Hit(px - 2, py - 2, 12, 12, () -> {
+			if (!Progress.togglePin(key)) {
+				message = Component.translatable("loothub.lh.pin.max", Progress.MAX_PINS).getString();
+			} else {
+				message = "";
+			}
+		}, Component.translatable(pin ? "loothub.lh.pin.off" : "loothub.lh.pin.on")));
 	}
 
 	private static int tierOf(JsonObject mine, String id) {

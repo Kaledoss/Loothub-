@@ -128,6 +128,43 @@ public final class Progress {
 				}
 			}
 		}
+		// Questkette der Woche („k|kette“, bleibt über alle Schritte angepinnt) und Gemeinschaftsquest („c|stat|ziel“)
+		if (s.has("chain") && s.get("chain").isJsonObject()) {
+			JsonObject ch = s.getAsJsonObject("chain");
+			int step = ch.get("step").getAsInt();
+			var steps = ch.getAsJsonArray("steps");
+			String key = "k|" + ch.get("id").getAsString();
+			if (step < steps.size()) {
+				present.add(key);
+				if (list.contains(key)) {
+					var cur = steps.get(step).getAsJsonArray();
+					JsonObject q = new JsonObject();
+					q.addProperty("stat", cur.get(0).getAsString());
+					q.addProperty("goal", cur.get(1).getAsLong());
+					q.addProperty("have", ch.get("have").getAsLong());
+					q.addProperty("done", false);
+					out.add(new Object[]{"k", q});
+				}
+			}
+		}
+		if (s.has("comm") && s.get("comm").isJsonObject()) {
+			JsonObject c = s.getAsJsonObject("comm");
+			String key = "c|" + c.get("stat").getAsString() + "|" + c.get("goal").getAsLong();
+			if (c.get("sum").getAsLong() < c.get("goal").getAsLong()) {
+				present.add(key);
+				if (list.contains(key)) {
+					JsonObject q = new JsonObject();
+					q.addProperty("stat", c.get("stat").getAsString());
+					q.addProperty("goal", c.get("goal").getAsLong());
+					q.addProperty("have", c.get("sum").getAsLong());
+					q.addProperty("done", false);
+					out.add(new Object[]{"c", q});
+				}
+			}
+		} else {
+			// ohne Angaben zur Gemeinschaftsquest (z. B. direkt nach einem Kauf) die Anpinnung behalten
+			list.stream().filter(k -> k.startsWith("c|")).forEach(present::add);
+		}
 		if (list.removeIf(k -> !present.contains(k))) {
 			WidgetConfig.get().save(); // Abschnitt bzw. Woche vorbei
 		}
@@ -170,7 +207,13 @@ public final class Progress {
 			long goal = q.get("goal").getAsLong();
 			boolean done = q.get("done").getAsBoolean();
 			long have = done ? goal : Math.min(goal, liveHave(stat, q.get("have").getAsLong()));
-			String label = (p[0].equals("w") ? "W · " : "") + Texts.goal(stat, goal).getString();
+			String prefix = switch ((String) p[0]) {
+				case "w" -> "W · ";
+				case "k" -> "✦ ";
+				case "c" -> "♦ ";
+				default -> "";
+			};
+			String label = prefix + Texts.goal(stat, goal).getString();
 			if (font.width(label) > PIN_W - 12) {
 				label = font.plainSubstrByWidth(label, PIN_W - 16) + "…";
 			}
