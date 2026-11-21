@@ -206,7 +206,7 @@ public class CosmeticsScreen extends LoothubScreen {
 					final int slot = k;
 					dropdown(descX + k * (dw + 6), y + 30, dw,
 							Component.translatable(slot == 0 ? "loothub.cosmetics.pets.right" : "loothub.cosmetics.pets.left").getString(),
-							PET_OPTIONS, "loothub.cosmetics.pets.type.", () -> slotValue(c.pets, slot),
+							petOptions(PET_OPTIONS), "loothub.cosmetics.pets.type.", () -> slotValue(c.pets, slot),
 							v -> c.pets = setSlot(c.pets, slot, v, Cosmetics.MAX_PETS));
 				}
 				boolean anyMini = false;
@@ -214,7 +214,7 @@ public class CosmeticsScreen extends LoothubScreen {
 					final int slot = k;
 					dropdown(descX + k * (dw + 6), y + 50, dw,
 							Component.translatable(slot == 0 ? "loothub.cosmetics.pets.head_left" : "loothub.cosmetics.pets.head_right").getString(),
-							HEAD_OPTIONS, "loothub.cosmetics.pets.type.", () -> slotValue(c.headPets, slot),
+							petOptions(HEAD_OPTIONS), "loothub.cosmetics.pets.type.", () -> slotValue(c.headPets, slot),
 							v -> {
 								if (headNamesChangedAt != 0) {
 									applyHeadNames(); // gerade getippten Namen nicht verlieren
@@ -301,13 +301,30 @@ public class CosmeticsScreen extends LoothubScreen {
 				rowPreviews.add(new RowPreview(nx + 30, y + 22, 30, myStyle, () -> c.wingColor, () -> c.wingColorOuter));
 				sections.add(new Section(y, 54, "loothub.cosmetics.wing_color", "loothub.cosmetics.wing_color.desc"));
 				y += 54 + GAP;
-				// Augen: an/aus + Farbe
+				// Augen: an/aus + Farbe (Regenbogen aus dem Loothub-Shop)
+				int eyesY = y;
 				y = colorSection(y, lx, lw, "loothub.cosmetics.eyes", "loothub.cosmetics.eyes.desc",
 						() -> c.eyeColor, v -> c.eyeColor = v, () -> c.eyeLast, v -> c.eyeLast = v, "#7FE8FF");
-				// Krone
-				toggle(lx, y + 20, lw, () -> c.crown, v -> c.crown = v);
-				sections.add(new Section(y, 42, "loothub.cosmetics.crown", "loothub.cosmetics.crown.desc"));
-				y += 42 + GAP;
+				if (de.loothub.client.progress.Shop.owned("e_rainbow")) {
+					boolean rb = "rainbow".equals(c.eyeColor);
+					addRenderableWidget(Button.builder(Component.translatable(rb ? "loothub.cosmetics.eyes.rainbow.on"
+							: "loothub.cosmetics.eyes.rainbow"), b -> {
+								c.eyeColor = rb ? (c.eyeLast == null || c.eyeLast.isBlank() ? "#7FE8FF" : c.eyeLast) : "rainbow";
+								c.save();
+								rebuildWidgets();
+							}).bounds(descX + 150, eyesY + 30, 100, 16).build());
+				}
+				// Krone: Stil wählen (Gold frei, weitere aus dem Loothub-Shop)
+				dropdown(descX, y + 30, ddWidth(), Component.translatable("loothub.cosmetics.crown").getString(),
+						java.util.Arrays.stream(CROWN_OPTIONS).filter(de.loothub.client.progress.Shop::crownAllowed).toArray(String[]::new),
+						"loothub.cosmetics.crown.style.",
+						() -> !c.crown ? "" : c.crownStyle == null || c.crownStyle.isBlank() ? "gold" : c.crownStyle,
+						v -> {
+							c.crown = !v.isEmpty();
+							c.crownStyle = v.isEmpty() || v.equals("gold") ? "" : v;
+						});
+				sections.add(new Section(y, 54, "loothub.cosmetics.crown", "loothub.cosmetics.crown.desc"));
+				y += 54 + GAP;
 				// Rüstung ausblenden: je Teil ein Knopf (✔ sichtbar, ✕ ausgeblendet)
 				int pw = Math.max(44, Math.min(70, (cr - 8 - descX - 4 * 4) / 5)), px = descX;
 				px = piece(px, y + 30, pw, "loothub.cosmetics.armor.helmet", () -> c.hideHelmet, v -> c.hideHelmet = v);
@@ -482,13 +499,21 @@ public class CosmeticsScreen extends LoothubScreen {
 	// ------------------------------------------------------------------ Auswahllisten
 
 	private static final String[] WING_OPTIONS = {"", "dragon", "devil", "angel", "drake"};
-	private static final String[] PET_OPTIONS = {"", "slime", "allay", "bee", "vex", "wolf", "penguin", "dragon", "panda", "red_panda", "donkey", "zombie", "serpent", "turtle", "hummingbird"};
-	private static final String[] HEAD_OPTIONS = {"", "minime", "slime", "allay", "bee", "vex", "wolf", "penguin", "dragon", "panda", "red_panda", "donkey", "zombie", "serpent", "turtle", "hummingbird"};
+	private static final String[] PET_OPTIONS = {"", "slime", "allay", "bee", "vex", "wolf", "penguin", "dragon", "panda", "red_panda", "donkey", "zombie", "serpent", "turtle", "hummingbird", "phoenix", "golddragon"};
+	private static final String[] HEAD_OPTIONS = {"", "minime", "slime", "allay", "bee", "vex", "wolf", "penguin", "dragon", "panda", "red_panda", "donkey", "zombie", "serpent", "turtle", "hummingbird", "phoenix", "golddragon"};
+	/** Krone: aus, Gold (frei) und die Stile aus dem Loothub-Shop. */
+	private static final String[] CROWN_OPTIONS = {"", "gold", "flower", "ice", "nether", "halo"};
+
+	/** Haustiere: freie und die im Loothub-Shop gekauften. */
+	private static String[] petOptions(String[] all) {
+		return java.util.Arrays.stream(all).filter(de.loothub.client.progress.Shop::petAllowed).toArray(String[]::new);
+	}
 	private static final String[] ARMOR_WHO = {"", "all"};
 	private static final String[] RANGE_OPTIONS = {"", "8", "16", "32", "64"};
 	private static final String[] MAX_OPTIONS = {"", "0", "1", "3", "5", "10"};
 	private static final String[] TRAIT_OPTIONS = {"", "playful", "shy", "brave", "lazy", "curious"};
-	private static final String[] STEP_OPTIONS = {"", "sparks", "flames", "hearts", "notes", "snow", "magic", "soul", "stars"};
+	private static final String[] STEP_OPTIONS = {"", "sparks", "flames", "hearts", "notes", "snow", "magic", "soul", "stars", "cherry",
+			"glow", "totem", "rainbow"};
 
 	/** Fußspuren: freie Stile und die im Loothub-Shop gekauften. */
 	private static String[] stepOptions() {

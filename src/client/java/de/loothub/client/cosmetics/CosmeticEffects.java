@@ -20,7 +20,8 @@ public final class CosmeticEffects {
 	/** Fußspuren-Stile aus dem Loothub-Shop. */
 	private static final java.util.Map<String, net.minecraft.core.particles.SimpleParticleType> SHOP_STEPS = java.util.Map.of(
 			"hearts", ParticleTypes.HEART, "notes", ParticleTypes.NOTE, "snow", ParticleTypes.SNOWFLAKE,
-			"magic", ParticleTypes.WITCH, "soul", ParticleTypes.SOUL_FIRE_FLAME, "stars", ParticleTypes.END_ROD);
+			"magic", ParticleTypes.WITCH, "soul", ParticleTypes.SOUL_FIRE_FLAME, "stars", ParticleTypes.END_ROD,
+			"glow", ParticleTypes.GLOW, "totem", ParticleTypes.TOTEM_OF_UNDYING);
 
 	public static void register() {
 		ClientTickEvents.END_CLIENT_TICK.register(CosmeticEffects::tick);
@@ -79,6 +80,20 @@ public final class CosmeticEffects {
 					}
 					if (r.nextInt(2) == 0) {
 						mc.level.addParticle(ParticleTypes.FLAME, x, y, z, 0.0, 0.008, 0.0);
+					}
+				} else if (steps.equals("rainbow")) {
+					// Regenbogen: Farbe wandert mit der Zeit durch alle Töne
+					int rgb = java.awt.Color.HSBtoRGB((p.tickCount % 60) / 60.0F, 0.85F, 1.0F) & 0xFFFFFF;
+					for (int i = 0; i < 2; i++) {
+						mc.level.addParticle(new DustParticleOptions(rgb, 1.1F), x + (r.nextDouble() - 0.5) * 0.25, y + 0.05,
+								z + (r.nextDouble() - 0.5) * 0.25, 0.0, 0.02, 0.0);
+					}
+				} else if (steps.equals("cherry")) {
+					// Kirschblüten: rosa Blättchen, die langsam herabsinken
+					if (p.tickCount % 4 == 0) {
+						int rgb = r.nextBoolean() ? 0xFFB7D5 : 0xFF8FBF;
+						mc.level.addParticle(new DustParticleOptions(rgb, 1.3F), x + (r.nextDouble() - 0.5) * 0.3, y + 0.35,
+								z + (r.nextDouble() - 0.5) * 0.3, 0.0, -0.01, 0.0);
 					}
 				} else if (SHOP_STEPS.containsKey(steps)) {
 					// Fußspuren aus dem Loothub-Shop

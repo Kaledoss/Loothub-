@@ -50,6 +50,16 @@ public final class PetsLayer extends RenderLayer<AvatarRenderState, PlayerModel>
 	private static final Identifier RED_PANDA_TEX = Identifier.fromNamespaceAndPath("loothub", "textures/entity/red_panda.png");
 	private static final Identifier TURTLE_TEX = Identifier.fromNamespaceAndPath("loothub", "textures/entity/turtle.png");
 	private static final Identifier HUMMINGBIRD_TEX = Identifier.fromNamespaceAndPath("loothub", "textures/entity/hummingbird.png");
+	/** Shop-Haustiere: eigenes Aussehen auf vorhandenem Modell (Phönix = Kolibri, Golddrache = Drache). */
+	private static final java.util.Map<String, Identifier> SKIN_TEX = java.util.Map.of(
+			"phoenix", Identifier.fromNamespaceAndPath("loothub", "textures/entity/phoenix.png"),
+			"golddragon", Identifier.fromNamespaceAndPath("loothub", "textures/entity/gold_dragon.png"));
+	/** Aussehen des gerade gezeichneten Haustiers (null = normal). */
+	private String skin;
+
+	private Identifier tex(Identifier normal) {
+		return skin == null ? normal : SKIN_TEX.getOrDefault(skin, normal);
+	}
 	private static final Identifier SERPENT_TEX = Identifier.fromNamespaceAndPath("loothub", "textures/entity/sky_serpent.png");
 
 	private final SlimeModel slimeInner;
@@ -103,6 +113,7 @@ public final class PetsLayer extends RenderLayer<AvatarRenderState, PlayerModel>
 		// Kopf-Plätze (eigene Plätze, unabhängig von den folgenden Haustieren)
 		for (int slot = 0; slot < Cosmetics.MAX_HEAD; slot++) {
 			String type = Cosmetics.headPet(state, slot);
+			skin = Cosmetics.petSkin(state, slot, true);
 			if (type != null && !Cosmetics.HEAD_MINI.equals(type)) {
 				drawOnHead(poseStack, collector, light, state, type, slot, state.ageInTicks);
 			}
@@ -118,6 +129,7 @@ public final class PetsLayer extends RenderLayer<AvatarRenderState, PlayerModel>
 		float lie = de.loothub.client.quick.AfkView.lying(state);
 		for (int slot = 0; slot < Cosmetics.MAX_PETS; slot++) {
 			String type = Cosmetics.pet(state, slot);
+			skin = Cosmetics.petSkin(state, slot, false);
 			if (type == null) {
 				continue;
 			}
@@ -285,12 +297,12 @@ public final class PetsLayer extends RenderLayer<AvatarRenderState, PlayerModel>
 					submit(collector, poseStack, turtle, s, TURTLE_TEX);
 				}
 				case "hummingbird" -> submit(collector, poseStack, hummingbird,
-						base(new LivingEntityRenderState(), t + slot * 11.0F, 0.0F), HUMMINGBIRD_TEX);
+						base(new LivingEntityRenderState(), t + slot * 11.0F, 0.0F), tex(HUMMINGBIRD_TEX));
 				case "serpent" -> submit(collector, poseStack, serpent, base(new LivingEntityRenderState(), t + slot * 17.0F, 0.0F),
 						SERPENT_TEX);
 				case "dragon" -> {
 					// Minecraft-Stil (Würfelmodell) – passend zum Pinguin
-					submit(collector, poseStack, dragon, base(new LivingEntityRenderState(), t + slot * 13.0F, 0.0F), DRAGON_TEX);
+					submit(collector, poseStack, dragon, base(new LivingEntityRenderState(), t + slot * 13.0F, 0.0F), tex(DRAGON_TEX));
 				}
 				default -> submit(collector, poseStack, vex, base(new VexRenderState(), t, 0.3F), VEX_TEX);
 			}
@@ -405,11 +417,11 @@ public final class PetsLayer extends RenderLayer<AvatarRenderState, PlayerModel>
 				submit(collector, poseStack, turtle, s, TURTLE_TEX);
 			}
 			case "hummingbird" -> submit(collector, poseStack, hummingbird, base(new LivingEntityRenderState(), t + slot * 11.0F, 0.0F),
-					HUMMINGBIRD_TEX);
+					tex(HUMMINGBIRD_TEX));
 			case "serpent" -> submit(collector, poseStack, serpent, base(new LivingEntityRenderState(), t + slot * 17.0F, 0.0F),
 					SERPENT_TEX);
 			case "dragon" -> submit(collector, poseStack, dragon, base(new LivingEntityRenderState(), t + slot * 13.0F, 0.0F),
-					DRAGON_TEX);
+					tex(DRAGON_TEX));
 			default -> submit(collector, poseStack, vex, base(new VexRenderState(), t, 0.0F), VEX_TEX);
 		}
 		poseStack.popPose();

@@ -661,9 +661,17 @@ public class ProgressScreen extends LoothubScreen {
 		JsonArray shop = s.getAsJsonObject("cat").getAsJsonArray("shop");
 		long balance = s.get("balance").getAsLong();
 		String title = s.get("title").getAsString(), badge = s.get("badge").getAsString();
-		for (String kind : new String[]{"freeze", "title", "badge", "steps"}) {
+		for (String kind : new String[]{"freeze", "title", "badge", "steps", "crown", "eyes", "pet"}) {
+			boolean cosmetic = kind.equals("steps") || kind.equals("crown") || kind.equals("eyes") || kind.equals("pet");
+			boolean any = false;
+			for (JsonElement e : shop) {
+				any |= e.getAsJsonArray().get(1).getAsString().equals(kind);
+			}
+			if (!any) {
+				continue; // ältere Server-Version ohne diese Artikel
+			}
 			y = section(g, Component.translatable("loothub.lh.shop.section." + kind),
-					kind.equals("steps") ? Component.translatable("loothub.lh.shop.steps.hint") : null, y);
+					cosmetic ? Component.translatable("loothub.lh.shop.steps.hint") : null, y);
 			for (JsonElement e : shop) {
 				JsonArray a = e.getAsJsonArray();
 				if (!a.get(1).getAsString().equals(kind)) {
@@ -711,7 +719,7 @@ public class ProgressScreen extends LoothubScreen {
 					color = can ? 0xFFE23B3B : 0xFF4A3A3C;
 					action = can ? () -> confirmBuy(id, cost) : null;
 					tip = can ? null : Component.translatable("loothub.lh.shop.poor", Fmt.whole(cost - balance));
-				} else if (kind.equals("steps")) {
+				} else if (cosmetic) {
 					label = Component.translatable("loothub.lh.shop.owned");
 					color = 0xFF2E5E36;
 					action = null;
@@ -748,7 +756,7 @@ public class ProgressScreen extends LoothubScreen {
 					message = "";
 					Progress.buy(id, err -> {
 						message = err == null ? "" : Component.translatable("loothub.lh.error." + err).getString();
-						if (Shop.STEPS.containsKey(id) && err == null) {
+						if (Shop.isCosmetic(id) && err == null) {
 							de.loothub.client.cosmetics.Cosmetics.rebuild();
 						}
 					});

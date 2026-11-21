@@ -36,6 +36,11 @@ public final class AuraTextures {
 			return NAMED.get("gold");
 		}
 		String c = color.strip().toLowerCase(Locale.ROOT);
+		if (c.equals("rainbow")) {
+			// Regenbogen (Loothub-Shop): Farbton wandert in 24 Stufen durch den Kreis
+			int step = (int) (System.currentTimeMillis() / 150L % 24L);
+			return java.awt.Color.HSBtoRGB(step / 24.0F, 0.8F, 1.0F) & 0xFFFFFF;
+		}
 		if (NAMED.containsKey(c)) {
 			return NAMED.get(c);
 		}

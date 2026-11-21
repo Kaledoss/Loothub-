@@ -21,6 +21,12 @@ import de.loothub.Loothub;
  */
 public final class CrownLayer extends RenderLayer<AvatarRenderState, PlayerModel> {
 	private static final Identifier TEXTURE = Identifier.fromNamespaceAndPath(Loothub.MOD_ID, "textures/entity/crown.png");
+	/** Stile aus dem Loothub-Shop: Blütenkranz, Eiskrone, Netherkrone, Heiligenschein. */
+	private static final java.util.Map<String, Identifier> STYLES = java.util.Map.of(
+			"flower", Identifier.fromNamespaceAndPath(Loothub.MOD_ID, "textures/entity/crown_flower.png"),
+			"ice", Identifier.fromNamespaceAndPath(Loothub.MOD_ID, "textures/entity/crown_ice.png"),
+			"nether", Identifier.fromNamespaceAndPath(Loothub.MOD_ID, "textures/entity/crown_nether.png"),
+			"halo", Identifier.fromNamespaceAndPath(Loothub.MOD_ID, "textures/entity/crown_halo.png"));
 	private static final int SEGMENTS = 8;
 	private static final float PX = 1.0F / 16.0F;
 	private static final float RADIUS = 3.0F, BAND = 1.6F, SPIKE = 1.9F;
@@ -48,30 +54,38 @@ public final class CrownLayer extends RenderLayer<AvatarRenderState, PlayerModel
 			return;
 		}
 		float t = state.ageInTicks;
+		String style = Cosmetics.crownStyle(state);
+		Identifier tex = STYLES.getOrDefault(style, TEXTURE);
+		boolean halo = style.equals("halo"); // flacher, leuchtender Ring ohne Zacken, etwas höher
+		boolean wreath = style.equals("flower"); // Kranz: niedrige, runde Blätter statt Zacken
+		final int lit = halo ? 0xF000F0 : light;
+		final float spike = halo ? 0.0F : wreath ? 0.9F : SPIKE;
+		final float band = halo ? 0.7F : BAND;
+		final float radius = halo ? 3.6F : RADIUS;
 		poseStack.pushPose();
 		getParentModel().head.translateAndRotate(poseStack);
 		// sitzt knapp über dem Kopf (über der Hut-Ebene), damit sie nicht ins Namensschild ragt
-		poseStack.translate(0.0F, (-8.8F - (float) Math.sin(t * 0.08F) * 0.3F) * PX, 0.0F);
+		poseStack.translate(0.0F, ((halo ? -10.5F : -8.8F) - (float) Math.sin(t * 0.08F) * 0.3F) * PX, 0.0F);
 		poseStack.mulPose(Axis.YP.rotationDegrees(t * 1.5F));
 		poseStack.mulPose(Axis.XP.rotationDegrees(4.0F)); // leicht schräg – wirkt lässiger
-		collector.submitCustomGeometry(poseStack, RenderTypes.entityCutoutNoCull(TEXTURE), (pose, vc) -> {
+		collector.submitCustomGeometry(poseStack, RenderTypes.entityCutoutNoCull(tex), (pose, vc) -> {
 			for (int s = 0; s < SEGMENTS; s++) {
 				double a0 = 2 * Math.PI * s / SEGMENTS, a1 = 2 * Math.PI * (s + 1) / SEGMENTS;
-				float x0 = (float) Math.cos(a0) * RADIUS, z0 = (float) Math.sin(a0) * RADIUS;
-				float x1 = (float) Math.cos(a1) * RADIUS, z1 = (float) Math.sin(a1) * RADIUS;
+				float x0 = (float) Math.cos(a0) * radius, z0 = (float) Math.sin(a0) * radius;
+				float x1 = (float) Math.cos(a1) * radius, z1 = (float) Math.sin(a1) * radius;
 				float nx = (float) Math.cos((a0 + a1) / 2), nz = (float) Math.sin((a0 + a1) / 2);
 				// Band (untere Texturhälfte)
-				v(pose, vc, x0, 0, z0, 0, 1.0F, light, nx, nz);
-				v(pose, vc, x1, 0, z1, 1, 1.0F, light, nx, nz);
-				v(pose, vc, x1, -BAND, z1, 1, 0.5F, light, nx, nz);
-				v(pose, vc, x0, -BAND, z0, 0, 0.5F, light, nx, nz);
+				v(pose, vc, x0, 0, z0, 0, 1.0F, lit, nx, nz);
+				v(pose, vc, x1, 0, z1, 1, 1.0F, lit, nx, nz);
+				v(pose, vc, x1, -band, z1, 1, 0.5F, lit, nx, nz);
+				v(pose, vc, x0, -band, z0, 0, 0.5F, lit, nx, nz);
 				// Zacke (obere Texturhälfte, Spitze mittig)
 				float xm = (x0 + x1) / 2, zm = (z0 + z1) / 2;
-				float top = -BAND - SPIKE;
-				v(pose, vc, x0, -BAND, z0, 0, 0.5F, light, nx, nz);
-				v(pose, vc, x1, -BAND, z1, 1, 0.5F, light, nx, nz);
-				v(pose, vc, xm, top, zm, 0.5F, 0.0F, light, nx, nz);
-				v(pose, vc, xm, top, zm, 0.5F, 0.0F, light, nx, nz);
+				float top = -band - spike;
+				v(pose, vc, x0, -band, z0, 0, 0.5F, lit, nx, nz);
+				v(pose, vc, x1, -band, z1, 1, 0.5F, lit, nx, nz);
+				v(pose, vc, xm, top, zm, 0.5F, 0.0F, lit, nx, nz);
+				v(pose, vc, xm, top, zm, 0.5F, 0.0F, lit, nx, nz);
 			}
 		});
 		poseStack.popPose();

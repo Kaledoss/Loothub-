@@ -10,15 +10,30 @@ import com.google.gson.JsonObject;
 /** Shop-Artikel: Titel, Abzeichen und Fußspuren-Stile. Preise und Liste kommen vom Server. */
 public final class Shop {
 	/** Fußspuren-Stile aus dem Shop: Artikel → Wert in den Cosmetics. */
-	public static final Map<String, String> STEPS = Map.of("c_hearts", "hearts", "c_notes", "notes", "c_snow", "snow",
-			"c_magic", "magic", "c_soul", "soul", "c_stars", "stars");
+	public static final Map<String, String> STEPS = Map.ofEntries(Map.entry("c_hearts", "hearts"), Map.entry("c_notes", "notes"),
+			Map.entry("c_snow", "snow"), Map.entry("c_magic", "magic"), Map.entry("c_soul", "soul"), Map.entry("c_stars", "stars"),
+			Map.entry("c_cherry", "cherry"), Map.entry("c_glow", "glow"), Map.entry("c_totem", "totem"),
+			Map.entry("c_rainbow", "rainbow"));
+	/** Kronen-Stile aus dem Shop. */
+	public static final Map<String, String> CROWNS = Map.of("k_flower", "flower", "k_ice", "ice", "k_nether", "nether",
+			"k_halo", "halo");
+	/** Haustiere aus dem Shop. */
+	public static final Map<String, String> PETS = Map.of("p_phoenix", "phoenix", "p_golddragon", "golddragon");
+	/** Augen-Effekte aus dem Shop. */
+	public static final Map<String, String> EYES = Map.of("e_rainbow", "rainbow");
+
+	/** Shop-Artikel, die ein Cosmetic freischalten (nicht Titel/Abzeichen)? */
+	public static boolean isCosmetic(String id) {
+		return STEPS.containsKey(id) || CROWNS.containsKey(id) || PETS.containsKey(id) || EYES.containsKey(id);
+	}
 
 	private Shop() {
 	}
 
 	/** Abzeichen der Reihe nach als Zeichen der Schrift loothub:badges (Pixel-Icons von Ludo). */
 	private static final java.util.List<String> BADGE_ORDER = java.util.List.of("b_star", "b_heart", "b_diamond", "b_sun",
-			"b_moon", "b_flower", "b_sword", "b_bolt", "b_note", "b_skull", "b_crown");
+			"b_moon", "b_flower", "b_sword", "b_bolt", "b_note", "b_skull", "b_crown", "b_fire", "b_leaf", "b_shield", "b_potion",
+			"b_emerald", "b_trident");
 	private static final net.minecraft.resources.Identifier BADGE_FONT =
 			net.minecraft.resources.Identifier.fromNamespaceAndPath("loothub", "badges");
 
@@ -61,8 +76,24 @@ public final class Shop {
 
 	/** Darf dieser Fußspuren-Stil gewählt werden (frei oder gekauft)? */
 	public static boolean stepAllowed(String style) {
-		for (Map.Entry<String, String> e : STEPS.entrySet()) {
-			if (e.getValue().equals(style)) {
+		return allowed(STEPS, style);
+	}
+
+	public static boolean crownAllowed(String style) {
+		return allowed(CROWNS, style);
+	}
+
+	public static boolean petAllowed(String type) {
+		return allowed(PETS, type);
+	}
+
+	public static boolean eyesAllowed(String effect) {
+		return allowed(EYES, effect);
+	}
+
+	private static boolean allowed(Map<String, String> items, String value) {
+		for (Map.Entry<String, String> e : items.entrySet()) {
+			if (e.getValue().equals(value)) {
 				return owned(e.getKey());
 			}
 		}

@@ -49,6 +49,7 @@ public class ShopPreviewScreen extends Screen {
 
 	@Override
 	protected void init() {
+		startPreview();
 		addRenderableWidget(Button.builder(Component.translatable("gui.back"), b -> onClose())
 				.bounds(width / 2 - 50, height - 28, 100, 20).build());
 	}
@@ -56,6 +57,30 @@ public class ShopPreviewScreen extends Screen {
 	@Override
 	public void onClose() {
 		minecraft.setScreen(parent);
+	}
+
+	/** Krone, Augen und Haustier werden für die Vorschau direkt am eigenen Spieler gezeigt. */
+	private void startPreview() {
+		java.util.Map<String, String> pv = new java.util.HashMap<>();
+		switch (kind) {
+			case "crown" -> {
+				pv.put(de.loothub.client.cosmetics.Cosmetics.CROWN, "");
+				pv.put(de.loothub.client.cosmetics.Cosmetics.CROWN_STYLE, Shop.CROWNS.get(id));
+				pv.put(de.loothub.client.cosmetics.Cosmetics.HEAD_PETS, "-"); // sonst bliebe die Krone weg
+			}
+			case "eyes" -> pv.put(de.loothub.client.cosmetics.Cosmetics.EYES, Shop.EYES.get(id));
+			case "pet" -> pv.put(de.loothub.client.cosmetics.Cosmetics.PETS, Shop.PETS.get(id) + "," + Shop.PETS.get(id) + ",");
+			default -> {
+				return;
+			}
+		}
+		de.loothub.client.cosmetics.Cosmetics.setPreview(pv);
+	}
+
+	@Override
+	public void removed() {
+		de.loothub.client.cosmetics.Cosmetics.setPreview(null);
+		super.removed();
 	}
 
 	@Override
@@ -142,6 +167,10 @@ public class ShopPreviewScreen extends Screen {
 			case "snow" -> new Spark(x, y - 30, vx, 14.0F, now, 0xFFFFFF, "❄");
 			case "magic" -> new Spark(x, y, vx, -20.0F, now, 0xB66BFF, "✦");
 			case "soul" -> new Spark(x, y, vx * 0.5F, -24.0F, now, 0x5FD8FF, "▲");
+			case "cherry" -> new Spark(x, y - 30, vx, 12.0F, now, 0xFFB7D5, "❀");
+			case "glow" -> new Spark(x, y, vx * 0.4F, -10.0F, now, 0x7FFFD4, "●");
+			case "totem" -> new Spark(x, y, vx * 1.5F, -30.0F, now, random.nextBoolean() ? 0xF2D64B : 0x6BD84E, "✦");
+			case "rainbow" -> new Spark(x, y, vx, -18.0F, now, 0xFF000000 | java.awt.Color.HSBtoRGB((now % 2000) / 2000.0F, 0.85F, 1.0F), "■");
 			default -> new Spark(x, y, vx, -16.0F, now, 0xFFF2A6, "✧");
 		};
 	}

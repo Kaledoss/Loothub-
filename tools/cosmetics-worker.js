@@ -573,10 +573,27 @@ const LH_SHOP = [
 	["b_note", "badge", 1600], ["b_skull", "badge", 3000], ["b_crown", "badge", 10000],
 	["c_hearts", "steps", 2400], ["c_notes", "steps", 2400], ["c_snow", "steps", 3600], ["c_magic", "steps", 5000],
 	["c_soul", "steps", 7000], ["c_stars", "steps", 10000],
+	// zweite Welle: von allem etwas
+	["t_stormborn", "title", 3000], ["t_shadow", "title", 3000], ["t_deep", "title", 4000], ["t_dragonslayer", "title", 8000],
+	["t_archmaster", "title", 12000], ["t_emperor", "title", 50000],
+	["b_leaf", "badge", 800], ["b_fire", "badge", 800], ["b_potion", "badge", 1200], ["b_shield", "badge", 1600],
+	["b_emerald", "badge", 2400], ["b_trident", "badge", 6000],
+	["c_cherry", "steps", 3000], ["c_glow", "steps", 4000], ["c_totem", "steps", 8000], ["c_rainbow", "steps", 14000],
+	["k_flower", "crown", 4000], ["k_ice", "crown", 6000], ["k_nether", "crown", 9000], ["k_halo", "crown", 18000],
+	["e_rainbow", "eyes", 8000],
+	["p_phoenix", "pet", 20000], ["p_golddragon", "pet", 25000],
 ];
 const LH_SHOP_MAP = Object.fromEntries(LH_SHOP.map(([id, kind, cost]) => [id, { kind, cost }]));
-// Fußspuren-Stile aus dem Shop (Wert in den Cosmetics → nötiger Shop-Artikel)
-const LH_STEP_ITEMS = { hearts: "c_hearts", notes: "c_notes", snow: "c_snow", magic: "c_magic", soul: "c_soul", stars: "c_stars" };
+// Cosmetics aus dem Shop: Eintrag in den Cosmetics → Wert → nötiger Shop-Artikel (Haustiere je Platz, durch Kommas getrennt)
+const LH_PETS_SHOP = { phoenix: "p_phoenix", golddragon: "p_golddragon" };
+const LH_COSM_ITEMS = {
+	footsteps: { hearts: "c_hearts", notes: "c_notes", snow: "c_snow", magic: "c_magic", soul: "c_soul", stars: "c_stars",
+		cherry: "c_cherry", glow: "c_glow", totem: "c_totem", rainbow: "c_rainbow" },
+	crownstyle: { flower: "k_flower", ice: "k_ice", nether: "k_nether", halo: "k_halo" },
+	eyes: { rainbow: "e_rainbow" },
+	pets: LH_PETS_SHOP,
+	headpets: LH_PETS_SHOP,
+};
 const LH_BOARDS = ["points", "ach", "login", "dquests", "wquests", "blocks", "placed", "picked", "dropped", "mobs", "fish", "play", "jobday"];
 
 const LH_DROP_MIN_PLAY = { d: 30, w: 180, m: 600, a: 1200 }; // Mindest-Spielminuten für „am wenigsten weggeworfen“
@@ -1159,9 +1176,10 @@ async function lhTags(request, env, ctx) {
 
 /** Shop-Fußspuren nur für Besitzer: nicht gekaufte Stile aus dem Cosmetics-Profil entfernen. */
 async function lhCheckProfile(env, uuid, profile) {
-	const steps = profile && profile.values && profile.values.footsteps;
-	const need = steps && LH_STEP_ITEMS[steps];
-	if (!need) return;
+	const values = profile && profile.values;
+	if (!values) return;
+	const needs = (key, v) => String(v).split(",").map((x) => LH_COSM_ITEMS[key][x.trim()]).filter(Boolean);
+	if (!Object.keys(LH_COSM_ITEMS).some((k) => k in values && needs(k, values[k]).length)) return;
 	let owned = [];
 	try {
 		if (env.AH) {
@@ -1170,9 +1188,16 @@ async function lhCheckProfile(env, uuid, profile) {
 			owned = row ? (JSON.parse(row.data).owned || []) : [];
 		}
 	} catch { owned = []; }
-	if (!owned.includes(need)) {
-		delete profile.values.footsteps;
-		profile.set = (profile.set || []).filter((s) => s !== "footsteps");
+	// nicht gekaufte Shop-Cosmetics entfernen (bei Haustieren nur den betroffenen Platz leeren)
+	for (const key of Object.keys(LH_COSM_ITEMS)) {
+		if (!(key in values)) continue;
+		const parts = String(values[key]).split(",");
+		const kept = parts.map((x) => { const need = LH_COSM_ITEMS[key][x.trim()]; return need && !owned.includes(need) ? "" : x; });
+		if (kept.join("") === parts.join("")) continue;
+		if (kept.every((x) => !x.trim())) {
+			delete values[key];
+			profile.set = (profile.set || []).filter((s) => s !== key);
+		} else values[key] = kept.join(",");
 	}
 }
 

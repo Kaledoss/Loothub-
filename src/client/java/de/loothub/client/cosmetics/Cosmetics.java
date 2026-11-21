@@ -69,7 +69,13 @@ public final class Cosmetics {
 	public static final String MINI_TRAITS = "minimetraits";
 	public static final List<String> TRAITS = List.of("playful", "shy", "brave", "lazy", "curious");
 	public static final List<String> FOOTSTEP_STYLES = List.of("sparks", "flames", "hearts", "notes", "snow", "magic", "soul", "stars");
-	public static final List<String> PET_TYPES = List.of("slime", "allay", "bee", "vex", "wolf", "penguin", "dragon", "panda", "zombie", "serpent", "red_panda", "donkey", "turtle", "hummingbird");
+	public static final List<String> PET_TYPES = List.of("slime", "allay", "bee", "vex", "wolf", "penguin", "dragon", "panda", "zombie", "serpent", "red_panda", "donkey", "turtle", "hummingbird", "phoenix", "golddragon");
+	/** Shop-Haustiere: eigenes Aussehen auf dem Modell eines vorhandenen Haustiers. */
+	public static final java.util.Map<String, String> PET_SKINS = java.util.Map.of("phoenix", "hummingbird", "golddragon", "dragon");
+	/** Stil der Krone (leer = Gold; flower, ice, nether, halo aus dem Loothub-Shop). */
+	public static final String CROWN_STYLE = "crownstyle";
+	/** Vorschau im Shop: Cosmetics, die vorübergehend am eigenen Spieler gezeigt werden (Schlüssel → Wert, "" = nur an). */
+	public static volatile java.util.Map<String, String> preview;
 	public static final int MAX_PETS = 2;
 	public static final int MAX_HEAD = 2;
 	public static final String HEAD_MINI = "minime";
@@ -220,6 +226,12 @@ public final class Cosmetics {
 	/** Ergebnis je Spieler kurz zwischenspeichern – nicht in jedem Bild neu zusammensetzen. */
 	private static final Map<Integer, Resolved> RESOLVED = new HashMap<>();
 
+	/** Shop-Vorschau setzen (null = beenden); wirkt sofort. */
+	public static void setPreview(java.util.Map<String, String> pv) {
+		preview = pv;
+		RESOLVED.clear();
+	}
+
 	private static Resolved resolve(Player p) {
 		long nowMs = System.currentTimeMillis();
 		Resolved cached = RESOLVED.get(p.getId());
@@ -256,6 +268,21 @@ public final class Cosmetics {
 		if (p == net.minecraft.client.Minecraft.getInstance().player) {
 			Set<String> mine = new HashSet<>(set == null ? Set.of() : set);
 			ownInto(mine, values);
+			// Shop-Vorschau: nur hier beim Zeichnen, nie im Profil für den Server
+			java.util.Map<String, String> pv = preview;
+			if (pv != null) {
+				pv.forEach((k, v) -> {
+					if (v.equals("-")) {
+						mine.remove(k);
+						values.remove(k);
+					} else {
+						mine.add(k);
+						if (!v.isEmpty()) {
+							values.put(k, v);
+						}
+					}
+				});
+			}
 			set = mine.isEmpty() ? set : mine;
 		}
 		if (aura != null && !aura.isBlank()) {
@@ -402,6 +429,7 @@ public final class Cosmetics {
 		putOwn(mine, values, MINI_TRAITS, cfg.miniMeTraits == null || cfg.miniMeTraits.replace(",", "").isBlank() ? "" : cfg.miniMeTraits);
 		if (cfg.crown) {
 			mine.add(CROWN);
+			putOwn(mine, values, CROWN_STYLE, cfg.crownStyle);
 		}
 		if (cfg.flyTrail) {
 			mine.add(FLY_TRAIL);
@@ -522,7 +550,24 @@ public final class Cosmetics {
 		}
 		String[] parts = raw.split(",", -1);
 		String s = slot < parts.length ? parts[slot].strip().toLowerCase(Locale.ROOT) : "";
-		return PET_TYPES.contains(s) ? s : null;
+		return PET_TYPES.contains(s) ? PET_SKINS.getOrDefault(s, s) : null;
+	}
+
+	/** Besonderes Aussehen (Shop-Haustier) auf Platz {@code slot}, oder null. */
+	public static String petSkin(Object state, int slot, boolean head) {
+		String raw = raw(state, head ? HEAD_PETS : PETS);
+		if (raw == null) {
+			return null;
+		}
+		String[] parts = raw.split(",", -1);
+		String s = slot < parts.length ? parts[slot].strip().toLowerCase(Locale.ROOT) : "";
+		return PET_SKINS.containsKey(s) ? s : null;
+	}
+
+	/** Stil der Krone („“ = Gold). */
+	public static String crownStyle(Object state) {
+		String v = raw(state, CROWN_STYLE);
+		return v == null ? "" : v.strip().toLowerCase(Locale.ROOT);
 	}
 
 	/** Was sitzt auf Kopf-Platz {@code slot} (0 = links, 1 = rechts): Haustier-Art, {@link #HEAD_MINI} oder null. */
@@ -533,7 +578,7 @@ public final class Cosmetics {
 		}
 		String[] parts = raw.split(",", -1);
 		String s = slot < parts.length ? parts[slot].strip().toLowerCase(Locale.ROOT) : "";
-		return PET_TYPES.contains(s) || HEAD_MINI.equals(s) ? s : null;
+		return PET_TYPES.contains(s) ? PET_SKINS.getOrDefault(s, s) : HEAD_MINI.equals(s) ? s : null;
 	}
 
 	/** Spielername für das Mini-Me auf Kopf-Platz {@code slot}, oder "" für den eigenen Skin. */

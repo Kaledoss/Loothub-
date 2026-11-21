@@ -98,6 +98,60 @@
       "chars": [
         "\ue00a"
       ]
+    },
+    {
+      "type": "bitmap",
+      "file": "loothub:font/badges/b_fire.png",
+      "ascent": 7,
+      "height": 8,
+      "chars": [
+        "\ue00b"
+      ]
+    },
+    {
+      "type": "bitmap",
+      "file": "loothub:font/badges/b_leaf.png",
+      "ascent": 7,
+      "height": 8,
+      "chars": [
+        "\ue00c"
+      ]
+    },
+    {
+      "type": "bitmap",
+      "file": "loothub:font/badges/b_shield.png",
+      "ascent": 7,
+      "height": 8,
+      "chars": [
+        "\ue00d"
+      ]
+    },
+    {
+      "type": "bitmap",
+      "file": "loothub:font/badges/b_potion.png",
+      "ascent": 7,
+      "height": 8,
+      "chars": [
+        "\ue00e"
+      ]
+    },
+    {
+      "type": "bitmap",
+      "file": "loothub:font/badges/b_emerald.png",
+      "ascent": 7,
+      "height": 8,
+      "chars": [
+        "\ue00f"
+      ]
+    },
+    {
+      "type": "bitmap",
+      "file": "loothub:font/badges/b_trident.png",
+      "ascent": 7,
+      "height": 8,
+      "chars": [
+        "\ue010"
+      ]
     }
   ]
 }
