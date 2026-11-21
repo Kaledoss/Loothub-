@@ -302,6 +302,7 @@ final class LitematicaBridge {
 		double r2 = range * range;
 		BlockPos.MutableBlockPos pos = new BlockPos.MutableBlockPos();
 		var eye = mc.player.getEyePosition();
+		var layers = renderLayers();
 		for (int dx = -r; dx <= r; dx++) {
 			for (int dy = -r; dy <= r; dy++) {
 				for (int dz = -r; dz <= r; dz++) {
@@ -318,6 +319,14 @@ final class LitematicaBridge {
 					if (have == want || !have.canBeReplaced()) {
 						continue;
 					}
+					// Der Printer setzt nur, was in der eingestellten Ebenen-Auswahl liegt …
+					if (layers != null && !layers.isPositionWithinRange(pos)) {
+						continue;
+					}
+					// … und nur, was dort auch halten würde (Saat braucht Ackerboden, Fackeln eine Wand …)
+					if (!want.canSurvive(mc.level, pos)) {
+						continue;
+					}
 					ItemStack stack = MaterialCache.getInstance().getRequiredBuildItemForState(want, world, pos);
 					if (stack != null && !stack.isEmpty() && seen.add(stack.getItem())) {
 						out.add(stack);
@@ -326,6 +335,15 @@ final class LitematicaBridge {
 			}
 		}
 		return out;
+	}
+
+	/** Ebenen-Auswahl von Litematica (null, falls nicht verfügbar). */
+	private static fi.dy.masa.malilib.util.LayerRange renderLayers() {
+		try {
+			return fi.dy.masa.litematica.data.DataManager.getRenderLayerRange();
+		} catch (Throwable t) {
+			return null;
+		}
 	}
 
 	/** Block, auf den der Spieler in der Schematic zielt und der noch nicht steht – das dafür nötige Item, sonst leer. */
