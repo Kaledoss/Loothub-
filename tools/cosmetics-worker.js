@@ -767,7 +767,7 @@ const LH_NO_COLLECT = new Set(["farmland", "dirt_path", "pitcher_pod", "crafting
 	"lilac", "rose_bush", "peony", "torchflower", "pitcher_plant", "pink_petals", "spore_blossom", "closed_eyeblossom",
 	"open_eyeblossom", "wildflowers", "cactus_flower", "chorus_flower", "mangrove_propagule", "flower_pot", "mossy_cobblestone",
 	"deepslate_tiles", "cracked_deepslate_tiles", "azalea", "flowering_azalea"]);
-const LH_NO_MOBS = new Set(["wither", "illusioner", "giant", "copper_golem"]);
+const LH_NO_MOBS = new Set(["wither", "illusioner", "giant", "copper_golem", "wandering_trader"]);
 function lhColExcluded(kind, id) {
 	if (kind === "m") return LH_NO_MOBS.has(id);
 	if (LH_NO_COLLECT.has(id) || /(_seeds|_stairs|_slab|_wall|_sapling|_leaves|_wool|_carpet|_tulip)$/.test(id) || id.includes("brick")

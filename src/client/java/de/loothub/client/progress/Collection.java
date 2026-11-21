@@ -34,7 +34,7 @@ final class Collection {
 	private static final Set<String> EXTRA_MOBS = Set.of("iron_golem", "snow_golem", "villager", "wandering_trader",
 			"copper_golem");
 	/** Mobs ohne eigenen Erfolg (Boss bzw. im Überleben nicht anzutreffen). */
-	private static final Set<String> NO_MOBS = Set.of("wither", "illusioner", "giant", "copper_golem");
+	private static final Set<String> NO_MOBS = Set.of("wither", "illusioner", "giant", "copper_golem", "wandering_trader");
 	/** Blöcke, die man im Überleben nicht sinnvoll abbaut. */
 	private static final Set<String> NO_BLOCKS = Set.of("light", "structure_void", "barrier", "jigsaw", "structure_block",
 			"command_block", "chain_command_block", "repeating_command_block", "test_block", "test_instance_block");
