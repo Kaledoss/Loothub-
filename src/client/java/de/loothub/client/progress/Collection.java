@@ -37,6 +37,48 @@ final class Collection {
 	private static final Set<String> NO_BLOCKS = Set.of("light", "structure_void", "barrier", "jigsaw", "structure_block",
 			"command_block", "chain_command_block", "repeating_command_block", "test_block", "test_instance_block");
 
+	/** Holzarten: davon zählen nur die Stämme. */
+	private static final List<String> WOODS = List.of("oak", "spruce", "birch", "jungle", "acacia", "dark_oak", "mangrove", "cherry",
+			"pale_oak", "crimson", "warped", "bamboo", "azalea");
+	/** Arbeitsblöcke, Redstone-Bauteile und Ähnliches, die nicht in die Sammlung gehören. */
+	private static final Set<String> NO_COLLECT = Set.of("farmland", "dirt_path", "pitcher_pod", "crafting_table", "smithing_table",
+			"fletching_table", "cartography_table", "loom", "stonecutter", "grindstone", "enchanting_table", "anvil", "chipped_anvil",
+			"damaged_anvil", "brewing_stand", "furnace", "blast_furnace", "smoker", "composter", "barrel", "lectern", "cauldron",
+			"crafter", "observer", "piston", "sticky_piston", "dispenser", "dropper", "hopper", "comparator", "repeater", "redstone",
+			"redstone_torch", "redstone_lamp", "daylight_detector", "target", "lever", "tripwire_hook", "string", "note_block",
+			"rail", "powered_rail", "detector_rail", "activator_rail", "trapped_chest", "short_grass", "tall_grass", "fern",
+			"large_fern", "seagrass", "dandelion", "poppy", "blue_orchid", "allium", "azure_bluet", "oxeye_daisy", "cornflower",
+			"lily_of_the_valley", "wither_rose", "sunflower", "lilac", "rose_bush", "peony", "torchflower", "pitcher_plant",
+			"pink_petals", "spore_blossom", "closed_eyeblossom", "open_eyeblossom", "wildflowers", "cactus_flower", "chorus_flower",
+			"mangrove_propagule", "flower_pot", "mossy_cobblestone", "deepslate_tiles", "cracked_deepslate_tiles");
+
+	/** Gehört dieser Block nicht in die Sammlung (Treppen, Stufen, Ziegel, Holzbauteile, Blumen, Glas, Wolle …)? */
+	static boolean excluded(String id) {
+		if (NO_COLLECT.contains(id) || id.endsWith("_seeds") || id.endsWith("_stairs") || id.endsWith("_slab")
+				|| id.endsWith("_wall") || id.contains("brick") || id.startsWith("infested_") || id.endsWith("_sapling")
+				|| id.endsWith("_leaves") || id.contains("glass") || id.endsWith("_wool") || id.endsWith("_carpet")
+				|| id.endsWith("_tulip") || id.startsWith("polished_") || id.startsWith("chiseled_") || id.startsWith("cracked_")
+				|| id.startsWith("smooth_") || id.startsWith("cut_") || id.startsWith("stripped_")) {
+			return true;
+		}
+		// Kupfer: nur die Erze zählen
+		if (id.contains("copper") && !id.endsWith("copper_ore")) {
+			return true;
+		}
+		// Tiefenschiefer: nur der normale, der Bruchstein und die Erze
+		if (id.contains("deepslate") && !id.equals("deepslate") && !id.equals("cobbled_deepslate") && !id.endsWith("_ore")) {
+			return true;
+		}
+		// Holz: nur die Stämme (Bambusrohr selbst bleibt)
+		for (String w : WOODS) {
+			if (id.startsWith(w + "_") && !id.endsWith("_log") && !id.endsWith("_stem") && !id.endsWith("_nylium")
+					&& !id.equals("bamboo_block")) {
+				return true;
+			}
+		}
+		return id.equals("azalea") || id.equals("flowering_azalea");
+	}
+
 	private static List<Entry> blocks, mobs;
 	/** Block-ID → Schlüssel der Sammlung (ID des Items). */
 	private static final Map<String, String> BLOCK_KEY = new HashMap<>();
@@ -58,6 +100,9 @@ final class Collection {
 					continue;
 				}
 				String key = iid.getPath();
+				if (excluded(id.getPath()) || excluded(key)) {
+					continue;
+				}
 				BLOCK_KEY.put(id.getPath(), key);
 				ItemStack stack = new ItemStack(item);
 				out.putIfAbsent(key, new Entry(key, stack.getHoverName().getString(), stack));
