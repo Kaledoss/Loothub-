@@ -129,11 +129,6 @@ public class ProgressScreen extends LoothubScreen {
 					searchText = t;
 					scroll = 0;
 				});
-				// Sammelbuch öffnen
-				Component bookLabel = Component.translatable("loothub.lh.book.open");
-				int bw2 = font.width(bookLabel) + 14;
-				addRenderableWidget(Button.builder(bookLabel, btn -> minecraft.setScreen(new CollectionBookScreen(this, achSub)))
-						.bounds(cr - 160 - 6 - bw2, ct + 19, bw2, 16).build());
 				boardButton = null;
 				periodButton = null;
 				listTop = ct + 40;
