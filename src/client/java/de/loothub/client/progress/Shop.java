@@ -1,5 +1,6 @@
 package de.loothub.client.progress;
 
+import java.util.List;
 import java.util.Map;
 
 import net.minecraft.network.chat.Component;
@@ -54,8 +55,35 @@ public final class Shop {
 		return titleText(id, "");
 	}
 
-	/** Titel in seiner Farbe (Gold ohne gekaufte Titelfarbe; Regenbogen läuft Buchstabe für Buchstabe durch). */
+	/** Titel mit Verzierung (Ludo-Bildchen links und gespiegelt rechts, Schrift loothub:titles). */
+	private static final List<String> TITLE_ORDER = List.of("t_miner", "t_hunter", "t_angler", "t_builder", "t_explorer", "t_collector",
+			"t_night", "t_trader", "t_lootking", "t_legend", "t_stormborn", "t_shadow", "t_deep", "t_dragonslayer", "t_archmaster",
+			"t_emperor", "t_snowking", "t_eggseeker", "t_sunseeker", "t_pumpkinking", "a_blocks", "a_placed", "a_picked", "a_mobs", "a_fish",
+			"a_play", "a_treasures", "a_jobmoney", "a_jumps", "a_dquests", "a_wquests", "a_login", "a_secrets");
+	private static final net.minecraft.network.chat.FontDescription TITLE_FONT = new net.minecraft.network.chat.FontDescription.Resource(
+			net.minecraft.resources.Identifier.fromNamespaceAndPath("loothub", "titles"));
+
+	private static Component ornament(String id, boolean right) {
+		int i = TITLE_ORDER.indexOf(id);
+		if (i < 0) {
+			return null;
+		}
+		return Component.literal(String.valueOf((char) (0xE000 + i * 2 + (right ? 1 : 0))))
+				.withStyle(s -> s.withFont(TITLE_FONT).withColor(0xFFFFFF));
+	}
+
+	/** Titel in seiner Farbe, links und rechts verziert. */
 	public static Component titleText(String id, String color) {
+		Component text = plainTitle(id, color);
+		Component l = text == null ? null : ornament(id, false);
+		if (l == null) {
+			return text;
+		}
+		return Component.empty().append(l).append(" ").append(text).append(" ").append(ornament(id, true));
+	}
+
+	/** Titel in seiner Farbe (Gold ohne gekaufte Titelfarbe; Regenbogen läuft Buchstabe für Buchstabe durch). */
+	private static Component plainTitle(String id, String color) {
 		if (id == null || id.isEmpty()) {
 			return null;
 		}
