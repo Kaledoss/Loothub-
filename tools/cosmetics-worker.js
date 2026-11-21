@@ -718,7 +718,7 @@ function lhColExcluded(kind, id) {
 	if (kind === "m") return LH_NO_MOBS.has(id);
 	if (LH_NO_COLLECT.has(id) || /(_seeds|_stairs|_slab|_wall|_sapling|_leaves|_wool|_carpet|_tulip)$/.test(id) || id.includes("brick")
 		|| id.includes("glass") || /^(infested_|polished_|chiseled_|cracked_|smooth_|cut_|stripped_)/.test(id)) return true;
-	if (/(_bed|_head|_skull|_banner|campfire|_candle|chest|shulker_box|_bucket|_chain)$/.test(id) || id.includes("lantern")
+	if (/(_bed|_head|_skull|_banner|campfire|_candle|chest|shulker_box|_bucket|_chain)$/.test(id) || (id.includes("lantern") && id !== "sea_lantern")
 		|| ["bell", "candle", "resin_clump", "chain", "lightning_rod"].includes(id) || id.includes("glazed_terracotta")) return true;
 	if (id.includes("copper") && !id.endsWith("copper_ore")) return true;
 	if (id.includes("deepslate") && id !== "deepslate" && id !== "cobbled_deepslate" && !id.endsWith("_ore")) return true;
