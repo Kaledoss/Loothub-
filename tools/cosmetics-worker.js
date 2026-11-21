@@ -571,6 +571,38 @@ const LH_CHAINS = [
 	{ id: "hunt", steps: [["mobs", 200], ["fish", 40], ["mobs", 300]] },
 ];
 const LH_CHAIN_REWARD = [50, 100, 300];
+// Geheimnisse (Easter Eggs): die Mod erkennt sie und meldet sie; „generous“ erkennt der Server (3 Geschenke)
+const LH_SECRETS = ["midnight_fish", "jumper", "night_owl", "sky_high", "deep_down", "chatty", "dizzy", "storm_fisher", "lucky", "generous"];
+const LH_SECRET_REWARD = 250;
+function lhSecret(d, row, id, news) {
+	d.secrets = d.secrets || [];
+	if (!LH_SECRETS.includes(id) || d.secrets.includes(id)) return false;
+	d.secrets.push(id);
+	row.points = (row.points || 0) + LH_SECRET_REWARD;
+	news.push({ k: "secret", id, p: LH_SECRET_REWARD });
+	d.owned = d.owned || [];
+	if (d.secrets.length >= LH_SECRETS.length && !d.owned.includes("a_secrets")) { d.owned.push("a_secrets"); news.push({ k: "unlock", id: "a_secrets" }); }
+	return true;
+}
+
+// Minispiele: tägliches Quiz (Fragen und Antworten stehen in der Mod, hier nur die richtige Antwort) und Block-Raten
+const LH_QUIZ = [1, 2, 0, 3, 1, 2, 0, 1, 3, 2, 0, 3, 1, 0, 2, 3, 1, 2, 0, 3];
+const LH_QUIZ_REWARD = 30;
+const LH_GUESS = ["stone", "cobblestone", "dirt", "sand", "gravel", "oak_log", "birch_log", "spruce_log", "coal_ore", "iron_ore",
+	"gold_ore", "diamond_ore", "emerald_ore", "lapis_ore", "redstone_ore", "copper_ore", "obsidian", "netherrack", "glowstone", "end_stone",
+	"clay", "deepslate", "tuff", "calcite", "granite", "diorite", "andesite", "bricks", "bookshelf", "ice", "packed_ice", "snow",
+	"amethyst_block", "terracotta", "soul_sand", "blackstone", "oak_planks", "mud", "sponge", "honeycomb_block", "moss_block", "dripstone_block"];
+const LH_GUESS_REWARD = [40, 25, 15, 5];
+function lhGuessDay(day) {
+	const r = lhRand(`guess-${day}`);
+	const answer = LH_GUESS[Math.floor(r() * LH_GUESS.length) % LH_GUESS.length];
+	const opts = [answer];
+	while (opts.length < 4) { const o = LH_GUESS[Math.floor(r() * LH_GUESS.length) % LH_GUESS.length]; if (!opts.includes(o)) opts.push(o); }
+	for (let i = opts.length - 1; i > 0; i--) { const j = Math.floor(r() * (i + 1)); [opts[i], opts[j]] = [opts[j], opts[i]]; }
+	return { answer, opts };
+}
+function lhQuizDay(day) { return Math.floor(lhRand(`quiz-${day}`)() * LH_QUIZ.length) % LH_QUIZ.length; }
+
 function lhChain(week) { return LH_CHAINS[Math.floor(lhRand(`chain-${week}`)() * LH_CHAINS.length) % LH_CHAINS.length]; }
 const LH_SHOP = [
 	["s_freeze", "freeze", 400], // Login-Schutz: verbrauchbar, mehrfach kaufbar
@@ -591,6 +623,8 @@ const LH_SHOP = [
 	["k_flower", "crown", 4000], ["k_ice", "crown", 6000], ["k_nether", "crown", 9000], ["k_halo", "crown", 18000],
 	["e_rainbow", "eyes", 8000],
 	["p_phoenix", "pet", 20000], ["p_golddragon", "pet", 25000],
+	// Geheimniskrämer: alle Geheimnisse gefunden
+	["a_secrets", "title", 0, { secrets: true }],
 	// Titelfarben (statt Gold)
 	["tc_emerald", "tcolor", 3000], ["tc_ice", "tcolor", 3000], ["tc_fire", "tcolor", 4000], ["tc_violet", "tcolor", 4000],
 	["tc_rainbow", "tcolor", 12000],
@@ -635,7 +669,7 @@ function lhOffer(now) {
 /** Preis jetzt (mit Angebot des Tages) oder null, wenn gerade nicht kaufbar. */
 function lhPrice(id, now) {
 	const it = LH_SHOP_MAP[id];
-	if (!it || it.extra.ach || it.extra.col) return null;
+	if (!it || it.extra.ach || it.extra.col || it.extra.secrets) return null;
 	if (it.extra.season && !lhSeasonOn(it.extra.season, now)) return null;
 	const o = lhOffer(now);
 	return o.id === id ? o.cost : it.cost;
@@ -778,7 +812,7 @@ function lhCatalog(now = Date.now()) {
 	const seasons = {};
 	for (const k of Object.keys(LH_SEASONS)) seasons[k] = { on: lhSeasonOn(k, now), until: LH_SEASONS[k][1] };
 	return { ach: LH_ACH, tierPoints: LH_TIER_POINTS, colTiers: LH_COL_TIERS, colPoints: LH_COL_POINTS, shop: LH_SHOP, boards: LH_BOARDS,
-		commReward: LH_COMM_REWARD, seasons, offer: lhOffer(now), offerOff: LH_OFFER_OFF };
+		commReward: LH_COMM_REWARD, secrets: LH_SECRETS, secretReward: LH_SECRET_REWARD, seasons, offer: lhOffer(now), offerOff: LH_OFFER_OFF };
 }
 
 function lhTier(stat, v) {
@@ -1027,7 +1061,8 @@ async function lhProgress(db, d, now) {
 	d.owned = d.owned || [];
 	for (const [id, , , extra] of LH_SHOP) {
 		if (!extra || d.owned.includes(id)) continue;
-		const ok = extra.ach ? (d.ach[extra.ach] || 0) >= LH_ACH[extra.ach].length : extra.col ? lhColBadge(extra.col, d) : false;
+		const ok = extra.ach ? (d.ach[extra.ach] || 0) >= LH_ACH[extra.ach].length : extra.col ? lhColBadge(extra.col, d)
+			: extra.secrets ? (d.secrets || []).length >= LH_SECRETS.length : false;
 		if (ok) { d.owned.push(id); news.push({ k: "unlock", id }); }
 	}
 	return { earned, news, commSum, cq };
@@ -1043,6 +1078,15 @@ function lhView(row, d, extra, now) {
 		col: { b: (d.col && d.col.b) || {}, m: (d.col && d.col.m) || {} },
 		cach: { b: (d.cach && d.cach.b) || {}, m: (d.cach && d.cach.m) || {} },
 		colBadges: { ores: lhColBadgeProgress("ores", d), hunter: lhColBadgeProgress("hunter", d) },
+		secrets: d.secrets || [],
+		quiz: (() => {
+			const day = lhDayId(now), q = lhQuizDay(day), done = !!(d.quiz && d.quiz.day === day);
+			return { q, done, a: done ? d.quiz.a : -1, ok: done ? d.quiz.ok : false, right: done ? LH_QUIZ[q] : -1, reward: LH_QUIZ_REWARD };
+		})(),
+		guess: (() => {
+			const day = lhDayId(now), g = lhGuessDay(day), st = d.guess && d.guess.day === day ? d.guess : { picked: [], done: false };
+			return { opts: g.opts, picked: st.picked, done: st.done, answer: st.done ? g.answer : "", hint: g.answer, rewards: LH_GUESS_REWARD };
+		})(),
 		chain: (() => {
 			const ch = lhChain(week), c = d.chain && d.chain.week === week ? d.chain : { step: 0, base: d.tot[ch.steps[0][0]] || 0 };
 			const cur = ch.steps[Math.min(c.step, ch.steps.length - 1)];
@@ -1211,6 +1255,36 @@ async function lhHandle(request, env) {
 					await db.prepare("UPDATE lh_player SET data = ? WHERE uuid = ?").bind(JSON.stringify(td), t.uuid).run();
 					row.spent += price;
 					extra = { news: [{ k: "gift_sent", id: p.item, to: p.target }] };
+					d.gifts = (d.gifts || 0) + 1;
+					if (d.gifts >= 3) lhSecret(d, row, "generous", extra.news);
+				}
+			}
+		} else if (p.op === "secret") {
+			extra = { news: [] };
+			if (!lhSecret(d, row, String(p.id || ""), extra.news)) error = "known";
+		} else if (p.op === "quiz") {
+			const day = lhDayId(now), q = lhQuizDay(day), a = Math.trunc(Number(p.a));
+			extra = { news: [] };
+			if (d.quiz && d.quiz.day === day) error = "done";
+			else if (!(a >= 0 && a < 4)) error = "bad";
+			else {
+				const ok = a === LH_QUIZ[q];
+				d.quiz = { day, a, ok };
+				if (ok) { row.points = (row.points || 0) + LH_QUIZ_REWARD; extra.news.push({ k: "quiz", p: LH_QUIZ_REWARD }); }
+			}
+		} else if (p.op === "guess") {
+			const day = lhDayId(now), g = lhGuessDay(day), c = String(p.c || "");
+			extra = { news: [] };
+			if (!d.guess || d.guess.day !== day) d.guess = { day, picked: [], done: false };
+			if (d.guess.done) error = "done";
+			else if (!g.opts.includes(c) || d.guess.picked.includes(c)) error = "bad";
+			else {
+				d.guess.picked.push(c);
+				if (c === g.answer) {
+					const p2 = LH_GUESS_REWARD[Math.min(d.guess.picked.length - 1, LH_GUESS_REWARD.length - 1)];
+					d.guess.done = true; d.guess.ok = true;
+					row.points = (row.points || 0) + p2;
+					extra.news.push({ k: "guess", p: p2 });
 				}
 			}
 		} else if (p.op === "equip") {

@@ -313,6 +313,20 @@ public class SettingsScreen extends LoothubScreen {
 							c.menuSkin = v;
 							minecraft.execute(() -> rebuildWidgets());
 						});
+				// Menü-Thema (Dropdown)
+				{
+					int mY = y;
+					int mDescX = cl + labelW + 12;
+					int mW = Math.min(200, cr - 8 - mDescX);
+					String cur = c.menuTheme == null || c.menuTheme.isEmpty() ? "dark" : c.menuTheme;
+					buttons.add(addRenderableWidget(Button.builder(Component.translatable("loothub.settings.menu_theme." + cur).append(" ▾"),
+							b -> openPicker(b, new String[]{"dark", "wood", "ice", "nether", "end"}, "loothub.settings.menu_theme.", v -> {
+								WidgetConfig.get().menuTheme = v.equals("dark") ? "" : v;
+								WidgetConfig.get().save();
+								rebuildWidgets();
+							})).bounds(mDescX, mY + 20, mW, 16).build()));
+					y = cardNoToggle(mY, 40, "loothub.settings.menu_theme", "loothub.settings.menu_theme.tooltip");
+				}
 				y = card(y, 40, "loothub.settings.progress", "loothub.settings.progress.tooltip",
 						() -> c.progress, v -> c.progress = v);
 				y = card(y, 40, "loothub.settings.progress_titles", "loothub.settings.progress_titles.tooltip",

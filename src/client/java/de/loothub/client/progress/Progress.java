@@ -227,6 +227,8 @@ public final class Progress {
 	}
 
 	public static void register() {
+		ClientTickEvents.END_CLIENT_TICK.register(Secrets::tick);
+		net.fabricmc.fabric.api.client.message.v1.ClientSendMessageEvents.CHAT.register(Secrets::chat);
 		ClientTickEvents.END_CLIENT_TICK.register(mc -> {
 			long now = System.currentTimeMillis();
 			if (mc.player == null || mc.level == null) {
@@ -374,6 +376,31 @@ public final class Progress {
 		JsonObject p = new JsonObject();
 		p.addProperty("op", "buy");
 		p.addProperty("item", item);
+		send(p, done);
+	}
+
+	/** Geheimnis gefunden melden. */
+	public static void secret(String id) {
+		JsonObject p = new JsonObject();
+		p.addProperty("op", "secret");
+		p.addProperty("id", id);
+		send(p, err -> {
+		});
+	}
+
+	/** Antwort im täglichen Quiz. */
+	public static void quiz(int answer, Consumer<String> done) {
+		JsonObject p = new JsonObject();
+		p.addProperty("op", "quiz");
+		p.addProperty("a", answer);
+		send(p, done);
+	}
+
+	/** Tipp beim Block-Raten. */
+	public static void guess(String choice, Consumer<String> done) {
+		JsonObject p = new JsonObject();
+		p.addProperty("op", "guess");
+		p.addProperty("c", choice);
 		send(p, done);
 	}
 
@@ -670,6 +697,10 @@ public final class Progress {
 					TOASTS.add(new Toast(Component.translatable(step >= of ? "loothub.lh.toast.chain.done" : "loothub.lh.toast.chain",
 							Component.translatable("loothub.lh.chain." + cid), step, of).getString(), plus, 0xB07CFF, step >= of));
 				}
+				case "secret" -> TOASTS.add(new Toast(Component.translatable("loothub.lh.toast.secret").getString(),
+						Component.translatable("loothub.lh.secret." + n.get("id").getAsString()).getString() + "  " + plus, 0xB07CFF, true));
+				case "quiz" -> TOASTS.add(new Toast(Component.translatable("loothub.lh.toast.quiz").getString(), plus, 0x55E06A));
+				case "guess" -> TOASTS.add(new Toast(Component.translatable("loothub.lh.toast.guess").getString(), plus, 0x55E06A));
 				case "gift" -> TOASTS.add(new Toast(Component.translatable("loothub.lh.toast.gift", n.get("from").getAsString()).getString(),
 						Shop.name(n.get("id").getAsString()).getString(), 0xFF7FB3, true));
 				case "gift_sent" -> TOASTS.add(new Toast(Component.translatable("loothub.lh.toast.gift_sent", n.get("to").getAsString()).getString(),

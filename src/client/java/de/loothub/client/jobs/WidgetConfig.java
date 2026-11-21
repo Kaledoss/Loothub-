@@ -107,6 +107,8 @@ public final class WidgetConfig {
 	public boolean crown = false;
 	/** Stil der Krone: "" = Gold, sonst ein Stil aus dem Loothub-Shop. */
 	public String crownStyle = "";
+	/** Menü-Thema für das Loothub-Fenster: "" = Dunkel mit Goldrand, wood, ice, nether, end. */
+	public String menuTheme = "";
 	/** Rüstung nur in der Darstellung ausblenden (Skin sichtbar); die Rüstung bleibt angezogen und schützt weiter. */
 	public boolean hideHelmet = false, hideChest = false, hideLegs = false, hideBoots = false, hideElytra = false;
 	/** Rüstung auch bei anderen Spielern ausblenden (sonst nur bei mir). */

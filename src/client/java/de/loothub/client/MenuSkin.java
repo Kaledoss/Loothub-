@@ -17,13 +17,30 @@ import de.loothub.client.jobs.WidgetConfig;
  * in doppelter Auflösung vor und werden halb so groß gezeichnet, damit die Verzierungen fein bleiben.
  */
 public final class MenuSkin {
-	private static final Identifier FRAME = id("menu/frame");
-	private static final Identifier CARD = id("menu/card");
-	private static final Identifier WOOD = id("menu/wood");
-	private static final Identifier BUTTON = id("menu/button");
-	private static final Identifier BUTTON_HOVER = id("menu/button_hover");
-	private static final Identifier BUTTON_OFF = id("menu/button_off");
-	private static final Identifier GEM = id("menu/gem");
+	/** Menü-Themen: "" = Dunkel mit Goldrand, sonst Holz, Eis, Nether, Ende (Bilder von Ludo). */
+	public static final String[] THEMES = {"", "wood", "ice", "nether", "end"};
+	private static String theme = null;
+	private static Identifier FRAME, CARD, WOOD, BUTTON, BUTTON_HOVER, BUTTON_OFF, GEM;
+
+	/** Bilder des eingestellten Themas laden (bei Wechsel neu). */
+	private static void sprites() {
+		String t = de.loothub.client.jobs.WidgetConfig.get().menuTheme;
+		if (t == null) {
+			t = "";
+		}
+		if (t.equals(theme)) {
+			return;
+		}
+		theme = t;
+		String dir = t.isEmpty() ? "menu/" : "menu_" + t + "/";
+		FRAME = id(dir + "frame");
+		CARD = id(dir + "card");
+		WOOD = id(dir + "wood");
+		BUTTON = id(dir + "button");
+		BUTTON_HOVER = id(dir + "button_hover");
+		BUTTON_OFF = id(dir + "button_off");
+		GEM = id(dir + "gem");
+	}
 	public static final int GOLD = 0xFFF2C14E;
 	private static final int LINE_LIGHT = 0xFFE2BC84;
 	private static final int LINE_DARK = 0xFF422111;
@@ -51,21 +68,25 @@ public final class MenuSkin {
 
 	/** Ornament-Rahmen samt Leder-Hintergrund um das ganze Fenster. */
 	public static void frame(GuiGraphics g, int x, int y, int w, int h) {
+		sprites();
 		half(g, FRAME, x - FRAME_OUT, y - FRAME_OUT, w + 2 * FRAME_OUT, h + 2 * FRAME_OUT);
 	}
 
 	/** Kasten mit dünnem Goldrand (Inhalt, Abschnitte). */
 	public static void card(GuiGraphics g, int x, int y, int w, int h) {
+		sprites();
 		half(g, CARD, x, y, w, h);
 	}
 
 	/** Dunkles Holz, gekachelt (Kategorie-Leiste). */
 	public static void wood(GuiGraphics g, int x, int y, int w, int h) {
+		sprites();
 		g.blitSprite(RenderPipelines.GUI_TEXTURED, WOOD, x, y, w, h);
 	}
 
 	/** Knopf aus rotem Leder mit Goldkante. */
 	public static void button(GuiGraphics g, int x, int y, int w, int h, boolean active, boolean hover) {
+		sprites();
 		g.blitSprite(RenderPipelines.GUI_TEXTURED, !active ? BUTTON_OFF : hover ? BUTTON_HOVER : BUTTON, x, y, w, h);
 	}
 
@@ -74,6 +95,7 @@ public final class MenuSkin {
 		g.fill(x1, y, x2, y + 1, LINE_LIGHT);
 		g.fill(x1, y + 1, x2, y + 2, LINE_DARK);
 		int cx = (x1 + x2) / 2;
+		sprites();
 		g.blitSprite(RenderPipelines.GUI_TEXTURED, GEM, cx - 5, y - 4, 10, 9);
 	}
 

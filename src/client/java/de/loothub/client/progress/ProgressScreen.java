@@ -24,7 +24,7 @@ import de.loothub.client.jobs.WidgetConfig;
 /** Menüseite „Quests“: Reiter Quests, Erfolge, Rangliste und Shop. */
 public class ProgressScreen extends LoothubScreen {
 	private enum Tab {
-		QUESTS, ACH, BOARD, SHOP, ADMIN
+		QUESTS, ACH, BOARD, GAMES, SHOP, ADMIN
 	}
 
 	private record Hit(int x, int y, int w, int h, Runnable action, Component tip) {
@@ -298,6 +298,7 @@ public class ProgressScreen extends LoothubScreen {
 			case QUESTS -> drawQuests(g, s, y);
 			case ACH -> drawAch(g, s, y);
 			case BOARD -> drawBoard(g, s, y);
+			case GAMES -> drawGames(g, s, y);
 			case SHOP -> drawShop(g, s, y);
 			case ADMIN -> drawAdmin(g, listTop);
 		};
@@ -466,6 +467,23 @@ public class ProgressScreen extends LoothubScreen {
 	}
 
 	/** Heldentaten: die großen Erfolge mit 30 Stufen, epischem Namen und Rang. */
+	/** Skilltree der Heldentaten: Knoten (Spalte, Zeile) und ihr Vorgänger. */
+	private static final String[][] TREE = {
+			{"root", "0", "2", ""},
+			{"blocks", "1", "0", "root"}, {"placed", "2", "0", "blocks"}, {"picked", "3", "0", "placed"},
+			{"mobs", "1", "1", "root"}, {"treasures", "2", "1", "mobs"},
+			{"fish", "1", "2", "root"}, {"jumps", "2", "2", "fish"},
+			{"login", "1", "3", "root"}, {"play", "2", "3", "login"}, {"dquests", "3", "3", "play"}, {"wquests", "4", "3", "dquests"},
+			{"jobmoney", "1", "4", "root"}, {"secret", "2", "4", "jobmoney"},
+	};
+	private static String selected = "blocks";
+	private static final net.minecraft.resources.Identifier ACH_BG = net.minecraft.resources.Identifier.fromNamespaceAndPath("loothub", "ach/bg");
+
+	private static net.minecraft.resources.Identifier achSprite(String name) {
+		return net.minecraft.resources.Identifier.fromNamespaceAndPath("loothub", "ach/" + name);
+	}
+
+	/** Heldentaten als Skilltree wie die Fortschritte in Minecraft; Klick auf einen Knoten zeigt darunter die Stufen. */
 	private int drawFeats(GuiGraphics g, JsonObject s, int y) {
 		JsonObject cat = s.getAsJsonObject("cat");
 		JsonObject ach = cat.getAsJsonObject("ach");
@@ -479,7 +497,84 @@ public class ProgressScreen extends LoothubScreen {
 		}
 		y = section(g, Component.translatable("loothub.lh.ach.sub.feats"),
 				Component.translatable("loothub.lh.ach.count", reached, total), y);
-		for (String stat : ach.keySet()) {
+		// Fläche des Baums
+		int sx = 74, sy = 38, nodes = 5;
+		int treeW = Math.min(cw, 40 + 4 * sx + 40), treeH = 5 * sy + 16;
+		int tx0 = cl + (cw - treeW) / 2, ty0 = y;
+		g.blitSprite(net.minecraft.client.renderer.RenderPipelines.GUI_TEXTURED, ACH_BG, tx0, ty0, treeW, treeH);
+		g.fill(tx0, ty0, tx0 + treeW, ty0 + 1, 0xFF4A3A2A);
+		g.fill(tx0, ty0 + treeH - 1, tx0 + treeW, ty0 + treeH, 0xFF4A3A2A);
+		java.util.Map<String, int[]> pos = new java.util.HashMap<>();
+		for (String[] n : TREE) {
+			pos.put(n[0], new int[]{tx0 + 30 + Integer.parseInt(n[1]) * sx, ty0 + 20 + Integer.parseInt(n[2]) * sy});
+		}
+		// Verbindungslinien (rechtwinklig wie in Minecraft): dunkler Rand, helle Linie
+		for (int pass = 0; pass < 2; pass++) {
+			for (String[] n : TREE) {
+				if (n[3].isEmpty()) {
+					continue;
+				}
+				int[] a = pos.get(n[3]), b = pos.get(n[0]);
+				int mx = (a[0] + b[0]) / 2;
+				int c = pass == 0 ? 0xFF000000 : (tierOf(mine, n[0]) > 0 ? 0xFFF2C14E : 0xFFB9A9AB);
+				int w = pass == 0 ? 2 : 1;
+				g.fill(a[0], a[1] - w + 1, mx + w, a[1] + w, c);
+				g.fill(mx - w + 1, Math.min(a[1], b[1]) - w + 1, mx + w, Math.max(a[1], b[1]) + w, c);
+				g.fill(mx - w + 1, b[1] - w + 1, b[0], b[1] + w, c);
+			}
+		}
+		// Knoten: Rahmen nach Rang (rund = Anfang, golden = ab Stufe 10, Stern = legendär), Icon darin
+		JsonArray secrets = s.has("secrets") ? s.getAsJsonArray("secrets") : new JsonArray();
+		int secretMax = cat.has("secrets") ? cat.getAsJsonArray("secrets").size() : 10;
+		for (String[] n : TREE) {
+			String id = n[0];
+			int[] p = pos.get(id);
+			int tier, max;
+			Component name, sub;
+			if (id.equals("root")) {
+				tier = reached > 0 ? 1 : 0;
+				max = 1;
+				name = Component.translatable("loothub.lh.tree.root");
+				sub = Component.translatable("loothub.lh.ach.count", reached, total);
+			} else if (id.equals("secret")) {
+				tier = secrets.size();
+				max = secretMax;
+				name = Component.translatable("loothub.lh.tree.secret");
+				sub = Component.translatable("loothub.lh.tree.secret.count", tier, max);
+			} else {
+				tier = mine.has(id) ? mine.get(id).getAsInt() : 0;
+				max = ach.has(id) ? ach.getAsJsonArray(id).size() : 30;
+				name = Texts.achName(id);
+				sub = Texts.rank(tier, max).copy().append(" · ").append(Component.translatable("loothub.lh.ach.tier", tier, max));
+			}
+			String frame = id.equals("root") || id.equals("secret") ? "frame_goal" : tier >= max ? "frame_challenge"
+					: tier >= 10 ? "frame_goal" : "frame_task";
+			int fs = 26;
+			int fx = p[0] - fs / 2, fy = p[1] - fs / 2;
+			boolean sel = id.equals(selected);
+			if (sel) {
+				g.fill(fx - 3, fy - 3, fx + fs + 3, fy + fs + 3, 0x60F2C14E);
+			}
+			g.blitSprite(net.minecraft.client.renderer.RenderPipelines.GUI_TEXTURED, achSprite(frame), fx, fy, fs, fs);
+			String icon = id.equals("root") ? "wquests" : id;
+			g.blitSprite(net.minecraft.client.renderer.RenderPipelines.GUI_TEXTURED, achSprite(icon), p[0] - 8, p[1] - 8, 16, 16);
+			if (tier == 0) {
+				g.fill(fx + 3, fy + 3, fx + fs - 3, fy + fs - 3, 0x90000000); // noch nicht begonnen: abgedunkelt
+			}
+			if (tier > 0 && !id.equals("root") && !id.equals("secret")) {
+				int rc = Texts.rankColor(tier, max);
+				g.fill(fx + fs - 6, fy + fs - 6, fx + fs, fy + fs, 0xFF000000);
+				g.fill(fx + fs - 5, fy + fs - 5, fx + fs - 1, fy + fs - 1, rc);
+			}
+			Component tip = Component.empty().append(name.copy().withStyle(st -> st.withColor(0xF2C14E))).append("\n").append(sub);
+			hits.add(new Hit(fx, fy, fs, fs, () -> selected = id, tip));
+		}
+		y += treeH + 8;
+		// Details zum gewählten Knoten
+		if (selected.equals("secret")) {
+			y = drawSecrets(g, s, y);
+		} else if (!selected.equals("root") && ach.has(selected)) {
+			String stat = selected;
 			JsonArray tiers = ach.getAsJsonArray(stat);
 			int tier = mine.has(stat) ? mine.get(stat).getAsInt() : 0;
 			long v = switch (stat) {
@@ -488,9 +583,164 @@ public class ProgressScreen extends LoothubScreen {
 				case "login" -> s.getAsJsonObject("login").get("best").getAsLong();
 				default -> tot.has(stat) ? tot.get(stat).getAsLong() : 0;
 			};
+			expanded.add(stat); // Stufen immer zeigen
 			y = achRow(g, stat, Texts.achName(stat), Texts.stat(stat), ItemStack.EMPTY, stat, v, tiers, tierPoints, tier, y);
+		} else {
+			g.drawString(font, Component.translatable("loothub.lh.tree.hint"), cl + 8, y + 2, MUTED, false);
+			y += 16;
 		}
 		return y;
+	}
+
+	/** Siegertreppchen für die ersten drei: Skins wippen leicht, Klick öffnet die Spielerkarte. */
+	private int podium(GuiGraphics g, JsonArray list, int y) {
+		if (list.isEmpty()) {
+			return y;
+		}
+		int h = 96, cx = cl + cw / 2;
+		int[] order = {1, 0, 2}; // links Platz 2, Mitte Platz 1, rechts Platz 3
+		int[] heights = {26, 18, 12};
+		int[] colors = {0xFFF2C14E, 0xFFC8CDD2, 0xFFCD8B4E};
+		double t = System.currentTimeMillis() / 400.0;
+		for (int k = 0; k < 3; k++) {
+			int place = order[k];
+			if (place >= list.size()) {
+				continue;
+			}
+			JsonArray r = list.get(place).getAsJsonArray();
+			int px = cx + (k - 1) * 70 - 26;
+			int ph = heights[place];
+			int baseY = y + h - ph;
+			g.fill(px, baseY, px + 52, y + h, colors[place]);
+			g.fill(px, baseY, px + 52, baseY + 2, 0x60FFFFFF);
+			String num = String.valueOf(place + 1);
+			g.drawString(font, num, px + 26 - font.width(num) / 2, baseY + (ph - 8) / 2 + 1, 0xFF2A1A10, false);
+			String name = r.get(1).getAsString();
+			net.minecraft.world.entity.player.PlayerSkin skin = de.loothub.client.cosmetics.SkinLookup.get(name);
+			int bob = (int) Math.round(Math.sin(t + place * 1.3) * (place == 0 ? 2.5 : 1.5));
+			int dollY = baseY - 34 - bob;
+			if (skin != null) {
+				PlayerCardScreen.doll(g, skin, px + 18, dollY, 1);
+			}
+			if (place == 0) {
+				g.drawString(font, "♛", px + 22, dollY - 10 - bob, 0xFFF2C14E, false); // Krönchen für Platz 1
+			}
+			String shown = font.width(name) > 64 ? font.plainSubstrByWidth(name, 60) + "…" : name;
+			g.drawString(font, shown, px + 26 - font.width(shown) / 2, baseY - 44 - bob, place == 0 ? 0xFFF2C14E : TEXT, false);
+			String uuid = r.get(0).getAsString();
+			hits.add(new Hit(px, baseY - 46, 52, 46 + ph, () -> minecraft.setScreen(new PlayerCardScreen(this, uuid, name)),
+					Component.translatable("loothub.lh.card.open")));
+		}
+		return y + h + 8;
+	}
+
+	/** Minispiele: tägliches Quiz und Block-Raten. */
+	private int drawGames(GuiGraphics g, JsonObject s, int y) {
+		// Quiz
+		if (s.has("quiz") && s.get("quiz").isJsonObject()) {
+			JsonObject q = s.getAsJsonObject("quiz");
+			int qi = q.get("q").getAsInt();
+			boolean done = q.get("done").getAsBoolean();
+			y = section(g, Component.translatable("loothub.lh.games.quiz"),
+					done ? Component.translatable("loothub.lh.games.tomorrow") : Component.translatable("loothub.lh.toast.points", q.get("reward").getAsInt()), y);
+			for (var line : font.split(Component.translatable("loothub.lh.quiz." + qi), cw - 16)) {
+				g.drawString(font, line, cl + 8, y + 2, TEXT, false);
+				y += 11;
+			}
+			y += 4;
+			int bw = (cw - 24) / 2;
+			for (int i = 0; i < 4; i++) {
+				int bx = cl + 8 + (i % 2) * (bw + 8), by2 = y + (i / 2) * 20;
+				int a = q.get("a").getAsInt(), right = q.get("right").getAsInt();
+				int col = !done ? 0xFF3A2A2C : i == right ? 0xFF2E7D3A : i == a ? 0xFF8A2A2A : 0xFF2A2022;
+				g.fill(bx, by2, bx + bw, by2 + 16, col);
+				Component opt = Component.translatable("loothub.lh.quiz." + qi + "." + i);
+				g.drawString(font, opt, bx + 6, by2 + 4, TEXT, false);
+				if (!done) {
+					int answer = i;
+					hits.add(new Hit(bx, by2, bw, 16, () -> Progress.quiz(answer, err -> message = err == null ? ""
+							: Component.translatable("loothub.lh.error." + err).getString()), null));
+				}
+			}
+			y += 44;
+			if (done) {
+				g.drawString(font, Component.translatable(q.get("ok").getAsBoolean() ? "loothub.lh.games.right" : "loothub.lh.games.wrong"),
+						cl + 8, y, q.get("ok").getAsBoolean() ? 0xFF55E06A : 0xFFE23B3B, false);
+				y += 14;
+			}
+			y += 6;
+		}
+		// Block-Raten
+		if (s.has("guess") && s.get("guess").isJsonObject()) {
+			JsonObject gs = s.getAsJsonObject("guess");
+			JsonArray opts = gs.getAsJsonArray("opts"), picked = gs.getAsJsonArray("picked");
+			JsonArray rewards = gs.getAsJsonArray("rewards");
+			boolean done = gs.get("done").getAsBoolean();
+			int wrong = picked.size() - (done ? 1 : 0);
+			y = section(g, Component.translatable("loothub.lh.games.guess"),
+					done ? Component.translatable("loothub.lh.games.tomorrow")
+							: Component.translatable("loothub.lh.games.guess.now", rewards.get(Math.min(wrong, rewards.size() - 1)).getAsInt()), y);
+			// Ausschnitt der Block-Textur: wird mit jedem Fehlversuch größer
+			String answer = gs.get("answer").getAsString();
+			int[] crop = {3, 5, 9, 16};
+			int size = done ? 16 : crop[Math.min(wrong, crop.length - 1)];
+			int u = (16 - size) / 2;
+			int box = 72;
+			int bx = cl + 8, by2 = y + 2;
+			g.fill(bx - 2, by2 - 2, bx + box + 2, by2 + box + 2, 0xFFF2C14E);
+			g.fill(bx - 1, by2 - 1, bx + box + 1, by2 + box + 1, 0xFF000000);
+			// Ausschnitt der Textur des heutigen Blocks
+			String texBlock = done ? answer : gs.has("hint") ? gs.get("hint").getAsString() : "";
+			if (!texBlock.isEmpty()) {
+				g.blit(net.minecraft.client.renderer.RenderPipelines.GUI_TEXTURED,
+						net.minecraft.resources.Identifier.withDefaultNamespace("textures/block/" + texBlock + ".png"), bx, by2, (float) u, (float) u,
+						box, box, size, size, 16, 16);
+			}
+			int ox = bx + box + 14, oy = by2;
+			int ow = Math.min(220, cr - ox - 4);
+			for (int i = 0; i < opts.size(); i++) {
+				String o = opts.get(i).getAsString();
+				boolean tried = picked.contains(opts.get(i));
+				boolean isAnswer = done && o.equals(answer);
+				int col = isAnswer ? 0xFF2E7D3A : tried ? 0xFF4A2A2A : 0xFF3A2A2C;
+				g.fill(ox, oy + i * 18, ox + ow, oy + i * 18 + 15, col);
+				g.drawString(font, Component.translatable("block.minecraft." + o), ox + 6, oy + i * 18 + 4, tried && !isAnswer ? FAINT : TEXT, false);
+				if (!done && !tried) {
+					hits.add(new Hit(ox, oy + i * 18, ow, 15, () -> Progress.guess(o, err -> message = err == null ? ""
+							: Component.translatable("loothub.lh.error." + err).getString()), null));
+				}
+			}
+			y += Math.max(box, opts.size() * 18) + 10;
+		}
+		return y;
+	}
+
+	private static int tierOf(JsonObject mine, String id) {
+		return mine.has(id) ? mine.get(id).getAsInt() : id.equals("secret") || id.equals("root") ? 1 : 0;
+	}
+
+	/** Geheimnisse: Hinweis immer sichtbar, Name erst nach dem Finden. */
+	private int drawSecrets(GuiGraphics g, JsonObject s, int y) {
+		JsonObject cat = s.getAsJsonObject("cat");
+		if (!cat.has("secrets")) {
+			return y;
+		}
+		JsonArray all = cat.getAsJsonArray("secrets");
+		JsonArray got = s.has("secrets") ? s.getAsJsonArray("secrets") : new JsonArray();
+		int reward = cat.has("secretReward") ? cat.get("secretReward").getAsInt() : 0;
+		y = section(g, Component.translatable("loothub.lh.tree.secret"),
+				Component.translatable("loothub.lh.tree.secret.reward", reward), y);
+		for (JsonElement e : all) {
+			String id = e.getAsString();
+			boolean found = got.contains(e);
+			g.drawString(font, found ? "✔" : "?", cl + 8, y + 2, found ? 0xFF55E06A : 0xFFB07CFF, false);
+			g.drawString(font, found ? Component.translatable("loothub.lh.secret." + id) : Component.literal("???"), cl + 22, y + 2,
+					found ? TEXT : MUTED, false);
+			Component hint = Component.translatable("loothub.lh.secret." + id + ".hint").withStyle(ChatFormatting.ITALIC);
+			g.drawString(font, hint, cl + 130, y + 2, found ? FAINT : 0xFFD8C8CA, false);
+			y += 13;
+		}
+		return y + 6;
 	}
 
 	/** Sammlung: eigene Erfolge je Block bzw. Mob (15 Stufen); Begonnene zuerst, dann alphabetisch. */
@@ -639,6 +889,7 @@ public class ProgressScreen extends LoothubScreen {
 			return y + 20;
 		}
 		String self = net.minecraft.client.Minecraft.getInstance().getUser().getProfileId().toString();
+		y = podium(g, list, y);
 		int rank = 0;
 		boolean meShown = false;
 		for (JsonElement e : list) {

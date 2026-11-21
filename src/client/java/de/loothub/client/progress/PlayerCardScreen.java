@@ -131,7 +131,7 @@ public class PlayerCardScreen extends Screen {
 	}
 
 	/** Skin als Vorderansicht (Kopf, Körper, Arme, Beine samt zweiter Schicht), k = Bildpunkte je Skin-Pixel. */
-	private static void doll(GuiGraphics g, PlayerSkin skin, int x, int y, int k) {
+	static void doll(GuiGraphics g, PlayerSkin skin, int x, int y, int k) {
 		Identifier tex = skin.body().texturePath();
 		int arm = skin.model() == PlayerModelType.SLIM ? 3 : 4;
 		int ax = 4 - arm; // schmale Arme näher am Körper
