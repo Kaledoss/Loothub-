@@ -132,8 +132,8 @@ public class ShopPreviewScreen extends Screen {
 		int nameY = headTop - 14;
 		plate(g, nameLine, cx, nameY);
 		if (kind.equals("tcolor")) {
-			com.google.gson.JsonObject st = Progress.state();
-			String t = st != null && st.has("title") && !st.get("title").getAsString().isEmpty() ? st.get("title").getAsString() : "t_miner";
+			com.google.gson.JsonObject ps = Progress.state();
+			String t = ps != null && ps.has("title") && !ps.get("title").getAsString().isEmpty() ? ps.get("title").getAsString() : "t_miner";
 			plate(g, Shop.titleText(t, id), cx, nameY - 12);
 		}
 		if (kind.equals("title")) {
