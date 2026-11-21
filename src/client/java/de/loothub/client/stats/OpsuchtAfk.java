@@ -22,6 +22,9 @@ public final class OpsuchtAfk {
 	private static long lastTabCheck;
 	private static boolean byTab;
 	private static boolean logged;
+	/** Position/Blickrichtung beim AFK-Wechsel: bewegt man sich danach, ist man nicht mehr AFK. */
+	private static net.minecraft.world.phys.Vec3 afkPos;
+	private static float afkYaw, afkPitch;
 
 	private OpsuchtAfk() {
 	}
@@ -43,12 +46,31 @@ public final class OpsuchtAfk {
 		}
 		if (YOU_AFK.matcher(text).find()) {
 			byMessage = !NOT_ANYMORE.matcher(text).find();
+			Minecraft mc = Minecraft.getInstance();
+			afkPos = mc.player == null ? null : mc.player.position();
+			if (mc.player != null) {
+				afkYaw = mc.player.getYRot();
+				afkPitch = mc.player.getXRot();
+			}
 		}
 	}
 
 	/** Gilt man laut OPSUCHT gerade als AFK? */
 	public static boolean afk(Minecraft mc) {
 		long now = System.currentTimeMillis();
+		// Die „nicht mehr AFK“-Meldung enthält nicht immer „AFK“ (oder ein Chat-Text hat die Erkennung ausgelöst):
+		// Sobald man sich bewegt oder umschaut, gilt man wieder als aktiv.
+		if (byMessage && mc.player != null) {
+			if (afkPos == null) {
+				afkPos = mc.player.position();
+				afkYaw = mc.player.getYRot();
+				afkPitch = mc.player.getXRot();
+			} else if (mc.player.position().distanceToSqr(afkPos) > 0.25 || Math.abs(mc.player.getYRot() - afkYaw) > 2
+					|| Math.abs(mc.player.getXRot() - afkPitch) > 2) {
+				byMessage = false;
+				afkPos = null;
+			}
+		}
 		if (now - lastTabCheck > 2000) {
 			lastTabCheck = now;
 			byTab = false;
@@ -67,5 +89,6 @@ public final class OpsuchtAfk {
 	public static void reset() {
 		byMessage = false;
 		byTab = false;
+		afkPos = null;
 	}
 }
