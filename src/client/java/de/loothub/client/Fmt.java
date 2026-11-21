@@ -60,30 +60,47 @@ public final class Fmt {
 	public static String duration(long ms) {
 		long minutes = ms / 60_000;
 		if (minutes < 1) {
-			return "< 1 Min.";
+			return "< 1 " + min();
 		}
 		if (minutes < 60) {
-			return minutes + " Min.";
+			return minutes + " " + min();
 		}
 		long hours = minutes / 60;
 		long rest = minutes % 60;
 		if (hours >= 100) {
-			return "> 99 Std.";
+			return "> 99 " + hr();
 		}
-		return rest == 0 || hours >= 10 ? hours + " Std." : hours + " Std. " + rest + " Min.";
+		return rest == 0 || hours >= 10 ? hours + " " + hr() : hours + " " + hr() + " " + rest + " " + min();
+	}
+
+	/** Spiel auf Deutsch? Dann „Std./Min./T“, sonst „h/min/d“. */
+	private static boolean german() {
+		try {
+			return net.minecraft.client.Minecraft.getInstance().options.languageCode.startsWith("de");
+		} catch (RuntimeException e) {
+			return true;
+		}
+	}
+
+	private static String hr() {
+		return german() ? "Std." : "h";
+	}
+
+	private static String min() {
+		return german() ? "Min." : "min";
 	}
 
 	/** Lange Dauer: "45 Min.", "12 Std. 5 Min.", "3 T 4 Std." */
 	public static String longDuration(long ms) {
 		long minutes = ms / 60_000;
 		if (minutes < 60) {
-			return minutes + " Min.";
+			return minutes + " " + min();
 		}
 		long hours = minutes / 60;
 		if (hours < 24) {
-			return hours + " Std. " + (minutes % 60) + " Min.";
+			return hours + " " + hr() + " " + (minutes % 60) + " " + min();
 		}
-		return WHOLE.get().format(hours / 24) + " T " + (hours % 24) + " Std.";
+		return WHOLE.get().format(hours / 24) + (german() ? " T " : " d ") + (hours % 24) + " " + hr();
 	}
 
 	/** Zahl mit höchstens einer Nachkommastelle, ohne Einheit: 12,4 */

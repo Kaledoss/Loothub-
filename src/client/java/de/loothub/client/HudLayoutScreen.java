@@ -58,7 +58,7 @@ public class HudLayoutScreen extends Screen {
 		huds.add(new Hud("loothub.hud.music", () -> new int[]{170, 34}, () -> c.musicX, () -> c.musicY,
 				v -> c.musicX = v, v -> c.musicY = v, 4, false, 0.0, 1.0, () -> c.musicEnabled));
 		if (de.loothub.client.bau.Build.present()) {
-			huds.add(new Hud("loothub.hud.build", () -> new int[]{de.loothub.client.bau.BuildHud.W,
+			huds.add(new Hud("loothub.hud.build", () -> new int[]{de.loothub.client.bau.BuildHud.width(),
 					de.loothub.client.bau.BuildHud.H}, () -> c.buildHudX, () -> c.buildHudY, v -> c.buildHudX = v,
 					v -> c.buildHudY = v, 4, false, 0.5, 0.1, () -> c.buildHud));
 			huds.add(new Hud("loothub.hud.build_warn", de.loothub.client.bau.EasyPlaceWarning::sampleSize, () -> c.buildWarnX,
