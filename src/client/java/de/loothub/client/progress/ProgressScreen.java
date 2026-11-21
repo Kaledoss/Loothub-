@@ -14,6 +14,7 @@ import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.input.MouseButtonEvent;
 import net.minecraft.network.chat.Component;
+import net.minecraft.world.item.ItemStack;
 
 import de.loothub.client.ConfirmScreen;
 import de.loothub.client.Fmt;
@@ -44,6 +45,10 @@ public class ProgressScreen extends LoothubScreen {
 	/** Offene Auswahlliste: 0 keine, 1 Rangliste, 2 Zeitraum. */
 	private int open;
 	private int scroll;
+	/** Unterreiter der Erfolge: feats = Heldentaten, b = Blöcke, m = Mobs. */
+	private static String achSub = "feats";
+	private static String searchText = "";
+	private net.minecraft.client.gui.components.EditBox search;
 	/** Aufgeklappte Erfolge (zeigen alle Stufen). */
 	private final Set<String> expanded = new HashSet<>();
 	private int listTop;
@@ -93,6 +98,42 @@ public class ProgressScreen extends LoothubScreen {
 			initAdmin();
 			listTop = ct + 24;
 			return;
+		}
+		search = null;
+		if (tab == Tab.ACH) {
+			int bx = cr;
+			String[] subs = {"m", "b", "feats"};
+			for (String sub : subs) {
+				Component label = Component.translatable("loothub.lh.ach.sub." + switch (sub) {
+					case "b" -> "blocks";
+					case "m" -> "mobs";
+					default -> "feats";
+				});
+				int w = font.width(label) + 14;
+				bx -= w;
+				Button b = addRenderableWidget(Button.builder(label, btn -> {
+					achSub = sub;
+					scroll = 0;
+					rebuildWidgets();
+				}).bounds(bx, ct, w, 16).build());
+				b.active = !achSub.equals(sub);
+				bx -= 4;
+			}
+			if (!achSub.equals("feats")) {
+				search = addRenderableWidget(new net.minecraft.client.gui.components.EditBox(font, cr - 160, ct + 20, 160, 14,
+						Component.translatable("loothub.lh.ach.search")));
+				search.setHint(Component.translatable("loothub.lh.ach.search").withStyle(ChatFormatting.DARK_GRAY));
+				search.setMaxLength(40);
+				search.setValue(searchText);
+				search.setResponder(t -> {
+					searchText = t;
+					scroll = 0;
+				});
+				boardButton = null;
+				periodButton = null;
+				listTop = ct + 40;
+				return;
+			}
 		}
 		if (tab == Tab.BOARD) {
 			periodButton = addRenderableWidget(Button.builder(periodLabel(), b -> open = open == 2 ? 0 : 2)
@@ -382,6 +423,14 @@ public class ProgressScreen extends LoothubScreen {
 	}
 
 	private int drawAch(GuiGraphics g, JsonObject s, int y) {
+		return switch (achSub) {
+			case "b", "m" -> drawCollection(g, s, achSub, y);
+			default -> drawFeats(g, s, y);
+		};
+	}
+
+	/** Heldentaten: die großen Erfolge mit 30 Stufen, epischem Namen und Rang. */
+	private int drawFeats(GuiGraphics g, JsonObject s, int y) {
 		JsonObject cat = s.getAsJsonObject("cat");
 		JsonObject ach = cat.getAsJsonObject("ach");
 		JsonArray tierPoints = cat.getAsJsonArray("tierPoints");
@@ -392,7 +441,7 @@ public class ProgressScreen extends LoothubScreen {
 			total += ach.getAsJsonArray(stat).size();
 			reached += mine.has(stat) ? mine.get(stat).getAsInt() : 0;
 		}
-		y = section(g, Component.translatable("loothub.lh.ach.title"),
+		y = section(g, Component.translatable("loothub.lh.ach.sub.feats"),
 				Component.translatable("loothub.lh.ach.count", reached, total), y);
 		for (String stat : ach.keySet()) {
 			JsonArray tiers = ach.getAsJsonArray(stat);
@@ -403,58 +452,134 @@ public class ProgressScreen extends LoothubScreen {
 				case "login" -> s.getAsJsonObject("login").get("best").getAsLong();
 				default -> tot.has(stat) ? tot.get(stat).getAsLong() : 0;
 			};
-			boolean isOpen = expanded.contains(stat);
-			g.drawString(font, Component.literal(isOpen ? "▾ " : "▸ ").append(Texts.stat(stat)), cl + 2, y + 2,
-					tier > 0 ? TEXT : MUTED, false);
-			String key = stat;
-			hits.add(new Hit(cl, y, cw, 20, () -> {
-				if (!expanded.remove(key)) {
-					expanded.add(key);
-				}
-			}, Component.translatable(isOpen ? "loothub.lh.ach.collapse" : "loothub.lh.ach.expand")));
-			// Stufe als „★ 12/30“
-			int starsX = cl + Math.min(170, cw / 3);
-			g.drawString(font, Component.translatable("loothub.lh.ach.tier", tier, tiers.size()), starsX, y + 2,
-					tier > 0 ? 0xFFF2C14E : FAINT, false);
-			String unit = stat;
+			y = achRow(g, stat, Texts.achName(stat), Texts.stat(stat), ItemStack.EMPTY, stat, v, tiers, tierPoints, tier, y);
+		}
+		return y;
+	}
+
+	/** Sammlung: eigene Erfolge je Block bzw. Mob (15 Stufen); Begonnene zuerst, dann alphabetisch. */
+	private int drawCollection(GuiGraphics g, JsonObject s, String kind, int y) {
+		JsonObject cat = s.getAsJsonObject("cat");
+		if (!cat.has("colTiers")) {
+			g.drawString(font, Component.translatable("loothub.lh.ach.col.old"), cl + 8, y + 4, MUTED, false);
+			return y + 20;
+		}
+		JsonArray tiers = cat.getAsJsonObject("colTiers").getAsJsonArray(kind);
+		JsonArray points = cat.getAsJsonArray("colPoints");
+		JsonObject counts = s.has("col") ? s.getAsJsonObject("col").getAsJsonObject(kind) : new JsonObject();
+		JsonObject got = s.has("cach") ? s.getAsJsonObject("cach").getAsJsonObject(kind) : new JsonObject();
+		List<Collection.Entry> all = kind.equals("m") ? Collection.mobs() : Collection.blocks();
+		int reached = 0;
+		for (Collection.Entry e : all) {
+			reached += got.has(e.id()) ? got.get(e.id()).getAsInt() : 0;
+		}
+		y = section(g, Collection.title(kind), Component.translatable("loothub.lh.ach.count", Fmt.whole(reached),
+				Fmt.whole((long) all.size() * tiers.size())), y);
+		String q = search == null ? "" : search.getValue().strip().toLowerCase(java.util.Locale.ROOT);
+		List<Collection.Entry> list = new ArrayList<>();
+		for (Collection.Entry e : all) {
+			if (q.isEmpty() || e.name().toLowerCase(java.util.Locale.ROOT).contains(q) || e.id().contains(q)) {
+				list.add(e);
+			}
+		}
+		java.util.function.ToLongFunction<Collection.Entry> count = e -> counts.has(e.id()) ? counts.get(e.id()).getAsLong() : 0;
+		// Begonnene nach oben (meiste zuerst), danach die noch unberührten alphabetisch
+		list.sort((a, b) -> Long.compare(count.applyAsLong(b), count.applyAsLong(a)));
+		if (list.isEmpty()) {
+			g.drawString(font, Component.translatable("loothub.lh.ach.col.none"), cl + 8, y + 4, MUTED, false);
+			return y + 20;
+		}
+		for (Collection.Entry e : list) {
+			int tier = got.has(e.id()) ? got.get(e.id()).getAsInt() : 0;
+			y = achRow(g, kind + ":" + e.id(), Component.literal(e.name()), null, e.icon(), kind, count.applyAsLong(e), tiers, points,
+					tier, y);
+		}
+		return y;
+	}
+
+	/**
+	 * Eine Erfolgszeile: Name im Glanz des Rangs, darunter die Beschreibung, rechts Rang, Fortschritt und Belohnung der nächsten
+	 * Stufe. Klick klappt alle Stufen auf.
+	 */
+	private int achRow(GuiGraphics g, String key, Component name, Component desc, ItemStack icon, String unit, long v,
+			JsonArray tiers, JsonArray points, int tier, int y) {
+		int max = tiers.size();
+		int h = desc != null ? 30 : 24;
+		boolean isOpen = expanded.contains(key);
+		boolean visible = y + h > listTop && y < cb; // Zeilen außerhalb nur mitzählen, nicht zeichnen
+		if (visible) {
+			int rc = Texts.rankColor(tier, max);
+			if (tier >= max) {
+				g.fill(cl, y, cr, y + h - 2, 0x22F2C14E); // legendär: goldener Schimmer
+			}
+			int x = cl + 2;
+			g.drawString(font, isOpen ? "▾" : "▸", x, y + 2, MUTED, false);
+			x += 10;
+			if (!icon.isEmpty()) {
+				g.renderItem(icon, x, y + (h - 2 - 16) / 2 - 1);
+				x += 20;
+			}
+			// Medaille in der Farbe des Rangs
+			g.drawString(font, tier > 0 ? "✦" : "✧", x, y + 2, rc, false);
+			g.drawString(font, name, x + 10, y + 2, tier > 0 ? TEXT : MUTED, false);
+			if (desc != null) {
+				g.drawString(font, desc, x + 10, y + 12, FAINT, false);
+			}
+			Component rank = Texts.rank(tier, max);
+			int rx = cl + Math.min(240, cw / 3);
+			g.drawString(font, rank, rx, y + 2, rc, false);
+			g.drawString(font, Component.translatable("loothub.lh.ach.tier", tier, max), rx, desc != null ? y + 12 : y + 11, FAINT,
+					false);
 			String right;
 			double f;
-			if (tier >= tiers.size()) {
+			if (tier >= max) {
 				right = Component.translatable("loothub.lh.ach.max", Texts.value(unit, v)).getString();
 				f = 1;
 			} else {
 				long next = tiers.get(tier).getAsLong();
 				long prev = tier == 0 ? 0 : tiers.get(tier - 1).getAsLong();
-				int p = tierPoints.get(Math.min(tier, tierPoints.size() - 1)).getAsInt();
+				int p = points.get(Math.min(tier, points.size() - 1)).getAsInt();
 				right = Texts.value(unit, v) + " / " + Texts.value(unit, next) + "  "
 						+ Component.translatable("loothub.lh.toast.points", p).getString();
 				f = (v - prev) / (double) Math.max(1, next - prev);
 			}
 			g.drawString(font, right, cr - font.width(right), y + 2, MUTED, false);
-			bar(g, cl + 2, y + 13, cw - 4, f, tier >= tiers.size() ? 0xFF55E06A : 0xFFF2C14E);
-			y += 22;
-			if (isOpen) {
-				y = drawTiers(g, unit, tiers, tierPoints, tier, y);
+			if (tier < max) {
+				Component nextRank = Component.translatable("loothub.lh.ach.next", Texts.rank(tier + 1, max));
+				g.drawString(font, nextRank, cr - font.width(nextRank), desc != null ? y + 12 : y + 11, FAINT, false);
 			}
+			bar(g, cl + 2, y + h - 6, cw - 4, f, tier >= max ? rc : 0xFFF2C14E);
+			hits.add(new Hit(cl, y, cw, h - 2, () -> {
+				if (!expanded.remove(key)) {
+					expanded.add(key);
+				}
+			}, Component.translatable(isOpen ? "loothub.lh.ach.collapse" : "loothub.lh.ach.expand")));
+		}
+		y += h;
+		if (isOpen) {
+			y = drawTiers(g, unit, tiers, points, tier, y);
 		}
 		return y;
 	}
 
-	/** Alle Stufen eines Erfolgs als Raster: geschafft (grün ✔), als Nächstes (gold ★), noch offen (blass). */
+	/** Alle Stufen eines Erfolgs als Raster: geschafft (✔ in Rangfarbe), als Nächstes (★), noch offen (blass). */
 	private int drawTiers(GuiGraphics g, String unit, JsonArray tiers, JsonArray tierPoints, int tier, int y) {
-		int cellW = 150, cellH = 12;
+		int max = tiers.size();
+		int cellW = 190, cellH = 12;
 		int cols = Math.max(1, (cw - 12) / cellW);
-		int rows = (tiers.size() + cols - 1) / cols;
+		int rows = (max + cols - 1) / cols;
 		g.fill(cl + 2, y - 4, cr - 2, y + rows * cellH + 2, 0x40000000);
-		for (int k = 0; k < tiers.size(); k++) {
+		for (int k = 0; k < max; k++) {
 			int col = k / rows, row = k % rows; // spaltenweise, damit die Reihenfolge von oben nach unten läuft
 			int x = cl + 8 + col * cellW, cy = y + row * cellH;
 			boolean done = k < tier, next = k == tier;
 			int p = tierPoints.get(Math.min(k, tierPoints.size() - 1)).getAsInt();
 			String mark = done ? "✔" : next ? "★" : "·";
-			String nr = (k + 1 < 10 ? " " : "") + (k + 1) + ". ";
-			int color = done ? 0xFF55E06A : next ? 0xFFF2C14E : FAINT;
-			g.drawString(font, mark + " " + nr + Texts.value(unit, tiers.get(k).getAsLong()), x, cy, color, false);
+			int rc = Texts.rankColor(k + 1, max);
+			g.drawString(font, mark, x, cy, done ? 0xFF55E06A : next ? 0xFFF2C14E : FAINT, false);
+			Component rank = Texts.rank(k + 1, max);
+			g.drawString(font, rank, x + 10, cy, done || next ? rc : FAINT, false);
+			g.drawString(font, Texts.value(unit, tiers.get(k).getAsLong()), x + 90, cy, done ? TEXT : next ? MUTED : FAINT, false);
 			String pts = Component.translatable("loothub.lh.toast.points", p).getString();
 			g.drawString(font, pts, x + cellW - 12 - font.width(pts), cy, done ? 0xFF55E06A : next ? MUTED : FAINT, false);
 		}

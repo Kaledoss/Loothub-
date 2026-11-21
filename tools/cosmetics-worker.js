@@ -648,7 +648,7 @@ function lhCommunity(week) {
 }
 
 function lhCatalog() {
-	return { ach: LH_ACH, tierPoints: LH_TIER_POINTS, shop: LH_SHOP, boards: LH_BOARDS,
+	return { ach: LH_ACH, tierPoints: LH_TIER_POINTS, colTiers: LH_COL_TIERS, colPoints: LH_COL_POINTS, shop: LH_SHOP, boards: LH_BOARDS,
 		commReward: LH_COMM_REWARD };
 }
 
@@ -657,6 +657,58 @@ function lhTier(stat, v) {
 	let n = 0;
 	while (n < t.length && v >= t[n]) n++;
 	return n;
+}
+
+// Sammlung: je abbaubarem Block (b) und je Mob (m) eigene Erfolge mit 15 Stufen und kleineren Belohnungen
+const LH_COL_TIERS = {
+	b: [50, 100, 250, 500, 1000, 2500, 5000, 10000, 25000, 50000, 100000, 250000, 500000, 1000000, 2500000],
+	m: [5, 10, 25, 50, 100, 250, 500, 1000, 2500, 5000, 10000, 25000, 50000, 100000, 250000],
+};
+const LH_COL_POINTS = [1, 1, 2, 2, 3, 3, 4, 5, 6, 8, 10, 12, 15, 20, 25];
+const LH_COL_SRC = { b: "blocks", m: "mobs" }; // Zuwachs je Block/Mob zusammen höchstens so viel wie der Gesamtzähler
+const LH_COL_MAX = 1500; // höchstens so viele verschiedene Blöcke bzw. Mobs je Spieler
+const LH_COL_ID = /^[a-z0-9_]{1,48}$/;
+
+function lhColTier(kind, v) {
+	const t = LH_COL_TIERS[kind];
+	let n = 0;
+	while (n < t.length && v >= t[n]) n++;
+	return n;
+}
+
+/** Zähler je Block und je Mob übernehmen (nach lhAbsorb). Der Zuwachs wird auf den Zuwachs des Gesamtzählers gekappt. */
+function lhAbsorbCol(d, reported) {
+	const rep = reported && typeof reported === "object" ? reported : {};
+	d.colFirst = false;
+	if (!rep.b && !rep.m) return; // ältere Mod-Version ohne Sammlung: nichts anlegen, damit später die Historie zählt
+	// erster Abgleich der Sammlung (auch bei Spielern, die schon vorher dabei waren): alte Statistik übernehmen
+	const first = d.colFirst = !d.craw;
+	d.craw = d.craw || { b: {}, m: {} };
+	d.col = d.col || { b: {}, m: {} };
+	for (const kind of ["b", "m"]) {
+		const src = rep[kind] && typeof rep[kind] === "object" ? rep[kind] : {};
+		const raw = d.craw[kind] || (d.craw[kind] = {});
+		const col = d.col[kind] || (d.col[kind] = {});
+		const deltas = {};
+		let sum = 0, known = Object.keys(col).length;
+		for (const [id, x] of Object.entries(src)) {
+			if (!LH_COL_ID.test(id)) continue;
+			let v = Number(x);
+			if (!Number.isFinite(v) || v < 0) continue;
+			v = Math.floor(v);
+			if (!(id in col)) {
+				if (known >= LH_COL_MAX) continue;
+				known++;
+			}
+			const prev = raw[id];
+			const delta = first || prev === undefined ? v : v >= prev ? v - prev : v;
+			raw[id] = v;
+			if (delta > 0) { deltas[id] = delta; sum += delta; }
+		}
+		const budget = first ? LH_FIRST_MAX[LH_COL_SRC[kind]] : Math.ceil((d.delta[LH_COL_SRC[kind]] || 0) * 1.1) + 20;
+		const f = sum > budget ? budget / sum : 1;
+		for (const [id, delta] of Object.entries(deltas)) col[id] = (col[id] || 0) + Math.floor(delta * f);
+	}
 }
 
 /** Gemeldete Summen übernehmen: Zuwachs je Zähler, gekappt; nach einem Zurücksetzen der Statistik zählt der neue Wert. */
@@ -795,6 +847,27 @@ async function lhProgress(db, d, now) {
 		}
 		if (t > had) d.ach[stat] = t;
 	}
+
+	// Sammlung (Blöcke und Mobs): kleine Belohnungen, bei vielen Stufen auf einmal nur eine Sammelmeldung
+	d.cach = d.cach || { b: {}, m: {} };
+	const colNews = [];
+	let colSum = 0;
+	for (const kind of ["b", "m"]) {
+		const got = d.cach[kind] || (d.cach[kind] = {});
+		for (const [id, v] of Object.entries((d.col && d.col[kind]) || {})) {
+			const t = lhColTier(kind, v), had = got[id] || 0;
+			for (let k = had; k < t; k++) {
+				const full = LH_COL_POINTS[k];
+				const p = d.colFirst ? Math.round(full * LH_HISTORY_SHARE) : full;
+				colSum += p;
+				colNews.push({ k: "col", c: kind, id, tier: k + 1, p });
+			}
+			if (t > had) got[id] = t;
+		}
+	}
+	earned += colSum;
+	if (colNews.length > 3) news.push({ k: "col_many", n: colNews.length, p: colSum });
+	else news.push(...colNews);
 	return { earned, news, commSum, cq };
 }
 
@@ -805,6 +878,8 @@ function lhView(row, d, extra, now) {
 	return {
 		now, points: row.points, balance: row.points - row.spent, title: row.title, badge: row.badge,
 		tot: lhCopy(d.tot), ach: d.ach, quests: d.quests,
+		col: { b: (d.col && d.col.b) || {}, m: (d.col && d.col.m) || {} },
+		cach: { b: (d.cach && d.cach.b) || {}, m: (d.cach && d.cach.m) || {} },
 		dquests: d.dq || 0, wquests: d.wq || 0, jobday: Math.floor((d.jd && d.jd.best) || 0),
 		login: { cur: (d.login || {}).cur || 0, best: (d.login || {}).best || 0, freeze: d.freeze || 0 },
 		slot: { ends: lhSlotEnd(slot), list: q4 },
@@ -926,6 +1001,7 @@ async function lhHandle(request, env) {
 	if (p.op === "sync") {
 		if (!p.stats || typeof p.stats !== "object") return json({ error: "bad payload" }, 400);
 		lhAbsorb(d, p.stats, now);
+		lhAbsorbCol(d, p.col);
 		extra = await lhProgress(db, d, now);
 		row.points = (row.points || 0) + extra.earned;
 	} else {

@@ -363,6 +363,7 @@ public final class Progress {
 		JsonObject p = new JsonObject();
 		p.addProperty("op", "sync");
 		p.add("stats", counters());
+		p.add("col", Collection.counters(StatsStore.sum(StatsStore.Range.TOTAL)));
 		send(p, null);
 	}
 
@@ -567,7 +568,10 @@ public final class Progress {
 
 	// ------------------------------------------------------------------ Einblendungen
 
-	private record Toast(String title, String sub, int color) {
+	private record Toast(String title, String sub, int color, boolean epic) {
+		Toast(String title, String sub, int color) {
+			this(title, sub, color, false);
+		}
 	}
 
 	private static final Deque<Toast> TOASTS = new ArrayDeque<>();
@@ -616,9 +620,28 @@ public final class Progress {
 						Component.translatable("loothub.lh.toast.freeze_used.sub", n.get("n").getAsInt()).getString(), 0x7FB3FF));
 				case "comm" -> TOASTS.add(new Toast(Component.translatable("loothub.lh.toast.comm").getString(),
 						Texts.stat(stat).getString() + " · " + plus, 0x6BD5FF));
-				case "ach" -> TOASTS.add(new Toast(
-						Component.translatable("loothub.lh.toast.ach", Texts.stat(stat), n.get("tier").getAsInt()).getString(),
-						plus, 0xF2C14E));
+				case "ach" -> {
+					// Heldentat: epischer Name, erreichter Rang und Fanfare
+					int tier = n.get("tier").getAsInt();
+					int max = 30;
+					try {
+						max = s.getAsJsonObject("cat").getAsJsonObject("ach").getAsJsonArray(stat).size();
+					} catch (RuntimeException ignored) {
+					}
+					TOASTS.add(new Toast(Component.translatable("loothub.lh.toast.ach", Texts.achName(stat)).getString(),
+							Component.translatable("loothub.lh.toast.ach.sub", Texts.rank(tier, max), plus).getString(),
+							Texts.rankColor(tier, max) & 0xFFFFFF, true));
+				}
+				case "col" -> {
+					String c = n.get("c").getAsString();
+					int tier = n.get("tier").getAsInt();
+					TOASTS.add(new Toast(Component.translatable("loothub.lh.toast.col." + c,
+							Collection.name(c, n.get("id").getAsString())).getString(),
+							Component.translatable("loothub.lh.toast.ach.sub", Texts.rank(tier, 15), plus).getString(),
+							Texts.rankColor(tier, 15) & 0xFFFFFF, tier >= 15));
+				}
+				case "col_many" -> TOASTS.add(new Toast(
+						Component.translatable("loothub.lh.toast.col_many", n.get("n").getAsInt()).getString(), plus, 0xF2C14E));
 				default -> {
 				}
 			}
@@ -634,7 +657,9 @@ public final class Progress {
 		if (current == null && !TOASTS.isEmpty()) {
 			current = TOASTS.poll();
 			since = now;
-			if (mc.player != null) {
+			if (mc.player != null && current.epic()) {
+				mc.player.playSound(net.minecraft.sounds.SoundEvents.UI_TOAST_CHALLENGE_COMPLETE, 0.45F, 1.0F); // Fanfare
+			} else if (mc.player != null) {
 				mc.player.playSound(net.minecraft.sounds.SoundEvents.PLAYER_LEVELUP, 0.35F, 1.4F);
 			}
 		}
