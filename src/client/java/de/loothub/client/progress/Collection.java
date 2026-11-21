@@ -33,6 +33,8 @@ final class Collection {
 	/** Mobs, die Minecraft unter „Sonstiges“ führt, die man aber trotzdem besiegen kann. */
 	private static final Set<String> EXTRA_MOBS = Set.of("iron_golem", "snow_golem", "villager", "wandering_trader",
 			"copper_golem");
+	/** Mobs ohne eigenen Erfolg (Boss bzw. im Überleben nicht anzutreffen). */
+	private static final Set<String> NO_MOBS = Set.of("wither", "illusioner", "giant");
 	/** Blöcke, die man im Überleben nicht sinnvoll abbaut. */
 	private static final Set<String> NO_BLOCKS = Set.of("light", "structure_void", "barrier", "jigsaw", "structure_block",
 			"command_block", "chain_command_block", "repeating_command_block", "test_block", "test_instance_block");
@@ -118,7 +120,7 @@ final class Collection {
 			for (EntityType<?> t : BuiltInRegistries.ENTITY_TYPE) {
 				Identifier id = BuiltInRegistries.ENTITY_TYPE.getKey(t);
 				String path = id.getPath();
-				if (!"minecraft".equals(id.getNamespace())
+				if (!"minecraft".equals(id.getNamespace()) || NO_MOBS.contains(path)
 						|| (t.getCategory() == MobCategory.MISC && !EXTRA_MOBS.contains(path))) {
 					continue;
 				}
@@ -153,7 +155,10 @@ final class Collection {
 					b.merge(key, v, Long::sum);
 				}
 			} else if (k.startsWith("killed.minecraft:")) {
-				m.merge(k.substring("killed.minecraft:".length()), v, Long::sum); // „killed.~Name“ = Custom-Mob, zählt nicht
+				String mob = k.substring("killed.minecraft:".length()); // „killed.~Name“ = Custom-Mob, zählt nicht
+				if (!NO_MOBS.contains(mob)) {
+					m.merge(mob, v, Long::sum);
+				}
 			}
 		}
 		JsonObject o = new JsonObject(), ob = new JsonObject(), om = new JsonObject();
