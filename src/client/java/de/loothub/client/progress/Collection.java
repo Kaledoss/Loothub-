@@ -63,6 +63,13 @@ final class Collection {
 				|| id.startsWith("smooth_") || id.startsWith("cut_") || id.startsWith("stripped_")) {
 			return true;
 		}
+		// Betten, Laternen, Köpfe, Banner, Lagerfeuer, Glocken, Kerzen, Kisten, Eimer, Harz, Ketten, glasierte Keramik
+		if (id.endsWith("_bed") || id.contains("lantern") || id.endsWith("_head") || id.endsWith("_skull") || id.endsWith("_banner")
+				|| id.endsWith("campfire") || id.equals("bell") || id.equals("candle") || id.endsWith("_candle") || id.endsWith("chest")
+				|| id.endsWith("shulker_box") || id.endsWith("_bucket") || id.equals("resin_clump") || id.equals("chain")
+				|| id.endsWith("_chain") || id.equals("lightning_rod") || id.contains("glazed_terracotta")) {
+			return true;
+		}
 		// Kupfer: nur die Erze zählen
 		if (id.contains("copper") && !id.endsWith("copper_ore")) {
 			return true;
