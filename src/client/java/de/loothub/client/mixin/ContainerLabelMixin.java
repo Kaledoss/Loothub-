@@ -36,7 +36,16 @@ public abstract class ContainerLabelMixin {
 				|| self instanceof net.minecraft.client.gui.screens.inventory.StonecutterScreen
 				|| self instanceof net.minecraft.client.gui.screens.inventory.HopperScreen
 				|| self instanceof net.minecraft.client.gui.screens.inventory.DispenserScreen
-				|| self instanceof net.minecraft.client.gui.screens.inventory.AbstractFurnaceScreen<?>;
+				|| self instanceof net.minecraft.client.gui.screens.inventory.AbstractFurnaceScreen<?>
+				|| self instanceof net.minecraft.client.gui.screens.inventory.BrewingStandScreen
+				|| self instanceof net.minecraft.client.gui.screens.inventory.EnchantmentScreen
+				|| self instanceof net.minecraft.client.gui.screens.inventory.GrindstoneScreen
+				|| self instanceof net.minecraft.client.gui.screens.inventory.SmithingScreen
+				|| self instanceof net.minecraft.client.gui.screens.inventory.LoomScreen
+				|| self instanceof net.minecraft.client.gui.screens.inventory.CartographyTableScreen
+				|| self instanceof net.minecraft.client.gui.screens.inventory.HorseInventoryScreen
+				|| self instanceof net.minecraft.client.gui.screens.inventory.BeaconScreen
+				|| self instanceof net.minecraft.client.gui.screens.inventory.MerchantScreen;
 		return dark && (color & 0xFFFFFF) == 0x404040 ? LIGHT : color;
 	}
 
