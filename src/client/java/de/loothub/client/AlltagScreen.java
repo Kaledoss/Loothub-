@@ -160,6 +160,16 @@ public class AlltagScreen extends LoothubScreen {
 				}).bounds(cr - 20, ry + 2, 18, 16).build());
 				continue;
 			}
+			// eigene Taste: anklicken, dann Taste drücken (Esc = entfernen)
+			Component keyLabel = binding == t ? Component.literal("…")
+					: t.key > 0 ? Component.literal(font.plainSubstrByWidth(
+							com.mojang.blaze3d.platform.InputConstants.Type.KEYSYM.getOrCreate(t.key).getDisplayName().getString(), 22))
+					: Component.literal("⌨");
+			addRenderableWidget(Button.builder(keyLabel, b -> {
+				binding = binding == t ? null : t;
+				rebuildWidgets();
+			}).bounds(cr - 132, ry + 2, 26, 16).tooltip(net.minecraft.client.gui.components.Tooltip.create(
+					Component.translatable("loothub.alltag.key.tip"))).build());
 			// Pause (nur Countdown-Timer, die gerade laufen)
 			if (!t.daily() && t.enabled && t.nextAt > 0) {
 				addRenderableWidget(Button.builder(Component.literal(t.paused() ? "▶" : "⏸"), b -> {
@@ -227,6 +237,21 @@ public class AlltagScreen extends LoothubScreen {
 		addTimer(t);
 	}
 
+	/** Timer, dem gerade eine Taste zugewiesen wird. */
+	private Timers.Timer binding;
+
+	@Override
+	public boolean keyPressed(net.minecraft.client.input.KeyEvent e) {
+		if (binding != null) {
+			binding.key = e.key() == org.lwjgl.glfw.GLFW.GLFW_KEY_ESCAPE ? 0 : e.key();
+			binding = null;
+			WidgetConfig.get().save();
+			rebuildWidgets();
+			return true;
+		}
+		return super.keyPressed(e);
+	}
+
 	private void addTimer(Timers.Timer t) {
 		Timers.start(t);
 		Timers.list().add(t);
@@ -283,7 +308,7 @@ public class AlltagScreen extends LoothubScreen {
 			g.fill(cl, ry, cr, ry + ROW_H - 2, 0x18FFFFFF);
 			g.fill(cl, ry, cl + 2, ry + ROW_H - 2, t.isAuction() ? GOLD : t.enabled ? GREEN : FAINT);
 			int nx = cl + 26;
-			String title = font.plainSubstrByWidth(t.name, Math.max(40, cr - 150 - nx));
+			String title = font.plainSubstrByWidth(t.name, Math.max(40, cr - (t.isAuction() ? 150 : 190) - nx));
 			g.drawString(font, title, nx, ry + 2, TEXT, false);
 			if (t.isAuction()) {
 				String info = Component.translatable("loothub.alltag.info.auction").getString()
@@ -300,7 +325,7 @@ public class AlltagScreen extends LoothubScreen {
 					: Component.translatable(t.repeat ? "loothub.alltag.info.repeat" : "loothub.alltag.info.once", t.minutes).getString();
 			g.drawString(font, info, nx, ry + 11, FAINT, false);
 			String left = t.enabled && t.nextAt > 0 ? Timers.format(Timers.left(t)) + (t.paused() ? " ⏸" : "") : "–";
-			g.drawString(font, left, cr - 112 - font.width(left), ry + 6, t.enabled && !t.paused() ? GOLD : FAINT, false);
+			g.drawString(font, left, cr - 136 - font.width(left), ry + 6, t.enabled && !t.paused() ? GOLD : FAINT, false);
 		}
 		if (System.currentTimeMillis() < limitUntil) {
 			Component m = Component.translatable("loothub.alltag.shown.limit", Timers.MAX_SHOWN);

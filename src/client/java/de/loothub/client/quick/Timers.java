@@ -42,6 +42,9 @@ public final class Timers {
 		/** Pausiert: verbleibende Zeit in ms (0 = läuft). */
 		public long pausedLeft = 0;
 
+		/** Eigene Taste (GLFW-Code, 0 = keine): starten bzw. pausieren/weiter. */
+		public int key = 0;
+
 		public boolean paused() {
 			return pausedLeft > 0;
 		}
@@ -91,7 +94,10 @@ public final class Timers {
 	}
 
 	public static void register() {
-		ClientTickEvents.END_CLIENT_TICK.register(mc -> tick());
+		ClientTickEvents.END_CLIENT_TICK.register(mc -> {
+			tick();
+			keys(mc);
+		});
 	}
 
 	public static List<Timer> list() {
@@ -145,6 +151,47 @@ public final class Timers {
 			return LocalTime.of(Mth.clamp(Integer.parseInt(p[0]), 0, 23), p.length > 1 ? Mth.clamp(Integer.parseInt(p[1]), 0, 59) : 0);
 		} catch (RuntimeException e) {
 			return LocalTime.MIDNIGHT;
+		}
+	}
+
+	private static final java.util.Set<Integer> HELD = new java.util.HashSet<>();
+
+	/** Timer-Tasten: nur im Spiel (ohne offenes Menü). */
+	private static void keys(net.minecraft.client.Minecraft mc) {
+		if (mc.player == null) {
+			HELD.clear();
+			return;
+		}
+		boolean save = false;
+		for (Timer t : list()) {
+			if (t.key <= 0 || t.isAuction()) {
+				continue;
+			}
+			boolean down = mc.screen == null && com.mojang.blaze3d.platform.InputConstants.isKeyDown(mc.getWindow(), t.key);
+			if (!down) {
+				HELD.remove(t.key);
+				continue;
+			}
+			if (!HELD.add(t.key)) {
+				continue; // gedrückt halten löst nur einmal aus
+			}
+			String msg;
+			if (!t.enabled || t.nextAt <= 0) {
+				start(t);
+				msg = "loothub.alltag.key.started";
+			} else if (t.daily()) {
+				t.enabled = false;
+				t.nextAt = 0;
+				msg = "loothub.alltag.key.stopped";
+			} else {
+				togglePause(t);
+				msg = t.paused() ? "loothub.alltag.key.paused" : "loothub.alltag.key.resumed";
+			}
+			mc.gui.setOverlayMessage(net.minecraft.network.chat.Component.translatable(msg, t.name), false);
+			save = true;
+		}
+		if (save) {
+			de.loothub.client.jobs.WidgetConfig.get().save();
 		}
 	}
 
