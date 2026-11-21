@@ -1035,7 +1035,7 @@ public class ProgressScreen extends LoothubScreen {
 			for (JsonElement e : shop) {
 				JsonArray a = e.getAsJsonArray();
 				JsonObject x = extra(a);
-				boolean reward = x != null && (x.has("ach") || x.has("col"));
+				boolean reward = x != null && (x.has("ach") || x.has("col") || x.has("secrets"));
 				boolean seasonal = x != null && x.has("season");
 				if (seasonal) {
 					continue;
@@ -1068,7 +1068,7 @@ public class ProgressScreen extends LoothubScreen {
 		String kind = a.get(1).getAsString();
 		int base = a.get(2).getAsInt();
 		JsonObject x = extra(a);
-		boolean reward = x != null && (x.has("ach") || x.has("col"));
+		boolean reward = x != null && (x.has("ach") || x.has("col") || x.has("secrets"));
 		// Angebot des Tages gilt überall, wo der Artikel steht
 		int cost = priceOverride >= 0 ? priceOverride : base;
 		if (priceOverride < 0 && cat.has("offer") && cat.getAsJsonObject("offer").get("id").getAsString().equals(id)) {
@@ -1109,6 +1109,10 @@ public class ProgressScreen extends LoothubScreen {
 		if (reward) {
 			if (x.has("ach")) {
 				need = Component.translatable("loothub.lh.shop.need.ach", Texts.achName(x.get("ach").getAsString()));
+			} else if (x.has("secrets")) {
+				int found = s.has("secrets") ? s.getAsJsonArray("secrets").size() : 0;
+				int all = cat.has("secrets") ? cat.getAsJsonArray("secrets").size() : 10;
+				need = Component.translatable("loothub.lh.shop.need.secrets", found, all);
 			} else {
 				String c = x.get("col").getAsString();
 				JsonArray pr = s.has("colBadges") && s.getAsJsonObject("colBadges").has(c) ? s.getAsJsonObject("colBadges").getAsJsonArray(c) : null;
@@ -1191,7 +1195,7 @@ public class ProgressScreen extends LoothubScreen {
 						}
 					});
 					minecraft.setScreen(this);
-				}));
+				}, Component.translatable("loothub.lh.shop.confirm.yes")));
 	}
 
 	private void equip(String kind, String id) {

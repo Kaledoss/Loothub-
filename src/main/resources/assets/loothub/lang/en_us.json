@@ -1313,6 +1313,8 @@
 	"loothub.lh.secret.lucky.hint": "Four times the lucky number in your Taler account.",
 	"loothub.lh.secret.generous": "Big Heart",
 	"loothub.lh.secret.generous.hint": "Give three times and you'll be rewarded yourself.",
+	"loothub.lh.shop.need.secrets": "find all secrets (%s/%s)",
+	"loothub.lh.shop.confirm.yes": "Yes, buy",
 	"loothub.lh.shop.t_miner": "Miner",
 	"loothub.lh.shop.t_hunter": "Monster Hunter",
 	"loothub.lh.shop.t_angler": "Angler King",

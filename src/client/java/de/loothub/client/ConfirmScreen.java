@@ -16,13 +16,20 @@ public class ConfirmScreen extends Screen {
 	private final Screen parent;
 	private final Component message;
 	private final Runnable onYes;
+	private final Component yes;
 	private int px, py, pw, ph;
 
 	public ConfirmScreen(Screen parent, Component title, Component message, Runnable onYes) {
+		this(parent, title, message, onYes, Component.translatable("loothub.confirm.yes"));
+	}
+
+	/** Mit eigener Beschriftung für „Ja“ (z. B. „Ja, kaufen“). */
+	public ConfirmScreen(Screen parent, Component title, Component message, Runnable onYes, Component yes) {
 		super(title);
 		this.parent = parent;
 		this.message = message;
 		this.onYes = onYes;
+		this.yes = yes;
 	}
 
 	@Override
@@ -33,7 +40,7 @@ public class ConfirmScreen extends Screen {
 		px = (width - pw) / 2;
 		py = (height - ph) / 2;
 		int bw = (pw - 24) / 2;
-		addRenderableWidget(Button.builder(Component.translatable("loothub.confirm.yes").withStyle(ChatFormatting.RED), b -> {
+		addRenderableWidget(Button.builder(yes.copy().withStyle(ChatFormatting.RED), b -> {
 			minecraft.setScreen(parent);
 			onYes.run();
 		}).bounds(px + 10, py + ph - 24, bw, 16).build());

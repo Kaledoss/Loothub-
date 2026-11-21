@@ -1313,6 +1313,8 @@
 	"loothub.lh.secret.lucky.hint": "Viermal die Glückszahl auf deinem Taler-Konto.",
 	"loothub.lh.secret.generous": "Großes Herz",
 	"loothub.lh.secret.generous.hint": "Wer dreimal schenkt, wird selbst beschenkt.",
+	"loothub.lh.shop.need.secrets": "alle Geheimnisse finden (%s/%s)",
+	"loothub.lh.shop.confirm.yes": "Ja, kaufen",
 	"loothub.lh.shop.t_miner": "Bergarbeiter",
 	"loothub.lh.shop.t_hunter": "Monsterjäger",
 	"loothub.lh.shop.t_angler": "Angelkönig",
