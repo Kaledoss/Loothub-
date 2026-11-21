@@ -57,9 +57,9 @@ public final class CrownLayer extends RenderLayer<AvatarRenderState, PlayerModel
 		String style = Cosmetics.crownStyle(state);
 		Identifier tex = STYLES.getOrDefault(style, TEXTURE);
 		boolean halo = style.equals("halo"); // flacher, leuchtender Ring ohne Zacken, etwas höher
-		boolean wreath = style.equals("flower"); // Kranz: niedrige, runde Blätter statt Zacken
+		boolean wreath = style.equals("flower"); // Blütenkranz: Blüten statt Zacken
 		final int lit = halo ? 0xF000F0 : light;
-		final float spike = halo ? 0.0F : wreath ? 0.9F : SPIKE;
+		final float spike = halo ? 0.0F : wreath ? 2.3F : SPIKE; // Kranz: Blüte so hoch wie breit
 		final float band = halo ? 0.7F : BAND;
 		final float radius = halo ? 3.6F : RADIUS;
 		poseStack.pushPose();
@@ -84,8 +84,14 @@ public final class CrownLayer extends RenderLayer<AvatarRenderState, PlayerModel
 				float top = -band - spike;
 				v(pose, vc, x0, -band, z0, 0, 0.5F, lit, nx, nz);
 				v(pose, vc, x1, -band, z1, 1, 0.5F, lit, nx, nz);
-				v(pose, vc, xm, top, zm, 0.5F, 0.0F, lit, nx, nz);
-				v(pose, vc, xm, top, zm, 0.5F, 0.0F, lit, nx, nz);
+				if (wreath) {
+					// Blüte: ganzes Rechteck statt Zacke, damit die runde Blüte nicht abgeschnitten wird
+					v(pose, vc, x1, top, z1, 1, 0.0F, lit, nx, nz);
+					v(pose, vc, x0, top, z0, 0, 0.0F, lit, nx, nz);
+				} else {
+					v(pose, vc, xm, top, zm, 0.5F, 0.0F, lit, nx, nz);
+					v(pose, vc, xm, top, zm, 0.5F, 0.0F, lit, nx, nz);
+				}
 			}
 		});
 		poseStack.popPose();
