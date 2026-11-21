@@ -720,6 +720,10 @@ function lhColExcluded(kind, id) {
 		|| id.includes("glass") || /^(infested_|polished_|chiseled_|cracked_|smooth_|cut_|stripped_)/.test(id)) return true;
 	if (/(_bed|_head|_skull|_banner|campfire|_candle|chest|shulker_box|_bucket|_chain)$/.test(id) || (id.includes("lantern") && id !== "sea_lantern")
 		|| ["bell", "candle", "resin_clump", "chain", "lightning_rod"].includes(id) || id.includes("glazed_terracotta")) return true;
+	if (["iron_block", "gold_block", "diamond_block", "emerald_block", "lapis_block", "redstone_block", "coal_block", "netherite_block",
+		"quartz_block", "resin_block", "respawn_anchor", "beacon", "beehive", "bookshelf", "cake", "sculk_sensor", "calibrated_sculk_sensor",
+		"carved_pumpkin", "conduit"].includes(id) || /^raw_.*_block$/.test(id)
+		|| /(_froglight|_concrete|_concrete_powder)$/.test(id)) return true;
 	if (id.includes("copper") && !id.endsWith("copper_ore")) return true;
 	if (id.includes("deepslate") && id !== "deepslate" && id !== "cobbled_deepslate" && !id.endsWith("_ore")) return true;
 	return LH_WOODS.some((w) => id.startsWith(`${w}_`) && !/(_log|_stem|_nylium)$/.test(id) && id !== "bamboo_block");

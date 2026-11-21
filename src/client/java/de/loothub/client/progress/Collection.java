@@ -70,6 +70,14 @@ final class Collection {
 				|| id.endsWith("_chain") || id.equals("lightning_rod") || id.contains("glazed_terracotta")) {
 			return true;
 		}
+		// Speicherblöcke (Eisen-, Gold-, Diamantblock …, auch Rohblöcke), Seelenanker, Froschlichter, Leuchtfeuer, Beton, Bienenstock
+		if (Set.of("iron_block", "gold_block", "diamond_block", "emerald_block", "lapis_block", "redstone_block", "coal_block",
+				"netherite_block", "quartz_block", "resin_block", "respawn_anchor", "beacon", "beehive", "bookshelf", "cake",
+				"sculk_sensor", "calibrated_sculk_sensor", "carved_pumpkin", "conduit").contains(id)
+				|| (id.startsWith("raw_") && id.endsWith("_block")) || id.endsWith("_froglight") || id.endsWith("_concrete")
+				|| id.endsWith("_concrete_powder")) {
+			return true;
+		}
 		// Kupfer: nur die Erze zählen
 		if (id.contains("copper") && !id.endsWith("copper_ore")) {
 			return true;
