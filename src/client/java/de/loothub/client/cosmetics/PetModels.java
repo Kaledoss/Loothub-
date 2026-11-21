@@ -370,6 +370,84 @@ final class PetModels {
 		}
 	}
 
+	/** Zustand für den Sternenbären: aufgerichtet (beim Spielen) und hingelegt (AFK). */
+	static final class StarBearState extends LivingEntityRenderState {
+		float stand, lie;
+	}
+
+	/**
+	 * Sternenbär (eigener Entwurf, Würfel, 64×64-Pixeltextur): kleiner nachtblauer Bär mit runden Ohren, heller Schnauze
+	 * und funkelnden Sternpunkten im ganzen Fell. Richtet sich beim Spielen auf, legt sich beim AFK hin.
+	 */
+	static final class StarBear extends EntityModel<StarBearState> {
+		private final ModelPart body, head;
+		private final ModelPart[] legs = new ModelPart[4];
+
+		StarBear() {
+			this(create().bakeRoot());
+		}
+
+		private StarBear(ModelPart root) {
+			super(root);
+			body = root.getChild("body");
+			head = body.getChild("head");
+			for (int i = 0; i < 4; i++) {
+				legs[i] = root.getChild("leg" + i);
+			}
+		}
+
+		static LayerDefinition create() {
+			MeshDefinition mesh = new MeshDefinition();
+			PartDefinition r = mesh.getRoot();
+			// rundlicher Rumpf: 6 breit, 6 hoch, 8 lang; Drehpunkt über den Hinterbeinen (zum Aufrichten)
+			PartDefinition body = r.addOrReplaceChild("body", CubeListBuilder.create().texOffs(0, 0)
+					.addBox(-3F, -6F, -6F, 6F, 6F, 8F), PartPose.offset(0F, 20F, 2F));
+			PartDefinition head = body.addOrReplaceChild("head", CubeListBuilder.create().texOffs(0, 16)
+					.addBox(-3F, -5F, -5F, 6F, 6F, 5F), PartPose.offset(0F, -4F, -6F));
+			head.addOrReplaceChild("snout", CubeListBuilder.create().texOffs(24, 16).addBox(-1.5F, -1F, -7F, 3F, 2F, 2F),
+					PartPose.ZERO);
+			head.addOrReplaceChild("ear_l", CubeListBuilder.create().texOffs(36, 16).addBox(1.5F, -6.5F, -3F, 2F, 2F, 1F),
+					PartPose.ZERO);
+			head.addOrReplaceChild("ear_r", CubeListBuilder.create().texOffs(36, 20).addBox(-3.5F, -6.5F, -3F, 2F, 2F, 1F),
+					PartPose.ZERO);
+			body.addOrReplaceChild("tail", CubeListBuilder.create().texOffs(44, 16).addBox(-1F, -1F, 0F, 2F, 2F, 2F),
+					PartPose.offset(0F, -4F, 2F));
+			float[][] at = {{-1.8F, -2.5F}, {1.8F, -2.5F}, {-1.8F, 2.5F}, {1.8F, 2.5F}};
+			for (int i = 0; i < 4; i++) {
+				r.addOrReplaceChild("leg" + i, CubeListBuilder.create().texOffs(i * 8, 32).addBox(-1F, 0F, -1F, 2F, 4F, 2F),
+						PartPose.offset(at[i][0], 20F, at[i][1]));
+			}
+			return LayerDefinition.create(mesh, 64, 64);
+		}
+
+		@Override
+		public void setupAnim(StarBearState s) {
+			super.setupAnim(s);
+			float t = s.ageInTicks;
+			float walk = Math.min(1F, s.walkAnimationSpeed);
+			float ph = s.walkAnimationPos * 1.3F;
+			float stand = s.stand, lie = s.lie;
+			for (int i = 0; i < 4; i++) {
+				legs[i].xRot = Mth.sin(ph + (i == 0 || i == 3 ? 0F : Mth.PI)) * 0.7F * walk;
+				legs[i].visible = lie < 0.5F;
+			}
+			// Aufrichten (Spielen): Körper hoch, Vorderpfoten winken
+			body.xRot = -1.0F * stand;
+			legs[0].xRot += -1.5F * stand + Mth.sin(t * 0.4F) * 0.4F * stand;
+			legs[1].xRot += -1.5F * stand - Mth.sin(t * 0.4F) * 0.4F * stand;
+			legs[0].y = legs[1].y = 20F - 5.5F * stand;
+			legs[0].z = legs[1].z = -2.5F + 3.5F * stand;
+			head.xRot = 0.9F * stand + Mth.sin(t * 0.06F) * 0.05F;
+			head.yRot = Mth.sin(t * 0.03F) * 0.3F * (1F - walk) * (1F - lie);
+			// Hingelegt (AFK): flach am Boden, Kopf auf den Pfoten
+			body.y = 20F + 4F * lie;
+			if (lie > 0F) {
+				head.xRot = 0.35F * lie;
+				head.yRot = 0.4F * lie;
+			}
+		}
+	}
+
 	/**
 	 * Kleine Schildkröte im Minecraft-Stil (Würfel, 64×64-Pixeltextur): gewölbter grüner Panzer mit Muster, heller
 	 * Bauchpanzer, Kopf mit Augen, vier Flossen-Beine und kurzer Schwanz. Läuft gemütlich, zieht beim AFK den Kopf ein.

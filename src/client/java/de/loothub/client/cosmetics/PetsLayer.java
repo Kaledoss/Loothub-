@@ -50,6 +50,7 @@ public final class PetsLayer extends RenderLayer<AvatarRenderState, PlayerModel>
 	private static final Identifier SHEEP_WOOL_TEX = Identifier.withDefaultNamespace("textures/entity/sheep/sheep_wool.png");
 	private static final Identifier ZOMBIE_TEX = Identifier.withDefaultNamespace("textures/entity/zombie/zombie.png");
 	private static final Identifier RED_PANDA_TEX = Identifier.fromNamespaceAndPath("loothub", "textures/entity/red_panda.png");
+	private static final Identifier STAR_BEAR_TEX = Identifier.fromNamespaceAndPath("loothub", "textures/entity/star_bear.png");
 	private static final Identifier TURTLE_TEX = Identifier.fromNamespaceAndPath("loothub", "textures/entity/turtle.png");
 	private static final Identifier HUMMINGBIRD_TEX = Identifier.fromNamespaceAndPath("loothub", "textures/entity/hummingbird.png");
 	/** Shop-Haustiere: eigenes Aussehen auf vorhandenem Modell (Phönix = Kolibri, Golddrache = Drache). */
@@ -80,6 +81,7 @@ public final class PetsLayer extends RenderLayer<AvatarRenderState, PlayerModel>
 	private final PetModels.Dragon dragon = new PetModels.Dragon();
 	private final PetModels.Serpent serpent = new PetModels.Serpent();
 	private final PetModels.RedPanda redPanda = new PetModels.RedPanda();
+	private final PetModels.StarBear starBear = new PetModels.StarBear();
 	private final PetModels.Turtle turtle = new PetModels.Turtle();
 	private final PetModels.Hummingbird hummingbird = new PetModels.Hummingbird();
 	private final PandaModel panda;
@@ -158,6 +160,7 @@ public final class PetsLayer extends RenderLayer<AvatarRenderState, PlayerModel>
 				case "red_panda" -> 0.6F;
 				case "donkey" -> 0.6F;
 				case "sheep" -> 0.6F;
+				case "starbear" -> 0.65F;
 				case "zombie" -> 0.6F;
 				case "turtle" -> 0.7F;
 				case "hummingbird" -> 0.75F;
@@ -302,6 +305,14 @@ public final class PetsLayer extends RenderLayer<AvatarRenderState, PlayerModel>
 					submit(collector, poseStack, sheep, s, SHEEP_TEX);
 					submit(collector, poseStack, sheepWool, s, SHEEP_WOOL_TEX);
 				}
+				case "starbear" -> {
+					// Sternenbär: richtet sich beim Spielen auf und winkt, legt sich beim AFK hin
+					PetModels.StarBearState s = base(new PetModels.StarBearState(), t,
+							Math.min(1F, Math.max(state.walkAnimationSpeed * 1.5F, p[4] * 2.5F)));
+					s.stand = playing ? 1F : 0F;
+					s.lie = Mth.clamp((lie - 0.3F) / 0.4F, 0F, 1F);
+					submit(collector, poseStack, starBear, s, STAR_BEAR_TEX);
+				}
 				case "red_panda" -> {
 					// Minecraft-Stil (Würfelmodell); beim Spielen richtet er sich auf, beim AFK rollt er sich zusammen
 					PetModels.RedPandaState s = base(new PetModels.RedPandaState(), t,
@@ -353,6 +364,7 @@ public final class PetsLayer extends RenderLayer<AvatarRenderState, PlayerModel>
 			case "dragon", "serpent" -> 0.34F;
 			case "donkey" -> 0.38F;
 			case "sheep" -> 0.42F;
+			case "starbear" -> 0.46F;
 			case "wolf", "red_panda" -> 0.46F;
 			case "turtle" -> 0.5F;
 			case "hummingbird" -> 0.6F;
@@ -437,6 +449,11 @@ public final class PetsLayer extends RenderLayer<AvatarRenderState, PlayerModel>
 				s.headEatAngleScale = eat * 0.6F;
 				submit(collector, poseStack, sheep, s, SHEEP_TEX);
 				submit(collector, poseStack, sheepWool, s, SHEEP_WOOL_TEX);
+			}
+			case "starbear" -> {
+				PetModels.StarBearState s = base(new PetModels.StarBearState(), t, 0.0F);
+				s.lie = sit ? 1.0F : 0.0F; // liegt gemütlich auf dem Kopf
+				submit(collector, poseStack, starBear, s, STAR_BEAR_TEX);
 			}
 			case "red_panda" -> {
 				PetModels.RedPandaState s = base(new PetModels.RedPandaState(), t, 0.0F);
