@@ -54,7 +54,10 @@ public final class PetsLayer extends RenderLayer<AvatarRenderState, PlayerModel>
 	private static final java.util.Map<String, Identifier> SKIN_TEX = java.util.Map.of(
 			"phoenix", Identifier.fromNamespaceAndPath("loothub", "textures/entity/phoenix.png"),
 			"golddragon", Identifier.fromNamespaceAndPath("loothub", "textures/entity/gold_dragon.png"),
-			"xmaspenguin", Identifier.fromNamespaceAndPath("loothub", "textures/entity/xmas_penguin.png"));
+			"xmaspenguin", Identifier.fromNamespaceAndPath("loothub", "textures/entity/xmas_penguin.png"),
+			"chick", Identifier.fromNamespaceAndPath("loothub", "textures/entity/chick.png"),
+			"bat", Identifier.fromNamespaceAndPath("loothub", "textures/entity/bat.png"),
+			"parrot", Identifier.fromNamespaceAndPath("loothub", "textures/entity/parrot.png"));
 	/** Aussehen des gerade gezeichneten Haustiers (null = normal). */
 	private String skin;
 

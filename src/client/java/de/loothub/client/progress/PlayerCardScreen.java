@@ -75,7 +75,8 @@ public class PlayerCardScreen extends Screen {
 				: Component.empty().append(badge).append(" ").append(Component.literal(name));
 		g.drawString(font, nameLine, tx, y + 14, 0xFFFFFFFF, true);
 		if (data != null && !data.get("title").getAsString().isEmpty()) {
-			g.drawString(font, Shop.titleText(data.get("title").getAsString()), tx, y + 26, 0xFFF2C14E, false);
+			g.drawString(font, Shop.titleText(data.get("title").getAsString(), data.has("tcolor") ? data.get("tcolor").getAsString() : ""),
+					tx, y + 26, 0xFFF2C14E, false);
 		}
 		if (data == null) {
 			g.drawString(font, Component.translatable(failed ? "loothub.lh.card.none" : "loothub.lh.loading"), tx, y + 46,

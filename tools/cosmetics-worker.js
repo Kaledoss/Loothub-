@@ -563,6 +563,15 @@ const LH_Q = {
 const LH_Q_POINTS = [[10, 20, 40], [100, 175, 300]];
 const LH_COMM = { blocks: 500000, mobs: 50000, fish: 5000, placed: 250000 };
 const LH_COMM_REWARD = 150;
+// Questketten: jede Woche eine kleine Geschichte in drei Schritten (Texte in der Mod), Belohnung je Schritt
+const LH_CHAINS = [
+	{ id: "treasure", steps: [["blocks", 2000], ["fish", 30], ["mobs", 150]] },
+	{ id: "fortress", steps: [["placed", 1500], ["blocks", 1500], ["mobs", 100]] },
+	{ id: "storm", steps: [["play", 120], ["placed", 800], ["fish", 25]] },
+	{ id: "hunt", steps: [["mobs", 200], ["fish", 40], ["mobs", 300]] },
+];
+const LH_CHAIN_REWARD = [50, 100, 300];
+function lhChain(week) { return LH_CHAINS[Math.floor(lhRand(`chain-${week}`)() * LH_CHAINS.length) % LH_CHAINS.length]; }
 const LH_SHOP = [
 	["s_freeze", "freeze", 400], // Login-Schutz: verbrauchbar, mehrfach kaufbar
 	["t_miner", "title", 2000], ["t_hunter", "title", 2000], ["t_angler", "title", 2000], ["t_builder", "title", 2000],
@@ -582,9 +591,21 @@ const LH_SHOP = [
 	["k_flower", "crown", 4000], ["k_ice", "crown", 6000], ["k_nether", "crown", 9000], ["k_halo", "crown", 18000],
 	["e_rainbow", "eyes", 8000],
 	["p_phoenix", "pet", 20000], ["p_golddragon", "pet", 25000],
+	// Titelfarben (statt Gold)
+	["tc_emerald", "tcolor", 3000], ["tc_ice", "tcolor", 3000], ["tc_fire", "tcolor", 4000], ["tc_violet", "tcolor", 4000],
+	["tc_rainbow", "tcolor", 12000],
 	// Winter-Saison (1. Dezember bis 6. Januar)
 	["t_snowking", "title", 4000, { season: "winter" }], ["c_candy", "steps", 5000, { season: "winter" }],
 	["k_holly", "crown", 6000, { season: "winter" }], ["p_xmaspenguin", "pet", 15000, { season: "winter" }],
+	// Ostern (20. März bis 20. April)
+	["t_eggseeker", "title", 3000, { season: "easter" }], ["c_eggs", "steps", 4000, { season: "easter" }],
+	["k_easter", "crown", 6000, { season: "easter" }], ["p_chick", "pet", 12000, { season: "easter" }],
+	// Sommer (21. Juni bis 31. August)
+	["t_sunseeker", "title", 3000, { season: "summer" }], ["c_bubbles", "steps", 4000, { season: "summer" }],
+	["k_shell", "crown", 6000, { season: "summer" }], ["p_parrot", "pet", 12000, { season: "summer" }],
+	// Halloween (15. Oktober bis 2. November)
+	["t_pumpkinking", "title", 4000, { season: "halloween" }], ["c_spooky", "steps", 5000, { season: "halloween" }],
+	["k_pumpkin", "crown", 6000, { season: "halloween" }], ["p_bat", "pet", 15000, { season: "halloween" }],
 	// Ruhmestitel: nicht kaufbar, bei „Legendär“ (letzte Stufe) einer Heldentat
 	...["blocks", "placed", "picked", "mobs", "fish", "play", "treasures", "jobmoney", "jumps", "dquests", "wquests", "login"]
 		.map((st) => [`a_${st}`, "title", 0, { ach: st }]),
@@ -593,7 +614,7 @@ const LH_SHOP = [
 ];
 const LH_SHOP_MAP = Object.fromEntries(LH_SHOP.map(([id, kind, cost, extra]) => [id, { kind, cost, extra: extra || {} }]));
 // Saisons: [Monat, Tag] von – bis (deutsche Zeit, über den Jahreswechsel möglich)
-const LH_SEASONS = { winter: [[12, 1], [1, 6]] };
+const LH_SEASONS = { easter: [[3, 20], [4, 20]], summer: [[6, 21], [8, 31]], halloween: [[10, 15], [11, 2]], winter: [[12, 1], [1, 6]] };
 const LH_OFFER_OFF = 0.25; // Angebot des Tages: 25 % günstiger
 
 function lhSeasonOn(season, now) {
@@ -668,11 +689,14 @@ function lhColExcluded(kind, id) {
 	return LH_WOODS.some((w) => id.startsWith(`${w}_`) && !/(_log|_stem|_nylium)$/.test(id) && id !== "bamboo_block");
 }
 // Cosmetics aus dem Shop: Eintrag in den Cosmetics → Wert → nötiger Shop-Artikel (Haustiere je Platz, durch Kommas getrennt)
-const LH_PETS_SHOP = { phoenix: "p_phoenix", golddragon: "p_golddragon", xmaspenguin: "p_xmaspenguin" };
+const LH_PETS_SHOP = { phoenix: "p_phoenix", golddragon: "p_golddragon", xmaspenguin: "p_xmaspenguin", chick: "p_chick", bat: "p_bat",
+	parrot: "p_parrot" };
 const LH_COSM_ITEMS = {
 	footsteps: { hearts: "c_hearts", notes: "c_notes", snow: "c_snow", magic: "c_magic", soul: "c_soul", stars: "c_stars",
-		cherry: "c_cherry", glow: "c_glow", totem: "c_totem", rainbow: "c_rainbow", candy: "c_candy" },
-	crownstyle: { flower: "k_flower", ice: "k_ice", nether: "k_nether", halo: "k_halo", holly: "k_holly" },
+		cherry: "c_cherry", glow: "c_glow", totem: "c_totem", rainbow: "c_rainbow", candy: "c_candy",
+		eggs: "c_eggs", bubbles: "c_bubbles", spooky: "c_spooky" },
+	crownstyle: { flower: "k_flower", ice: "k_ice", nether: "k_nether", halo: "k_halo", holly: "k_holly", easter: "k_easter",
+		shell: "k_shell", pumpkin: "k_pumpkin" },
 	eyes: { rainbow: "e_rainbow" },
 	pets: LH_PETS_SHOP,
 	headpets: LH_PETS_SHOP,
@@ -700,6 +724,9 @@ async function lhInit(db) {
 		if (!have.has(col)) {
 			try { await db.prepare(`ALTER TABLE lh_player ADD COLUMN ${col} INTEGER DEFAULT 0`).run(); } catch { /* vorhanden */ }
 		}
+	}
+	if (!have.has("tcolor")) {
+		try { await db.prepare("ALTER TABLE lh_player ADD COLUMN tcolor TEXT DEFAULT ''").run(); } catch { /* vorhanden */ }
 	}
 	lhReady = true;
 }
@@ -978,6 +1005,24 @@ async function lhProgress(db, d, now) {
 	else news.push(...colNews);
 	delete d.colFirst;
 
+	// Questkette der Woche: Schritt für Schritt, gezählt ab Beginn des jeweiligen Schritts
+	{
+		const wk = lhWeekId(now), ch = lhChain(wk);
+		if (!d.chain || d.chain.week !== wk) d.chain = { week: wk, step: 0, base: tot[ch.steps[0][0]] || 0 };
+		while (d.chain.step < ch.steps.length) {
+			const [st, goal] = ch.steps[d.chain.step];
+			if ((tot[st] || 0) - d.chain.base < goal) break;
+			const p = LH_CHAIN_REWARD[d.chain.step];
+			earned += p;
+			d.chain.step++;
+			news.push({ k: "chain", id: ch.id, step: d.chain.step, of: ch.steps.length, p });
+			if (d.chain.step < ch.steps.length) d.chain.base = tot[ch.steps[d.chain.step][0]] || 0;
+		}
+	}
+
+	// Geschenke von anderen Spielern
+	if (d.inbox && d.inbox.length) { news.push(...d.inbox); d.inbox = []; }
+
 	// Freischaltungen: Ruhmestitel bei „Legendär“, Sammel-Abzeichen
 	d.owned = d.owned || [];
 	for (const [id, , , extra] of LH_SHOP) {
@@ -993,34 +1038,25 @@ function lhView(row, d, extra, now) {
 	const q4 = lhQuests(0, slot).map((q, i) => ({ ...q, have: Math.max(0, (d.tot[q.stat] || 0) - (d.slot.base[q.stat] || 0)), done: !!d.slot.done[i] }));
 	const qw = lhQuests(1, week).map((q, i) => ({ ...q, have: Math.max(0, (d.tot[q.stat] || 0) - (d.week.base[q.stat] || 0)), done: !!d.week.done[i] }));
 	return {
-		now, points: row.points, balance: row.points - row.spent, title: row.title, badge: row.badge,
+		now, points: row.points, balance: row.points - row.spent, title: row.title, badge: row.badge, tcolor: row.tcolor || "",
 		tot: lhCopy(d.tot), ach: d.ach, quests: d.quests,
 		col: { b: (d.col && d.col.b) || {}, m: (d.col && d.col.m) || {} },
 		cach: { b: (d.cach && d.cach.b) || {}, m: (d.cach && d.cach.m) || {} },
 		colBadges: { ores: lhColBadgeProgress("ores", d), hunter: lhColBadgeProgress("hunter", d) },
+		chain: (() => {
+			const ch = lhChain(week), c = d.chain && d.chain.week === week ? d.chain : { step: 0, base: d.tot[ch.steps[0][0]] || 0 };
+			const cur = ch.steps[Math.min(c.step, ch.steps.length - 1)];
+			return { id: ch.id, step: c.step, steps: ch.steps.map(([st, g], i) => [st, g, LH_CHAIN_REWARD[i]]),
+				have: c.step < ch.steps.length ? Math.max(0, (d.tot[cur[0]] || 0) - c.base) : 0 };
+		})(),
 		dquests: d.dq || 0, wquests: d.wq || 0, jobday: Math.floor((d.jd && d.jd.best) || 0),
 		login: { cur: (d.login || {}).cur || 0, best: (d.login || {}).best || 0, freeze: d.freeze || 0 },
 		slot: { ends: lhSlotEnd(slot), list: q4 },
 		week: { ends: lhWeekEnd(week), list: qw },
-		comm: extra ? { stat: extra.cq.stat, goal: extra.cq.goal, sum: extra.commSum, mine: d.week.comm || 0,
+		comm: extra && extra.cq ? { stat: extra.cq.stat, goal: extra.cq.goal, sum: extra.commSum, mine: d.week.comm || 0,
 			need: Math.ceil(extra.cq.goal / 200), paid: !!d.week.paid, reward: LH_COMM_REWARD } : null,
 		owned: d.owned || [], news: extra ? extra.news : [], cat: lhCatalog(now),
 	};
-}
-
-/** Wochenrückblick beim ersten Abgleich einer neuen Woche: was in der letzten gespielten Woche zusammenkam. */
-function lhRecap(d, row, now) {
-	const pe = d.per && d.per.w;
-	if (!pe || !pe.base || pe.id === lhWeekId(now)) return null;
-	const off = d.off || {}, tot = d.tot || {};
-	const cur = {
-		points: (row.points || 0) - (off.points || 0), dquests: (d.dq || 0) - (off.dquests || 0), wquests: (d.wq || 0) - (off.wquests || 0),
-		blocks: (tot.blocks || 0) - (off.blocks || 0), mobs: (tot.mobs || 0) - (off.mobs || 0), fish: (tot.fish || 0) - (off.fish || 0),
-	};
-	const v = {};
-	for (const k of Object.keys(cur)) v[k] = Math.max(0, cur[k] - (pe.base[k] || 0));
-	if (!Object.values(v).some((x) => x > 0)) return null;
-	return { k: "recap", ...v };
 }
 
 /** Rücksetzungen aller Spieler: {"board|zeitraum": Zeitpunkt}. */
@@ -1038,7 +1074,7 @@ async function lhSave(db, row, d, now, name, resets) {
 	const bv = lhBoardValues(d, row, achCount, now, resets || await lhResets(db));
 	const cols = {
 		...bv.all, uuid: row.uuid, name: name || row.name || "", data: JSON.stringify(d), spent: row.spent || 0,
-		title: row.title || "", badge: row.badge || "", quests: d.quests || 0, jobmoney: tot.jobmoney || 0, updated: now,
+		title: row.title || "", badge: row.badge || "", tcolor: row.tcolor || "", quests: d.quests || 0, jobmoney: tot.jobmoney || 0, updated: now,
 		pd: bv.ids.d, pw: bv.ids.w, pm: bv.ids.m,
 	};
 	// „points“ = alle je verdienten Taler (für das Guthaben); die Rangliste „gesamt“ liest points_a (nach Rücksetzung neu)
@@ -1137,8 +1173,6 @@ async function lhHandle(request, env) {
 		lhAbsorb(d, p.stats, now);
 		lhAbsorbCol(d, p.col);
 		extra = await lhProgress(db, d, now);
-		const recap = lhRecap(d, row, now); // vor dem Speichern: danach beginnt die neue Woche
-		if (recap) extra.news.push(recap);
 		row.points = (row.points || 0) + extra.earned;
 	} else {
 		if (!d.tot || !d.slot || !d.week) return json({ error: "sync first" }, 409);
@@ -1155,11 +1189,37 @@ async function lhHandle(request, env) {
 				else if (row.points - row.spent < price) error = "poor";
 				else { d.owned.push(p.item); row.spent += price; }
 			}
+		} else if (p.op === "gift") {
+			// Geschenk: der Schenkende zahlt, der Beschenkte bekommt den Artikel beim nächsten Abgleich gemeldet
+			const item = LH_SHOP_MAP[p.item];
+			const price = item ? (item.kind === "freeze" ? item.cost : lhPrice(p.item, now)) : null;
+			if (!item) error = "unknown";
+			else if (price === null) error = item.extra.season ? "season" : "locked";
+			else if (typeof p.target !== "string" || !NAME.test(p.target)) error = "no player";
+			else {
+				const t = await db.prepare("SELECT uuid, data FROM lh_player WHERE lower(name) = lower(?) ORDER BY updated DESC LIMIT 1").bind(p.target).first();
+				let td = null;
+				try { td = t ? JSON.parse(t.data || "{}") : null; } catch { td = null; }
+				if (!t || !td) error = "no player";
+				else if (t.uuid === uuid) error = "self";
+				else if (item.kind !== "freeze" && (td.owned || []).includes(p.item)) error = "has it";
+				else if (row.points - row.spent < price) error = "poor";
+				else {
+					if (item.kind === "freeze") td.freeze = (td.freeze || 0) + 1;
+					else (td.owned = td.owned || []).push(p.item);
+					td.inbox = [...(td.inbox || []), { k: "gift", id: p.item, from: name || row.name || "?" }].slice(-20);
+					await db.prepare("UPDATE lh_player SET data = ? WHERE uuid = ?").bind(JSON.stringify(td), t.uuid).run();
+					row.spent += price;
+					extra = { news: [{ k: "gift_sent", id: p.item, to: p.target }] };
+				}
+			}
 		} else if (p.op === "equip") {
 			const t = typeof p.title === "string" ? p.title : row.title;
 			const b = typeof p.badge === "string" ? p.badge : row.badge;
-			if ((t && !(d.owned.includes(t) && LH_SHOP_MAP[t].kind === "title")) || (b && !(d.owned.includes(b) && LH_SHOP_MAP[b].kind === "badge"))) error = "not owned";
-			else { row.title = t; row.badge = b; }
+			const c = typeof p.tcolor === "string" ? p.tcolor : (row.tcolor || "");
+			const ok = (id, kind) => !id || (d.owned.includes(id) && LH_SHOP_MAP[id] && LH_SHOP_MAP[id].kind === kind);
+			if (!ok(t, "title") || !ok(b, "badge") || !ok(c, "tcolor")) error = "not owned";
+			else { row.title = t; row.badge = b; row.tcolor = c; }
 		} else {
 			return json({ error: "bad op" }, 400);
 		}
@@ -1285,13 +1345,13 @@ async function lhCard(request, env, ctx, url) {
 	if (!UUID_RE.test(u)) return json({ error: "bad uuid" }, 400);
 	await lhInit(env.AH);
 	return lhCached(request, ctx, `/lh-card-cache/${u}`, 60, async () => {
-		const x = await env.AH.prepare(`SELECT name, title, badge, points_a, points, ach, login, dquests, wquests, blocks, placed,
+		const x = await env.AH.prepare(`SELECT name, title, badge, tcolor, points_a, points, ach, login, dquests, wquests, blocks, placed,
 			picked, mobs, fish, play, jobday, updated, data FROM lh_player WHERE uuid = ?`).bind(u).first();
 		if (!x) return { error: "unknown" };
 		let d = {};
 		try { d = JSON.parse(x.data || "{}"); } catch { d = {}; }
 		return {
-			name: x.name, title: x.title || "", badge: x.badge || "", earned: x.points || 0, ach: x.ach || 0,
+			name: x.name, title: x.title || "", badge: x.badge || "", tcolor: x.tcolor || "", earned: x.points || 0, ach: x.ach || 0,
 			achMax: Object.values(LH_ACH).reduce((a, t) => a + t.length, 0),
 			loginCur: (d.login && d.login.cur) || 0, loginBest: x.login || 0, dquests: x.dquests || 0, wquests: x.wquests || 0,
 			blocks: x.blocks || 0, placed: x.placed || 0, picked: x.picked || 0, mobs: x.mobs || 0, fish: x.fish || 0,
@@ -1306,9 +1366,9 @@ async function lhTags(request, env, ctx) {
 	if (!env.AH) return json({});
 	await lhInit(env.AH);
 	return lhCached(request, ctx, "/lh-tags-cache", 300, async () => {
-		const r = await env.AH.prepare("SELECT uuid, title, badge FROM lh_player WHERE title != '' OR badge != ''").all();
+		const r = await env.AH.prepare("SELECT uuid, title, badge, tcolor FROM lh_player WHERE title != '' OR badge != ''").all();
 		const out = {};
-		for (const x of r.results || []) out[x.uuid] = [x.title || "", x.badge || ""];
+		for (const x of r.results || []) out[x.uuid] = [x.title || "", x.badge || "", x.tcolor || ""];
 		return out;
 	});
 }

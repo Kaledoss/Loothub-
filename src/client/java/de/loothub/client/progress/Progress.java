@@ -377,6 +377,23 @@ public final class Progress {
 		send(p, done);
 	}
 
+	/** Artikel an einen anderen Spieler verschenken (der Schenkende zahlt). */
+	public static void gift(String item, String target, Consumer<String> done) {
+		JsonObject p = new JsonObject();
+		p.addProperty("op", "gift");
+		p.addProperty("item", item);
+		p.addProperty("target", target);
+		send(p, done);
+	}
+
+	/** Titelfarbe anlegen ("" = Gold). */
+	public static void equipColor(String color, Consumer<String> done) {
+		JsonObject p = new JsonObject();
+		p.addProperty("op", "equip");
+		p.addProperty("tcolor", color);
+		send(p, done);
+	}
+
 	/** Titel bzw. Abzeichen anlegen ("" = ablegen, null = unverändert). */
 	public static void equip(String title, String badge, Consumer<String> done) {
 		JsonObject p = new JsonObject();
@@ -513,8 +530,9 @@ public final class Progress {
 			JsonObject o = e.getAsJsonObject();
 			for (String k : o.keySet()) {
 				if (o.get(k).isJsonArray() && o.getAsJsonArray(k).size() >= 2) {
-					m.put(k.toLowerCase(Locale.ROOT), new String[]{o.getAsJsonArray(k).get(0).getAsString(),
-							o.getAsJsonArray(k).get(1).getAsString()});
+					var arr = o.getAsJsonArray(k);
+					m.put(k.toLowerCase(Locale.ROOT), new String[]{arr.get(0).getAsString(), arr.get(1).getAsString(),
+							arr.size() > 2 ? arr.get(2).getAsString() : ""});
 				}
 			}
 			tags = m;
@@ -547,7 +565,8 @@ public final class Progress {
 		if (s != null && id.equals(mc.getUser().getProfileId())) {
 			String t = s.has("title") ? s.get("title").getAsString() : "";
 			String b = s.has("badge") ? s.get("badge").getAsString() : "";
-			return t.isEmpty() && b.isEmpty() ? null : new String[]{t, b};
+			String c = s.has("tcolor") ? s.get("tcolor").getAsString() : "";
+			return t.isEmpty() && b.isEmpty() ? null : new String[]{t, b, c};
 		}
 		return tags.get(id.toString().toLowerCase(Locale.ROOT));
 	}
@@ -559,7 +578,7 @@ public final class Progress {
 			return null;
 		}
 		Component badge = Shop.badge(t[1]);
-		Component title = t[0].isEmpty() ? null : Shop.titleText(t[0]);
+		Component title = t[0].isEmpty() ? null : Shop.titleText(t[0], t.length > 2 ? t[2] : "");
 		if (badge == null && title == null) {
 			return null;
 		}
@@ -645,16 +664,22 @@ public final class Progress {
 				}
 				case "col_many" -> TOASTS.add(new Toast(
 						Component.translatable("loothub.lh.toast.col_many", n.get("n").getAsInt()).getString(), plus, 0xF2C14E));
+				case "chain" -> {
+					String cid = n.get("id").getAsString();
+					int step = n.get("step").getAsInt(), of = n.get("of").getAsInt();
+					TOASTS.add(new Toast(Component.translatable(step >= of ? "loothub.lh.toast.chain.done" : "loothub.lh.toast.chain",
+							Component.translatable("loothub.lh.chain." + cid), step, of).getString(), plus, 0xB07CFF, step >= of));
+				}
+				case "gift" -> TOASTS.add(new Toast(Component.translatable("loothub.lh.toast.gift", n.get("from").getAsString()).getString(),
+						Shop.name(n.get("id").getAsString()).getString(), 0xFF7FB3, true));
+				case "gift_sent" -> TOASTS.add(new Toast(Component.translatable("loothub.lh.toast.gift_sent", n.get("to").getAsString()).getString(),
+						Shop.name(n.get("id").getAsString()).getString(), 0xFF7FB3));
 				case "unlock" -> {
 					// Ruhmestitel oder Sammel-Abzeichen freigeschaltet
 					String id = n.get("id").getAsString();
 					TOASTS.add(new Toast(Component.translatable(id.startsWith("a_") ? "loothub.lh.toast.unlock.title"
 							: "loothub.lh.toast.unlock.badge").getString(), Shop.name(id).getString(), 0xFF8C30, true));
 				}
-				case "recap" -> TOASTS.add(new Toast(Component.translatable("loothub.lh.toast.recap").getString(),
-						Component.translatable("loothub.lh.toast.recap.sub", Fmt.whole(n.get("points").getAsLong()),
-								Fmt.whole(n.get("dquests").getAsLong() + n.get("wquests").getAsLong()), Fmt.whole(n.get("blocks").getAsLong()),
-								Fmt.whole(n.get("mobs").getAsLong())).getString(), 0x7FB3FF));
 				default -> {
 				}
 			}

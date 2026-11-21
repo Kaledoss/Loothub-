@@ -129,6 +129,11 @@ public class ProgressScreen extends LoothubScreen {
 					searchText = t;
 					scroll = 0;
 				});
+				// Sammelbuch öffnen
+				Component bookLabel = Component.translatable("loothub.lh.book.open");
+				int bw2 = font.width(bookLabel) + 14;
+				addRenderableWidget(Button.builder(bookLabel, btn -> minecraft.setScreen(new CollectionBookScreen(this, achSub)))
+						.bounds(cr - 160 - 6 - bw2, ct + 19, bw2, 16).build());
 				boardButton = null;
 				periodButton = null;
 				listTop = ct + 40;
@@ -381,6 +386,37 @@ public class ProgressScreen extends LoothubScreen {
 		y = section(g, Component.translatable("loothub.lh.q.week"),
 				Component.translatable("loothub.lh.q.ends_in", Texts.left(week.get("ends").getAsLong() - now)), y);
 		y = quests(g, week.getAsJsonArray("list"), y, "w") + 6;
+
+		// Questkette der Woche: kleine Geschichte in drei Schritten
+		if (s.has("chain") && s.get("chain").isJsonObject()) {
+			JsonObject ch = s.getAsJsonObject("chain");
+			String cid = ch.get("id").getAsString();
+			int step = ch.get("step").getAsInt();
+			JsonArray steps = ch.getAsJsonArray("steps");
+			y = section(g, Component.translatable("loothub.lh.chain.title", Component.translatable("loothub.lh.chain." + cid)),
+					Component.translatable("loothub.lh.chain.step", Math.min(step + 1, steps.size()), steps.size()), y);
+			if (step >= steps.size()) {
+				g.drawString(font, Component.translatable("loothub.lh.chain." + cid + ".end"), cl + 8, y + 2, 0xFF55E06A, false);
+				y += 16;
+			} else {
+				JsonArray cur = steps.get(step).getAsJsonArray();
+				String st = cur.get(0).getAsString();
+				long goal = cur.get(1).getAsLong(), have = ch.get("have").getAsLong();
+				// Erzähltext des Schritts, darunter Ziel und Fortschritt
+				g.drawString(font, Component.translatable("loothub.lh.chain." + cid + "." + (step + 1)).withStyle(ChatFormatting.ITALIC),
+						cl + 8, y + 2, 0xFFE8D8DA, false);
+				y += 13;
+				String reward = Component.translatable("loothub.lh.toast.points", cur.get(2).getAsInt()).getString();
+				g.drawString(font, Texts.goal(st, goal), cl + 8, y + 2, TEXT, false);
+				g.drawString(font, reward, cr - font.width(reward), y + 2, 0xFFF2C14E, false);
+				String prog = Texts.value(st, Math.min(have, goal)) + " / " + Texts.value(st, goal);
+				int barW = Math.max(40, cw - 8 - font.width(prog) - 12);
+				bar(g, cl + 8, y + 13, barW, goal == 0 ? 1 : have / (double) goal, 0xFFB07CFF);
+				g.drawString(font, prog, cl + 8 + barW + 8, y + 10, MUTED, false);
+				y += 24;
+			}
+			y += 4;
+		}
 
 		if (s.has("comm") && s.get("comm").isJsonObject()) {
 			JsonObject c = s.getAsJsonObject("comm");
@@ -723,7 +759,7 @@ public class ProgressScreen extends LoothubScreen {
 			}
 			y += 6;
 		}
-		for (String kind : new String[]{"freeze", "title", "badge", "fame", "steps", "crown", "eyes", "pet"}) {
+		for (String kind : new String[]{"freeze", "title", "tcolor", "badge", "fame", "steps", "crown", "eyes", "pet"}) {
 			List<JsonArray> items = new ArrayList<>();
 			for (JsonElement e : shop) {
 				JsonArray a = e.getAsJsonArray();
@@ -787,7 +823,9 @@ public class ProgressScreen extends LoothubScreen {
 			return y + 18;
 		}
 		Component preview = switch (kind) {
-			case "title" -> Shop.titleText(id);
+			case "title" -> Shop.titleText(id, s.has("tcolor") ? s.get("tcolor").getAsString() : "");
+			case "tcolor" -> Shop.titleText(title.isEmpty() ? "t_miner" : title, id).copy().append(
+					Component.literal("  ").append(Shop.name(id).copy().withStyle(ChatFormatting.GRAY)));
 			case "badge" -> Component.empty().append(Shop.badge(id) == null ? Component.literal("?") : Shop.badge(id)).append("  ")
 					.append(Shop.name(id).copy().withStyle(ChatFormatting.GRAY));
 			default -> Shop.name(id);
@@ -807,9 +845,10 @@ public class ProgressScreen extends LoothubScreen {
 			}
 			String ns = owned ? Component.translatable("loothub.lh.shop.unlocked").getString() : need.getString();
 			g.drawString(font, ns, bx - 10 - font.width(ns), y + 4, owned ? FAINT : MUTED, false);
+			// (Belohnungen kann man nicht verschenken)
 		} else {
 			String ps = Component.translatable("loothub.lh.shop.cost", Fmt.whole(price)).getString();
-			int px = bx - 10 - font.width(ps);
+			int px = bx - 28 - font.width(ps); // Platz für den Geschenk-Knopf
 			g.drawString(font, ps, px, y + 4, owned ? FAINT : 0xFFF2C14E, false);
 			if (price != base && !owned) {
 				// alter Preis durchgestrichen davor
@@ -819,7 +858,8 @@ public class ProgressScreen extends LoothubScreen {
 				g.fill(ox - 1, y + 7, ox + font.width(old) + 1, y + 8, FAINT);
 			}
 		}
-		boolean worn = kind.equals("title") ? id.equals(title) : kind.equals("badge") && id.equals(badge);
+		boolean worn = kind.equals("title") ? id.equals(title) : kind.equals("tcolor")
+				? id.equals(s.has("tcolor") ? s.get("tcolor").getAsString() : "") : kind.equals("badge") && id.equals(badge);
 		Component label;
 		int color;
 		Runnable action;
@@ -855,6 +895,14 @@ public class ProgressScreen extends LoothubScreen {
 		if (action != null || tip != null) {
 			hits.add(new Hit(bx, y + 1, btnW, 14, action, tip));
 		}
+		// Verschenken (nur kaufbare Artikel)
+		if (!reward) {
+			int gx = bx - 18;
+			g.fill(gx, y + 1, gx + 14, y + 15, balance >= price ? 0xFF8A3A68 : 0xFF4A3A3C);
+			g.drawString(font, "✉", gx + 3, y + 4, TEXT, false);
+			hits.add(new Hit(gx, y + 1, 14, 14, balance >= price ? () -> minecraft.setScreen(new GiftScreen(this, id, price)) : null,
+					Component.translatable("loothub.lh.gift.tip", Fmt.whole(price))));
+		}
 		// Klick auf die Zeile: Vorschau am eigenen Spieler
 		hits.add(new Hit(cl, y, Math.max(40, bx - 10 - cl - 140), 16, () -> minecraft.setScreen(new ShopPreviewScreen(this, id, kind, price)),
 				Component.translatable("loothub.lh.preview.click")));
@@ -877,6 +925,10 @@ public class ProgressScreen extends LoothubScreen {
 
 	private void equip(String kind, String id) {
 		message = "";
+		if (kind.equals("tcolor")) {
+			Progress.equipColor(id, err -> message = err == null ? "" : Component.translatable("loothub.lh.error." + err).getString());
+			return;
+		}
 		Progress.equip(kind.equals("title") ? id : null, kind.equals("badge") ? id : null,
 				err -> message = err == null ? "" : Component.translatable("loothub.lh.error." + err).getString());
 	}

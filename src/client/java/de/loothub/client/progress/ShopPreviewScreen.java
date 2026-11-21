@@ -131,6 +131,11 @@ public class ShopPreviewScreen extends Screen {
 		Component nameLine = badge == null ? playerName : Component.empty().append(badge).append(" ").append(playerName);
 		int nameY = headTop - 14;
 		plate(g, nameLine, cx, nameY);
+		if (kind.equals("tcolor")) {
+			com.google.gson.JsonObject st = Progress.state();
+			String t = st != null && st.has("title") && !st.get("title").getAsString().isEmpty() ? st.get("title").getAsString() : "t_miner";
+			plate(g, Shop.titleText(t, id), cx, nameY - 12);
+		}
 		if (kind.equals("title")) {
 			plate(g, Shop.titleText(id), cx, nameY - 12);
 		}
@@ -168,6 +173,9 @@ public class ShopPreviewScreen extends Screen {
 			case "magic" -> new Spark(x, y, vx, -20.0F, now, 0xB66BFF, "✦");
 			case "soul" -> new Spark(x, y, vx * 0.5F, -24.0F, now, 0x5FD8FF, "▲");
 			case "candy" -> new Spark(x, y, vx, -18.0F, now, random.nextBoolean() ? 0xE23B3B : 0xFFFFFF, "■");
+			case "eggs" -> new Spark(x, y, vx, -14.0F, now, new int[]{0xFFB3C7, 0xB3D9FF, 0xFFF0A0, 0xB8F0D0, 0xD9C2FF}[random.nextInt(5)], "●");
+			case "bubbles" -> new Spark(x, y, vx * 0.5F, -34.0F, now, 0xBFF4FF, "○");
+			case "spooky" -> new Spark(x, y, vx, -16.0F, now, random.nextBoolean() ? 0x8E3BD8 : 0x7CFF4F, "✦");
 			case "cherry" -> new Spark(x, y - 30, vx, 12.0F, now, 0xFFB7D5, "❀");
 			case "glow" -> new Spark(x, y, vx * 0.4F, -10.0F, now, 0x7FFFD4, "●");
 			case "totem" -> new Spark(x, y, vx * 1.5F, -30.0F, now, random.nextBoolean() ? 0xF2D64B : 0x6BD84E, "✦");

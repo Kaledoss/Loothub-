@@ -93,6 +93,27 @@ public final class CosmeticEffects {
 					int rgb = (p.tickCount / 3) % 2 == 0 ? 0xE23B3B : 0xFFFFFF;
 					mc.level.addParticle(new DustParticleOptions(rgb, 1.2F), x + (r.nextDouble() - 0.5) * 0.25, y + 0.05,
 							z + (r.nextDouble() - 0.5) * 0.25, 0.0, 0.02, 0.0);
+				} else if (steps.equals("eggs")) {
+					// Ostereier: Pastelltöne
+					if (p.tickCount % 3 == 0) {
+						int[] pastel = {0xFFB3C7, 0xB3D9FF, 0xFFF0A0, 0xB8F0D0, 0xD9C2FF};
+						mc.level.addParticle(new DustParticleOptions(pastel[r.nextInt(pastel.length)], 1.4F), x + (r.nextDouble() - 0.5) * 0.3,
+								y + 0.05, z + (r.nextDouble() - 0.5) * 0.3, 0.0, 0.01, 0.0);
+					}
+				} else if (steps.equals("bubbles")) {
+					// Seifenblasen: hellblau, steigen auf
+					if (p.tickCount % 3 == 0) {
+						mc.level.addParticle(new DustParticleOptions(r.nextBoolean() ? 0xBFF4FF : 0xE8FFFF, 1.0F), x + (r.nextDouble() - 0.5) * 0.3,
+								y + 0.1, z + (r.nextDouble() - 0.5) * 0.3, 0.0, 0.06, 0.0);
+					}
+				} else if (steps.equals("spooky")) {
+					// Spuk: lila und giftgrün, dazu etwas Rauch
+					int rgb = r.nextBoolean() ? 0x8E3BD8 : 0x7CFF4F;
+					mc.level.addParticle(new DustParticleOptions(rgb, 1.1F), x + (r.nextDouble() - 0.5) * 0.25, y + 0.05,
+							z + (r.nextDouble() - 0.5) * 0.25, 0.0, 0.02, 0.0);
+					if (p.tickCount % 6 == 0) {
+						mc.level.addParticle(ParticleTypes.SMOKE, x, y + 0.1, z, 0.0, 0.02, 0.0);
+					}
 				} else if (steps.equals("cherry")) {
 					// Kirschblüten: rosa Blättchen, die langsam herabsinken
 					if (p.tickCount % 4 == 0) {

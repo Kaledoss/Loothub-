@@ -13,13 +13,14 @@ public final class Shop {
 	public static final Map<String, String> STEPS = Map.ofEntries(Map.entry("c_hearts", "hearts"), Map.entry("c_notes", "notes"),
 			Map.entry("c_snow", "snow"), Map.entry("c_magic", "magic"), Map.entry("c_soul", "soul"), Map.entry("c_stars", "stars"),
 			Map.entry("c_cherry", "cherry"), Map.entry("c_glow", "glow"), Map.entry("c_totem", "totem"),
-			Map.entry("c_rainbow", "rainbow"), Map.entry("c_candy", "candy"));
+			Map.entry("c_rainbow", "rainbow"), Map.entry("c_candy", "candy"),
+			Map.entry("c_eggs", "eggs"), Map.entry("c_bubbles", "bubbles"), Map.entry("c_spooky", "spooky"));
 	/** Kronen-Stile aus dem Shop. */
 	public static final Map<String, String> CROWNS = Map.of("k_flower", "flower", "k_ice", "ice", "k_nether", "nether",
-			"k_halo", "halo", "k_holly", "holly");
+			"k_halo", "halo", "k_holly", "holly", "k_easter", "easter", "k_shell", "shell", "k_pumpkin", "pumpkin");
 	/** Haustiere aus dem Shop. */
 	public static final Map<String, String> PETS = Map.of("p_phoenix", "phoenix", "p_golddragon", "golddragon", "p_xmaspenguin",
-			"xmaspenguin");
+			"xmaspenguin", "p_chick", "chick", "p_bat", "bat", "p_parrot", "parrot");
 	/** Augen-Effekte aus dem Shop. */
 	public static final Map<String, String> EYES = Map.of("e_rainbow", "rainbow");
 
@@ -50,10 +51,37 @@ public final class Shop {
 
 	/** Titel als goldener Text, oder null. */
 	public static Component titleText(String id) {
+		return titleText(id, "");
+	}
+
+	/** Titel in seiner Farbe (Gold ohne gekaufte Titelfarbe; Regenbogen läuft Buchstabe für Buchstabe durch). */
+	public static Component titleText(String id, String color) {
 		if (id == null || id.isEmpty()) {
 			return null;
 		}
-		return Component.translatable("loothub.lh.shop." + id).withStyle(s -> s.withColor(0xF2C14E));
+		Component name = Component.translatable("loothub.lh.shop." + id);
+		if ("tc_rainbow".equals(color)) {
+			String text = name.getString();
+			net.minecraft.network.chat.MutableComponent out = Component.empty();
+			long t = System.currentTimeMillis() / 60;
+			for (int i = 0; i < text.length(); i++) {
+				int rgb = java.awt.Color.HSBtoRGB(((t + i * 4) % 100) / 100.0F, 0.75F, 1.0F) & 0xFFFFFF;
+				out.append(Component.literal(String.valueOf(text.charAt(i))).withStyle(s -> s.withColor(rgb)));
+			}
+			return out;
+		}
+		int rgb = titleColor(color);
+		return name.copy().withStyle(s -> s.withColor(rgb));
+	}
+
+	static int titleColor(String color) {
+		return switch (color == null ? "" : color) {
+			case "tc_emerald" -> 0x3DDC84;
+			case "tc_ice" -> 0x7FE8FF;
+			case "tc_fire" -> 0xFF6A2B;
+			case "tc_violet" -> 0xB07CFF;
+			default -> 0xF2C14E;
+		};
 	}
 
 	/** Name eines Artikels für die Liste. */

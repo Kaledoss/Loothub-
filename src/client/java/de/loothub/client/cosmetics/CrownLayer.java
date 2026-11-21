@@ -27,7 +27,12 @@ public final class CrownLayer extends RenderLayer<AvatarRenderState, PlayerModel
 			"ice", Identifier.fromNamespaceAndPath(Loothub.MOD_ID, "textures/entity/crown_ice.png"),
 			"nether", Identifier.fromNamespaceAndPath(Loothub.MOD_ID, "textures/entity/crown_nether.png"),
 			"halo", Identifier.fromNamespaceAndPath(Loothub.MOD_ID, "textures/entity/crown_halo.png"),
-			"holly", Identifier.fromNamespaceAndPath(Loothub.MOD_ID, "textures/entity/crown_holly.png"));
+			"holly", Identifier.fromNamespaceAndPath(Loothub.MOD_ID, "textures/entity/crown_holly.png"),
+			"easter", Identifier.fromNamespaceAndPath(Loothub.MOD_ID, "textures/entity/crown_easter.png"),
+			"shell", Identifier.fromNamespaceAndPath(Loothub.MOD_ID, "textures/entity/crown_shell.png"),
+			"pumpkin", Identifier.fromNamespaceAndPath(Loothub.MOD_ID, "textures/entity/crown_pumpkin.png"));
+	/** Kränze: ganze Verzierung (Blüte, Ei, Kürbis …) statt Zacke. */
+	private static final java.util.Set<String> WREATHS = java.util.Set.of("flower", "holly", "easter", "shell", "pumpkin");
 	private static final int SEGMENTS = 8;
 	private static final float PX = 1.0F / 16.0F;
 	private static final float RADIUS = 3.0F, BAND = 1.6F, SPIKE = 1.9F;
@@ -58,7 +63,7 @@ public final class CrownLayer extends RenderLayer<AvatarRenderState, PlayerModel
 		String style = Cosmetics.crownStyle(state);
 		Identifier tex = STYLES.getOrDefault(style, TEXTURE);
 		boolean halo = style.equals("halo"); // flacher, leuchtender Ring ohne Zacken, etwas höher
-		boolean wreath = style.equals("flower") || style.equals("holly"); // Kranz: Blüten bzw. Stechpalme statt Zacken
+		boolean wreath = WREATHS.contains(style);
 		final int lit = halo ? 0xF000F0 : light;
 		final float spike = halo ? 0.0F : wreath ? 2.3F : SPIKE; // Kranz: Blüte so hoch wie breit
 		final float band = halo ? 0.7F : BAND;
