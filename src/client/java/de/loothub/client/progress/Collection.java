@@ -96,6 +96,12 @@ final class Collection {
 		if (id.contains("sculk") || id.equals("sea_pickle") || id.contains("grass") || id.equals("jukebox")) {
 			return true;
 		}
+		// Tropfblätter, Schneeschicht, Fackeln, Schwämme, Eier, Knöpfe, seltsame Blöcke, TNT, Ranken, Tresor, Prüfungsspawner, Blitzableiter
+		if (id.contains("dripleaf") || id.equals("snow") || id.contains("torch") || id.endsWith("sponge") || id.endsWith("_egg")
+				|| id.endsWith("_button") || id.startsWith("suspicious_") || id.equals("tnt") || id.contains("vine") || id.equals("vault")
+				|| id.equals("trial_spawner") || id.contains("lightning_rod")) {
+			return true;
+		}
 		// Kupfer: nur die Erze zählen
 		if (id.contains("copper") && !id.endsWith("copper_ore")) {
 			return true;
