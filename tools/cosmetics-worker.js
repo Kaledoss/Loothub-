@@ -726,6 +726,9 @@ function lhColExcluded(kind, id) {
 		|| /(_froglight|_concrete|_concrete_powder)$/.test(id)) return true;
 	if (id.startsWith("dead_") || ["decorated_pot", "dried_kelp_block", "end_rod", "frogspawn", "bush", "honeycomb_block"].includes(id)
 		|| /(_bush|_roots|_pressure_plate)$/.test(id)) return true;
+	if (/(_door|_trapdoor|_bars|_sprouts)$/.test(id) || id.includes("pillar")
+		|| ["leaf_litter", "ladder", "packed_mud", "pale_hanging_moss", "pointed_dripstone", "scaffolding", "rooted_dirt"].includes(id)
+		|| (id.includes("amethyst") && id !== "amethyst_block" && id !== "budding_amethyst")) return true;
 	if (id.includes("copper") && !id.endsWith("copper_ore")) return true;
 	if (id.includes("deepslate") && id !== "deepslate" && id !== "cobbled_deepslate" && !id.endsWith("_ore")) return true;
 	return LH_WOODS.some((w) => id.startsWith(`${w}_`) && !/(_log|_stem|_nylium)$/.test(id) && id !== "bamboo_block");

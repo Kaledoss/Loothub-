@@ -84,6 +84,14 @@ final class Collection {
 				|| id.equals("honeycomb_block") || id.endsWith("_pressure_plate")) {
 			return true;
 		}
+		// Türen, Falltüren und Gitter aller Metalle, Laub, Leitern, Amethyst (außer Block und knospender), Sprossen, Lehmziegel,
+		// Blasses hängendes Moos, Tropfstein-Spitzen, Säulen, Gerüste, Wurzelerde
+		if (id.endsWith("_door") || id.endsWith("_trapdoor") || id.endsWith("_bars") || id.equals("leaf_litter") || id.equals("ladder")
+				|| (id.contains("amethyst") && !id.equals("amethyst_block") && !id.equals("budding_amethyst")) || id.endsWith("_sprouts")
+				|| id.equals("packed_mud") || id.equals("pale_hanging_moss") || id.equals("pointed_dripstone") || id.contains("pillar")
+				|| id.equals("scaffolding") || id.equals("rooted_dirt")) {
+			return true;
+		}
 		// Kupfer: nur die Erze zählen
 		if (id.contains("copper") && !id.endsWith("copper_ore")) {
 			return true;
