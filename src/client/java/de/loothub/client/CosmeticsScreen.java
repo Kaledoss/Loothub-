@@ -499,8 +499,8 @@ public class CosmeticsScreen extends LoothubScreen {
 	// ------------------------------------------------------------------ Auswahllisten
 
 	private static final String[] WING_OPTIONS = {"", "dragon", "devil", "angel", "drake"};
-	private static final String[] PET_OPTIONS = {"", "slime", "allay", "bee", "vex", "wolf", "penguin", "dragon", "panda", "red_panda", "donkey", "zombie", "serpent", "turtle", "hummingbird", "phoenix", "golddragon", "xmaspenguin", "chick", "bat", "parrot"};
-	private static final String[] HEAD_OPTIONS = {"", "minime", "slime", "allay", "bee", "vex", "wolf", "penguin", "dragon", "panda", "red_panda", "donkey", "zombie", "serpent", "turtle", "hummingbird", "phoenix", "golddragon", "xmaspenguin", "chick", "bat", "parrot"};
+	private static final String[] PET_OPTIONS = {"", "slime", "allay", "bee", "vex", "wolf", "penguin", "dragon", "panda", "red_panda", "donkey", "sheep", "zombie", "serpent", "turtle", "hummingbird", "phoenix", "golddragon", "xmaspenguin", "chick", "bat", "parrot"};
+	private static final String[] HEAD_OPTIONS = {"", "minime", "slime", "allay", "bee", "vex", "wolf", "penguin", "dragon", "panda", "red_panda", "donkey", "sheep", "zombie", "serpent", "turtle", "hummingbird", "phoenix", "golddragon", "xmaspenguin", "chick", "bat", "parrot"};
 	/** Krone: aus, Gold (frei) und die Stile aus dem Loothub-Shop. */
 	private static final String[] CROWN_OPTIONS = {"", "gold", "flower", "ice", "nether", "halo", "holly", "easter", "shell", "pumpkin"};
 

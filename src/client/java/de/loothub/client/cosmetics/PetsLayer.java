@@ -46,6 +46,8 @@ public final class PetsLayer extends RenderLayer<AvatarRenderState, PlayerModel>
 	private static final Identifier DRAGON_TEX = Identifier.fromNamespaceAndPath("loothub", "textures/entity/mini_dragon.png");
 	private static final Identifier DONKEY_TEX = Identifier.withDefaultNamespace("textures/entity/horse/donkey.png");
 	private static final Identifier PANDA_TEX = Identifier.withDefaultNamespace("textures/entity/panda/panda.png");
+	private static final Identifier SHEEP_TEX = Identifier.withDefaultNamespace("textures/entity/sheep/sheep.png");
+	private static final Identifier SHEEP_WOOL_TEX = Identifier.withDefaultNamespace("textures/entity/sheep/sheep_wool.png");
 	private static final Identifier ZOMBIE_TEX = Identifier.withDefaultNamespace("textures/entity/zombie/zombie.png");
 	private static final Identifier RED_PANDA_TEX = Identifier.fromNamespaceAndPath("loothub", "textures/entity/red_panda.png");
 	private static final Identifier TURTLE_TEX = Identifier.fromNamespaceAndPath("loothub", "textures/entity/turtle.png");
@@ -72,6 +74,8 @@ public final class PetsLayer extends RenderLayer<AvatarRenderState, PlayerModel>
 	private final BeeModel bee;
 	private final VexModel vex;
 	private final WolfModel wolf;
+	private final net.minecraft.client.model.animal.sheep.SheepModel sheep;
+	private final net.minecraft.client.model.animal.sheep.SheepFurModel sheepWool;
 	private final PetModels.Penguin penguin = new PetModels.Penguin();
 	private final PetModels.Dragon dragon = new PetModels.Dragon();
 	private final PetModels.Serpent serpent = new PetModels.Serpent();
@@ -93,6 +97,8 @@ public final class PetsLayer extends RenderLayer<AvatarRenderState, PlayerModel>
 		wolf = new WolfModel(models.bakeLayer(ModelLayers.WOLF));
 		panda = new PandaModel(models.bakeLayer(ModelLayers.PANDA_BABY));
 		donkey = new net.minecraft.client.model.animal.equine.DonkeyModel(models.bakeLayer(ModelLayers.DONKEY_BABY));
+		sheep = new net.minecraft.client.model.animal.sheep.SheepModel(models.bakeLayer(ModelLayers.SHEEP_BABY));
+		sheepWool = new net.minecraft.client.model.animal.sheep.SheepFurModel(models.bakeLayer(ModelLayers.SHEEP_BABY_WOOL));
 		zombie = new ZombieModel(models.bakeLayer(ModelLayers.ZOMBIE_BABY));
 	}
 
@@ -151,6 +157,7 @@ public final class PetsLayer extends RenderLayer<AvatarRenderState, PlayerModel>
 				case "panda" -> 0.55F;
 				case "red_panda" -> 0.6F;
 				case "donkey" -> 0.6F;
+				case "sheep" -> 0.6F;
 				case "zombie" -> 0.6F;
 				case "turtle" -> 0.7F;
 				case "hummingbird" -> 0.75F;
@@ -280,6 +287,21 @@ public final class PetsLayer extends RenderLayer<AvatarRenderState, PlayerModel>
 					s.eatAnimation = Mth.clamp((lie - 0.3F) / 0.4F, 0F, 1F);
 					submit(collector, poseStack, donkey, s, DONKEY_TEX);
 				}
+				case "sheep" -> {
+					// Lamm (Minecraft-Modell): springt beim Spielen, grast beim AFK
+					net.minecraft.client.renderer.entity.state.SheepRenderState s = base(
+							new net.minecraft.client.renderer.entity.state.SheepRenderState(), t,
+							Math.min(1F, Math.max(state.walkAnimationSpeed * 1.5F, p[4] * 2.5F)));
+					s.isBaby = true;
+					float eat = Mth.clamp((lie - 0.3F) / 0.4F, 0F, 1F);
+					s.headEatPositionScale = eat;
+					s.headEatAngleScale = eat * 0.6F;
+					if (playing) {
+						poseStack.translate(0.0F, -Math.abs(Mth.sin(t * 0.3F)) * 0.4F, 0.0F); // hüpft
+					}
+					submit(collector, poseStack, sheep, s, SHEEP_TEX);
+					submit(collector, poseStack, sheepWool, s, SHEEP_WOOL_TEX);
+				}
 				case "red_panda" -> {
 					// Minecraft-Stil (Würfelmodell); beim Spielen richtet er sich auf, beim AFK rollt er sich zusammen
 					PetModels.RedPandaState s = base(new PetModels.RedPandaState(), t,
@@ -330,6 +352,7 @@ public final class PetsLayer extends RenderLayer<AvatarRenderState, PlayerModel>
 			// gut sichtbar, aber nicht breiter als der Kopf
 			case "dragon", "serpent" -> 0.34F;
 			case "donkey" -> 0.38F;
+			case "sheep" -> 0.42F;
 			case "wolf", "red_panda" -> 0.46F;
 			case "turtle" -> 0.5F;
 			case "hummingbird" -> 0.6F;
@@ -404,6 +427,16 @@ public final class PetsLayer extends RenderLayer<AvatarRenderState, PlayerModel>
 				s.animateTail = true;
 				s.eatAnimation = lie > 0.5F ? 1.0F : 0.0F; // neben dem schlafenden Spieler: grasen
 				submit(collector, poseStack, donkey, s, DONKEY_TEX);
+			}
+			case "sheep" -> {
+				net.minecraft.client.renderer.entity.state.SheepRenderState s = base(
+						new net.minecraft.client.renderer.entity.state.SheepRenderState(), t, 0.0F);
+				s.isBaby = true;
+				float eat = lie > 0.5F ? 1.0F : 0.0F; // neben dem schlafenden Spieler: grasen
+				s.headEatPositionScale = eat;
+				s.headEatAngleScale = eat * 0.6F;
+				submit(collector, poseStack, sheep, s, SHEEP_TEX);
+				submit(collector, poseStack, sheepWool, s, SHEEP_WOOL_TEX);
 			}
 			case "red_panda" -> {
 				PetModels.RedPandaState s = base(new PetModels.RedPandaState(), t, 0.0F);
