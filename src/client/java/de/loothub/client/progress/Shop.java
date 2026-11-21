@@ -13,12 +13,13 @@ public final class Shop {
 	public static final Map<String, String> STEPS = Map.ofEntries(Map.entry("c_hearts", "hearts"), Map.entry("c_notes", "notes"),
 			Map.entry("c_snow", "snow"), Map.entry("c_magic", "magic"), Map.entry("c_soul", "soul"), Map.entry("c_stars", "stars"),
 			Map.entry("c_cherry", "cherry"), Map.entry("c_glow", "glow"), Map.entry("c_totem", "totem"),
-			Map.entry("c_rainbow", "rainbow"));
+			Map.entry("c_rainbow", "rainbow"), Map.entry("c_candy", "candy"));
 	/** Kronen-Stile aus dem Shop. */
 	public static final Map<String, String> CROWNS = Map.of("k_flower", "flower", "k_ice", "ice", "k_nether", "nether",
-			"k_halo", "halo");
+			"k_halo", "halo", "k_holly", "holly");
 	/** Haustiere aus dem Shop. */
-	public static final Map<String, String> PETS = Map.of("p_phoenix", "phoenix", "p_golddragon", "golddragon");
+	public static final Map<String, String> PETS = Map.of("p_phoenix", "phoenix", "p_golddragon", "golddragon", "p_xmaspenguin",
+			"xmaspenguin");
 	/** Augen-Effekte aus dem Shop. */
 	public static final Map<String, String> EYES = Map.of("e_rainbow", "rainbow");
 
@@ -33,7 +34,7 @@ public final class Shop {
 	/** Abzeichen der Reihe nach als Zeichen der Schrift loothub:badges (Pixel-Icons von Ludo). */
 	private static final java.util.List<String> BADGE_ORDER = java.util.List.of("b_star", "b_heart", "b_diamond", "b_sun",
 			"b_moon", "b_flower", "b_sword", "b_bolt", "b_note", "b_skull", "b_crown", "b_fire", "b_leaf", "b_shield", "b_potion",
-			"b_emerald", "b_trident");
+			"b_emerald", "b_trident", "b_ores", "b_hunter");
 	private static final net.minecraft.resources.Identifier BADGE_FONT =
 			net.minecraft.resources.Identifier.fromNamespaceAndPath("loothub", "badges");
 

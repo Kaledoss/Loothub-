@@ -499,10 +499,10 @@ public class CosmeticsScreen extends LoothubScreen {
 	// ------------------------------------------------------------------ Auswahllisten
 
 	private static final String[] WING_OPTIONS = {"", "dragon", "devil", "angel", "drake"};
-	private static final String[] PET_OPTIONS = {"", "slime", "allay", "bee", "vex", "wolf", "penguin", "dragon", "panda", "red_panda", "donkey", "zombie", "serpent", "turtle", "hummingbird", "phoenix", "golddragon"};
-	private static final String[] HEAD_OPTIONS = {"", "minime", "slime", "allay", "bee", "vex", "wolf", "penguin", "dragon", "panda", "red_panda", "donkey", "zombie", "serpent", "turtle", "hummingbird", "phoenix", "golddragon"};
+	private static final String[] PET_OPTIONS = {"", "slime", "allay", "bee", "vex", "wolf", "penguin", "dragon", "panda", "red_panda", "donkey", "zombie", "serpent", "turtle", "hummingbird", "phoenix", "golddragon", "xmaspenguin"};
+	private static final String[] HEAD_OPTIONS = {"", "minime", "slime", "allay", "bee", "vex", "wolf", "penguin", "dragon", "panda", "red_panda", "donkey", "zombie", "serpent", "turtle", "hummingbird", "phoenix", "golddragon", "xmaspenguin"};
 	/** Krone: aus, Gold (frei) und die Stile aus dem Loothub-Shop. */
-	private static final String[] CROWN_OPTIONS = {"", "gold", "flower", "ice", "nether", "halo"};
+	private static final String[] CROWN_OPTIONS = {"", "gold", "flower", "ice", "nether", "halo", "holly"};
 
 	/** Haustiere: freie und die im Loothub-Shop gekauften. */
 	private static String[] petOptions(String[] all) {
@@ -513,7 +513,7 @@ public class CosmeticsScreen extends LoothubScreen {
 	private static final String[] MAX_OPTIONS = {"", "0", "1", "3", "5", "10"};
 	private static final String[] TRAIT_OPTIONS = {"", "playful", "shy", "brave", "lazy", "curious"};
 	private static final String[] STEP_OPTIONS = {"", "sparks", "flames", "hearts", "notes", "snow", "magic", "soul", "stars", "cherry",
-			"glow", "totem", "rainbow"};
+			"glow", "totem", "rainbow", "candy"};
 
 	/** Fußspuren: freie Stile und die im Loothub-Shop gekauften. */
 	private static String[] stepOptions() {

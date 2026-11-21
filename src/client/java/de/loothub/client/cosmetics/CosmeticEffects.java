@@ -88,6 +88,11 @@ public final class CosmeticEffects {
 						mc.level.addParticle(new DustParticleOptions(rgb, 1.1F), x + (r.nextDouble() - 0.5) * 0.25, y + 0.05,
 								z + (r.nextDouble() - 0.5) * 0.25, 0.0, 0.02, 0.0);
 					}
+				} else if (steps.equals("candy")) {
+					// Zuckerstange: rot und weiß im Wechsel
+					int rgb = (p.tickCount / 3) % 2 == 0 ? 0xE23B3B : 0xFFFFFF;
+					mc.level.addParticle(new DustParticleOptions(rgb, 1.2F), x + (r.nextDouble() - 0.5) * 0.25, y + 0.05,
+							z + (r.nextDouble() - 0.5) * 0.25, 0.0, 0.02, 0.0);
 				} else if (steps.equals("cherry")) {
 					// Kirschblüten: rosa Blättchen, die langsam herabsinken
 					if (p.tickCount % 4 == 0) {

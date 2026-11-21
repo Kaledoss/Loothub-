@@ -53,8 +53,8 @@ public class PlayerCardScreen extends Screen {
 	@Override
 	public void render(GuiGraphics g, int mouseX, int mouseY, float delta) {
 		super.render(g, mouseX, mouseY, delta);
-		int w = 300, h = 180;
-		int x = (width - w) / 2, y = height / 2 - 90;
+		int w = 320, h = 214;
+		int x = (width - w) / 2, y = height / 2 - 107;
 		if (MenuSkin.on()) {
 			MenuSkin.card(g, x, y, w, h);
 		} else {
@@ -86,6 +86,27 @@ public class PlayerCardScreen extends Screen {
 		ry = row(g, tx, ry, w - 110, "loothub.lh.card.earned", Fmt.whole(data.get("earned").getAsLong()));
 		ry = row(g, tx, ry, w - 110, "loothub.lh.card.ach",
 				data.get("ach").getAsLong() + " / " + data.get("achMax").getAsLong());
+		if (data.has("achTiers")) {
+			// beste Heldentat mit Rang, Anzahl legendärer Heldentaten, Sammlungsränge
+			String best = null;
+			int bestTier = 0;
+			for (var e : data.getAsJsonObject("achTiers").entrySet()) {
+				int t = e.getValue().getAsInt();
+				if (t > bestTier) {
+					bestTier = t;
+					best = e.getKey();
+				}
+			}
+			final int bt = bestTier;
+			Component bestLine = best == null ? Component.literal("–")
+					: Component.empty().append(Texts.achName(best)).append(" · ")
+							.append(Texts.rank(bt, 30).copy().withStyle(st -> st.withColor(Texts.rankColor(bt, 30) & 0xFFFFFF)));
+			g.drawString(font, Component.translatable("loothub.lh.card.best"), tx, ry, 0xFFB9A9AB, false);
+			g.drawString(font, bestLine, tx + w - 110 - font.width(bestLine), ry, 0xFFFFFFFF, false);
+			ry += 11;
+			ry = row(g, tx, ry, w - 110, "loothub.lh.card.legendary", Fmt.whole(data.get("legendary").getAsLong()));
+			ry = row(g, tx, ry, w - 110, "loothub.lh.card.col", Fmt.whole(data.get("colTiers").getAsLong()));
+		}
 		ry = row(g, tx, ry, w - 110, "loothub.lh.card.login", Component.translatable("loothub.lh.card.login.value",
 				days(data.get("loginCur").getAsLong()), days(data.get("loginBest").getAsLong())).getString());
 		ry = row(g, tx, ry, w - 110, "loothub.lh.board.dquests", Fmt.whole(data.get("dquests").getAsLong()));

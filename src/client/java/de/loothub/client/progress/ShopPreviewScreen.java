@@ -167,6 +167,7 @@ public class ShopPreviewScreen extends Screen {
 			case "snow" -> new Spark(x, y - 30, vx, 14.0F, now, 0xFFFFFF, "❄");
 			case "magic" -> new Spark(x, y, vx, -20.0F, now, 0xB66BFF, "✦");
 			case "soul" -> new Spark(x, y, vx * 0.5F, -24.0F, now, 0x5FD8FF, "▲");
+			case "candy" -> new Spark(x, y, vx, -18.0F, now, random.nextBoolean() ? 0xE23B3B : 0xFFFFFF, "■");
 			case "cherry" -> new Spark(x, y - 30, vx, 12.0F, now, 0xFFB7D5, "❀");
 			case "glow" -> new Spark(x, y, vx * 0.4F, -10.0F, now, 0x7FFFD4, "●");
 			case "totem" -> new Spark(x, y, vx * 1.5F, -30.0F, now, random.nextBoolean() ? 0xF2D64B : 0x6BD84E, "✦");

@@ -152,6 +152,24 @@
       "chars": [
         "\ue010"
       ]
+    },
+    {
+      "type": "bitmap",
+      "file": "loothub:font/badges/b_ores.png",
+      "ascent": 7,
+      "height": 8,
+      "chars": [
+        "\ue011"
+      ]
+    },
+    {
+      "type": "bitmap",
+      "file": "loothub:font/badges/b_hunter.png",
+      "ascent": 7,
+      "height": 8,
+      "chars": [
+        "\ue012"
+      ]
     }
   ]
 }

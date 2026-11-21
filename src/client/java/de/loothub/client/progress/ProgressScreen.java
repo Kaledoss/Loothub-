@@ -604,10 +604,12 @@ public class ProgressScreen extends LoothubScreen {
 		}
 		String self = net.minecraft.client.Minecraft.getInstance().getUser().getProfileId().toString();
 		int rank = 0;
+		boolean meShown = false;
 		for (JsonElement e : list) {
 			JsonArray r = e.getAsJsonArray();
 			rank++;
 			boolean me = r.get(0).getAsString().equalsIgnoreCase(self);
+			meShown |= me;
 			if (me) {
 				g.fill(cl, y - 1, cr, y + 11, 0x30E23B3B);
 			}
@@ -623,6 +625,22 @@ public class ProgressScreen extends LoothubScreen {
 					Component.translatable("loothub.lh.card.open")));
 			String v = boardValue(board, r.get(3).getAsLong());
 			g.drawString(font, v, cr - 4 - font.width(v), y + 1, me ? TEXT : MUTED, false);
+			y += 13;
+		}
+		// eigene Position, wenn man nicht unter den gezeigten Plätzen ist
+		if (!meShown && b.has("me") && b.get("me").isJsonObject()) {
+			JsonObject me = b.getAsJsonObject("me");
+			y += 4;
+			g.fill(cl + 4, y - 3, cr - 4, y - 2, 0x40FFFFFF);
+			g.fill(cl, y - 1, cr, y + 11, 0x30E23B3B);
+			g.drawString(font, "#" + Fmt.whole(me.get("rank").getAsLong()), cl + 4, y + 1, MUTED, false);
+			g.drawString(font, Component.translatable("loothub.lh.board.you"), cl + 34, y + 1, TEXT, false);
+			String v = boardValue(board, me.get("v").getAsLong());
+			g.drawString(font, v, cr - 4 - font.width(v), y + 1, TEXT, false);
+			y += 13;
+		} else if (!meShown) {
+			y += 4;
+			g.drawString(font, Component.translatable("loothub.lh.board.notyet"), cl + 8, y + 1, FAINT, false);
 			y += 13;
 		}
 		return y;
@@ -657,97 +675,190 @@ public class ProgressScreen extends LoothubScreen {
 		}
 	}
 
+	private static JsonObject extra(JsonArray a) {
+		return a.size() > 3 && a.get(3).isJsonObject() ? a.get(3).getAsJsonObject() : null;
+	}
+
 	private int drawShop(GuiGraphics g, JsonObject s, int y) {
-		JsonArray shop = s.getAsJsonObject("cat").getAsJsonArray("shop");
-		long balance = s.get("balance").getAsLong();
-		String title = s.get("title").getAsString(), badge = s.get("badge").getAsString();
-		for (String kind : new String[]{"freeze", "title", "badge", "steps", "crown", "eyes", "pet"}) {
-			boolean cosmetic = kind.equals("steps") || kind.equals("crown") || kind.equals("eyes") || kind.equals("pet");
-			boolean any = false;
-			for (JsonElement e : shop) {
-				any |= e.getAsJsonArray().get(1).getAsString().equals(kind);
-			}
-			if (!any) {
-				continue; // ältere Server-Version ohne diese Artikel
-			}
-			y = section(g, Component.translatable("loothub.lh.shop.section." + kind),
-					cosmetic ? Component.translatable("loothub.lh.shop.steps.hint") : null, y);
+		JsonObject cat = s.getAsJsonObject("cat");
+		JsonArray shop = cat.getAsJsonArray("shop");
+		JsonObject offer = cat.has("offer") ? cat.getAsJsonObject("offer") : null;
+		JsonObject seasons = cat.has("seasons") ? cat.getAsJsonObject("seasons") : new JsonObject();
+
+		// Angebot des Tages
+		if (offer != null) {
+			String oid = offer.get("id").getAsString();
 			for (JsonElement e : shop) {
 				JsonArray a = e.getAsJsonArray();
-				if (!a.get(1).getAsString().equals(kind)) {
+				if (a.get(0).getAsString().equals(oid)) {
+					int off = cat.has("offerOff") ? (int) Math.round(cat.get("offerOff").getAsDouble() * 100) : 25;
+					y = section(g, Component.translatable("loothub.lh.shop.section.offer"),
+							Component.translatable("loothub.lh.shop.offer.hint", off), y);
+					y = shopRow(g, s, a, y, offer.get("cost").getAsInt());
+					y += 6;
+				}
+			}
+		}
+		// Saison-Artikel (nur während der Saison kaufbar; Gekauftes bleibt sichtbar)
+		for (String season : seasons.keySet()) {
+			JsonObject se = seasons.getAsJsonObject(season);
+			boolean on = se.get("on").getAsBoolean();
+			List<JsonArray> items = new ArrayList<>();
+			for (JsonElement e : shop) {
+				JsonArray a = e.getAsJsonArray();
+				JsonObject x = extra(a);
+				if (x != null && x.has("season") && x.get("season").getAsString().equals(season) && (on || Shop.owned(a.get(0).getAsString()))) {
+					items.add(a);
+				}
+			}
+			if (items.isEmpty()) {
+				continue;
+			}
+			JsonArray until = se.getAsJsonArray("until");
+			y = section(g, Component.translatable("loothub.lh.shop.section.season." + season),
+					on ? Component.translatable("loothub.lh.shop.season.until", until.get(1).getAsInt(), until.get(0).getAsInt())
+							: Component.translatable("loothub.lh.shop.season.over"), y);
+			for (JsonArray a : items) {
+				y = shopRow(g, s, a, y, -1);
+			}
+			y += 6;
+		}
+		for (String kind : new String[]{"freeze", "title", "badge", "fame", "steps", "crown", "eyes", "pet"}) {
+			List<JsonArray> items = new ArrayList<>();
+			for (JsonElement e : shop) {
+				JsonArray a = e.getAsJsonArray();
+				JsonObject x = extra(a);
+				boolean reward = x != null && (x.has("ach") || x.has("col"));
+				boolean seasonal = x != null && x.has("season");
+				if (seasonal) {
 					continue;
 				}
-				String id = a.get(0).getAsString();
-				int cost = a.get(2).getAsInt();
-				boolean owned = Shop.owned(id);
-				if (kind.equals("freeze")) {
-					// verbrauchbar: immer kaufbar, Anzahl daneben
-					int have = s.getAsJsonObject("login").has("freeze") ? s.getAsJsonObject("login").get("freeze").getAsInt() : 0;
-					g.drawString(font, Component.literal("❄ ").withStyle(st2 -> st2.withColor(0x7FB3FF)).append(Shop.name(id))
-							.append(Component.translatable("loothub.lh.freeze.have", have).withStyle(ChatFormatting.GRAY)), cl + 8, y + 4, TEXT, false);
-					String price = Component.translatable("loothub.lh.shop.cost", Fmt.whole(cost)).getString();
-					int bw = 74, bx2 = cr - bw;
-					g.drawString(font, price, bx2 - 10 - font.width(price), y + 4, 0xFFF2C14E, false);
-					boolean can = balance >= cost;
-					Component label = Component.translatable("loothub.lh.shop.buy");
-					g.fill(bx2, y + 1, cr, y + 15, can ? 0xFFE23B3B : 0xFF4A3A3C);
-					g.drawString(font, label, bx2 + (bw - font.width(label)) / 2, y + 4, TEXT, false);
-					hits.add(new Hit(bx2, y + 1, bw, 14, can ? () -> confirmBuy(id, cost) : null,
-							can ? Component.translatable("loothub.lh.freeze.tip") : Component.translatable("loothub.lh.shop.poor", Fmt.whole(cost - balance))));
-					y += 18;
-					continue;
+				if (kind.equals("fame") ? reward : !reward && a.get(1).getAsString().equals(kind)) {
+					items.add(a);
 				}
-				Component preview = switch (kind) {
-					case "title" -> Shop.titleText(id);
-					case "badge" -> Component.empty().append(Shop.badge(id) == null ? Component.literal("?") : Shop.badge(id)).append("  ")
-							.append(Shop.name(id).copy().withStyle(ChatFormatting.GRAY));
-					default -> Shop.name(id);
-				};
-				g.drawString(font, preview, cl + 8, y + 4, TEXT, false);
-				String price = Component.translatable("loothub.lh.shop.cost", Fmt.whole(cost)).getString();
-				int btnW = 74;
-				int bx = cr - btnW;
-				g.drawString(font, price, bx - 10 - font.width(price), y + 4, owned ? FAINT : 0xFFF2C14E, false);
-				boolean worn = kind.equals("title") ? id.equals(title) : kind.equals("badge") && id.equals(badge);
-				Component label;
-				int color;
-				Runnable action;
-				Component tip = null;
-				if (!owned) {
-					boolean can = balance >= cost;
-					label = Component.translatable("loothub.lh.shop.buy");
-					color = can ? 0xFFE23B3B : 0xFF4A3A3C;
-					action = can ? () -> confirmBuy(id, cost) : null;
-					tip = can ? null : Component.translatable("loothub.lh.shop.poor", Fmt.whole(cost - balance));
-				} else if (cosmetic) {
-					label = Component.translatable("loothub.lh.shop.owned");
-					color = 0xFF2E5E36;
-					action = null;
-					tip = Component.translatable("loothub.lh.shop.steps.tip");
-				} else if (worn) {
-					label = Component.translatable("loothub.lh.shop.worn");
-					color = 0xFF2E7D3A;
-					action = () -> equip(kind, "");
-					tip = Component.translatable("loothub.lh.shop.unequip");
-				} else {
-					label = Component.translatable("loothub.lh.shop.equip");
-					color = 0xFF6E2A30;
-					action = () -> equip(kind, id);
-				}
-				g.fill(bx, y + 1, cr, y + 15, color);
-				g.drawString(font, label, bx + (btnW - font.width(label)) / 2, y + 4, TEXT, false);
-				if (action != null || tip != null) {
-					hits.add(new Hit(bx, y + 1, btnW, 14, action, tip));
-				}
-				// Klick auf die Zeile: Vorschau am eigenen Spieler
-				String pk = kind;
-				hits.add(new Hit(cl, y, bx - 10 - cl, 16, () -> minecraft.setScreen(new ShopPreviewScreen(this, id, pk, cost)),
-						Component.translatable("loothub.lh.preview.click")));
-				y += 18;
+			}
+			if (items.isEmpty()) {
+				continue; // ältere Server-Version ohne diese Artikel
+			}
+			boolean cosmetic = kind.equals("steps") || kind.equals("crown") || kind.equals("eyes") || kind.equals("pet");
+			y = section(g, Component.translatable("loothub.lh.shop.section." + kind),
+					cosmetic ? Component.translatable("loothub.lh.shop.steps.hint")
+							: kind.equals("fame") ? Component.translatable("loothub.lh.shop.fame.hint") : null, y);
+			for (JsonArray a : items) {
+				y = shopRow(g, s, a, y, -1);
 			}
 			y += 6;
 		}
 		return y;
+	}
+
+	/** Eine Shop-Zeile: Vorschau, Preis (oder Bedingung) und Knopf zum Kaufen, Anlegen bzw. Ablegen. */
+	private int shopRow(GuiGraphics g, JsonObject s, JsonArray a, int y, int priceOverride) {
+		long balance = s.get("balance").getAsLong();
+		String title = s.get("title").getAsString(), badge = s.get("badge").getAsString();
+		JsonObject cat = s.getAsJsonObject("cat");
+		String id = a.get(0).getAsString();
+		String kind = a.get(1).getAsString();
+		int base = a.get(2).getAsInt();
+		JsonObject x = extra(a);
+		boolean reward = x != null && (x.has("ach") || x.has("col"));
+		// Angebot des Tages gilt überall, wo der Artikel steht
+		int cost = priceOverride >= 0 ? priceOverride : base;
+		if (priceOverride < 0 && cat.has("offer") && cat.getAsJsonObject("offer").get("id").getAsString().equals(id)) {
+			cost = cat.getAsJsonObject("offer").get("cost").getAsInt();
+		}
+		final int price = cost;
+		boolean owned = Shop.owned(id);
+		boolean cosmetic = kind.equals("steps") || kind.equals("crown") || kind.equals("eyes") || kind.equals("pet");
+		if (kind.equals("freeze")) {
+			// verbrauchbar: immer kaufbar, Anzahl daneben
+			int have = s.getAsJsonObject("login").has("freeze") ? s.getAsJsonObject("login").get("freeze").getAsInt() : 0;
+			g.drawString(font, Component.literal("❄ ").withStyle(st2 -> st2.withColor(0x7FB3FF)).append(Shop.name(id))
+					.append(Component.translatable("loothub.lh.freeze.have", have).withStyle(ChatFormatting.GRAY)), cl + 8, y + 4, TEXT, false);
+			String ps = Component.translatable("loothub.lh.shop.cost", Fmt.whole(price)).getString();
+			int bw = 74, bx2 = cr - bw;
+			g.drawString(font, ps, bx2 - 10 - font.width(ps), y + 4, 0xFFF2C14E, false);
+			boolean can = balance >= price;
+			Component label = Component.translatable("loothub.lh.shop.buy");
+			g.fill(bx2, y + 1, cr, y + 15, can ? 0xFFE23B3B : 0xFF4A3A3C);
+			g.drawString(font, label, bx2 + (bw - font.width(label)) / 2, y + 4, TEXT, false);
+			hits.add(new Hit(bx2, y + 1, bw, 14, can ? () -> confirmBuy(id, price) : null,
+					can ? Component.translatable("loothub.lh.freeze.tip") : Component.translatable("loothub.lh.shop.poor", Fmt.whole(price - balance))));
+			return y + 18;
+		}
+		Component preview = switch (kind) {
+			case "title" -> Shop.titleText(id);
+			case "badge" -> Component.empty().append(Shop.badge(id) == null ? Component.literal("?") : Shop.badge(id)).append("  ")
+					.append(Shop.name(id).copy().withStyle(ChatFormatting.GRAY));
+			default -> Shop.name(id);
+		};
+		g.drawString(font, preview, cl + 8, y + 4, TEXT, false);
+		int btnW = 74;
+		int bx = cr - btnW;
+		// Preis bzw. Bedingung
+		Component need = null;
+		if (reward) {
+			if (x.has("ach")) {
+				need = Component.translatable("loothub.lh.shop.need.ach", Texts.achName(x.get("ach").getAsString()));
+			} else {
+				String c = x.get("col").getAsString();
+				JsonArray pr = s.has("colBadges") && s.getAsJsonObject("colBadges").has(c) ? s.getAsJsonObject("colBadges").getAsJsonArray(c) : null;
+				need = Component.translatable("loothub.lh.shop.need.col." + c, pr == null ? 0 : pr.get(0).getAsInt(), pr == null ? 0 : pr.get(1).getAsInt());
+			}
+			String ns = owned ? Component.translatable("loothub.lh.shop.unlocked").getString() : need.getString();
+			g.drawString(font, ns, bx - 10 - font.width(ns), y + 4, owned ? FAINT : MUTED, false);
+		} else {
+			String ps = Component.translatable("loothub.lh.shop.cost", Fmt.whole(price)).getString();
+			int px = bx - 10 - font.width(ps);
+			g.drawString(font, ps, px, y + 4, owned ? FAINT : 0xFFF2C14E, false);
+			if (price != base && !owned) {
+				// alter Preis durchgestrichen davor
+				String old = Fmt.whole(base);
+				int ox = px - 6 - font.width(old);
+				g.drawString(font, old, ox, y + 4, FAINT, false);
+				g.fill(ox - 1, y + 7, ox + font.width(old) + 1, y + 8, FAINT);
+			}
+		}
+		boolean worn = kind.equals("title") ? id.equals(title) : kind.equals("badge") && id.equals(badge);
+		Component label;
+		int color;
+		Runnable action;
+		Component tip = null;
+		if (!owned && reward) {
+			label = Component.translatable("loothub.lh.shop.locked");
+			color = 0xFF3A2E30;
+			action = null;
+			tip = need;
+		} else if (!owned) {
+			boolean can = balance >= price;
+			label = Component.translatable("loothub.lh.shop.buy");
+			color = can ? 0xFFE23B3B : 0xFF4A3A3C;
+			action = can ? () -> confirmBuy(id, price) : null;
+			tip = can ? null : Component.translatable("loothub.lh.shop.poor", Fmt.whole(price - balance));
+		} else if (cosmetic) {
+			label = Component.translatable("loothub.lh.shop.owned");
+			color = 0xFF2E5E36;
+			action = null;
+			tip = Component.translatable("loothub.lh.shop.steps.tip");
+		} else if (worn) {
+			label = Component.translatable("loothub.lh.shop.worn");
+			color = 0xFF2E7D3A;
+			action = () -> equip(kind, "");
+			tip = Component.translatable("loothub.lh.shop.unequip");
+		} else {
+			label = Component.translatable("loothub.lh.shop.equip");
+			color = 0xFF6E2A30;
+			action = () -> equip(kind, id);
+		}
+		g.fill(bx, y + 1, cr, y + 15, color);
+		g.drawString(font, label, bx + (btnW - font.width(label)) / 2, y + 4, TEXT, false);
+		if (action != null || tip != null) {
+			hits.add(new Hit(bx, y + 1, btnW, 14, action, tip));
+		}
+		// Klick auf die Zeile: Vorschau am eigenen Spieler
+		hits.add(new Hit(cl, y, Math.max(40, bx - 10 - cl - 140), 16, () -> minecraft.setScreen(new ShopPreviewScreen(this, id, kind, price)),
+				Component.translatable("loothub.lh.preview.click")));
+		return y + 18;
 	}
 
 	private void confirmBuy(String id, int cost) {

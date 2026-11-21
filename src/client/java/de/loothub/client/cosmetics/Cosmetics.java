@@ -69,9 +69,10 @@ public final class Cosmetics {
 	public static final String MINI_TRAITS = "minimetraits";
 	public static final List<String> TRAITS = List.of("playful", "shy", "brave", "lazy", "curious");
 	public static final List<String> FOOTSTEP_STYLES = List.of("sparks", "flames", "hearts", "notes", "snow", "magic", "soul", "stars");
-	public static final List<String> PET_TYPES = List.of("slime", "allay", "bee", "vex", "wolf", "penguin", "dragon", "panda", "zombie", "serpent", "red_panda", "donkey", "turtle", "hummingbird", "phoenix", "golddragon");
+	public static final List<String> PET_TYPES = List.of("slime", "allay", "bee", "vex", "wolf", "penguin", "dragon", "panda", "zombie", "serpent", "red_panda", "donkey", "turtle", "hummingbird", "phoenix", "golddragon", "xmaspenguin");
 	/** Shop-Haustiere: eigenes Aussehen auf dem Modell eines vorhandenen Haustiers. */
-	public static final java.util.Map<String, String> PET_SKINS = java.util.Map.of("phoenix", "hummingbird", "golddragon", "dragon");
+	public static final java.util.Map<String, String> PET_SKINS = java.util.Map.of("phoenix", "hummingbird", "golddragon", "dragon",
+			"xmaspenguin", "penguin");
 	/** Stil der Krone (leer = Gold; flower, ice, nether, halo aus dem Loothub-Shop). */
 	public static final String CROWN_STYLE = "crownstyle";
 	/** Vorschau im Shop: Cosmetics, die vorübergehend am eigenen Spieler gezeigt werden (Schlüssel → Wert, "" = nur an). */

@@ -53,7 +53,8 @@ public final class PetsLayer extends RenderLayer<AvatarRenderState, PlayerModel>
 	/** Shop-Haustiere: eigenes Aussehen auf vorhandenem Modell (Phönix = Kolibri, Golddrache = Drache). */
 	private static final java.util.Map<String, Identifier> SKIN_TEX = java.util.Map.of(
 			"phoenix", Identifier.fromNamespaceAndPath("loothub", "textures/entity/phoenix.png"),
-			"golddragon", Identifier.fromNamespaceAndPath("loothub", "textures/entity/gold_dragon.png"));
+			"golddragon", Identifier.fromNamespaceAndPath("loothub", "textures/entity/gold_dragon.png"),
+			"xmaspenguin", Identifier.fromNamespaceAndPath("loothub", "textures/entity/xmas_penguin.png"));
 	/** Aussehen des gerade gezeichneten Haustiers (null = normal). */
 	private String skin;
 
@@ -253,7 +254,7 @@ public final class PetsLayer extends RenderLayer<AvatarRenderState, PlayerModel>
 						poseStack.translate(0.0F, -1.5F, 0.0F);
 					}
 					submit(collector, poseStack, penguin,
-							base(new LivingEntityRenderState(), t, Math.min(1F, Math.max(state.walkAnimationSpeed * 1.5F, p[4] * 2.5F))), PENGUIN_TEX);
+							base(new LivingEntityRenderState(), t, Math.min(1F, Math.max(state.walkAnimationSpeed * 1.5F, p[4] * 2.5F))), tex(PENGUIN_TEX));
 				}
 				case "panda" -> {
 					PandaRenderState s = base(new PandaRenderState(), t, Math.min(1F, Math.max(state.walkAnimationSpeed * 1.5F, p[4] * 2.5F)));
@@ -386,7 +387,7 @@ public final class PetsLayer extends RenderLayer<AvatarRenderState, PlayerModel>
 				s.isSitting = sit;
 				submit(collector, poseStack, wolf, s, WOLF_TEX);
 			}
-			case "penguin" -> submit(collector, poseStack, penguin, base(new LivingEntityRenderState(), t, 0.0F), PENGUIN_TEX);
+			case "penguin" -> submit(collector, poseStack, penguin, base(new LivingEntityRenderState(), t, 0.0F), tex(PENGUIN_TEX));
 			case "panda" -> {
 				PandaRenderState s = base(new PandaRenderState(), t, 0.0F);
 				s.variant = net.minecraft.world.entity.animal.panda.Panda.Gene.NORMAL;

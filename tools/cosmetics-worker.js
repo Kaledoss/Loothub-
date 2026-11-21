@@ -528,7 +528,7 @@ function lhTz(now) {
 	return Math.round((local - Math.floor(now / 60000) * 60000) / LH_HOUR) * LH_HOUR;
 }
 const LH_SLOT = 4 * LH_HOUR;
-const LH_STATS = ["blocks", "placed", "mobs", "fish", "play", "dist", "treasures", "jobmoney", "itemdex", "eat", "jumps", "picked", "dropped"];
+const LH_STATS = ["blocks", "placed", "mobs", "fish", "play", "treasures", "jobmoney", "jumps", "picked", "dropped"];
 // höchstens so viel Zuwachs pro Sekunde zwischen zwei Meldungen (dazu ein Puffer von 2 Minuten)
 const LH_RATE = { blocks: 25, placed: 25, mobs: 6, fish: 0.3, play: 0.025, dist: 120, treasures: 1, jobmoney: 50000,
 	itemdex: 5, eat: 2, jumps: 6, picked: 60, dropped: 60 };
@@ -582,14 +582,97 @@ const LH_SHOP = [
 	["k_flower", "crown", 4000], ["k_ice", "crown", 6000], ["k_nether", "crown", 9000], ["k_halo", "crown", 18000],
 	["e_rainbow", "eyes", 8000],
 	["p_phoenix", "pet", 20000], ["p_golddragon", "pet", 25000],
+	// Winter-Saison (1. Dezember bis 6. Januar)
+	["t_snowking", "title", 4000, { season: "winter" }], ["c_candy", "steps", 5000, { season: "winter" }],
+	["k_holly", "crown", 6000, { season: "winter" }], ["p_xmaspenguin", "pet", 15000, { season: "winter" }],
+	// Ruhmestitel: nicht kaufbar, bei „Legendär“ (letzte Stufe) einer Heldentat
+	...["blocks", "placed", "picked", "mobs", "fish", "play", "treasures", "jobmoney", "jumps", "dquests", "wquests", "login"]
+		.map((st) => [`a_${st}`, "title", 0, { ach: st }]),
+	// Sammel-Abzeichen: nicht kaufbar
+	["b_ores", "badge", 0, { col: "ores" }], ["b_hunter", "badge", 0, { col: "hunter" }],
 ];
-const LH_SHOP_MAP = Object.fromEntries(LH_SHOP.map(([id, kind, cost]) => [id, { kind, cost }]));
+const LH_SHOP_MAP = Object.fromEntries(LH_SHOP.map(([id, kind, cost, extra]) => [id, { kind, cost, extra: extra || {} }]));
+// Saisons: [Monat, Tag] von – bis (deutsche Zeit, über den Jahreswechsel möglich)
+const LH_SEASONS = { winter: [[12, 1], [1, 6]] };
+const LH_OFFER_OFF = 0.25; // Angebot des Tages: 25 % günstiger
+
+function lhSeasonOn(season, now) {
+	const t = new Date(now + lhTz(now));
+	const md = (t.getUTCMonth() + 1) * 100 + t.getUTCDate();
+	const [[m1, d1], [m2, d2]] = LH_SEASONS[season] || [[0, 0], [0, 0]];
+	const a = m1 * 100 + d1, b = m2 * 100 + d2;
+	return a <= b ? md >= a && md <= b : md >= a || md <= b;
+}
+
+/** Angebot des Tages: ein kaufbarer Artikel (kein Schutz, keine Saison, keine Belohnung), für alle gleich. */
+function lhOffer(now) {
+	const pool = LH_SHOP.filter(([, kind, cost, extra]) => kind !== "freeze" && cost > 0 && !extra);
+	const [id, , cost] = pool[Math.floor(lhRand(`offer-${lhDayId(now)}`)() * pool.length) % pool.length];
+	return { id, cost: Math.round((cost * (1 - LH_OFFER_OFF)) / 10) * 10 };
+}
+
+/** Preis jetzt (mit Angebot des Tages) oder null, wenn gerade nicht kaufbar. */
+function lhPrice(id, now) {
+	const it = LH_SHOP_MAP[id];
+	if (!it || it.extra.ach || it.extra.col) return null;
+	if (it.extra.season && !lhSeasonOn(it.extra.season, now)) return null;
+	const o = lhOffer(now);
+	return o.id === id ? o.cost : it.cost;
+}
+
+// Sammel-Abzeichen: alle Erze (normal und Tiefenschiefer zusammen) mindestens 50-mal, alle Monster mindestens 5-mal
+const LH_ORES = ["coal", "iron", "copper", "gold", "redstone", "lapis", "diamond", "emerald"];
+const LH_HOSTILE = ["blaze", "cave_spider", "creeper", "drowned", "enderman", "ghast", "guardian", "hoglin", "husk", "magma_cube",
+	"phantom", "piglin", "pillager", "shulker", "silverfish", "skeleton", "slime", "spider", "stray", "witch", "wither_skeleton",
+	"zombie", "zombie_villager", "zombified_piglin"];
+function lhColBadge(kind, d) {
+	const b = (d.col && d.col.b) || {}, m = (d.col && d.col.m) || {};
+	if (kind === "ores") {
+		return LH_ORES.every((o) => (b[`${o}_ore`] || 0) + (b[`deepslate_${o}_ore`] || 0) >= 50)
+			&& (b.nether_gold_ore || 0) >= 50 && (b.nether_quartz_ore || 0) >= 50 && (b.ancient_debris || 0) >= 50;
+	}
+	if (kind === "hunter") return LH_HOSTILE.every((x) => (m[x] || 0) >= 5);
+	return false;
+}
+
+/** Fortschritt der Sammel-Abzeichen für die Anzeige: [geschafft, gesamt]. */
+function lhColBadgeProgress(kind, d) {
+	const b = (d.col && d.col.b) || {}, m = (d.col && d.col.m) || {};
+	if (kind === "ores") {
+		const all = [...LH_ORES.map((o) => (b[`${o}_ore`] || 0) + (b[`deepslate_${o}_ore`] || 0)),
+			b.nether_gold_ore || 0, b.nether_quartz_ore || 0, b.ancient_debris || 0];
+		return [all.filter((v) => v >= 50).length, all.length];
+	}
+	return [LH_HOSTILE.filter((x) => (m[x] || 0) >= 5).length, LH_HOSTILE.length];
+}
+
+// Sammlung: Blöcke und Mobs, die nicht (mehr) dazugehören – gleiche Regeln wie in der Mod
+const LH_WOODS = ["oak", "spruce", "birch", "jungle", "acacia", "dark_oak", "mangrove", "cherry", "pale_oak", "crimson", "warped", "bamboo", "azalea"];
+const LH_NO_COLLECT = new Set(["farmland", "dirt_path", "pitcher_pod", "crafting_table", "smithing_table", "fletching_table",
+	"cartography_table", "loom", "stonecutter", "grindstone", "enchanting_table", "anvil", "chipped_anvil", "damaged_anvil",
+	"brewing_stand", "furnace", "blast_furnace", "smoker", "composter", "barrel", "lectern", "cauldron", "crafter", "observer",
+	"piston", "sticky_piston", "dispenser", "dropper", "hopper", "comparator", "repeater", "redstone", "redstone_torch",
+	"redstone_lamp", "daylight_detector", "target", "lever", "tripwire_hook", "string", "note_block", "rail", "powered_rail",
+	"detector_rail", "activator_rail", "trapped_chest", "short_grass", "tall_grass", "fern", "large_fern", "seagrass", "dandelion",
+	"poppy", "blue_orchid", "allium", "azure_bluet", "oxeye_daisy", "cornflower", "lily_of_the_valley", "wither_rose", "sunflower",
+	"lilac", "rose_bush", "peony", "torchflower", "pitcher_plant", "pink_petals", "spore_blossom", "closed_eyeblossom",
+	"open_eyeblossom", "wildflowers", "cactus_flower", "chorus_flower", "mangrove_propagule", "flower_pot", "mossy_cobblestone",
+	"deepslate_tiles", "cracked_deepslate_tiles", "azalea", "flowering_azalea"]);
+const LH_NO_MOBS = new Set(["wither", "illusioner", "giant"]);
+function lhColExcluded(kind, id) {
+	if (kind === "m") return LH_NO_MOBS.has(id);
+	if (LH_NO_COLLECT.has(id) || /(_seeds|_stairs|_slab|_wall|_sapling|_leaves|_wool|_carpet|_tulip)$/.test(id) || id.includes("brick")
+		|| id.includes("glass") || /^(infested_|polished_|chiseled_|cracked_|smooth_|cut_|stripped_)/.test(id)) return true;
+	if (id.includes("copper") && !id.endsWith("copper_ore")) return true;
+	if (id.includes("deepslate") && id !== "deepslate" && id !== "cobbled_deepslate" && !id.endsWith("_ore")) return true;
+	return LH_WOODS.some((w) => id.startsWith(`${w}_`) && !/(_log|_stem|_nylium)$/.test(id) && id !== "bamboo_block");
+}
 // Cosmetics aus dem Shop: Eintrag in den Cosmetics → Wert → nötiger Shop-Artikel (Haustiere je Platz, durch Kommas getrennt)
-const LH_PETS_SHOP = { phoenix: "p_phoenix", golddragon: "p_golddragon" };
+const LH_PETS_SHOP = { phoenix: "p_phoenix", golddragon: "p_golddragon", xmaspenguin: "p_xmaspenguin" };
 const LH_COSM_ITEMS = {
 	footsteps: { hearts: "c_hearts", notes: "c_notes", snow: "c_snow", magic: "c_magic", soul: "c_soul", stars: "c_stars",
-		cherry: "c_cherry", glow: "c_glow", totem: "c_totem", rainbow: "c_rainbow" },
-	crownstyle: { flower: "k_flower", ice: "k_ice", nether: "k_nether", halo: "k_halo" },
+		cherry: "c_cherry", glow: "c_glow", totem: "c_totem", rainbow: "c_rainbow", candy: "c_candy" },
+	crownstyle: { flower: "k_flower", ice: "k_ice", nether: "k_nether", halo: "k_halo", holly: "k_holly" },
 	eyes: { rainbow: "e_rainbow" },
 	pets: LH_PETS_SHOP,
 	headpets: LH_PETS_SHOP,
@@ -664,9 +747,11 @@ function lhCommunity(week) {
 	return { stat: s, goal: LH_COMM[s] };
 }
 
-function lhCatalog() {
+function lhCatalog(now = Date.now()) {
+	const seasons = {};
+	for (const k of Object.keys(LH_SEASONS)) seasons[k] = { on: lhSeasonOn(k, now), until: LH_SEASONS[k][1] };
 	return { ach: LH_ACH, tierPoints: LH_TIER_POINTS, colTiers: LH_COL_TIERS, colPoints: LH_COL_POINTS, shop: LH_SHOP, boards: LH_BOARDS,
-		commReward: LH_COMM_REWARD };
+		commReward: LH_COMM_REWARD, seasons, offer: lhOffer(now), offerOff: LH_OFFER_OFF };
 }
 
 function lhTier(stat, v) {
@@ -708,8 +793,12 @@ function lhAbsorbCol(d, reported) {
 		const col = d.col[kind] || (d.col[kind] = {});
 		const deltas = {};
 		let sum = 0, known = Object.keys(col).length;
+		// Aufräumen: Blöcke/Mobs, die nicht mehr zur Sammlung gehören
+		for (const id of Object.keys(col)) if (lhColExcluded(kind, id)) delete col[id];
+		for (const id of Object.keys(raw)) if (lhColExcluded(kind, id)) delete raw[id];
+		if (d.cach && d.cach[kind]) for (const id of Object.keys(d.cach[kind])) if (lhColExcluded(kind, id)) delete d.cach[kind][id];
 		for (const [id, x] of Object.entries(src)) {
-			if (!LH_COL_ID.test(id)) continue;
+			if (!LH_COL_ID.test(id) || lhColExcluded(kind, id)) continue;
 			let v = Number(x);
 			if (!Number.isFinite(v) || v < 0) continue;
 			v = Math.floor(v);
@@ -732,6 +821,8 @@ function lhAbsorbCol(d, reported) {
 function lhAbsorb(d, reported, now) {
 	d.raw = d.raw || {};
 	d.tot = d.tot || {};
+	// Aufräumen: Werte, die nicht mehr gezählt werden (Essen, Strecke, Itemdex)
+	for (const o of [d.raw, d.tot, d.off || {}]) for (const k of Object.keys(o)) if (!LH_STATS.includes(k) && !LH_BOARDS.includes(k)) delete o[k];
 	const first = !d.last;
 	d.delta = {};
 	d.first = first; // erster Abgleich: Erfolge aus alter Statistik bringen nur einen Teil der Taler
@@ -885,6 +976,15 @@ async function lhProgress(db, d, now) {
 	earned += colSum;
 	if (colNews.length > 3) news.push({ k: "col_many", n: colNews.length, p: colSum });
 	else news.push(...colNews);
+	delete d.colFirst;
+
+	// Freischaltungen: Ruhmestitel bei „Legendär“, Sammel-Abzeichen
+	d.owned = d.owned || [];
+	for (const [id, , , extra] of LH_SHOP) {
+		if (!extra || d.owned.includes(id)) continue;
+		const ok = extra.ach ? (d.ach[extra.ach] || 0) >= LH_ACH[extra.ach].length : extra.col ? lhColBadge(extra.col, d) : false;
+		if (ok) { d.owned.push(id); news.push({ k: "unlock", id }); }
+	}
 	return { earned, news, commSum, cq };
 }
 
@@ -897,14 +997,30 @@ function lhView(row, d, extra, now) {
 		tot: lhCopy(d.tot), ach: d.ach, quests: d.quests,
 		col: { b: (d.col && d.col.b) || {}, m: (d.col && d.col.m) || {} },
 		cach: { b: (d.cach && d.cach.b) || {}, m: (d.cach && d.cach.m) || {} },
+		colBadges: { ores: lhColBadgeProgress("ores", d), hunter: lhColBadgeProgress("hunter", d) },
 		dquests: d.dq || 0, wquests: d.wq || 0, jobday: Math.floor((d.jd && d.jd.best) || 0),
 		login: { cur: (d.login || {}).cur || 0, best: (d.login || {}).best || 0, freeze: d.freeze || 0 },
 		slot: { ends: lhSlotEnd(slot), list: q4 },
 		week: { ends: lhWeekEnd(week), list: qw },
 		comm: extra ? { stat: extra.cq.stat, goal: extra.cq.goal, sum: extra.commSum, mine: d.week.comm || 0,
 			need: Math.ceil(extra.cq.goal / 200), paid: !!d.week.paid, reward: LH_COMM_REWARD } : null,
-		owned: d.owned || [], news: extra ? extra.news : [], cat: lhCatalog(),
+		owned: d.owned || [], news: extra ? extra.news : [], cat: lhCatalog(now),
 	};
+}
+
+/** Wochenrückblick beim ersten Abgleich einer neuen Woche: was in der letzten gespielten Woche zusammenkam. */
+function lhRecap(d, row, now) {
+	const pe = d.per && d.per.w;
+	if (!pe || !pe.base || pe.id === lhWeekId(now)) return null;
+	const off = d.off || {}, tot = d.tot || {};
+	const cur = {
+		points: (row.points || 0) - (off.points || 0), dquests: (d.dq || 0) - (off.dquests || 0), wquests: (d.wq || 0) - (off.wquests || 0),
+		blocks: (tot.blocks || 0) - (off.blocks || 0), mobs: (tot.mobs || 0) - (off.mobs || 0), fish: (tot.fish || 0) - (off.fish || 0),
+	};
+	const v = {};
+	for (const k of Object.keys(cur)) v[k] = Math.max(0, cur[k] - (pe.base[k] || 0));
+	if (!Object.values(v).some((x) => x > 0)) return null;
+	return { k: "recap", ...v };
 }
 
 /** Rücksetzungen aller Spieler: {"board|zeitraum": Zeitpunkt}. */
@@ -1021,6 +1137,8 @@ async function lhHandle(request, env) {
 		lhAbsorb(d, p.stats, now);
 		lhAbsorbCol(d, p.col);
 		extra = await lhProgress(db, d, now);
+		const recap = lhRecap(d, row, now); // vor dem Speichern: danach beginnt die neue Woche
+		if (recap) extra.news.push(recap);
 		row.points = (row.points || 0) + extra.earned;
 	} else {
 		if (!d.tot || !d.slot || !d.week) return json({ error: "sync first" }, 409);
@@ -1031,8 +1149,12 @@ async function lhHandle(request, env) {
 				if (row.points - row.spent < item.cost) error = "poor";
 				else { d.freeze = (d.freeze || 0) + 1; row.spent += item.cost; }
 			} else if (d.owned.includes(p.item)) error = "owned";
-			else if (row.points - row.spent < item.cost) error = "poor";
-			else { d.owned.push(p.item); row.spent += item.cost; }
+			else {
+				const price = lhPrice(p.item, now);
+				if (price === null) error = item.extra.season ? "season" : "locked";
+				else if (row.points - row.spent < price) error = "poor";
+				else { d.owned.push(p.item); row.spent += price; }
+			}
 		} else if (p.op === "equip") {
 			const t = typeof p.title === "string" ? p.title : row.title;
 			const b = typeof p.badge === "string" ? p.badge : row.badge;
@@ -1127,19 +1249,33 @@ async function lhBoard(request, env, ctx, url) {
 	await lhInit(env.AH);
 	const now = Date.now();
 	const id = p === "d" ? lhDayId(now) : p === "w" ? lhWeekId(now) : p === "m" ? lhMonthId(now) : 0;
-	return lhCached(request, ctx, `/lh-board-cache/${b}/${p}/${id}`, 300, async () => {
-		const col = p === "a" ? (b === "points" ? "points_a" : b) : `${b}_${p}`;
-		let where = p === "a" ? `${col} > 0` : `p${p} = ${id} AND ${col} > 0`;
-		let order = `${col} DESC`;
-		if (b === "dropped") {
-			// wer am wenigsten wegwirft – aber nur mit genug Spielzeit im Zeitraum
-			const play = p === "a" ? "play" : `play_${p}`;
-			where = `${p === "a" ? "1 = 1" : `p${p} = ${id}`} AND ${play} >= ${LH_DROP_MIN_PLAY[p]}`;
-			order = `${col} ASC, ${play} DESC`;
-		}
+	const col = p === "a" ? (b === "points" ? "points_a" : b) : `${b}_${p}`;
+	const play = p === "a" ? "play" : `play_${p}`;
+	let where = p === "a" ? `${col} > 0` : `p${p} = ${id} AND ${col} > 0`;
+	let order = `${col} DESC`;
+	if (b === "dropped") {
+		// wer am wenigsten wegwirft – aber nur mit genug Spielzeit im Zeitraum
+		where = `${p === "a" ? "1 = 1" : `p${p} = ${id}`} AND ${play} >= ${LH_DROP_MIN_PLAY[p]}`;
+		order = `${col} ASC, ${play} DESC`;
+	}
+	const res = await lhCached(request, ctx, `/lh-board-cache/${b}/${p}/${id}`, 300, async () => {
 		const r = await env.AH.prepare(`SELECT uuid, name, badge, ${col} AS v FROM lh_player WHERE ${where} ORDER BY ${order} LIMIT 50`).all();
 		return { b, p, t: Date.now(), minPlay: b === "dropped" ? LH_DROP_MIN_PLAY[p] : 0, list: (r.results || []).map((x) => [x.uuid, x.name, x.badge || "", x.v]) };
 	});
+	// eigene Position (nicht zwischengespeichert, eine kleine Abfrage)
+	const u = String(url.searchParams.get("u") || "").toLowerCase();
+	if (!UUID_RE.test(u)) return res;
+	const out = await res.json();
+	try {
+		const me = await env.AH.prepare(`SELECT ${col} AS v, ${play} AS pl FROM lh_player WHERE uuid = ? AND ${where}`).bind(u).first();
+		if (me) {
+			const better = b === "dropped" ? `(${col} < ? OR (${col} = ? AND ${play} > ?))` : `${col} > ?`;
+			const args = b === "dropped" ? [me.v, me.v, me.pl] : [me.v];
+			const r = await env.AH.prepare(`SELECT COUNT(*) AS n FROM lh_player WHERE ${where} AND ${better}`).bind(...args).first();
+			out.me = { rank: (r ? r.n : 0) + 1, v: me.v };
+		}
+	} catch { /* ohne eigene Position */ }
+	return json(out);
 }
 
 /** Spielerkarte: öffentliche Werte eines Spielers (für die Rangliste). */
@@ -1160,6 +1296,8 @@ async function lhCard(request, env, ctx, url) {
 			loginCur: (d.login && d.login.cur) || 0, loginBest: x.login || 0, dquests: x.dquests || 0, wquests: x.wquests || 0,
 			blocks: x.blocks || 0, placed: x.placed || 0, picked: x.picked || 0, mobs: x.mobs || 0, fish: x.fish || 0,
 			play: x.play || 0, jobday: x.jobday || 0, owned: (d.owned || []).length, updated: x.updated || 0,
+			achTiers: d.ach || {}, legendary: Object.keys(LH_ACH).filter((st) => (d.ach && d.ach[st] || 0) >= LH_ACH[st].length).length,
+			colTiers: Object.values((d.cach && d.cach.b) || {}).reduce((a, n) => a + n, 0) + Object.values((d.cach && d.cach.m) || {}).reduce((a, n) => a + n, 0),
 		};
 	});
 }

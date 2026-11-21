@@ -11,6 +11,8 @@ import java.util.Base64;
 import java.util.Deque;
 import java.util.HashMap;
 import java.util.Locale;
+
+import de.loothub.client.Fmt;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
@@ -484,7 +486,8 @@ public final class Progress {
 		Long at = BOARD_AT.get(key);
 		if (at == null || now - at > BOARD_MS) {
 			BOARD_AT.put(key, now);
-			get("/lh/board?b=" + b + "&p=" + period, e -> {
+			String me = Minecraft.getInstance().getUser().getProfileId().toString().toLowerCase(Locale.ROOT);
+			get("/lh/board?b=" + b + "&p=" + period + "&u=" + me, e -> {
 				if (e.isJsonObject() && e.getAsJsonObject().has("list")) {
 					BOARDS.put(key, e.getAsJsonObject());
 				}
@@ -642,6 +645,16 @@ public final class Progress {
 				}
 				case "col_many" -> TOASTS.add(new Toast(
 						Component.translatable("loothub.lh.toast.col_many", n.get("n").getAsInt()).getString(), plus, 0xF2C14E));
+				case "unlock" -> {
+					// Ruhmestitel oder Sammel-Abzeichen freigeschaltet
+					String id = n.get("id").getAsString();
+					TOASTS.add(new Toast(Component.translatable(id.startsWith("a_") ? "loothub.lh.toast.unlock.title"
+							: "loothub.lh.toast.unlock.badge").getString(), Shop.name(id).getString(), 0xFF8C30, true));
+				}
+				case "recap" -> TOASTS.add(new Toast(Component.translatable("loothub.lh.toast.recap").getString(),
+						Component.translatable("loothub.lh.toast.recap.sub", Fmt.whole(n.get("points").getAsLong()),
+								Fmt.whole(n.get("dquests").getAsLong() + n.get("wquests").getAsLong()), Fmt.whole(n.get("blocks").getAsLong()),
+								Fmt.whole(n.get("mobs").getAsLong())).getString(), 0x7FB3FF));
 				default -> {
 				}
 			}
