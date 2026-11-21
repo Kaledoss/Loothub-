@@ -851,7 +851,15 @@ public class ProgressScreen extends LoothubScreen {
 	/** Alle Stufen eines Erfolgs als Raster: geschafft (✔ in Rangfarbe), als Nächstes (★), noch offen (blass). */
 	private int drawTiers(GuiGraphics g, String unit, JsonArray tiers, JsonArray tierPoints, int tier, int y) {
 		int max = tiers.size();
-		int cellW = 190, cellH = 12;
+		// Spaltenbreiten aus den längsten Texten, damit sich nichts überlappt
+		int rankW = 0, valW = 0, ptsW = 0;
+		for (int k = 0; k < max; k++) {
+			rankW = Math.max(rankW, font.width(Texts.rank(k + 1, max)));
+			valW = Math.max(valW, font.width(Texts.value(unit, tiers.get(k).getAsLong())));
+			int p = tierPoints.get(Math.min(k, tierPoints.size() - 1)).getAsInt();
+			ptsW = Math.max(ptsW, font.width(Component.translatable("loothub.lh.toast.points", p).getString()));
+		}
+		int cellW = 10 + rankW + 8 + valW + 8 + ptsW + 16, cellH = 12;
 		int cols = Math.max(1, (cw - 12) / cellW);
 		int rows = (max + cols - 1) / cols;
 		g.fill(cl + 2, y - 4, cr - 2, y + rows * cellH + 2, 0x40000000);
@@ -865,9 +873,9 @@ public class ProgressScreen extends LoothubScreen {
 			g.drawString(font, mark, x, cy, done ? 0xFF55E06A : next ? 0xFFF2C14E : FAINT, false);
 			Component rank = Texts.rank(k + 1, max);
 			g.drawString(font, rank, x + 10, cy, done || next ? rc : FAINT, false);
-			g.drawString(font, Texts.value(unit, tiers.get(k).getAsLong()), x + 90, cy, done ? TEXT : next ? MUTED : FAINT, false);
+			g.drawString(font, Texts.value(unit, tiers.get(k).getAsLong()), x + 10 + rankW + 8, cy, done ? TEXT : next ? MUTED : FAINT, false);
 			String pts = Component.translatable("loothub.lh.toast.points", p).getString();
-			g.drawString(font, pts, x + cellW - 12 - font.width(pts), cy, done ? 0xFF55E06A : next ? MUTED : FAINT, false);
+			g.drawString(font, pts, x + cellW - 16 - font.width(pts), cy, done ? 0xFF55E06A : next ? MUTED : FAINT, false);
 		}
 		return y + rows * cellH + 8;
 	}
