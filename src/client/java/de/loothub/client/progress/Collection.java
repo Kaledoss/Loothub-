@@ -92,6 +92,10 @@ final class Collection {
 				|| id.equals("scaffolding") || id.equals("rooted_dirt")) {
 			return true;
 		}
+		// alles aus Sculk, Seegurken, Gras jeder Art (auch Grasblock), Plattenspieler
+		if (id.contains("sculk") || id.equals("sea_pickle") || id.contains("grass") || id.equals("jukebox")) {
+			return true;
+		}
 		// Kupfer: nur die Erze zählen
 		if (id.contains("copper") && !id.endsWith("copper_ore")) {
 			return true;

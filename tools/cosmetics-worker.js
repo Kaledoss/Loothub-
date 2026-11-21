@@ -729,6 +729,7 @@ function lhColExcluded(kind, id) {
 	if (/(_door|_trapdoor|_bars|_sprouts)$/.test(id) || id.includes("pillar")
 		|| ["leaf_litter", "ladder", "packed_mud", "pale_hanging_moss", "pointed_dripstone", "scaffolding", "rooted_dirt"].includes(id)
 		|| (id.includes("amethyst") && id !== "amethyst_block" && id !== "budding_amethyst")) return true;
+	if (id.includes("sculk") || id.includes("grass") || id === "sea_pickle" || id === "jukebox") return true;
 	if (id.includes("copper") && !id.endsWith("copper_ore")) return true;
 	if (id.includes("deepslate") && id !== "deepslate" && id !== "cobbled_deepslate" && !id.endsWith("_ore")) return true;
 	return LH_WOODS.some((w) => id.startsWith(`${w}_`) && !/(_log|_stem|_nylium)$/.test(id) && id !== "bamboo_block");
