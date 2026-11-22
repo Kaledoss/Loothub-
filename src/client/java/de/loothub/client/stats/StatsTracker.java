@@ -196,6 +196,10 @@ public final class StatsTracker {
 		// Server-Items mit eigenem Namen (z. B. „Kasuarhorn“ als Mob-Drop) unter ihrem Namen zählen
 		String item = pickupKey(stack);
 		int n = Math.max(1, amount);
+		// Aufgesammeltes erklärt Inventar-Zugänge (Magnet-Erkennung soll es nicht noch einmal zählen)
+		long[] ex = PICKED_RECENT.computeIfAbsent(item, k -> new long[2]);
+		ex[0] += n;
+		ex[1] = System.currentTimeMillis();
 		if (entity != null && OWN_DROPS.remove(entity.getId())) {
 			pickupEntity = null;
 			return; // selbst weggeworfen und wieder aufgehoben: zählt nicht noch einmal
@@ -856,7 +860,7 @@ public final class StatsTracker {
 			}
 			long born = now - it.tickCount * 50L;
 			Kill best = null;
-			double bestDist = 3.0 * 3.0;
+			double bestDist = 5.0 * 5.0; // etwas großzügiger: Magnete ziehen Drops sofort weg
 			for (Kill k : RECENT_KILLS) {
 				if (born < k.at() - 1500 || born - k.at() > 3000) {
 					continue;
@@ -874,6 +878,49 @@ public final class StatsTracker {
 		}
 		if (LOOT_TAG.size() > 500) {
 			LOOT_TAG.keySet().removeIf(id -> mc.level.getEntity(id) == null);
+		}
+	}
+
+	/** Über Aufsammel-Pakete erklärte Zugänge der letzten Sekunden: Schlüssel → {Menge, Zeitpunkt}. */
+	private static final Map<String, long[]> PICKED_RECENT = new HashMap<>();
+	private static Map<String, Long> lastInv;
+
+	/**
+	 * Magnete legen Drops oft direkt ins Inventar, ohne dass ein Item am Boden lag oder aufgesammelt wurde. Was kurz
+	 * nach einem Kill ohne Aufsammeln im Inventar dazukommt, zählt deshalb als Loot dieses Mobs (nur ohne offenes Menü).
+	 */
+	private static void inventoryLoot(Minecraft mc, long now) {
+		if (mc.player == null) {
+			return;
+		}
+		Map<String, Long> inv = new HashMap<>();
+		var pinv = mc.player.getInventory();
+		for (int i = 0; i < pinv.getContainerSize(); i++) {
+			ItemStack st = pinv.getItem(i);
+			if (!st.isEmpty()) {
+				inv.merge(pickupKey(st), (long) st.getCount(), Long::sum);
+			}
+		}
+		Map<String, Long> before = lastInv;
+		lastInv = inv;
+		PICKED_RECENT.values().removeIf(x -> now - x[1] > 2000);
+		if (before == null || mc.screen != null || RECENT_KILLS.isEmpty()) {
+			return;
+		}
+		Kill k = RECENT_KILLS.peekFirst();
+		boolean fresh = now - k.at() <= 1500;
+		for (Map.Entry<String, Long> e : inv.entrySet()) {
+			long gain = e.getValue() - before.getOrDefault(e.getKey(), 0L);
+			long[] ex = PICKED_RECENT.get(e.getKey());
+			if (gain > 0 && ex != null) {
+				long used = Math.min(gain, ex[0]); // schon über Aufsammeln gezählt
+				ex[0] -= used;
+				gain -= used;
+			}
+			if (gain > 0 && fresh) {
+				StatsStore.add("mobloot." + k.mob(), gain);
+				StatsStore.add("mobloot_item." + k.mob() + "|" + e.getKey(), gain);
+			}
 		}
 	}
 
@@ -950,6 +997,7 @@ public final class StatsTracker {
 		trackAreaHits(mc, now);
 		trackOwnDrops(mc, now);
 		tagDrops(mc, now);
+		inventoryLoot(mc, now);
 		trackTargets(mc, now);
 
 		StatsStore.saveIfDirty(false);
