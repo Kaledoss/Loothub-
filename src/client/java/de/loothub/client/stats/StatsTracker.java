@@ -119,6 +119,73 @@ public final class StatsTracker {
 		markCounted(p, now);
 		onBlockBroken(state);
 		startAreaCheck(p, now);
+		startTreeCheck(p, state, now);
+	}
+
+	/** One-Click-Äxte von OPSUCHT (Name enthält einen dieser Begriffe): fällen den ganzen Baum auf einmal. */
+	private static final java.util.List<String> TREE_TOOLS = java.util.List.of("gamechanger", "timber", "wurzelbrecher",
+			"seelenfresser", "runenbrecher");
+	private static final int TREE_MAX = 256;
+
+	private static boolean isTreeTool(ItemStack stack) {
+		if (stack == null || stack.isEmpty()) {
+			return false;
+		}
+		var name = stack.get(net.minecraft.core.component.DataComponents.CUSTOM_NAME);
+		StringBuilder text = new StringBuilder(name == null ? "" : name.getString());
+		var lore = stack.get(net.minecraft.core.component.DataComponents.LORE);
+		if (lore != null) {
+			for (var line : lore.lines()) {
+				text.append(' ').append(line.getString()); // z. B. Verzauberung „Timber“ im Tooltip
+			}
+		}
+		String t = text.toString().toLowerCase(java.util.Locale.ROOT);
+		for (String k : TREE_TOOLS) {
+			if (t.contains(k)) {
+				return true;
+			}
+		}
+		return false;
+	}
+
+	/**
+	 * Baum fällen: Wird ein Stamm mit einer One-Click-Axt abgebaut, alle damit verbundenen Stämme merken (bis 256).
+	 * Verschwinden sie in den nächsten Sekunden, zählen sie einzeln als abgebaut – Blätter zählen nicht.
+	 */
+	private static void startTreeCheck(net.minecraft.core.BlockPos start, BlockState state, long now) {
+		Minecraft mc = Minecraft.getInstance();
+		if (mc.player == null || mc.level == null || !state.is(net.minecraft.tags.BlockTags.LOGS)
+				|| !isTreeTool(mc.player.getMainHandItem())) {
+			return;
+		}
+		java.util.ArrayDeque<net.minecraft.core.BlockPos> queue = new java.util.ArrayDeque<>();
+		java.util.Set<net.minecraft.core.BlockPos> seen = new java.util.HashSet<>();
+		queue.add(start);
+		seen.add(start);
+		int found = 0;
+		while (!queue.isEmpty() && found < TREE_MAX) {
+			net.minecraft.core.BlockPos c = queue.poll();
+			for (int dx = -1; dx <= 1; dx++) {
+				for (int dy = -1; dy <= 1; dy++) {
+					for (int dz = -1; dz <= 1; dz++) {
+						net.minecraft.core.BlockPos n = c.offset(dx, dy, dz);
+						if (!seen.add(n) || Math.abs(n.getX() - start.getX()) > 12 || Math.abs(n.getZ() - start.getZ()) > 12
+								|| n.getY() < start.getY() - 2 || n.getY() > start.getY() + 40) {
+							continue;
+						}
+						BlockState st = mc.level.getBlockState(n);
+						if (st.is(net.minecraft.tags.BlockTags.LOGS) && !recentlyCounted(n, now)) {
+							pendingArea.put(n.immutable(), st);
+							pendingUntil.put(n.immutable(), now + 4000L); // der Server fällt große Bäume nach und nach
+							queue.add(n);
+							if (++found >= TREE_MAX) {
+								break;
+							}
+						}
+					}
+				}
+			}
+		}
 	}
 
 	public static void onBlockBroken(BlockState state) {
