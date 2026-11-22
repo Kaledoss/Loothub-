@@ -228,6 +228,8 @@ public final class WidgetConfig {
 	public double buildWarnY = 0.22;
 	/** Einkaufsliste im HUD: eingeschaltet für diese Schematics („Name|Datei“). */
 	public java.util.Set<String> buildShopping = new java.util.HashSet<>();
+	/** Bestwert in Schoko-Snake. */
+	public int snakeBest = 0;
 	public double buildListX = 1.0;
 	public double buildListY = 0.3;
 	/** YouTube Music (Desktop-App, API Server): „Läuft gerade“ im HUD. */

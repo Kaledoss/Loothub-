@@ -662,6 +662,21 @@ public class ProgressScreen extends LoothubScreen {
 
 	/** Minispiele: tägliches Quiz und Block-Raten. */
 	private int drawGames(GuiGraphics g, JsonObject s, int y) {
+		// Schoko-Snake (lokal, ohne Taler)
+		y = section(g, Component.translatable("loothub.lh.snake.title"),
+				Component.translatable("loothub.lh.snake.record", Fmt.whole(WidgetConfig.get().snakeBest)), y);
+		g.blit(net.minecraft.client.renderer.RenderPipelines.GUI_TEXTURED,
+				net.minecraft.resources.Identifier.fromNamespaceAndPath("loothub", "textures/gui/choco.png"), cl + 8, y + 1, 0f, 0f,
+				16, 16, 64, 64, 64, 64);
+		g.drawString(font, Component.translatable("loothub.lh.snake.desc"), cl + 30, y + 5, MUTED, false);
+		Component play = Component.translatable("loothub.lh.snake.play");
+		int pw = font.width(play) + 16, px = cr - pw - 4;
+		g.fill(px, y, px + pw, y + 16, 0xFF3A2A2C);
+		g.fill(px, y + 15, px + pw, y + 16, RED);
+		g.drawString(font, play, px + 8, y + 4, TEXT, false);
+		hits.add(new Hit(px, y, pw, 16, () -> minecraft.setScreen(new SnakeScreen(this)), null));
+		y += 26;
+
 		// Quiz
 		if (s.has("quiz") && s.get("quiz").isJsonObject()) {
 			JsonObject q = s.getAsJsonObject("quiz");
