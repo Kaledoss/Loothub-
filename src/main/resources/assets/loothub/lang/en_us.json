@@ -909,7 +909,7 @@
 	"loothub.build.warn.missing": "Missing in inventory: %s",
 	"loothub.build.btn.shopping": "Shopping list: %s",
 	"loothub.build.btn.shopping.tooltip": "Shows in game what you still need to get for this schematic (missing blocks minus inventory and storage barrels). What you carry disappears from the list. Move it via \"HUD positions\".",
-	"loothub.build.shopping.title": "🛒 %s",
+	"loothub.build.shopping.title": "✎ %s",
 	"loothub.build.shopping.done": "✔ Got everything",
 	"loothub.build.shopping.more": "+ %s more",
 	"loothub.hud.build_list": "Shopping list (building)",

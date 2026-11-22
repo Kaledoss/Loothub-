@@ -909,7 +909,7 @@
 	"loothub.build.warn.missing": "Fehlt im Inventar: %s",
 	"loothub.build.btn.shopping": "Einkaufsliste: %s",
 	"loothub.build.btn.shopping.tooltip": "Zeigt im Spiel an, was du für diese Schematic noch besorgen musst (fehlende Blöcke abzüglich Inventar und Lager-Fässern). Was du dabeihast, verschwindet von der Liste. Verschieben über „HUD-Positionen“.",
-	"loothub.build.shopping.title": "🛒 %s",
+	"loothub.build.shopping.title": "✎ %s",
 	"loothub.build.shopping.done": "✔ Alles beisammen",
 	"loothub.build.shopping.more": "+ %s weitere",
 	"loothub.hud.build_list": "Einkaufsliste (Bauen)",
