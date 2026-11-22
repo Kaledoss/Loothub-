@@ -426,6 +426,20 @@ public class ProgressScreen extends LoothubScreen {
 				int bw = font.width(btn) + 14;
 				gameButton(g, cr - bw, y, bw, btn, () -> minecraft.setScreen(new DuoScreen(this, partner)));
 			}
+			// Einladungen: andere haben mich eingetragen – mit einem Klick annehmen
+			if (!paired && !paid && duo.has("invites")) {
+				for (var inv : duo.getAsJsonArray("invites")) {
+					String who = inv.getAsString();
+					if (who.equalsIgnoreCase(partner)) {
+						continue;
+					}
+					y += 14;
+					g.drawString(font, Component.translatable("loothub.lh.duo.invite", who), cl + 8, y + 2, 0xFF6BD5FF, false);
+					Component acc = Component.translatable("loothub.lh.duo.accept");
+					int aw = font.width(acc) + 14;
+					gameButton(g, cr - aw, y - 2, aw, acc, () -> Progress.duo(who, err -> minecraft.execute(this::rebuildWidgets)));
+				}
+			}
 			if (partner.isEmpty()) {
 				g.drawString(font, Component.translatable("loothub.lh.duo.none"), cl + 8, y + 12, MUTED, false);
 				y += 26;

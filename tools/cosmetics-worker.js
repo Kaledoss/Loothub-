@@ -819,8 +819,11 @@ async function lhDuoUpdate(db, uuid, d, now, out) {
 	const week = lhWeekId(now);
 	const q = lhDuoQuest(week);
 	if (!d.duo || d.duo.week !== week) d.duo = { week, partner: "", pname: "", paid: false };
-	const view = { ...q, week, partner: d.duo.pname, paired: false, mine: lhDuoMine(d, week), theirs: 0, paid: d.duo.paid,
-		ends: lhWeekEnd(week) };
+	// alter Stand (vor dem Zählen ab Annahme): neu beginnen
+	if (d.duo.partner && d.duo.v !== 2) { d.duo.paid = false; delete d.duo.pairedAt; }
+	d.duo.v = 2;
+	const view = { ...q, week, partner: d.duo.pname, paired: false, mine: 0, theirs: 0, paid: d.duo.paid,
+		ends: lhWeekEnd(week), invites: [] };
 	if (d.duo.partner) {
 		const t = await db.prepare("SELECT name, data FROM lh_player WHERE uuid = ?").bind(d.duo.partner).first();
 		let td = null;
@@ -828,9 +831,29 @@ async function lhDuoUpdate(db, uuid, d, now, out) {
 		if (t) view.partner = t.name || d.duo.pname;
 		if (td && td.duo && td.duo.week === week && td.duo.partner === uuid) {
 			view.paired = true;
-			view.theirs = lhDuoMine(td, week);
+			// gezählt wird erst ab Annahme (beide haben sich eingetragen): Startwerte beider Spieler merken
+			if (!d.duo.pairedAt) {
+				d.duo.pairedAt = now;
+				d.duo.mbase = lhQVal(d, q.stat);
+				d.duo.tbase = lhQVal(td, q.stat);
+			}
+			view.mine = Math.max(0, lhQVal(d, q.stat) - (d.duo.mbase || 0));
+			view.theirs = Math.max(0, lhQVal(td, q.stat) - (d.duo.tbase || 0));
+		} else if (d.duo.pairedAt) {
+			delete d.duo.pairedAt; // Partner hat sich ausgetragen
 		}
 	}
+	// Einladungen: wer mich diese Woche eingetragen hat, ohne dass ich ihn eingetragen habe
+	try {
+		const r = await db.prepare("SELECT uuid, name, data FROM lh_player WHERE data LIKE ? LIMIT 20").bind(`%"partner":"${uuid}"%`).all();
+		for (const x of r.results || []) {
+			if (x.uuid === uuid || x.uuid === d.duo.partner) continue;
+			let xd = null;
+			try { xd = JSON.parse(x.data || "{}"); } catch { xd = null; }
+			if (xd && xd.duo && xd.duo.week === week && xd.duo.partner === uuid && x.name) view.invites.push(x.name);
+			if (view.invites.length >= 5) break;
+		}
+	} catch { /* ohne Einladungen */ }
 	if (view.paired && !d.duo.paid && view.mine + view.theirs >= q.goal) {
 		d.duo.paid = true;
 		view.paid = true;
@@ -1254,7 +1277,8 @@ function lhAbsorb(d, reported, now) {
 		v = Math.floor(v);
 		const prev = d.raw[s];
 		let delta;
-		if (first || prev === undefined) delta = Math.min(v, LH_FIRST_MAX[s]);
+		if (first) delta = Math.min(v, LH_FIRST_MAX[s]);
+		else if (prev === undefined) delta = 0; // neu eingeführter Zähler: alte Statistik zählt nicht (sonst springen Quests)
 		else delta = v >= prev ? v - prev : v; // kleiner als vorher: Statistik zurückgesetzt
 		if (!first && prev !== undefined) delta = Math.min(delta, Math.ceil(LH_RATE[s] * secs));
 		d.raw[s] = v;
@@ -1668,13 +1692,13 @@ async function lhHandle(request, env) {
 			const target = String(p.target || "");
 			extra = { news: [], earned: 0 };
 			if (d.duo && d.duo.week === week && d.duo.paid) error = "duo done";
-			else if (!target) d.duo = { week, partner: "", pname: "", paid: false };
+			else if (!target) d.duo = { week, partner: "", pname: "", paid: !!(d.duo && d.duo.week === week && d.duo.paid), v: 2 };
 			else if (!NAME.test(target)) error = "no player";
 			else {
 				const t = await db.prepare("SELECT uuid, name FROM lh_player WHERE lower(name) = lower(?) ORDER BY updated DESC LIMIT 1").bind(target).first();
 				if (!t) error = "no player";
 				else if (t.uuid === uuid) error = "duo self";
-				else d.duo = { week, partner: t.uuid, pname: t.name, paid: false };
+				else if (!d.duo || d.duo.week !== week || d.duo.partner !== t.uuid) d.duo = { week, partner: t.uuid, pname: t.name, paid: false, v: 2 };
 			}
 			if (!error) {
 				await lhDuoUpdate(db, uuid, d, now, extra);

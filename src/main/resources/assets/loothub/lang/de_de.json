@@ -1067,6 +1067,8 @@
 	"loothub.lh.duo.change": "Partner ändern",
 	"loothub.lh.duo.none": "Trag einen Mitspieler ein – er muss dich auch eintragen.",
 	"loothub.lh.duo.waiting": "Wartet darauf, dass %s dich auch einträgt.",
+	"loothub.lh.duo.invite": "%s möchte mit dir ein Duo bilden.",
+	"loothub.lh.duo.accept": "Annehmen",
 	"loothub.lh.duo.split": "Du: %s · %s: %s",
 	"loothub.lh.duo.set": "Eintragen",
 	"loothub.lh.duo.leave": "Austragen",

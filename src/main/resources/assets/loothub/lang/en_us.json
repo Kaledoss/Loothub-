@@ -1067,6 +1067,8 @@
 	"loothub.lh.duo.change": "Change partner",
 	"loothub.lh.duo.none": "Enter a fellow player – they have to enter you too.",
 	"loothub.lh.duo.waiting": "Waiting for %s to enter you too.",
+	"loothub.lh.duo.invite": "%s wants to team up with you.",
+	"loothub.lh.duo.accept": "Accept",
 	"loothub.lh.duo.split": "You: %s · %s: %s",
 	"loothub.lh.duo.set": "Enter",
 	"loothub.lh.duo.leave": "Leave",
