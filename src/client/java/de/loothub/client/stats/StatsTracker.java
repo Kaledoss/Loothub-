@@ -224,9 +224,16 @@ public final class StatsTracker {
 		}
 	}
 
+	/** Zeitpunkt des letzten eigenen Schlags (für Flächenschaden: Schwungangriff, Flächen-Waffen). */
+	private static long lastSwingAt;
+	/** So lange nach einem Schlag zählen auch Mobs, die nebenbei Schaden nehmen. */
+	private static final long AREA_HIT_MS = 700;
+	private static final double AREA_RANGE = 8.0;
+
 	/** Treffer auf ein Lebewesen merken: für ausgeteilten Schaden und Kills. */
 	public static void onAttack(Entity entity) {
 		Minecraft mc = Minecraft.getInstance();
+		lastSwingAt = System.currentTimeMillis();
 		if (tracking(mc)) {
 			toolStat("tool_hits.", mc.player.getMainHandItem());
 		}
@@ -851,6 +858,7 @@ public final class StatsTracker {
 		trackMovement(mc, p);
 		trackHealth(p);
 		trackEating(p);
+		trackAreaHits(mc, now);
 		trackTargets(mc, now);
 
 		StatsStore.saveIfDirty(false);
@@ -1077,6 +1085,32 @@ public final class StatsTracker {
 			StatsStore.add("eaten." + eatingItem, 1);
 		}
 		eatingItem = null;
+	}
+
+	/**
+	 * Flächenschaden: Kurz nach einem eigenen Schlag nehmen oft mehrere Mobs gleichzeitig Schaden (Schwungangriff,
+	 * Flächen-Waffen, Mob-Farmen). Alle Mobs in der Nähe, die gerade getroffen wurden oder sterben, werden dann ebenfalls
+	 * beobachtet – so zählen z. B. 10 Endermen, die mit einem Schlag sterben, auch als 10 Kills.
+	 */
+	private static void trackAreaHits(Minecraft mc, long now) {
+		if (now - lastSwingAt > AREA_HIT_MS || mc.level == null || mc.player == null) {
+			return;
+		}
+		var box = mc.player.getBoundingBox().inflate(AREA_RANGE);
+		for (LivingEntity l : mc.level.getEntitiesOfClass(LivingEntity.class, box)) {
+			if (l == mc.player || l instanceof net.minecraft.world.entity.player.Player || TARGETS.containsKey(l.getId())
+					|| l instanceof net.minecraft.world.entity.decoration.ArmorStand) {
+				continue;
+			}
+			// gerade getroffen (Treffer-Aufleuchten) oder frisch gestorben
+			boolean hit = l.hurtTime > 0 && l.hurtTime >= l.hurtDuration - 2;
+			boolean dying = l.isDeadOrDying() && l.deathTime <= 3;
+			if (!hit && !dying) {
+				continue;
+			}
+			// vorige Lebenspunkte unbekannt: ab jetzt beobachten (der Schaden dieses Treffers zählt nicht doppelt)
+			TARGETS.put(l.getId(), new Target(l.getType(), customName(l), l.getHealth(), now, l.getX(), l.getY(), l.getZ()));
+		}
 	}
 
 	/** Getroffene Lebewesen beobachten: Lebensverlust = ausgeteilter Schaden, Tod kurz nach Treffer = Kill. */
