@@ -175,16 +175,28 @@ public final class BackpackValue {
 	}
 
 	/**
-	 * Neuer Fang (aus dem Angel-Verlauf): zählt zum Rucksack, wenn der Rucksack in der Nebenhand ist – aber nur, wenn
-	 * er nicht im Inventar gelandet ist (z. B. Vanilla-Fänge oder Trödel/Schätze, wenn sie bei OPSUCHT nicht in den
-	 * Rucksack sollen). Dafür wird kurz beobachtet, ob ein Item mit dem Namen ins Inventar kommt.
+	 * Neuer Fang (aus dem Angel-Verlauf), wenn der Rucksack in der Nebenhand ist: Fische zählen zum Rucksack, Vanilla nie
+	 * (landet immer im Inventar). Trödel und Schätze nur, wenn sie nicht im Inventar auftauchen – das hängt von der
+	 * OPSUCHT-Einstellung des Spielers ab.
 	 */
 	static void onCatch(String fish, String size, String rarity) {
 		if (!wearing()) {
 			return;
 		}
+		String r = rarity.strip().toLowerCase(Locale.ROOT);
+		if (r.equals("vanilla")) {
+			return; // Vanilla-Fänge landen immer im Inventar
+		}
+		Stack st = new Stack(fish.strip(), size.strip(), rarity.strip(), 1);
+		if (!paysShards(r)) {
+			Data d = data(); // Fische landen immer im Rucksack
+			d.pending.add(st);
+			save();
+			return;
+		}
+		// Trödel und Schätze: je nach OPSUCHT-Einstellung im Rucksack oder im Inventar – kurz beobachten
 		Minecraft mc = Minecraft.getInstance();
-		mc.execute(() -> CANDIDATES.add(new Candidate(new Stack(fish.strip(), size.strip(), rarity.strip(), 1), invTick)));
+		mc.execute(() -> CANDIDATES.add(new Candidate(st, invTick)));
 	}
 
 	private record Candidate(Stack stack, long at) {
