@@ -414,6 +414,7 @@ public final class Progress {
 		p.addProperty("mv", 2); // Feature-Stand der Mod: kann besondere/Erkundungs-Quests anzeigen
 		p.add("stats", counters());
 		p.add("col", Collection.counters(StatsStore.sum(StatsStore.Range.TOTAL)));
+		p.add("fk", de.loothub.client.jobs.FishingLog.knownKinds());
 		send(p, null);
 	}
 

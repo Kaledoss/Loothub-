@@ -107,6 +107,28 @@ public final class FishingLog {
 		de.loothub.client.AsyncSave.write(file(), GSON.toJson(all()));
 	}
 
+	/** Gefangene Arten als [Fisch, Größe, Seltenheit] (ohne Vanilla) – für die gemeinsame Fischliste auf dem Server. */
+	public static com.google.gson.JsonArray knownKinds() {
+		java.util.Set<String> seen = new java.util.HashSet<>();
+		com.google.gson.JsonArray out = new com.google.gson.JsonArray();
+		for (Catch c : all()) {
+			String r = c.rarity == null ? "" : c.rarity.strip();
+			if (r.isEmpty() || r.equalsIgnoreCase("vanilla") || c.fish == null) {
+				continue;
+			}
+			String size = c.size == null ? "" : c.size.strip();
+			if (seen.add(c.fish.strip().toLowerCase(Locale.ROOT) + "|" + size.toLowerCase(Locale.ROOT) + "|" + r.toLowerCase(Locale.ROOT))
+					&& out.size() < 600) {
+				com.google.gson.JsonArray e = new com.google.gson.JsonArray();
+				e.add(c.fish.strip());
+				e.add(size);
+				e.add(r);
+				out.add(e);
+			}
+		}
+		return out;
+	}
+
 	/** Bekannte Seltenheiten in Reihenfolge (klein geschrieben). */
 	public static List<String> knownRarities() {
 		return ORDER;

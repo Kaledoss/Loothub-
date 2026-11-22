@@ -755,6 +755,31 @@ function fishParse(text) {
 	}
 	return out;
 }
+const FISH_RARITIES = new Set(["trödel", "schatz", "häufig", "episch", "legendär", "spektakulär", "sensationell"]);
+const FISH_SIZES = new Set(["", "klein", "mittel", "groß", "riesig"]);
+/** Neue Fang-Arten eines Spielers in die gemeinsame Liste (je Spieler und Art nur einmal gezählt). */
+async function lhFishKnown(db, d, list) {
+	if (!Array.isArray(list) || !list.length) return;
+	const mine = new Set(Array.isArray(d.fk) ? d.fk : []);
+	const add = [];
+	for (const e of list.slice(0, 600)) {
+		if (!Array.isArray(e) || e.length < 3) continue;
+		const fish = String(e[0] || "").trim().slice(0, 40), size = String(e[1] || "").trim().toLowerCase(),
+			rarity = String(e[2] || "").trim().toLowerCase();
+		if (!fish || !/^[\p{L}\p{N} '\-]+$/u.test(fish) || !FISH_SIZES.has(size) || !FISH_RARITIES.has(rarity)) continue;
+		const key = `${fish.toLowerCase()}|${size}|${rarity}`;
+		if (mine.has(key)) continue;
+		mine.add(key);
+		add.push([fish, size, rarity]);
+	}
+	if (!add.length) return;
+	const now = Date.now();
+	const stmts = add.slice(0, 80).map(([f, z, r]) => db.prepare(`INSERT INTO lh_fish (fish, size, rarity, n, at) VALUES (?, ?, ?, 1, ?)
+		ON CONFLICT(fish, size, rarity) DO UPDATE SET n = n + 1`).bind(f, z, r, now));
+	await db.batch(stmts);
+	d.fk = [...mine].slice(0, 1500);
+}
+
 /** Preisliste aus D1 (und bei Bedarf frisch von Google). */
 async function fishRefresh(env, force) {
 	if (!env.AH) return null;
@@ -1032,6 +1057,8 @@ async function lhInit(db) {
 			dist INTEGER DEFAULT 0, jobmoney INTEGER DEFAULT 0, itemdex INTEGER DEFAULT 0, updated INTEGER DEFAULT 0)`),
 		db.prepare("CREATE TABLE IF NOT EXISTS lh_comm (week INTEGER PRIMARY KEY, stat TEXT, goal INTEGER, sum INTEGER DEFAULT 0)"),
 		db.prepare("CREATE TABLE IF NOT EXISTS lh_meta (k TEXT PRIMARY KEY, v TEXT)"),
+		db.prepare(`CREATE TABLE IF NOT EXISTS lh_fish (fish TEXT, size TEXT, rarity TEXT, n INTEGER DEFAULT 0, at INTEGER DEFAULT 0,
+			PRIMARY KEY (fish, size, rarity))`),
 		db.prepare(`CREATE TABLE IF NOT EXISTS lh_mg (game TEXT, week INTEGER, uuid TEXT, name TEXT, score INTEGER DEFAULT 0,
 			at INTEGER DEFAULT 0, PRIMARY KEY (game, week, uuid))`),
 	]);
@@ -1526,7 +1553,7 @@ async function lhAdmin(db, env, p, now) {
 async function lhHandle(request, env) {
 	if (!env.AH) return json({ error: "no-db" }, 503);
 	const [body, err] = await signedBody(request, env, async (b) =>
-		typeof b.payload === "string" && b.payload.length < 64000 ? // mit Sammlung (Zähler je Block und Mob) deutlich größer
+		typeof b.payload === "string" && b.payload.length < 120000 ? // mit Sammlung (Zähler je Block und Mob) deutlich größer
 		 `loothub-lh\n${b.uuid}\n${b.ts}\n${b.payload}` : null);
 	if (err) return err;
 	let p;
@@ -1550,6 +1577,8 @@ async function lhHandle(request, env) {
 	}
 	if (p.op === "sync") {
 		d.legacy = !p.mv; // ältere Mod ohne Feature-Stand: nur Quests, die sie anzeigen kann
+		// gefangene Fisch-Arten (Fisch|Größe|Seltenheit) für die gemeinsame Liste aller bekannten Fänge
+		try { await lhFishKnown(db, d, p.fk); } catch { /* nächstes Mal */ }
 		if (!p.stats || typeof p.stats !== "object") return json({ error: "bad payload" }, 400);
 		lhAbsorb(d, p.stats, now);
 		lhAbsorbCol(d, p.col);
@@ -2013,6 +2042,15 @@ export default {
 			}
 		}
 
+		if (request.method === "GET" && url.pathname === "/fish/known") {
+			try {
+				await lhInit(env.AH);
+				const r = await env.AH.prepare("SELECT fish, size, rarity, n, at FROM lh_fish ORDER BY rarity, fish, size").all();
+				return json({ list: (r.results || []).map((x) => [x.fish, x.size, x.rarity, x.n, x.at]) });
+			} catch {
+				return json({ error: "busy" }, 503);
+			}
+		}
 		if (request.method === "GET" && url.pathname === "/fish") {
 			try {
 				const data = await fishRefresh(env, false);
