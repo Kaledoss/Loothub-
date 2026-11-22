@@ -106,7 +106,7 @@ public final class BuildScreen extends de.loothub.client.LoothubScreen {
 		// Liste so breit, dass Namen und Dateinamen ganz zu sehen sind (höchstens knapp die Hälfte)
 		int need = 130;
 		for (Plan p : Build.plans()) {
-			need = Math.max(need, Math.max(font.width(p.name) + 16, font.width(p.file) + 60));
+			need = Math.max(need, Math.max(font.width(p.name) + 16, font.width(p.file) + 60 + font.width("-00000, 000, -00000 · ")));
 		}
 		listW = Math.max(130, Math.min(need, Math.max(200, cw * 45 / 100)));
 		listH = cb - listY;
@@ -357,7 +357,12 @@ public final class BuildScreen extends de.loothub.client.LoothubScreen {
 				g.fill(listX + 1, y, listX + listW - 1, y + PLAN_H, 0x18FFFFFF);
 			}
 			g.drawString(font, fit(p.name, listW - 16), listX + 8, y + 3, p.enabled ? TEXT : FAINT, false);
-			String sub = fit(p.file, listW - 60);
+			// gleiche Schematic mehrfach gesetzt: Lage dazuschreiben, damit man sie unterscheiden kann
+			String file = p.file;
+			if (Build.plans().stream().filter(o -> o.name.equals(p.name)).count() > 1) {
+				file = p.minX + ", " + p.minY + ", " + p.minZ + " · " + file;
+			}
+			String sub = fit(file, listW - 60);
 			g.drawString(font, sub, listX + 8, y + 14, FAINT, false);
 			long total = p.totalBlocks();
 			if (total > 0 && p.counted > 0) {

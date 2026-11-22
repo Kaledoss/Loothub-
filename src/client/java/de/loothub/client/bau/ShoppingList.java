@@ -56,9 +56,12 @@ public final class ShoppingList {
 				Identifier.fromNamespaceAndPath(de.loothub.Loothub.MOD_ID, "build_shopping"), ShoppingList::render);
 	}
 
-	/** Schlüssel einer Schematic für die Einstellung (bleibt gleich, auch wenn Litematica die Platzierung neu lädt). */
+	/**
+	 * Schlüssel einer Platzierung für die Einstellung: Name, Datei und Lage. So hat jede Platzierung ihre eigene Liste,
+	 * auch wenn dieselbe Schematic mehrfach gesetzt ist – und die Einstellung bleibt nach einem Neustart erhalten.
+	 */
 	static String key(Plan p) {
-		return p.name + "|" + p.file;
+		return p.name + "|" + p.file + "|" + p.minX + "," + p.minY + "," + p.minZ;
 	}
 
 	public static boolean on(Plan p) {
@@ -113,7 +116,9 @@ public final class ShoppingList {
 			rows.sort((a, b) -> Long.compare(b.amount(), a.amount()));
 			int more = Math.max(0, rows.size() - MAX_ROWS);
 			boolean done = rows.isEmpty() && p.missing != null;
-			out.add(new Section(p.name, rows.size() > MAX_ROWS ? List.copyOf(rows.subList(0, MAX_ROWS)) : rows, more, done));
+			long same = plans.stream().filter(o -> o.name.equals(p.name)).count();
+			String title = same > 1 ? p.name + " (" + p.minX + ", " + p.minY + ", " + p.minZ + ")" : p.name;
+			out.add(new Section(title, rows.size() > MAX_ROWS ? List.copyOf(rows.subList(0, MAX_ROWS)) : rows, more, done));
 		}
 		return out;
 	}
