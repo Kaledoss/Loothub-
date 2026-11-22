@@ -4,6 +4,7 @@
 name: build
 on:
   push:
+    branches: ['**']  # Versions-Tags (v1.1.0 …) lösen keinen Build aus
     # Nur der Server (Worker) geändert: keine neue Mod-Version bauen und veröffentlichen
     paths-ignore:
       - 'tools/cosmetics-worker.js'
@@ -75,6 +76,11 @@ jobs:
           NEXT="${LAST%.*}.$(( ${LAST##*.} + 1 ))"
           if [ "${{ github.ref }}" = "refs/heads/main" ]; then
             VERSION="$NEXT"
+            # Sprung auf eine neue Reihe (z. B. 1.1.0): .github/release-version, gilt nur, wenn sie höher ist
+            if [ -f .github/release-version ]; then
+              WANT=$(tr -d ' \r\n' < .github/release-version)
+              if [ -n "$WANT" ] && [ "$WANT" != "$NEXT" ] && [ "$(printf '%s\n%s\n' "$NEXT" "$WANT" | sort -V | tail -1)" = "$WANT" ]; then VERSION="$WANT"; fi
+            fi
           elif [ "${{ github.ref }}" = "refs/heads/test" ]; then
             # Optional eigene Testreihe: .github/test-base (z. B. 1.0.82), gilt nur, wenn sie höher ist
             if [ -f .github/test-base ]; then
@@ -132,3 +138,5 @@ jobs:
             --title "Loothub+ ${{ steps.ver.outputs.version }}" \
             --notes-file notes.md \
             --target "$GITHUB_SHA"
+          # Jede Version als Tag merken (für die Versionsnummern im Changelog der Mod)
+          gh api "repos/${{ github.repository }}/git/refs" -f ref="refs/tags/v${{ steps.ver.outputs.version }}" -f sha="$GITHUB_SHA" || true

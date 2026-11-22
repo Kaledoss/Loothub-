@@ -128,7 +128,10 @@ public class ChangelogScreen extends LoothubScreen {
 				.exceptionally(t -> null); // ohne Build-Läufe wird nach Tagen gruppiert
 		CompletableFuture<String> latest = get("https://api.github.com/repos/" + REPO + "/releases/tags/latest")
 				.exceptionally(t -> null);
-		commits.thenCombine(runs, (a, b) -> new String[]{a, b}).thenCombine(latest, (ab, l) -> parse(ab[0], ab[1], l))
+		CompletableFuture<String> tags = get("https://api.github.com/repos/" + REPO + "/tags?per_page=100")
+				.exceptionally(t -> null);
+		commits.thenCombine(runs, (a, b) -> new String[]{a, b}).thenCombine(latest, (ab, l) -> new String[]{ab[0], ab[1], l})
+				.thenCombine(tags, (x, tg) -> parse(x[0], x[1], x[2], tg))
 				.whenComplete((result, t) -> {
 			if (t != null) {
 				Throwable c = t.getCause() != null ? t.getCause() : t;
@@ -175,10 +178,25 @@ public class ChangelogScreen extends LoothubScreen {
 		});
 	}
 
-	private static List<Group> parse(String commitsJson, String runsJson, String latestJson) {
+	private static List<Group> parse(String commitsJson, String runsJson, String latestJson, String tagsJson) {
 		// Jeder erfolgreiche Build auf main ist eine Version, lückenlos hochgezählt: der neueste Lauf ist die aktuelle
 		// Version (aus dem Release „latest“), jeder ältere eine Nummer darunter.
 		Map<String, String> versionAt = new HashMap<>();
+		// Versions-Tags (v1.1.0 …) sind genau; dazwischen wird von der nächst neueren Version heruntergezählt
+		Map<String, int[]> tagged = new HashMap<>();
+		if (tagsJson != null) {
+			try {
+				for (JsonElement el : JsonParser.parseString(tagsJson).getAsJsonArray()) {
+					JsonObject t = el.getAsJsonObject();
+					int[] v = latestVersion("{\"name\":\"" + t.get("name").getAsString() + "\"}");
+					if (t.get("name").getAsString().startsWith("v") && v != null) {
+						tagged.put(t.getAsJsonObject("commit").get("sha").getAsString(), v);
+					}
+				}
+			} catch (RuntimeException ignored) {
+				// ohne Tags: nur herunterzählen
+			}
+		}
 		int[] latest = latestVersion(latestJson);
 		if (runsJson != null && latest != null) {
 			List<JsonObject> list = new ArrayList<>();
@@ -187,16 +205,23 @@ public class ChangelogScreen extends LoothubScreen {
 			}
 			list.sort((a, b) -> Integer.compare(b.get("run_number").getAsInt(), a.get("run_number").getAsInt()));
 			java.util.Set<String> seen = new java.util.HashSet<>();
-			int n = latest[2];
+			int[] cur = null;
 			for (JsonObject run : list) {
 				String sha = run.get("head_sha").getAsString();
 				if (!seen.add(sha)) {
 					continue; // erneut gestarteter Lauf desselben Stands: keine neue Version
 				}
-				if (n < 0) {
-					break;
+				int[] tag = tagged.get(sha);
+				if (tag != null) {
+					cur = tag.clone();
+				} else if (cur == null) {
+					cur = latest.clone(); // neuester Lauf = aktuelle Version
+				} else if (cur[2] > 0) {
+					cur[2]--;
+				} else {
+					break; // Sprung auf eine neue Reihe ohne Tag davor: ältere Nummern unbekannt
 				}
-				versionAt.put(sha, latest[0] + "." + latest[1] + "." + n--);
+				versionAt.put(sha, cur[0] + "." + cur[1] + "." + cur[2]);
 			}
 		}
 		boolean byVersion = !versionAt.isEmpty();
