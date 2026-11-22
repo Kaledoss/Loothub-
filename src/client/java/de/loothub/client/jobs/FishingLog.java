@@ -206,6 +206,7 @@ public final class FishingLog {
 		c.biome = currentBiome();
 		List<Catch> l = all();
 		l.add(c);
+		BackpackValue.onCatch(c.fish, c.size, c.rarity);
 		if (l.size() > MAX) {
 			l.subList(0, l.size() - MAX).clear();
 		}

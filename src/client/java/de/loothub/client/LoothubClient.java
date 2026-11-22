@@ -157,6 +157,7 @@ public class LoothubClient implements ClientModInitializer {
 			de.loothub.client.bau.Build.register();
 			de.loothub.client.bau.BuildHud.register();
 			de.loothub.client.bau.ShoppingList.register();
+			de.loothub.client.jobs.BackpackValue.register();
 		}
 
 		// Streamer-Modus: offene Kanalbelohnungen im HUD, Twitch-Chat und Belohnungen im Hintergrund

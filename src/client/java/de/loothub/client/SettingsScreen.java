@@ -740,6 +740,21 @@ public class SettingsScreen extends LoothubScreen {
 				y = card(y, 40, "loothub.settings.market_sales", "loothub.settings.market_sales.tooltip",
 						() -> c.marketSales, v -> c.marketSales = v);
 				y = section(y, "loothub.settings.section.fishing");
+				// Angler-Prestige (Pflichtauswahl für den Rucksack-Wert im Job-Tracker)
+				{
+					int pY = y;
+					int pDescX = cl + labelW + 12;
+					int pW = Math.min(200, cr - 8 - pDescX);
+					String cur = c.anglerPrestige < 0 ? "none" : String.valueOf(c.anglerPrestige);
+					buttons.add(addRenderableWidget(Button.builder(Component.translatable("loothub.settings.angler_prestige." + cur).append(" ▾"),
+							b -> openPicker(b, new String[]{"0", "1", "2", "3", "4", "5", "6", "7", "8", "9", "10"},
+									"loothub.settings.angler_prestige.", v -> {
+										WidgetConfig.get().anglerPrestige = Integer.parseInt(v);
+										WidgetConfig.get().save();
+										rebuildWidgets();
+									})).bounds(pDescX, pY + 20, pW, 16).build()));
+					y = cardNoToggle(pY, 40, "loothub.settings.angler_prestige", "loothub.settings.angler_prestige.tooltip");
+				}
 				{
 					// Fang-Einblendung: an/aus, Seltenheiten als Kästchen, Test und Verschieben
 					int fY = y;

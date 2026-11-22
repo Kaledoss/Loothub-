@@ -230,6 +230,8 @@ public final class WidgetConfig {
 	public java.util.Set<String> buildShopping = new java.util.HashSet<>();
 	/** Bestwert in Schoko-Snake. */
 	public int snakeBest = 0;
+	/** Angler-Prestige für den Rucksack-Wert (-1 = noch nicht gewählt). */
+	public int anglerPrestige = -1;
 	/** Rekorde der Minispiele (Spiel → Punkte; bei Memory die wenigsten Züge). */
 	public java.util.Map<String, Integer> mgBest = new java.util.HashMap<>();
 	public double buildListX = 1.0;

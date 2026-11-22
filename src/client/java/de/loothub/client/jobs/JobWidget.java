@@ -35,7 +35,7 @@ public final class JobWidget {
 
 	/** Zeilen-IDs in Anzeigereihenfolge; Sprachschlüssel: loothub.job.row.&lt;id&gt;. In den Einstellungen einzeln schaltbar. */
 	public static final List<String> ROW_IDS = List.of("job", "level", "progress", "time", "money", "money_rate", "xp", "xp_rate",
-			"money_total", "xp_total", "treasure", "inv_market", "inv_shards");
+			"money_total", "xp_total", "treasure", "inv_market", "inv_shards", "backpack");
 
 	/** Eine Zeile des Widgets. */
 	public record Row(String label, String value, int color) {
@@ -124,6 +124,25 @@ public final class JobWidget {
 		WidgetConfig c = WidgetConfig.get();
 		boolean showJob = c.jobRowVisible("job");
 		List<Row> rows = new ArrayList<>();
+		// Anglerrucksack in der Nebenhand: Gesamtwert ganz oben
+		if (c.jobRowVisible("backpack") && BackpackValue.wearing()) {
+			String v;
+			int col = 0xFF55E06A;
+			if (c.anglerPrestige < 0) {
+				v = tr("loothub.job.backpack.prestige");
+				col = 0xFFFF8A2A;
+			} else {
+				BackpackValue.Value bv = BackpackValue.value();
+				if (!bv.seen()) {
+					v = tr("loothub.job.backpack.open");
+					col = MUTED;
+				} else {
+					v = Fmt.exact(bv.money()) + " $" + (bv.unknown() > 0
+							? Component.translatable("loothub.job.backpack.unknown", bv.unknown()).getString() : "");
+				}
+			}
+			rows.add(new Row(tr("loothub.job.row.backpack"), v, col));
+		}
 		addRow(rows, c, "level", s.level() >= 0 ? String.valueOf(s.level()) : "–");
 		if (c.jobRowVisible("progress")) {
 			rows.add(new Row(tr("loothub.job.row.progress"),

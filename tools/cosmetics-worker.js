@@ -699,6 +699,79 @@ const LH_MG = {
 	craft: { minMs: 2500, max: 300 },
 	word: { minMs: 900, min: 15, max: 3600, asc: true }, // Sekunden: weniger ist besser
 };
+// Fischpreise: Google-Tabelle (veröffentlicht als CSV), Spalten Fisch | Größe | Seltenheit | Preis.
+// Wird alle ~9 Minuten neu geholt; eine leere Zelle bei Größe oder Seltenheit gilt für alle.
+const FISH_CSV = "https://docs.google.com/spreadsheets/d/e/2PACX-1vQfzmNp1YDBQwgAuKyB5aZhQId8Gxqn7a5MozPZV3OFf_32aIgVWCq5lVk94m_EAvBZMQSZPf8ZBHzt/pub?output=csv";
+const FISH_EVERY = 9 * 60 * 1000;
+
+/** CSV-Zeilen lesen (Anführungszeichen, Kommas und Zeilenumbrüche in Feldern). */
+function csvRows(text) {
+	const rows = [];
+	let row = [], cell = "", q = false;
+	for (let i = 0; i < text.length; i++) {
+		const ch = text[i];
+		if (q) {
+			if (ch === '"' && text[i + 1] === '"') { cell += '"'; i++; }
+			else if (ch === '"') q = false;
+			else cell += ch;
+		} else if (ch === '"') q = true;
+		else if (ch === ",") { row.push(cell); cell = ""; }
+		else if (ch === "\n" || ch === "\r") {
+			if (ch === "\r" && text[i + 1] === "\n") i++;
+			row.push(cell); rows.push(row); row = []; cell = "";
+		} else cell += ch;
+	}
+	if (cell !== "" || row.length) { row.push(cell); rows.push(row); }
+	return rows;
+}
+/** Preis wie „2,50“, „1.234,50“, „2.5“ oder „12 $“ lesen. */
+function fishPrice(v) {
+	let t = String(v || "").replace(/[^0-9.,-]/g, "");
+	if (!t) return NaN;
+	if (t.includes(",")) t = t.replace(/\./g, "").replace(",", ".");
+	else if ((t.match(/\./g) || []).length > 1) t = t.replace(/\./g, "");
+	return Number(t);
+}
+function fishParse(text) {
+	const rows = csvRows(text).map((r) => r.map((c) => c.trim()));
+	if (!rows.length) return [];
+	const head = rows[0].map((h) => h.toLowerCase());
+	const col = (...names) => head.findIndex((h) => names.some((n) => h.includes(n)));
+	let iF = col("fisch", "fish", "name"), iS = col("größe", "groesse", "grösse", "size"), iR = col("seltenheit", "rarity"),
+		iP = col("preis", "price", "wert", "value");
+	let start = 1;
+	if (iF < 0 || iP < 0) { iF = 0; iS = 1; iR = 2; iP = 3; start = 0; } // ohne Kopfzeile: feste Reihenfolge
+	const out = [];
+	for (const r of rows.slice(start)) {
+		const name = (r[iF] || "").trim();
+		const price = fishPrice(r[iP]);
+		if (!name || !Number.isFinite(price) || price < 0) continue; // unlesbare Zeile überspringen
+		out.push([name.toLowerCase(), iS >= 0 ? (r[iS] || "").trim().toLowerCase() : "", iR >= 0 ? (r[iR] || "").trim().toLowerCase() : "",
+			Math.round(price * 100) / 100]);
+		if (out.length >= 5000) break;
+	}
+	return out;
+}
+/** Preisliste aus D1 (und bei Bedarf frisch von Google). */
+async function fishRefresh(env, force) {
+	if (!env.AH) return null;
+	await env.AH.prepare("CREATE TABLE IF NOT EXISTS ah_kv (k TEXT PRIMARY KEY, v TEXT)").run();
+	const row = await env.AH.prepare("SELECT v FROM ah_kv WHERE k = 'fish'").first();
+	let cur = null;
+	try { cur = row ? JSON.parse(row.v) : null; } catch { cur = null; }
+	if (!force && cur && Date.now() - (cur.tried || cur.at || 0) < FISH_EVERY) return cur;
+	try {
+		const res = await fetch(FISH_CSV, { redirect: "follow", cf: { cacheTtl: 60 } });
+		if (!res.ok) throw new Error(`HTTP ${res.status}`);
+		const list = fishParse(await res.text());
+		cur = { at: Date.now(), tried: Date.now(), list };
+	} catch (e) {
+		cur = { ...(cur || { at: 0, list: [] }), tried: Date.now(), err: String(e && e.message || e).slice(0, 200) };
+	}
+	await env.AH.prepare("INSERT INTO ah_kv (k, v) VALUES ('fish', ?) ON CONFLICT(k) DO UPDATE SET v = excluded.v").bind(JSON.stringify(cur)).run();
+	return cur;
+}
+
 // Duo-Quest: jede Woche ein gemeinsames Ziel für zwei Spieler, die sich gegenseitig eintragen
 const LH_DUO = { blocks: 40000, placed: 20000, mobs: 2500, fish: 500, play: 1200, dist: 100000 };
 const LH_DUO_REWARD = 200;
@@ -1793,6 +1866,7 @@ async function lhCheckProfile(env, uuid, profile) {
 export default {
 	async scheduled(controller, env, ctx) {
 		ctx.waitUntil(ahRun(env).catch(() => {}));
+		ctx.waitUntil(fishRefresh(env, false).catch(() => {}));
 	},
 
 	async fetch(request, env, ctx) {
@@ -1924,6 +1998,14 @@ export default {
 			}
 		}
 
+		if (request.method === "GET" && url.pathname === "/fish") {
+			try {
+				const data = await fishRefresh(env, false);
+				return json(data || { at: 0, list: [] });
+			} catch {
+				return json({ error: "busy" }, 503);
+			}
+		}
 		if (request.method === "GET" && url.pathname === "/ah") {
 			return ahServe(request, env, ctx);
 		}
