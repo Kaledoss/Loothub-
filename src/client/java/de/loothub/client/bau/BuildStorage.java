@@ -51,6 +51,12 @@ public final class BuildStorage {
 	}
 
 	static void register() {
+		// selbst abgebautes Lager-Fass vergessen
+		net.fabricmc.fabric.api.event.client.player.ClientPlayerBlockBreakEvents.AFTER.register((level, player, pos, state) -> {
+			if (state.getBlock() instanceof BarrelBlock && load().remove(key(level.dimension().toString(), pos)) != null) {
+				save();
+			}
+		});
 		ScreenEvents.AFTER_INIT.register((client, screen, w, h) -> {
 			if (!(screen instanceof AbstractContainerScreen<?> acs) || !(acs.getMenu() instanceof ChestMenu)) {
 				return;
@@ -140,13 +146,8 @@ public final class BuildStorage {
 			if (!b.dim().equals(dim) || plan.distance(b.x() + 0.5, b.y() + 0.5, b.z() + 0.5) > RADIUS) {
 				continue;
 			}
-			// Fass abgebaut? (nur prüfbar, wenn der Chunk geladen ist)
-			BlockPos pos = new BlockPos(b.x(), b.y(), b.z());
-			if (mc.level.hasChunk(b.x() >> 4, b.z() >> 4) && !(mc.level.getBlockState(pos).getBlock() instanceof BarrelBlock)) {
-				it.remove();
-				changed = true;
-				continue;
-			}
+			// Kein Löschen, nur weil dort gerade kein Fass steht: In anderen Welten (z. B. Farmwelt) gibt es dieselben
+			// Koordinaten, aber ohne das Fass. Entfernt wird ein Lager nur, wenn man das Fass selbst abbaut.
 			if (b.name().equalsIgnoreCase(plan.name)) {
 				own.add(b);
 			} else if (b.name().equalsIgnoreCase(GENERAL)) {
