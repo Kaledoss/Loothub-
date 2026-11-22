@@ -178,6 +178,8 @@ public class ChangelogScreen extends LoothubScreen {
 		});
 	}
 
+	private static final java.util.Set<String> RUN_SHAS = java.util.concurrent.ConcurrentHashMap.newKeySet();
+
 	private static List<Group> parse(String commitsJson, String runsJson, String latestJson, String tagsJson) {
 		// Jeder erfolgreiche Build auf main ist eine Version, lückenlos hochgezählt: der neueste Lauf ist die aktuelle
 		// Version (aus dem Release „latest“), jeder ältere eine Nummer darunter.
@@ -208,6 +210,7 @@ public class ChangelogScreen extends LoothubScreen {
 			int[] cur = null;
 			for (JsonObject run : list) {
 				String sha = run.get("head_sha").getAsString();
+				RUN_SHAS.add(sha);
 				if (!seen.add(sha)) {
 					continue; // erneut gestarteter Lauf desselben Stands: keine neue Version
 				}
@@ -245,6 +248,9 @@ public class ChangelogScreen extends LoothubScreen {
 			}
 			if (byVersion) {
 				String ver = versionAt.get(c.get("sha").getAsString());
+				if (ver == null && RUN_SHAS.contains(c.get("sha").getAsString())) {
+					break; // ältere Version mit unbekannter Nummer: nicht der neueren zuschlagen
+				}
 				if (ver != null) {
 					current = new Group(ver, time, new ArrayList<>(), new ArrayList<>());
 					out.add(current);

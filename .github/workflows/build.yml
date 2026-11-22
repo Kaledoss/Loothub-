@@ -138,5 +138,11 @@ jobs:
             --title "Loothub+ ${{ steps.ver.outputs.version }}" \
             --notes-file notes.md \
             --target "$GITHUB_SHA"
+          # Einmalig fehlende Versions-Tags nachtragen (Zeilen „v1.0.84 <sha>“)
+          if [ -f .github/backfill-tags ]; then
+            while read -r T S; do
+              [ -n "$T" ] && gh api "repos/${{ github.repository }}/git/refs" -f ref="refs/tags/$T" -f sha="$S" >/dev/null 2>&1 || true
+            done < .github/backfill-tags
+          fi
           # Jede Version als Tag merken (für die Versionsnummern im Changelog der Mod)
           gh api "repos/${{ github.repository }}/git/refs" -f ref="refs/tags/v${{ steps.ver.outputs.version }}" -f sha="$GITHUB_SHA" || true
