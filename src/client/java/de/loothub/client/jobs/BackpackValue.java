@@ -226,6 +226,29 @@ public final class BackpackValue {
 		return new Value(sum, shards, unknown, fish, !d.pages.isEmpty());
 	}
 
+	/**
+	 * Wert eines Fangs im Inventar: {$, OPShards} oder null, wenn es kein OPSUCHT-Fang ist (dann zählt der Marktpreis).
+	 * Fische mit Prestige-Bonus in $, Trödel und Schätze in OPShards; ohne bekannten Preis {0, 0}.
+	 */
+	public static double[] itemValue(ItemStack st) {
+		Stack s = parse(st);
+		if (s == null) {
+			return null;
+		}
+		if (System.currentTimeMillis() - pricesAt > PRICE_EVERY && !loading) {
+			loadPrices();
+		}
+		Double p = price(s);
+		if (p == null) {
+			return new double[]{0, 0};
+		}
+		if (paysShards(s.rarity)) {
+			return new double[]{0, p * s.count};
+		}
+		double mult = 1 + Math.max(0, Math.min(2, WidgetConfig.get().anglerPrestige)) * BONUS_PER_PRESTIGE;
+		return new double[]{p * s.count * mult, 0};
+	}
+
 	private static boolean paysShards(String rarity) {
 		String r = rarity.strip().toLowerCase(Locale.ROOT);
 		return r.equals("trödel") || r.equals("schatz");

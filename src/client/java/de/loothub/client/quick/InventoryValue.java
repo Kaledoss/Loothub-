@@ -52,6 +52,13 @@ public final class InventoryValue {
 				continue;
 			}
 			int n = st.getCount();
+			// OPSUCHT-Fänge (Fische, Trödel, Schätze): Preis aus der Fischpreis-Tabelle
+			double[] fish = de.loothub.client.jobs.BackpackValue.itemValue(st);
+			if (fish != null) {
+				m += fish[0];
+				sh += fish[1];
+				continue;
+			}
 			double shard = ShardValue.perItem(st);
 			if (!Double.isNaN(shard)) {
 				sh += shard * n;
