@@ -114,6 +114,7 @@ public final class BackpackValue {
 
 	public static void register() {
 		ClientTickEvents.END_CLIENT_TICK.register(mc -> {
+			watchInventory(mc);
 			if (++tick % 10 != 0) {
 				return;
 			}
@@ -172,14 +173,91 @@ public final class BackpackValue {
 		return name.contains("rucksack") && !name.contains("talisman"); // nur der Anglerrucksack, nicht der Talisman-Rucksack
 	}
 
-	/** Neuer Fang (aus dem Angel-Verlauf): zählt dazu, wenn der Rucksack in der Nebenhand ist. */
+	/**
+	 * Neuer Fang (aus dem Angel-Verlauf): zählt zum Rucksack, wenn der Rucksack in der Nebenhand ist – aber nur, wenn
+	 * er nicht im Inventar gelandet ist (z. B. Vanilla-Fänge oder Trödel/Schätze, wenn sie bei OPSUCHT nicht in den
+	 * Rucksack sollen). Dafür wird kurz beobachtet, ob ein Item mit dem Namen ins Inventar kommt.
+	 */
 	static void onCatch(String fish, String size, String rarity) {
 		if (!wearing()) {
 			return;
 		}
-		Data d = data();
-		d.pending.add(new Stack(fish.strip(), size.strip(), rarity.strip(), 1));
-		save();
+		Minecraft mc = Minecraft.getInstance();
+		mc.execute(() -> CANDIDATES.add(new Candidate(new Stack(fish.strip(), size.strip(), rarity.strip(), 1), invTick)));
+	}
+
+	private record Candidate(Stack stack, long at) {
+	}
+
+	private static final List<Candidate> CANDIDATES = new ArrayList<>();
+	/** Anzahl je Item-Name im Inventar, je Tick (die letzten 2 Sekunden). */
+	private static final java.util.ArrayDeque<Snap> INV_HISTORY = new java.util.ArrayDeque<>();
+	/** Schon einem Fang zugeordnete Inventar-Zugänge je Name (damit ein Item nicht für zwei Fänge zählt). */
+	private static final Map<String, Integer> CLAIMED = new HashMap<>();
+	private static long invTick, lastClaim;
+
+	private record Snap(long tick, Map<String, Integer> counts) {
+	}
+	private static final int WAIT_TICKS = 30, HISTORY_TICKS = 40;
+
+	private static void watchInventory(Minecraft mc) {
+		invTick++;
+		if (mc.player == null) {
+			INV_HISTORY.clear();
+			CANDIDATES.clear();
+			return;
+		}
+		if (CANDIDATES.isEmpty() && invTick % 5 != 0) {
+			return; // ohne offenen Fang reicht ein Blick alle paar Ticks
+		}
+		Map<String, Integer> now = new HashMap<>();
+		var inv = mc.player.getInventory();
+		for (int i = 0; i < inv.getContainerSize(); i++) {
+			ItemStack st = inv.getItem(i);
+			if (!st.isEmpty()) {
+				now.merge(key(st.getHoverName().getString()), st.getCount(), Integer::sum);
+			}
+		}
+		INV_HISTORY.addLast(new Snap(invTick, now));
+		while (INV_HISTORY.size() > HISTORY_TICKS) {
+			INV_HISTORY.removeFirst();
+		}
+		if (invTick - lastClaim > HISTORY_TICKS) {
+			CLAIMED.clear();
+		}
+		if (CANDIDATES.isEmpty()) {
+			return;
+		}
+		boolean changed = false;
+		for (java.util.Iterator<Candidate> it = CANDIDATES.iterator(); it.hasNext();) {
+			Candidate c = it.next();
+			String k = key(c.stack().fish);
+			int cur = now.getOrDefault(k, 0);
+			// kleinster Stand rund um den Fang (der Zugang kann kurz vor oder nach der Chat-Meldung kommen)
+			int min = cur;
+			for (Snap h : INV_HISTORY) {
+				if (h.tick() >= c.at() - 20) {
+					min = Math.min(min, h.counts().getOrDefault(k, 0));
+				}
+			}
+			int gained = cur - min - CLAIMED.getOrDefault(k, 0);
+			if (gained > 0) {
+				CLAIMED.merge(k, 1, Integer::sum); // liegt im Inventar, nicht im Rucksack
+				lastClaim = invTick;
+				it.remove();
+			} else if (invTick - c.at() >= WAIT_TICKS) {
+				data().pending.add(c.stack()); // nicht im Inventar aufgetaucht → im Rucksack
+				it.remove();
+				changed = true;
+			}
+		}
+		if (changed) {
+			save();
+		}
+	}
+
+	private static String key(String name) {
+		return net.minecraft.ChatFormatting.stripFormatting(name).strip().toLowerCase(Locale.ROOT);
 	}
 
 	private static void readPage(AbstractContainerScreen<?> cs) {
