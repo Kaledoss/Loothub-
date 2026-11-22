@@ -2042,6 +2042,18 @@ export default {
 			}
 		}
 
+		if (request.method === "GET" && url.pathname === "/fish/known.csv") {
+			// für Google Tabellen: =IMPORTDATA("…/fish/known.csv")
+			try {
+				await lhInit(env.AH);
+				const r = await env.AH.prepare("SELECT fish, size, rarity, n FROM lh_fish ORDER BY rarity, fish, size").all();
+				const q = (v) => `"${String(v).replace(/"/g, '""')}"`;
+				const lines = ["Fisch,Größe,Seltenheit,Spieler", ...(r.results || []).map((x) => [x.fish, x.size, x.rarity, x.n].map(q).join(","))];
+				return new Response(lines.join("\n"), { headers: { "content-type": "text/csv; charset=utf-8", "access-control-allow-origin": "*" } });
+			} catch {
+				return new Response("error", { status: 503 });
+			}
+		}
 		if (request.method === "GET" && url.pathname === "/fish/known") {
 			try {
 				await lhInit(env.AH);
