@@ -41,16 +41,15 @@ final class MgBoardScreen extends Screen {
 	protected void init() {
 		int cx = width / 2, y = height / 2 + 112;
 		if (!streak) {
-			addRenderableWidget(Button.builder(Component.translatable("loothub.lh.mg.board.week"), b -> {
-				week = 0;
-				load();
-				rebuildWidgets();
-			}).bounds(cx - 122, y, 118, 18).build()).active = week != 0;
-			addRenderableWidget(Button.builder(Component.translatable("loothub.lh.mg.board.last"), b -> {
-				week = 1;
-				load();
-				rebuildWidgets();
-			}).bounds(cx + 4, y, 118, 18).build()).active = week != 1;
+			String[] keys = {"loothub.lh.mg.board.week", "loothub.lh.mg.board.last", "loothub.lh.mg.board.all"};
+			for (int i = 0; i < 3; i++) {
+				int w = i;
+				addRenderableWidget(Button.builder(Component.translatable(keys[i]), b -> {
+					week = w;
+					load();
+					rebuildWidgets();
+				}).bounds(cx - 130 + i * 88, y, 84, 18).build()).active = week != i;
+			}
 			y += 22;
 		}
 		addRenderableWidget(Button.builder(Component.translatable("gui.back"), b -> onClose()).bounds(cx - 60, y, 120, 18).build());
@@ -68,6 +67,8 @@ final class MgBoardScreen extends Screen {
 		String sub;
 		if (streak) {
 			sub = Component.translatable("loothub.lh.mg.board.streak_sub").getString();
+		} else if (week == 2) {
+			sub = Component.translatable("loothub.lh.mg.board.all_sub").getString();
 		} else if (week == 0 && data != null && data.has("ends")) {
 			sub = Component.translatable("loothub.lh.mg.board.ends", Texts.left(data.get("ends").getAsLong() - System.currentTimeMillis()))
 					.getString();

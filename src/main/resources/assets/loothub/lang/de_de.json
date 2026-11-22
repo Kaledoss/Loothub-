@@ -1042,6 +1042,8 @@
 	"loothub.lh.mg.board.title": "Rangliste",
 	"loothub.lh.mg.board.week": "Diese Woche",
 	"loothub.lh.mg.board.last": "Letzte Woche",
+	"loothub.lh.mg.board.all": "Allzeit",
+	"loothub.lh.mg.board.all_sub": "Bester Wert aller Zeiten je Spieler",
 	"loothub.lh.mg.board.of": "Rangliste: %s",
 	"loothub.lh.mg.board.streak_sub": "Längste Serie richtiger Antworten in Folge",
 	"loothub.lh.mg.board.ends": "Endet in %s",

@@ -1823,22 +1823,29 @@ async function lhMgBoard(request, env, ctx, url) {
 	if (!LH_MG[game] && !streak) return json({ error: "unknown game" }, 400);
 	await lhInit(env.AH);
 	const now = Date.now();
+	const all = !streak && url.searchParams.get("w") === "a"; // Bestenliste aller Zeiten (bester Wert je Spieler)
 	const week = streak ? 0 : lhWeekId(now) - (url.searchParams.get("w") === "1" ? 1 : 0);
 	const asc = !!(LH_MG[game] && LH_MG[game].asc);
-	const res = await lhCached(request, ctx, `/lh-mg-cache/${game}/${week}`, 60, async () => {
-		const r = await env.AH.prepare(`SELECT uuid, name, score FROM lh_mg WHERE game = ? AND week = ? AND score > 0 ORDER BY score ${asc ? "ASC" : "DESC"}, at ASC LIMIT 10`)
-			.bind(game, week).all();
-		return { g: game, week, ends: streak ? 0 : lhWeekEnd(week), reward: (LH_MG[game] && LH_MG[game].reward) || [],
-			asc, list: (r.results || []).map((x) => [x.uuid, x.name, x.score]) };
+	const agg = asc ? "MIN" : "MAX";
+	// Ansicht: je Spieler ein Wert, frühester Zeitpunkt bei Gleichstand
+	const src = all
+		? `(SELECT uuid, MAX(name) AS name, ${agg}(score) AS score, MIN(at) AS at FROM lh_mg WHERE game = ?1 AND week > 0 AND score > 0 GROUP BY uuid)`
+		: `(SELECT uuid, name, score, at FROM lh_mg WHERE game = ?1 AND week = ?2 AND score > 0)`;
+	const res = await lhCached(request, ctx, `/lh-mg-cache/${game}/${all ? "all" : week}`, 60, async () => {
+		const st = env.AH.prepare(`SELECT uuid, name, score FROM ${src} ORDER BY score ${asc ? "ASC" : "DESC"}, at ASC LIMIT 10`);
+		const r = await (all ? st.bind(game) : st.bind(game, week)).all();
+		return { g: game, week: all ? -1 : week, ends: streak || all ? 0 : lhWeekEnd(week),
+			reward: !all && LH_MG[game] && LH_MG[game].reward || [], asc, list: (r.results || []).map((x) => [x.uuid, x.name, x.score]) };
 	});
 	const u = String(url.searchParams.get("u") || "").toLowerCase();
 	if (!UUID_RE.test(u)) return res;
 	const out = await res.json();
 	try {
-		const me = await env.AH.prepare("SELECT score, at FROM lh_mg WHERE game = ? AND week = ? AND uuid = ?").bind(game, week, u).first();
+		const ms = env.AH.prepare(`SELECT score, at FROM ${src} WHERE uuid = ?3`);
+		const me = await (all ? ms.bind(game, 0, u) : ms.bind(game, week, u)).first();
 		if (me && me.score > 0) {
-			const n = await env.AH.prepare(`SELECT COUNT(*) AS n FROM lh_mg WHERE game = ? AND week = ? AND (score ${asc ? "<" : ">"} ? OR (score = ? AND at < ?))`)
-				.bind(game, week, me.score, me.score, me.at).first();
+			const ns = env.AH.prepare(`SELECT COUNT(*) AS n FROM ${src} WHERE (score ${asc ? "<" : ">"} ?3 OR (score = ?3 AND at < ?4))`);
+			const n = await (all ? ns.bind(game, 0, me.score, me.at) : ns.bind(game, week, me.score, me.at)).first();
 			out.me = { rank: (n ? n.n : 0) + 1, v: me.score };
 		}
 	} catch { /* ohne eigene Position */ }

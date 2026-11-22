@@ -456,7 +456,7 @@ public final class Progress {
 	/** Minispiel-Rangliste laden (week 0 = diese Woche, 1 = letzte; Serien ohne Woche). done bekommt die Antwort oder null. */
 	public static void mgBoard(String game, int week, Consumer<JsonObject> done) {
 		String me = Minecraft.getInstance().getUser().getProfileId().toString().toLowerCase(Locale.ROOT);
-		get("/lh/mg?g=" + game + "&w=" + week + "&u=" + me, e -> {
+		get("/lh/mg?g=" + game + "&w=" + (week == 2 ? "a" : String.valueOf(week)) + "&u=" + me, e -> {
 			JsonObject o = e.isJsonObject() && e.getAsJsonObject().has("list") ? e.getAsJsonObject() : null;
 			Minecraft.getInstance().execute(() -> done.accept(o));
 		});

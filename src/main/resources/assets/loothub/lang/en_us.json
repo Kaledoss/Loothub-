@@ -1042,6 +1042,8 @@
 	"loothub.lh.mg.board.title": "Leaderboard",
 	"loothub.lh.mg.board.week": "This week",
 	"loothub.lh.mg.board.last": "Last week",
+	"loothub.lh.mg.board.all": "All time",
+	"loothub.lh.mg.board.all_sub": "Best score of all time per player",
 	"loothub.lh.mg.board.of": "Leaderboard: %s",
 	"loothub.lh.mg.board.streak_sub": "Longest streak of correct answers in a row",
 	"loothub.lh.mg.board.ends": "Ends in %s",
