@@ -8,44 +8,43 @@ import org.lwjgl.glfw.GLFW;
 
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.screens.Screen;
-import net.minecraft.client.input.KeyEvent;
 import net.minecraft.client.renderer.RenderPipelines;
-import net.minecraft.network.chat.Component;
-import net.minecraft.resources.Identifier;
 import net.minecraft.sounds.SoundEvents;
 
-import de.loothub.client.Fmt;
-import de.loothub.client.LoothubScreen;
-import de.loothub.client.jobs.WidgetConfig;
-
 /**
- * Schoko-Snake: Die Schlange sammelt Schokolade statt Äpfel. Steuerung mit Pfeiltasten oder WASD, Leertaste startet
- * neu, P pausiert. Bestwert wird lokal gespeichert.
+ * Schoko-Snake: Die Schlange sammelt Schokolade statt Äpfel. Ab und zu taucht kurz eine goldene Schoki auf (5 Punkte).
+ * Steuerung mit Pfeiltasten oder WASD.
  */
-final class SnakeScreen extends Screen {
-	private static final Identifier CHOCO = Identifier.fromNamespaceAndPath("loothub", "textures/gui/choco.png");
+final class SnakeScreen extends ArcadeScreen {
 	private static final int COLS = 24, ROWS = 16;
+	/** Goldene Schoki: so viele Schritte sichtbar, so viele Punkte. */
+	private static final int GOLD_STEPS = 40, GOLD_POINTS = 5;
 
-	private final Screen parent;
 	private final Random random = new Random();
 	private final Deque<int[]> snake = new ArrayDeque<>();
 	private final Deque<int[]> turns = new ArrayDeque<>();
 	private int dx = 1, dy = 0;
 	private int foodX, foodY;
-	private int score;
+	private int goldX = -1, goldY = -1, goldLeft;
+	/** Noch zu wachsende Glieder. */
+	private int grow;
 	private int stepIn;
-	private boolean over, paused, started;
-	private int cell, ox, oy;
-	/** Kurzes Aufleuchten beim Einsammeln. */
+	private int cell;
 	private int flash;
 
 	SnakeScreen(Screen parent) {
-		super(Component.translatable("loothub.lh.snake.title"));
-		this.parent = parent;
+		super(parent, "snake");
 		reset();
 	}
 
-	private void reset() {
+	@Override
+	protected int[] fieldSize(int maxW, int maxH) {
+		cell = Math.max(6, Math.min(maxW / COLS, maxH / ROWS));
+		return new int[]{COLS * cell, ROWS * cell};
+	}
+
+	@Override
+	protected void reset() {
 		snake.clear();
 		turns.clear();
 		for (int i = 0; i < 4; i++) {
@@ -53,42 +52,27 @@ final class SnakeScreen extends Screen {
 		}
 		dx = 1;
 		dy = 0;
-		score = 0;
-		over = false;
-		paused = false;
-		started = false;
 		stepIn = 0;
-		placeFood();
+		grow = 0;
+		goldX = -1;
+		goldLeft = 0;
+		int[] f = freeCell();
+		foodX = f[0];
+		foodY = f[1];
 	}
 
-	private void placeFood() {
-		while (true) {
+	private int[] freeCell() {
+		for (int tries = 0; tries < 2000; tries++) {
 			int x = random.nextInt(COLS), y = random.nextInt(ROWS);
-			boolean free = true;
-			for (int[] s : snake) {
-				if (s[0] == x && s[1] == y) {
-					free = false;
-					break;
-				}
-			}
-			if (free) {
-				foodX = x;
-				foodY = y;
-				return;
+			if (!occupied(x, y, false) && !(x == foodX && y == foodY) && !(x == goldX && y == goldY)) {
+				return new int[]{x, y};
 			}
 		}
+		return new int[]{-1, -1};
 	}
 
-	@Override
-	protected void init() {
-		cell = Math.max(6, Math.min((width - 40) / COLS, (height - 70) / ROWS));
-		ox = (width - COLS * cell) / 2;
-		oy = (height - ROWS * cell) / 2 + 8;
-	}
-
-	/** Schritte je Sekunde steigen mit der Länge (Spiel-Ticks zwischen zwei Schritten). */
 	private int interval() {
-		return Math.max(2, 5 - score / 8);
+		return Math.max(2, 5 - score / 10);
 	}
 
 	@Override
@@ -96,9 +80,11 @@ final class SnakeScreen extends Screen {
 		if (flash > 0) {
 			flash--;
 		}
-		if (over || paused || !started) {
-			return;
-		}
+		super.tick();
+	}
+
+	@Override
+	protected void step() {
 		if (--stepIn > 0) {
 			return;
 		}
@@ -111,29 +97,57 @@ final class SnakeScreen extends Screen {
 		int[] head = snake.peekFirst();
 		int nx = head[0] + dx, ny = head[1] + dy;
 		boolean eat = nx == foodX && ny == foodY;
-		if (nx < 0 || ny < 0 || nx >= COLS || ny >= ROWS || hits(nx, ny, !eat)) {
+		boolean gold = nx == goldX && ny == goldY;
+		if (nx < 0 || ny < 0 || nx >= COLS || ny >= ROWS || occupied(nx, ny, grow == 0 && !eat && !gold)) {
 			gameOver();
 			return;
 		}
 		snake.addFirst(new int[]{nx, ny});
 		if (eat) {
 			score++;
+			grow++;
 			flash = 4;
-			if (minecraft != null && minecraft.player != null) {
-				minecraft.player.playSound(SoundEvents.GENERIC_EAT.value(), 0.5F, 1.2F + random.nextFloat() * 0.2F);
-			}
-			if (snake.size() >= COLS * ROWS) {
+			sound(1.2F);
+			int[] f = freeCell();
+			if (f[0] < 0) {
 				gameOver();
 				return;
 			}
-			placeFood();
+			foodX = f[0];
+			foodY = f[1];
+			// ab und zu eine goldene Schoki
+			if (goldLeft <= 0 && random.nextInt(6) == 0) {
+				int[] gc = freeCell();
+				goldX = gc[0];
+				goldY = gc[1];
+				goldLeft = GOLD_STEPS;
+			}
+		} else if (gold) {
+			score += GOLD_POINTS;
+			grow++;
+			flash = 8;
+			sound(1.8F);
+			goldX = -1;
+			goldLeft = 0;
+		}
+		if (grow > 0) {
+			grow--;
 		} else {
 			snake.removeLast();
 		}
+		if (goldLeft > 0 && --goldLeft == 0) {
+			goldX = -1;
+		}
 	}
 
-	/** Läuft die Schlange in sich selbst? (Das Schwanzende rückt gleich weiter, außer sie frisst.) */
-	private boolean hits(int x, int y, boolean tailMoves) {
+	private void sound(float pitch) {
+		if (minecraft != null && minecraft.player != null) {
+			minecraft.player.playSound(SoundEvents.GENERIC_EAT.value(), 0.5F, pitch + random.nextFloat() * 0.15F);
+		}
+	}
+
+	/** Liegt dort die Schlange? (Das Schwanzende rückt gleich weiter, wenn sie nicht wächst.) */
+	private boolean occupied(int x, int y, boolean tailMoves) {
 		int i = 0, last = snake.size() - 1;
 		for (int[] s : snake) {
 			if (s[0] == x && s[1] == y && !(tailMoves && i == last)) {
@@ -144,32 +158,10 @@ final class SnakeScreen extends Screen {
 		return false;
 	}
 
-	private void gameOver() {
-		over = true;
-		WidgetConfig c = WidgetConfig.get();
-		if (score > c.snakeBest) {
-			c.snakeBest = score;
-			c.save();
-		}
-		if (minecraft != null && minecraft.player != null) {
-			minecraft.player.playSound(SoundEvents.NOTE_BLOCK_BASS.value(), 0.6F, 0.6F);
-		}
-	}
-
 	@Override
-	public boolean keyPressed(KeyEvent e) {
-		int k = e.key();
-		if (k == GLFW.GLFW_KEY_SPACE || k == GLFW.GLFW_KEY_ENTER) {
-			if (over) {
-				reset();
-			}
-			started = true;
-			paused = false;
-			return true;
-		}
-		if (k == GLFW.GLFW_KEY_P && started && !over) {
-			paused = !paused;
-			return true;
+	protected boolean control(int k, boolean down) {
+		if (!down) {
+			return false;
 		}
 		int[] d = switch (k) {
 			case GLFW.GLFW_KEY_UP, GLFW.GLFW_KEY_W -> new int[]{0, -1};
@@ -178,49 +170,42 @@ final class SnakeScreen extends Screen {
 			case GLFW.GLFW_KEY_RIGHT, GLFW.GLFW_KEY_D -> new int[]{1, 0};
 			default -> null;
 		};
-		if (d != null) {
-			if (over) {
-				return true;
-			}
-			started = true;
-			// nicht direkt umdrehen; mehrere schnelle Tasten werden nacheinander ausgeführt
-			int[] last = turns.isEmpty() ? new int[]{dx, dy} : turns.peekLast();
-			if (turns.size() < 3 && !(d[0] == -last[0] && d[1] == -last[1]) && !(d[0] == last[0] && d[1] == last[1])) {
-				turns.add(d);
-			}
-			return true;
+		if (d == null) {
+			return false;
 		}
-		return super.keyPressed(e);
+		int[] last = turns.isEmpty() ? new int[]{dx, dy} : turns.peekLast();
+		if (turns.size() < 3 && !(d[0] == -last[0] && d[1] == -last[1]) && !(d[0] == last[0] && d[1] == last[1])) {
+			turns.add(d);
+		}
+		return true;
 	}
 
 	@Override
-	public void render(GuiGraphics g, int mouseX, int mouseY, float delta) {
-		super.render(g, mouseX, mouseY, delta);
-		int w = COLS * cell, h = ROWS * cell;
-		// Titel und Punkte
-		g.drawCenteredString(font, Component.translatable("loothub.lh.snake.title"), width / 2, oy - 26, 0xFFF2C14E);
-		String info = Component.translatable("loothub.lh.snake.score", score, Fmt.whole(WidgetConfig.get().snakeBest)).getString();
-		g.drawCenteredString(font, info, width / 2, oy - 14, 0xFFFFFFFF);
-		// Spielfeld: Schachbrett in dunklem Braun
-		g.fill(ox - 2, oy - 2, ox + w + 2, oy + h + 2, flash > 0 ? 0xFFF2C14E : LoothubScreen.RED);
+	protected void drawField(GuiGraphics g, float partial) {
 		for (int x = 0; x < COLS; x++) {
 			for (int y = 0; y < ROWS; y++) {
-				g.fill(ox + x * cell, oy + y * cell, ox + (x + 1) * cell, oy + (y + 1) * cell,
-						(x + y) % 2 == 0 ? 0xFF1E1412 : 0xFF241816);
+				g.fill(fx + x * cell, fy + y * cell, fx + (x + 1) * cell, fy + (y + 1) * cell, (x + y) % 2 == 0 ? 0xFF1E1412 : 0xFF241816);
 			}
 		}
-		// Schokolade
-		g.blit(RenderPipelines.GUI_TEXTURED, CHOCO, ox + foodX * cell, oy + foodY * cell, 0f, 0f, cell, cell, 64, 64, 64, 64);
-		// Schlange: Kopf heller, Körper verläuft von Rot nach Dunkelrot
+		if (flash > 0) {
+			g.fill(fx, fy, fx + fw, fy + fh, 0x20F2C14E);
+		}
+		g.blit(RenderPipelines.GUI_TEXTURED, tex("choco"), fx + foodX * cell, fy + foodY * cell, 0f, 0f, cell, cell, 64, 64, 64, 64);
+		// goldene Schoki blinkt kurz vor dem Verschwinden
+		if (goldX >= 0 && (goldLeft > 10 || goldLeft % 2 == 0)) {
+			int pad = (int) (Math.sin(System.currentTimeMillis() / 120.0) * 1.5);
+			g.blit(RenderPipelines.GUI_TEXTURED, tex("choco_gold"), fx + goldX * cell - pad, fy + goldY * cell - pad, 0f, 0f,
+					cell + 2 * pad, cell + 2 * pad, 64, 64, 64, 64);
+		}
 		int i = 0, n = snake.size();
 		for (int[] s : snake) {
-			int px = ox + s[0] * cell, py = oy + s[1] * cell;
+			int px = fx + s[0] * cell, py = fy + s[1] * cell;
 			float t = n <= 1 ? 0 : i / (float) (n - 1);
 			int col = i == 0 ? 0xFFFF6B6B : lerp(0xFFE23B3B, 0xFF7A1E24, t);
 			g.fill(px + 1, py + 1, px + cell - 1, py + cell - 1, col);
 			if (i == 0) {
-				// Augen in Laufrichtung
-				int e1x, e1y, e2x, e2y, q = Math.max(1, cell / 5);
+				int q = Math.max(1, cell / 5);
+				int e1x, e1y, e2x, e2y;
 				if (dx != 0) {
 					e1x = e2x = dx > 0 ? px + cell - 2 * q - 1 : px + q + 1;
 					e1y = py + q + 1;
@@ -235,37 +220,12 @@ final class SnakeScreen extends Screen {
 			}
 			i++;
 		}
-		// Hinweise
-		String hint = null;
-		if (over) {
-			g.fill(ox, oy + h / 2 - 16, ox + w, oy + h / 2 + 18, 0xC0000000);
-			boolean best = score > 0 && score >= WidgetConfig.get().snakeBest;
-			g.drawCenteredString(font, Component.translatable(best ? "loothub.lh.snake.best" : "loothub.lh.snake.over", score),
-					width / 2, oy + h / 2 - 10, best ? 0xFFF2C14E : 0xFFFF6B6B);
-			hint = Component.translatable("loothub.lh.snake.again").getString();
-			g.drawCenteredString(font, hint, width / 2, oy + h / 2 + 4, 0xFFB9A9AB);
-		} else if (!started) {
-			g.drawCenteredString(font, Component.translatable("loothub.lh.snake.start"), width / 2, oy + h / 2 + cell, 0xFFFFFFFF);
-		} else if (paused) {
-			g.drawCenteredString(font, Component.translatable("loothub.lh.snake.paused"), width / 2, oy + h / 2 + cell, 0xFFFFFFFF);
-		}
-		g.drawCenteredString(font, Component.translatable("loothub.lh.snake.keys"), width / 2, oy + h + 8, 0xFF7A6A6C);
 	}
 
-	private static int lerp(int a, int b, float t) {
+	static int lerp(int a, int b, float t) {
 		int r = (int) (((a >> 16) & 0xFF) + (((b >> 16) & 0xFF) - ((a >> 16) & 0xFF)) * t);
 		int gg = (int) (((a >> 8) & 0xFF) + (((b >> 8) & 0xFF) - ((a >> 8) & 0xFF)) * t);
 		int bl = (int) ((a & 0xFF) + ((b & 0xFF) - (a & 0xFF)) * t);
 		return 0xFF000000 | (r << 16) | (gg << 8) | bl;
-	}
-
-	@Override
-	public boolean isPauseScreen() {
-		return false;
-	}
-
-	@Override
-	public void onClose() {
-		minecraft.setScreen(parent);
 	}
 }

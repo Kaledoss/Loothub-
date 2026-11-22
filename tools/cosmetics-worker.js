@@ -678,6 +678,57 @@ const LH_GUESS = ["stone", "cobblestone", "dirt", "sand", "gravel", "oak_log", "
 	"clay", "deepslate", "tuff", "calcite", "granite", "diorite", "andesite", "bricks", "bookshelf", "ice", "packed_ice", "snow",
 	"amethyst_block", "terracotta", "soul_sand", "blackstone", "oak_planks", "mud", "sponge", "honeycomb_block", "moss_block", "dripstone_block"];
 const LH_GUESS_REWARD = [40, 25, 15, 5];
+// Minispiele mit Rangliste (je Woche). minMs: so lange dauert ein Punkt mindestens (grobe Plausibilität), max: höchstens.
+// reward: Taler für Platz 1–3 der Vorwoche (nur Snake).
+const LH_MG = {
+	snake: { minMs: 300, max: 3000, reward: [300, 200, 100] },
+	tower: { minMs: 120, max: 5000 },
+	sheep: { minMs: 500, max: 5000 },
+	elf: { minMs: 20, max: 200000 },
+	memory: { minMs: 400, min: 18, max: 1000, asc: true }, // Züge: weniger ist besser
+};
+// Serien-Ranglisten (ohne Belohnung): längste Serie richtiger Antworten an aufeinanderfolgenden Tagen
+const LH_STREAK_GAMES = ["quiz", "guess"];
+
+/** Serie fortschreiben: richtig am Tag nach dem letzten Treffer → +1, sonst neu ab 1 (falsch → 0). */
+function lhStreak(d, game, day, ok) {
+	d.streak2 = d.streak2 || {};
+	const s = d.streak2[game] || { cur: 0, best: 0, day: -1 };
+	if (!ok) s.cur = 0;
+	else s.cur = s.day === day - 1 ? s.cur + 1 : 1;
+	if (ok) s.day = day;
+	s.best = Math.max(s.best, s.cur);
+	d.streak2[game] = s;
+	return s;
+}
+function lhStreakView(d, game, day) {
+	const s = (d.streak2 && d.streak2[game]) || { cur: 0, best: 0, day: -1 };
+	// gestern und heute nicht richtig → Serie ist gerissen
+	return { cur: s.day >= day - 1 ? s.cur : 0, best: s.best };
+}
+async function lhMgStore(db, game, week, uuid, name, score, now) {
+	const asc = !!(LH_MG[game] && LH_MG[game].asc);
+	await db.prepare(`INSERT INTO lh_mg (game, week, uuid, name, score, at) VALUES (?, ?, ?, ?, ?, ?)
+		ON CONFLICT(game, week, uuid) DO UPDATE SET name = excluded.name,
+		at = CASE WHEN excluded.score ${asc ? "<" : ">"} score THEN excluded.at ELSE at END,
+		score = ${asc ? "MIN" : "MAX"}(score, excluded.score)`).bind(game, week, uuid, name, score, now).run();
+}
+/** Belohnung der Vorwoche (Platz 1–3) einmal auszahlen. */
+async function lhMgPayout(db, uuid, d, now, out) {
+	const prev = lhWeekId(now) - 1;
+	d.mgpaid = d.mgpaid || {};
+	for (const [game, g] of Object.entries(LH_MG)) {
+		if (!g.reward || d.mgpaid[game] >= prev) continue;
+		d.mgpaid[game] = prev;
+		const top = (await db.prepare("SELECT uuid FROM lh_mg WHERE game = ? AND week = ? ORDER BY score DESC, at ASC LIMIT 3")
+			.bind(game, prev).all()).results || [];
+		const rank = top.findIndex((x) => x.uuid === uuid);
+		if (rank >= 0) {
+			out.earned += g.reward[rank];
+			out.news.push({ k: "mg", g: game, r: rank + 1, p: g.reward[rank] });
+		}
+	}
+}
 function lhGuessDay(day) {
 	const r = lhRand(`guess-${day}`);
 	const answer = LH_GUESS[Math.floor(r() * LH_GUESS.length) % LH_GUESS.length];
@@ -850,6 +901,8 @@ async function lhInit(db) {
 			dist INTEGER DEFAULT 0, jobmoney INTEGER DEFAULT 0, itemdex INTEGER DEFAULT 0, updated INTEGER DEFAULT 0)`),
 		db.prepare("CREATE TABLE IF NOT EXISTS lh_comm (week INTEGER PRIMARY KEY, stat TEXT, goal INTEGER, sum INTEGER DEFAULT 0)"),
 		db.prepare("CREATE TABLE IF NOT EXISTS lh_meta (k TEXT PRIMARY KEY, v TEXT)"),
+		db.prepare(`CREATE TABLE IF NOT EXISTS lh_mg (game TEXT, week INTEGER, uuid TEXT, name TEXT, score INTEGER DEFAULT 0,
+			at INTEGER DEFAULT 0, PRIMARY KEY (game, week, uuid))`),
 	]);
 	// später dazugekommene Spalten: Ranglisten-Werte gesamt und je Tag/Woche/Monat samt Zeitraum-Kennung
 	const have = new Set(((await db.prepare("PRAGMA table_info(lh_player)").all()).results || []).map((c) => c.name));
@@ -1215,11 +1268,13 @@ function lhView(row, d, extra, now) {
 		secrets: d.secrets || [],
 		quiz: (() => {
 			const day = lhDayId(now), q = lhQuizDay(day), done = !!(d.quiz && d.quiz.day === day);
-			return { q, done, a: done ? d.quiz.a : -1, ok: done ? d.quiz.ok : false, right: done ? LH_QUIZ[q] : -1, reward: LH_QUIZ_REWARD };
+			return { q, done, a: done ? d.quiz.a : -1, ok: done ? d.quiz.ok : false, right: done ? LH_QUIZ[q] : -1, reward: LH_QUIZ_REWARD,
+				streak: lhStreakView(d, "quiz", day) };
 		})(),
 		guess: (() => {
 			const day = lhDayId(now), g = lhGuessDay(day), st = d.guess && d.guess.day === day ? d.guess : { picked: [], done: false };
-			return { opts: g.opts, picked: st.picked, done: st.done, answer: st.done ? g.answer : "", hint: g.answer, rewards: LH_GUESS_REWARD };
+			return { opts: g.opts, picked: st.picked, done: st.done, answer: st.done ? g.answer : "", hint: g.answer, rewards: LH_GUESS_REWARD,
+				streak: lhStreakView(d, "guess", day) };
 		})(),
 		chain: (() => {
 			const ch = lhChain(week), c = d.chain && d.chain.week === week ? d.chain : { step: 0, base: d.tot[ch.steps[0][0]] || 0 };
@@ -1351,6 +1406,7 @@ async function lhHandle(request, env) {
 		lhAbsorb(d, p.stats, now);
 		lhAbsorbCol(d, p.col);
 		extra = await lhProgress(db, d, now);
+		try { await lhMgPayout(db, uuid, d, now, extra); } catch { /* nächstes Mal */ }
 		row.points = (row.points || 0) + extra.earned;
 	} else {
 		if (!d.tot || !d.slot || !d.week) return json({ error: "sync first" }, 409);
@@ -1404,6 +1460,8 @@ async function lhHandle(request, env) {
 			else {
 				const ok = a === LH_QUIZ[q];
 				d.quiz = { day, a, ok };
+				const st = lhStreak(d, "quiz", day, ok);
+				await lhMgStore(db, "quiz", 0, uuid, name || row.name || "", st.best, now);
 				if (ok) { row.points = (row.points || 0) + LH_QUIZ_REWARD; extra.news.push({ k: "quiz", p: LH_QUIZ_REWARD }); }
 			}
 		} else if (p.op === "guess") {
@@ -1414,12 +1472,27 @@ async function lhHandle(request, env) {
 			else if (!g.opts.includes(c) || d.guess.picked.includes(c)) error = "bad";
 			else {
 				d.guess.picked.push(c);
+				// Serie: nur ein Treffer beim ersten Versuch zählt
+				if (d.guess.picked.length === 1) {
+					const st = lhStreak(d, "guess", day, c === g.answer);
+					await lhMgStore(db, "guess", 0, uuid, name || row.name || "", st.best, now);
+				}
 				if (c === g.answer) {
 					const p2 = LH_GUESS_REWARD[Math.min(d.guess.picked.length - 1, LH_GUESS_REWARD.length - 1)];
 					d.guess.done = true; d.guess.ok = true;
 					row.points = (row.points || 0) + p2;
 					extra.news.push({ k: "guess", p: p2 });
 				}
+			}
+		} else if (p.op === "mg") {
+			const game = String(p.game || ""), g = LH_MG[game];
+			const score = Math.trunc(Number(p.score)), ms = Math.trunc(Number(p.ms));
+			if (!g) error = "unknown";
+			else if (!(score > 0 && score >= (g.min || 1) && score <= g.max && ms > 0 && ms >= score * g.minMs)) error = "bad";
+			else if (d.mgAt && now - d.mgAt < 5000) error = "busy";
+			else {
+				d.mgAt = now;
+				await lhMgStore(db, game, lhWeekId(now), uuid, name || row.name || "", score, now);
 			}
 		} else if (p.op === "equip") {
 			const t = typeof p.title === "string" ? p.title : row.title;
@@ -1541,6 +1614,36 @@ async function lhBoard(request, env, ctx, url) {
 			const args = b === "dropped" ? [me.v, me.v, me.pl] : [me.v];
 			const r = await env.AH.prepare(`SELECT COUNT(*) AS n FROM lh_player WHERE ${where} AND ${better}`).bind(...args).first();
 			out.me = { rank: (r ? r.n : 0) + 1, v: me.v };
+		}
+	} catch { /* ohne eigene Position */ }
+	return json(out);
+}
+
+/** Minispiel-Rangliste: GET /lh/mg?g=snake&w=0|1 (diese/letzte Woche) bzw. g=quiz|guess (Serien, gesamt), u = eigene UUID. */
+async function lhMgBoard(request, env, ctx, url) {
+	if (!env.AH) return json({ error: "no-db" }, 503);
+	const game = url.searchParams.get("g") || "";
+	const streak = LH_STREAK_GAMES.includes(game);
+	if (!LH_MG[game] && !streak) return json({ error: "unknown game" }, 400);
+	await lhInit(env.AH);
+	const now = Date.now();
+	const week = streak ? 0 : lhWeekId(now) - (url.searchParams.get("w") === "1" ? 1 : 0);
+	const asc = !!(LH_MG[game] && LH_MG[game].asc);
+	const res = await lhCached(request, ctx, `/lh-mg-cache/${game}/${week}`, 60, async () => {
+		const r = await env.AH.prepare(`SELECT uuid, name, score FROM lh_mg WHERE game = ? AND week = ? AND score > 0 ORDER BY score ${asc ? "ASC" : "DESC"}, at ASC LIMIT 10`)
+			.bind(game, week).all();
+		return { g: game, week, ends: streak ? 0 : lhWeekEnd(week), reward: (LH_MG[game] && LH_MG[game].reward) || [],
+			asc, list: (r.results || []).map((x) => [x.uuid, x.name, x.score]) };
+	});
+	const u = String(url.searchParams.get("u") || "").toLowerCase();
+	if (!UUID_RE.test(u)) return res;
+	const out = await res.json();
+	try {
+		const me = await env.AH.prepare("SELECT score, at FROM lh_mg WHERE game = ? AND week = ? AND uuid = ?").bind(game, week, u).first();
+		if (me && me.score > 0) {
+			const n = await env.AH.prepare(`SELECT COUNT(*) AS n FROM lh_mg WHERE game = ? AND week = ? AND (score ${asc ? "<" : ">"} ? OR (score = ? AND at < ?))`)
+				.bind(game, week, me.score, me.score, me.at).first();
+			out.me = { rank: (n ? n.n : 0) + 1, v: me.score };
 		}
 	} catch { /* ohne eigene Position */ }
 	return json(out);
@@ -1755,6 +1858,9 @@ export default {
 		}
 		if (url.pathname === "/lh/board" && request.method === "GET") {
 			try { return await lhBoard(request, env, ctx, url); } catch { return json({ error: "busy" }, 503); }
+		}
+		if (url.pathname === "/lh/mg" && request.method === "GET") {
+			try { return await lhMgBoard(request, env, ctx, url); } catch { return json({ error: "busy" }, 503); }
 		}
 		if (url.pathname === "/lh/card" && request.method === "GET") {
 			try { return await lhCard(request, env, ctx, url); } catch { return json({ error: "busy" }, 503); }

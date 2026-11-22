@@ -439,6 +439,25 @@ public final class Progress {
 		send(p, done);
 	}
 
+	/** Punktestand eines Minispiels für die Rangliste melden. */
+	public static void mgSubmit(String game, int score, long ms, Consumer<String> done) {
+		JsonObject p = new JsonObject();
+		p.addProperty("op", "mg");
+		p.addProperty("game", game);
+		p.addProperty("score", score);
+		p.addProperty("ms", ms);
+		send(p, done);
+	}
+
+	/** Minispiel-Rangliste laden (week 0 = diese Woche, 1 = letzte; Serien ohne Woche). done bekommt die Antwort oder null. */
+	public static void mgBoard(String game, int week, Consumer<JsonObject> done) {
+		String me = Minecraft.getInstance().getUser().getProfileId().toString().toLowerCase(Locale.ROOT);
+		get("/lh/mg?g=" + game + "&w=" + week + "&u=" + me, e -> {
+			JsonObject o = e.isJsonObject() && e.getAsJsonObject().has("list") ? e.getAsJsonObject() : null;
+			Minecraft.getInstance().execute(() -> done.accept(o));
+		});
+	}
+
 	/** Tipp beim Block-Raten. */
 	public static void guess(String choice, Consumer<String> done) {
 		JsonObject p = new JsonObject();
@@ -704,6 +723,8 @@ public final class Progress {
 						Component.translatable(k.equals("week") ? "loothub.lh.toast.week" : "loothub.lh.toast.quest").getString(),
 						Texts.goal(stat, n.get("goal").getAsLong()).getString() + " · " + plus, 0x55E06A));
 				}
+				case "mg" -> TOASTS.add(new Toast(Component.translatable("loothub.lh.toast.mg", n.get("r").getAsInt(),
+						Component.translatable("loothub.lh.mg." + n.get("g").getAsString())).getString(), plus, 0xF2C14E));
 				case "login" -> TOASTS.add(new Toast(
 						Component.translatable("loothub.lh.toast.login", n.get("n").getAsInt()).getString(), plus, 0xFFB833));
 				case "freeze" -> TOASTS.add(new Toast(Component.translatable("loothub.lh.toast.freeze").getString(),

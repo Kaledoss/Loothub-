@@ -662,20 +662,42 @@ public class ProgressScreen extends LoothubScreen {
 
 	/** Minispiele: tägliches Quiz und Block-Raten. */
 	private int drawGames(GuiGraphics g, JsonObject s, int y) {
-		// Schoko-Snake (lokal, ohne Taler)
-		y = section(g, Component.translatable("loothub.lh.snake.title"),
-				Component.translatable("loothub.lh.snake.record", Fmt.whole(WidgetConfig.get().snakeBest)), y);
-		g.blit(net.minecraft.client.renderer.RenderPipelines.GUI_TEXTURED,
-				net.minecraft.resources.Identifier.fromNamespaceAndPath("loothub", "textures/gui/choco.png"), cl + 8, y + 1, 0f, 0f,
-				16, 16, 64, 64, 64, 64);
-		g.drawString(font, Component.translatable("loothub.lh.snake.desc"), cl + 30, y + 5, MUTED, false);
-		Component play = Component.translatable("loothub.lh.snake.play");
-		int pw = font.width(play) + 16, px = cr - pw - 4;
-		g.fill(px, y, px + pw, y + 16, 0xFF3A2A2C);
-		g.fill(px, y + 15, px + pw, y + 16, RED);
-		g.drawString(font, play, px + 8, y + 4, TEXT, false);
-		hits.add(new Hit(px, y, pw, 16, () -> minecraft.setScreen(new SnakeScreen(this)), null));
-		y += 26;
+		// Spielhalle: kleine Spiele mit Rekord, Ranglisten je Woche (Snake mit Taler für Platz 1–3)
+		y = section(g, Component.translatable("loothub.lh.mg.hall"), Component.translatable("loothub.lh.mg.hall.sub"), y);
+		String[][] games = {{"snake", "choco"}, {"tower", "mg_penguin"}, {"sheep", "mg_sheep"}, {"elf", "mg_elf"}, {"memory", ""}};
+		for (String[] gm : games) {
+			String id = gm[0];
+			g.fill(cl + 4, y, cr - 4, y + 20, 0x18FFFFFF);
+			if (gm[1].isEmpty()) {
+				g.renderItem(new ItemStack(net.minecraft.world.item.Items.ENDER_EYE), cl + 8, y + 2);
+			} else {
+				int th = id.equals("sheep") ? 12 : 16;
+				g.blit(net.minecraft.client.renderer.RenderPipelines.GUI_TEXTURED, ArcadeScreen.tex(gm[1]), cl + 8, y + 2 + (16 - th) / 2,
+						0f, 0f, 16, th, id.equals("snake") ? 64 : 16, id.equals("snake") ? 64 : th, id.equals("snake") ? 64 : 16,
+						id.equals("snake") ? 64 : th);
+			}
+			g.drawString(font, Component.translatable("loothub.lh.mg." + id), cl + 30, y + 2, TEXT, false);
+			int rec = ArcadeScreen.best(id);
+			String recText = rec == 0 ? "–" : Fmt.whole(rec);
+			g.drawString(font, Component.translatable(id.equals("memory") ? "loothub.lh.mg.record.memory" : "loothub.lh.mg.record", recText),
+					cl + 30, y + 11, MUTED, false);
+			if (id.equals("snake")) {
+				Component rw = Component.translatable("loothub.lh.mg.weekly");
+				g.drawString(font, rw, cl + 150, y + 6, 0xFF55E06A, false);
+			}
+			Component play = Component.translatable("loothub.lh.snake.play");
+			int pw = font.width(play) + 14, px = cr - 8 - pw;
+			gameButton(g, px, y + 2, pw, play, () -> minecraft.setScreen(switch (id) {
+				case "tower" -> new TowerScreen(this);
+				case "sheep" -> new SheepScreen(this);
+				case "elf" -> new ElfScreen(this);
+				case "memory" -> new MemoryScreen(this);
+				default -> new SnakeScreen(this);
+			}));
+			gameButton(g, px - 24, y + 2, 20, Component.empty(), () -> minecraft.setScreen(new MgBoardScreen(this, id)));
+			y += 22;
+		}
+		y += 8;
 
 		// Quiz
 		if (s.has("quiz") && s.get("quiz").isJsonObject()) {
@@ -709,7 +731,7 @@ public class ProgressScreen extends LoothubScreen {
 						cl + 8, y, q.get("ok").getAsBoolean() ? 0xFF55E06A : 0xFFE23B3B, false);
 				y += 14;
 			}
-			y += 6;
+			y = streakLine(g, q, "quiz", y) + 6;
 		}
 		// Block-Raten
 		if (s.has("guess") && s.get("guess").isJsonObject()) {
@@ -751,9 +773,38 @@ public class ProgressScreen extends LoothubScreen {
 							: Component.translatable("loothub.lh.error." + err).getString()), null));
 				}
 			}
-			y += Math.max(box, opts.size() * 18) + 10;
+			y += Math.max(box, opts.size() * 18) + 6;
+			y = streakLine(g, gs, "guess", y) + 6;
 		}
 		return y;
+	}
+
+	/** Knopf im Minispiel-Reiter (gezeichnet, Klick über die Trefferliste). */
+	private void gameButton(GuiGraphics g, int x, int y, int w, Component label, Runnable action) {
+		g.fill(x, y, x + w, y + 16, 0xFF3A2A2C);
+		g.fill(x, y + 15, x + w, y + 16, RED);
+		if (label.getString().isEmpty()) {
+			// leerer Text = Ranglisten-Knopf mit Pokal
+			g.blit(net.minecraft.client.renderer.RenderPipelines.GUI_TEXTURED,
+					net.minecraft.resources.Identifier.fromNamespaceAndPath("loothub", "textures/gui/trophy.png"), x + (w - 12) / 2, y + 2,
+					0f, 0f, 12, 12, 16, 16, 16, 16);
+			hits.add(new Hit(x, y, w, 16, action, Component.translatable("loothub.lh.mg.board.title")));
+			return;
+		}
+		g.drawString(font, label, x + (w - font.width(label)) / 2, y + 4, TEXT, false);
+		hits.add(new Hit(x, y, w, 16, action, null));
+	}
+
+	/** Serie (richtige Antworten an aufeinanderfolgenden Tagen) mit Ranglisten-Knopf. */
+	private int streakLine(GuiGraphics g, JsonObject o, String game, int y) {
+		if (!o.has("streak")) {
+			return y;
+		}
+		JsonObject st = o.getAsJsonObject("streak");
+		g.drawString(font, Component.translatable("loothub.lh.mg.streak", st.get("cur").getAsInt(), st.get("best").getAsInt()),
+				cl + 8, y + 4, 0xFFF2C14E, false);
+		gameButton(g, cr - 8 - 20, y, 20, Component.empty(), () -> minecraft.setScreen(new MgBoardScreen(this, game)));
+		return y + 20;
 	}
 
 	/** Fähnchen zum An- und Abpinnen. */

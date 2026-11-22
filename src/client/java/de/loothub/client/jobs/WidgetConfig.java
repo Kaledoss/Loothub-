@@ -230,6 +230,8 @@ public final class WidgetConfig {
 	public java.util.Set<String> buildShopping = new java.util.HashSet<>();
 	/** Bestwert in Schoko-Snake. */
 	public int snakeBest = 0;
+	/** Rekorde der Minispiele (Spiel → Punkte; bei Memory die wenigsten Züge). */
+	public java.util.Map<String, Integer> mgBest = new java.util.HashMap<>();
 	public double buildListX = 1.0;
 	public double buildListY = 0.3;
 	/** YouTube Music (Desktop-App, API Server): „Läuft gerade“ im HUD. */
