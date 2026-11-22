@@ -274,6 +274,8 @@
 	"loothub.settings.hide_head.tooltip": "Hides items worn on the head (e.g. the car) – on you and on other players. Real helmets of others stay visible. Only you see the difference.",
 	"loothub.inv_hud.editor.title": "Move inventory display",
 	"loothub.inv_hud.editor.reset": "Default (above hotbar)",
+	"loothub.settings.hide_armor": "Hide armour",
+	"loothub.settings.hide_armor.tooltip": "Hides helmet, chestplate, leggings and boots – on you and on other players. Elytras stay visible. Only you see the difference, the protection stays.",
 	"loothub.settings.hide_offhand": "Hide talisman backpack",
 	"loothub.settings.hide_offhand.tooltip": "Hides talisman backpacks in the off hand – on you (also first person) and on other players. Only you see the difference.",
 	"loothub.job.row.treasure": "Job treasure:",

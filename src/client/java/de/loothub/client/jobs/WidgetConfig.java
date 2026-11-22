@@ -146,6 +146,8 @@ public final class WidgetConfig {
 	public long treasureFoundAt = 0;
 	/** Talismanrucksack in der eigenen Zweithand nicht anzeigen. */
 	public boolean hideOffhandBackpack = false;
+	/** Rüstung (Helm, Brustpanzer, Hose, Stiefel) bei sich und anderen Spielern nicht anzeigen. */
+	public boolean hideArmor = false;
 	/** Inventar über der Hotbar anzeigen, mit eigener Hintergrundfarbe und Deckkraft. */
 	public boolean invHudEnabled = false;
 	public int invHudColor = 0x140B0D;
@@ -392,6 +394,7 @@ public final class WidgetConfig {
 		glowingOres = false;
 		flyPose = false;
 		hideOffhandBackpack = false;
+		hideArmor = false;
 		invHudEnabled = false;
 		musicEnabled = false;
 		buildHud = false;

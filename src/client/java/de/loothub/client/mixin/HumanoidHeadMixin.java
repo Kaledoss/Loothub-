@@ -39,6 +39,7 @@ public abstract class HumanoidHeadMixin {
 					}
 				}
 				hideBackpack(entity, state);
+				hideArmor(state);
 				// geteilte Geste: Hände leer, solange der andere Spieler sie macht
 				if (de.loothub.client.cosmetics.EmoteShare.remote(entity.getUUID()) != null && !state.isUsingItem
 						&& state.attackTime <= 0.0F && de.loothub.client.cosmetics.Motion.fly(state) <= 0.5F) {
@@ -60,6 +61,7 @@ public abstract class HumanoidHeadMixin {
 		}
 		// Talismanrucksack in der Zweithand (von außen gesehen)
 		hideBackpack(entity, state);
+		hideArmor(state);
 		// Emote-Rad: während der Geste nichts in den Händen zeigen (wie die Geste selbst nur, wenn nicht gekämpft,
 		// benutzt oder geflogen wird)
 		if (de.loothub.client.cosmetics.Emotes.wheel() != null && !state.isUsingItem && state.attackTime <= 0.0F
@@ -74,6 +76,25 @@ public abstract class HumanoidHeadMixin {
 		if (de.loothub.client.quick.AfkView.pose(state) != null) {
 			state.leftHandItemState.clear();
 			state.rightHandItemState.clear();
+		}
+	}
+
+	/** Rüstung ausblenden (Elytra und Kopf-Items wie das Auto bleiben – dafür gibt es eigene Schalter). */
+	private static void hideArmor(HumanoidRenderState state) {
+		if (!WidgetConfig.get().hideArmor) {
+			return;
+		}
+		if (state.headEquipment.is(net.minecraft.tags.ItemTags.HEAD_ARMOR)) {
+			state.headEquipment = ItemStack.EMPTY;
+		}
+		if (state.chestEquipment.is(net.minecraft.tags.ItemTags.CHEST_ARMOR)) {
+			state.chestEquipment = ItemStack.EMPTY;
+		}
+		if (state.legsEquipment.is(net.minecraft.tags.ItemTags.LEG_ARMOR)) {
+			state.legsEquipment = ItemStack.EMPTY;
+		}
+		if (state.feetEquipment.is(net.minecraft.tags.ItemTags.FOOT_ARMOR)) {
+			state.feetEquipment = ItemStack.EMPTY;
 		}
 	}
 

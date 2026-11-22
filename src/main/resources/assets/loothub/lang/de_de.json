@@ -274,6 +274,8 @@
 	"loothub.settings.hide_head.tooltip": "Blendet Items auf dem Kopf aus (z. B. das Auto) – bei dir und bei anderen Spielern. Echte Helme anderer bleiben sichtbar. Nur du siehst den Unterschied, die Wirkung bleibt.",
 	"loothub.inv_hud.editor.title": "Inventar-Anzeige verschieben",
 	"loothub.inv_hud.editor.reset": "Standard (über Hotbar)",
+	"loothub.settings.hide_armor": "Rüstung ausblenden",
+	"loothub.settings.hide_armor.tooltip": "Blendet Helm, Brustpanzer, Hose und Stiefel aus – bei dir und bei anderen Spielern. Elytren bleiben sichtbar. Nur du siehst den Unterschied, der Schutz bleibt.",
 	"loothub.settings.hide_offhand": "Talismanrucksack ausblenden",
 	"loothub.settings.hide_offhand.tooltip": "Blendet Talismanrucksäcke in der Zweithand aus – bei dir (auch in der Ich-Ansicht) und bei anderen Spielern. Nur du siehst den Unterschied, die Wirkung bleibt.",
 	"loothub.job.row.treasure": "Jobschatz:",

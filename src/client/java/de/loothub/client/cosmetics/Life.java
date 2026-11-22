@@ -215,11 +215,13 @@ public final class Life {
 			ty = s.gazeToYaw;
 			tp = s.gazeToPitch;
 		}
-		// Sakkade: schnell hin, dann ruhig; dazu kaum merkliches Zittern
-		float k = Math.min(1, dt * 12F);
+		// Sakkade: bei einem neuen Blickziel schnell hin, beim Verfolgen (Ziel wandert in kleinen Schritten, z. B. ein
+		// laufendes Tier – es wird nur alle paar Ticks neu gesucht) weich hinterher, damit der Kopf nicht ruckelt/zittert
+		float dist = Math.max(Math.abs(ty - s.gazeYaw), Math.abs(tp - s.gazePitch));
+		float k = dist < 0.5F ? 0 : Math.min(1, dt * (dist > 20F ? 12F : 4F));
 		s.gazeYaw += (ty - s.gazeYaw) * k;
 		s.gazePitch += (tp - s.gazePitch) * k;
-		float jitter = (float) Math.sin(t * 1.7F + phase) * 1.2F;
+		float jitter = 0;
 		float lookYaw = baseYaw + (s.gazeYaw + s.lagYaw + jitter - baseYaw) * L;
 		float lookPitch = basePitch + (s.gazePitch - basePitch) * L + (player.isCrouching ? 15F * L : 0) + s.flinch * 20F * L;
 
