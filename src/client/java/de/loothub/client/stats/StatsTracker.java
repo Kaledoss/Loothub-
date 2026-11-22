@@ -59,7 +59,43 @@ public final class StatsTracker {
 		if (!tracking(mc) || stack == null || stack.isEmpty() || amount <= 0) {
 			return;
 		}
-		StatsStore.add("dropped." + BuiltInRegistries.ITEM.getKey(stack.getItem()), Math.min(amount, stack.getCount()));
+		int n = Math.min(amount, stack.getCount());
+		StatsStore.add("dropped." + BuiltInRegistries.ITEM.getKey(stack.getItem()), n);
+		// Weggeworfenes merken: hebt man es wieder auf, zählt es nicht noch einmal (Aufgesammelt, Mob-Loot, Quests)
+		long now = System.currentTimeMillis();
+		OWN_DROPS.values().removeIf(d -> now - d[1] > OWN_DROP_MS);
+		long[] d = OWN_DROPS.computeIfAbsent(pickupKey(stack), k -> new long[2]);
+		d[0] += n;
+		d[1] = now;
+	}
+
+	/** Selbst weggeworfene Items: Schlüssel → {Anzahl, Zeitpunkt}. Gilt 10 Minuten. */
+	private static final Map<String, long[]> OWN_DROPS = new HashMap<>();
+	private static final long OWN_DROP_MS = 10 * 60_000L;
+
+	/** Zähl-Schlüssel eines Items wie beim Aufsammeln (eigener Name hat Vorrang). */
+	private static String pickupKey(ItemStack stack) {
+		var custom = stack.get(net.minecraft.core.component.DataComponents.CUSTOM_NAME);
+		String name = custom == null ? null : net.minecraft.ChatFormatting.stripFormatting(custom.getString());
+		if (name != null && !(name = name.strip()).isEmpty()) {
+			return "~" + (name.length() > 40 ? name.substring(0, 40).strip() : name);
+		}
+		return BuiltInRegistries.ITEM.getKey(stack.getItem()).toString();
+	}
+
+	/** Wie viel vom Aufgesammelten neu ist (abzüglich zuvor selbst weggeworfener Items). */
+	private static int fresh(String key, int amount) {
+		long[] d = OWN_DROPS.get(key);
+		if (d == null || System.currentTimeMillis() - d[1] > OWN_DROP_MS) {
+			OWN_DROPS.remove(key);
+			return amount;
+		}
+		long back = Math.min(d[0], amount);
+		d[0] -= back;
+		if (d[0] <= 0) {
+			OWN_DROPS.remove(key);
+		}
+		return (int) (amount - back);
 	}
 
 	public static void onBlockBroken(net.minecraft.core.BlockPos pos, BlockState state) {
@@ -148,17 +184,14 @@ public final class StatsTracker {
 			return;
 		}
 		// Server-Items mit eigenem Namen (z. B. „Kasuarhorn“ als Mob-Drop) unter ihrem Namen zählen
-		var custom = stack.get(net.minecraft.core.component.DataComponents.CUSTOM_NAME);
-		String name = custom == null ? null : net.minecraft.ChatFormatting.stripFormatting(custom.getString());
-		if (name != null && !(name = name.strip()).isEmpty()) {
-			String item = "~" + (name.length() > 40 ? name.substring(0, 40).strip() : name);
-			StatsStore.add("picked." + item, Math.max(1, amount));
-			countLoot(item, Math.max(1, amount));
+		String item = pickupKey(stack);
+		int n = fresh(item, Math.max(1, amount)); // selbst Weggeworfenes zählt beim Wiederaufheben nicht
+		if (n <= 0) {
+			pickupEntity = null;
 			return;
 		}
-		String item = BuiltInRegistries.ITEM.getKey(stack.getItem()).toString();
-		StatsStore.add("picked." + item, Math.max(1, amount));
-		countLoot(item, Math.max(1, amount));
+		StatsStore.add("picked." + item, n);
+		countLoot(item, n);
 	}
 
 	/**
