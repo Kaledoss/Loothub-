@@ -764,8 +764,10 @@ async function lhFishKnown(db, d, list) {
 	const cand = [], seen = new Set();
 	for (const e of list.slice(0, 600)) {
 		if (!Array.isArray(e) || e.length < 3) continue;
-		const fish = String(e[0] || "").trim().slice(0, 40), size = String(e[1] || "").trim().toLowerCase(),
-			rarity = String(e[2] || "").trim().toLowerCase();
+		// Umlaute vereinheitlichen (NFC): „Ö“ kann auch als „O“ + Pünktchen ankommen
+		const fish = String(e[0] || "").normalize("NFC").trim().slice(0, 40),
+			size = String(e[1] || "").normalize("NFC").trim().toLowerCase(),
+			rarity = String(e[2] || "").normalize("NFC").trim().toLowerCase();
 		if (!fish || !/^[\p{L}\p{N} '\-]+$/u.test(fish) || !FISH_SIZES.has(size) || !FISH_RARITIES.has(rarity)) continue;
 		const key = `${fish.toLowerCase()}|${size}|${rarity}`;
 		if (seen.has(key)) continue;
