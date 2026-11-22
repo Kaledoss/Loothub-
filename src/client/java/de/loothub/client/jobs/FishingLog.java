@@ -111,16 +111,21 @@ public final class FishingLog {
 	public static com.google.gson.JsonArray knownKinds() {
 		java.util.Set<String> seen = new java.util.HashSet<>();
 		com.google.gson.JsonArray out = new com.google.gson.JsonArray();
+		// eigene Fänge plus alles, was zuletzt im Fanglager lag (auch ältere Fänge von vor der Mod)
+		List<String[]> kinds = new ArrayList<>();
 		for (Catch c : all()) {
-			String r = c.rarity == null ? "" : c.rarity.strip();
-			if (r.isEmpty() || r.equalsIgnoreCase("vanilla") || c.fish == null) {
+			kinds.add(new String[]{c.fish, c.size, c.rarity});
+		}
+		kinds.addAll(BackpackValue.seenKinds());
+		for (String[] k : kinds) {
+			String fish = k[0] == null ? "" : k[0].strip(), size = k[1] == null ? "" : k[1].strip(), r = k[2] == null ? "" : k[2].strip();
+			if (fish.isEmpty() || r.isEmpty() || r.equalsIgnoreCase("vanilla")) {
 				continue;
 			}
-			String size = c.size == null ? "" : c.size.strip();
-			if (seen.add(c.fish.strip().toLowerCase(Locale.ROOT) + "|" + size.toLowerCase(Locale.ROOT) + "|" + r.toLowerCase(Locale.ROOT))
+			if (seen.add(fish.toLowerCase(Locale.ROOT) + "|" + size.toLowerCase(Locale.ROOT) + "|" + r.toLowerCase(Locale.ROOT))
 					&& out.size() < 600) {
 				com.google.gson.JsonArray e = new com.google.gson.JsonArray();
-				e.add(c.fish.strip());
+				e.add(fish);
 				e.add(size);
 				e.add(r);
 				out.add(e);

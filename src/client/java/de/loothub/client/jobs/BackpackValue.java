@@ -249,6 +249,17 @@ public final class BackpackValue {
 		return new double[]{p * s.count * mult, 0};
 	}
 
+	/** Alle zuletzt im Fanglager gesehenen Arten als {Fisch, Größe, Seltenheit} (für die gemeinsame Fischliste). */
+	static List<String[]> seenKinds() {
+		List<String[]> out = new ArrayList<>();
+		for (List<Stack> page : data().pages.values()) {
+			for (Stack s : page) {
+				out.add(new String[]{s.fish, s.size, s.rarity});
+			}
+		}
+		return out;
+	}
+
 	private static boolean paysShards(String rarity) {
 		String r = rarity.strip().toLowerCase(Locale.ROOT);
 		return r.equals("trödel") || r.equals("schatz");
