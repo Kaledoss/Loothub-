@@ -385,8 +385,6 @@ public class SettingsScreen extends LoothubScreen {
 						() -> c.flyPose, v -> c.flyPose = v);
 				y = card(y, 40, "loothub.settings.hide_offhand", "loothub.settings.hide_offhand.tooltip",
 						() -> c.hideOffhandBackpack, v -> c.hideOffhandBackpack = v);
-				y = card(y, 40, "loothub.settings.hide_armor", "loothub.settings.hide_armor.tooltip",
-						() -> c.hideArmor, v -> c.hideArmor = v);
 				y = card(y, 40, "loothub.settings.afk_view", "loothub.settings.afk_view.tooltip",
 						() -> c.afkView, v -> c.afkView = v);
 			}

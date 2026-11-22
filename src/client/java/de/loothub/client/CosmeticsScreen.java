@@ -332,8 +332,12 @@ public class CosmeticsScreen extends LoothubScreen {
 				px = piece(px, y + 30, pw, "loothub.cosmetics.armor.legs", () -> c.hideLegs, v -> c.hideLegs = v);
 				px = piece(px, y + 30, pw, "loothub.cosmetics.armor.boots", () -> c.hideBoots, v -> c.hideBoots = v);
 				piece(px, y + 30, pw, "loothub.cosmetics.armor.elytra", () -> c.hideElytra, v -> c.hideElytra = v);
-				sections.add(new Section(y, 54, "loothub.cosmetics.armor", "loothub.cosmetics.armor.desc"));
-				y += 54 + GAP;
+				// dazu Kopf-Items (z. B. das Auto) und den Talismanrucksack – dieselben Schalter wie in den Einstellungen
+				int pw2 = Math.max(pw, Math.min(110, (cr - 8 - descX - 4) / 2));
+				px = piece(descX, y + 50, pw2, "loothub.cosmetics.armor.headitem", () -> c.hideOwnHeadItem, v -> c.hideOwnHeadItem = v);
+				piece(px, y + 50, pw2, "loothub.cosmetics.armor.backpack", () -> c.hideOffhandBackpack, v -> c.hideOffhandBackpack = v);
+				sections.add(new Section(y, 74, "loothub.cosmetics.armor", "loothub.cosmetics.armor.desc"));
+				y += 74 + GAP;
 				dropdown(descX, y + 30, ddWidth() + 40, Component.translatable("loothub.cosmetics.armor.who.short").getString(),
 						ARMOR_WHO, "loothub.cosmetics.armor.who.", () -> c.hideArmorOthers ? "all" : "",
 						v -> c.hideArmorOthers = "all".equals(v));
