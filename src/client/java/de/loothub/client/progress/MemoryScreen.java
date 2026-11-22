@@ -43,7 +43,7 @@ final class MemoryScreen extends ArcadeScreen {
 
 	@Override
 	protected String scoreText() {
-		long ms = !started ? 0 : (over ? endAt : System.currentTimeMillis()) - startAt;
+		long ms = startAt == 0 ? 0 : (over ? endAt : System.currentTimeMillis()) - startAt;
 		int best = best(game);
 		return Component.translatable("loothub.lh.mg.memory.score", score, pairs, COLS * ROWS / 2, Fmt.duration(ms).replace("< 1", "0"),
 				best == 0 ? "–" : String.valueOf(best)).getString();
@@ -70,6 +70,7 @@ final class MemoryScreen extends ArcadeScreen {
 		first = second = -1;
 		hideIn = 0;
 		pairs = 0;
+		startAt = 0;
 	}
 
 	@Override
@@ -90,8 +91,8 @@ final class MemoryScreen extends ArcadeScreen {
 		if (e.x() < fx || e.y() < fy || cx >= COLS || cy >= ROWS) {
 			return super.mouseClicked(e, doubleClick);
 		}
-		if (!started) {
-			begin();
+		begin();
+		if (startAt == 0) {
 			startAt = System.currentTimeMillis();
 		}
 		paused = false;

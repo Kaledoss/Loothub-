@@ -59,11 +59,19 @@ final class ElfScreen extends ArcadeScreen {
 		py = lastPy = 0;
 		vx = 0;
 		vy = JUMP;
-		cam = lastCam = -260;
+		cam = lastCam = -(Math.max(200, fh) - 30);
 		highest = 0;
 		plats.add(new Plat(W / 2f - PW / 2f, 4, 0));
 		top = 4;
 		fill();
+	}
+
+	@Override
+	protected void init() {
+		super.init();
+		if (!started) {
+			reset(); // Kamera an die echte Feldhöhe anpassen
+		}
 	}
 
 	/** Neue Platten oberhalb anlegen; mit der Höhe werden die Abstände größer und Sonderplatten häufiger. */

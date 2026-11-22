@@ -51,12 +51,20 @@ final class TowerScreen extends ArcadeScreen {
 		px = W / 2f - SIZE / 2f;
 		py = 0;
 		vx = vy = 0;
-		cam = lastCam = 0;
+		cam = lastCam = -(Math.max(200, fh) - 24); // Boden unten im Bild
 		scroll = 0;
 		best = 0;
 		lastPx = px;
 		lastPy = py;
 		onGround = true;
+	}
+
+	@Override
+	protected void init() {
+		super.init();
+		if (!started) {
+			cam = lastCam = -(fh - 24);
+		}
 	}
 
 	private void addPlatform(int floor) {
