@@ -192,7 +192,7 @@ final class Collection {
 	/** Zähler je Block und je Mob aus der eigenen Statistik („mined.minecraft:stone“, „killed.minecraft:zombie“). */
 	static JsonObject counters(Map<String, Long> all) {
 		blocks(); // füllt BLOCK_KEY
-		Map<String, Long> b = new HashMap<>(), m = new HashMap<>(), pl = new HashMap<>();
+		Map<String, Long> b = new HashMap<>(), m = new HashMap<>(), pl = new HashMap<>(), pk = new HashMap<>();
 		for (Map.Entry<String, Long> e : all.entrySet()) {
 			String k = e.getKey();
 			long v = e.getValue();
@@ -206,6 +206,8 @@ final class Collection {
 				}
 			} else if (k.startsWith("picked.minecraft:") && PICKED_ONLY.contains(k.substring("picked.minecraft:".length()))) {
 				b.merge(k.substring("picked.minecraft:".length()), v, Long::sum);
+			} else if (k.startsWith("picked.minecraft:")) {
+				pk.put(k.substring("picked.minecraft:".length()), v); // aufgesammelte Items je Art (für Item-Quests)
 			} else if (k.startsWith("placed.minecraft:")) {
 				pl.put(k.substring("placed.minecraft:".length()), v); // gesetzte Blöcke je Art (für besondere Quests)
 			} else if (k.startsWith("killed.minecraft:")) {
@@ -220,6 +222,9 @@ final class Collection {
 		m.forEach(om::addProperty);
 		pl.forEach(op::addProperty);
 		o.add("p", op);
+		JsonObject oi = new JsonObject();
+		pk.forEach(oi::addProperty);
+		o.add("i", oi);
 		o.add("b", ob);
 		o.add("m", om);
 		return o;

@@ -835,7 +835,14 @@ public final class StatsTracker {
 			StatsStore.add("general.play_time", Math.min(now - lastTickTime, 1000));
 			if (!OpsuchtAfk.afk(mc)) {
 				// aktive Spielzeit: nur, solange OPSUCHT einen nicht als AFK meldet (für Quests und Rangliste)
-				StatsStore.add("general.active_time", Math.min(now - lastTickTime, 1000));
+				long step = Math.min(now - lastTickTime, 1000);
+				StatsStore.add("general.active_time", step);
+				// Erkundung: Zeit im Nether und tief unter der Erde (für Quests)
+				if (mc.level.dimension() == net.minecraft.world.level.Level.NETHER) {
+					StatsStore.add("general.nether_time", step);
+				} else if (mc.level.dimension() == net.minecraft.world.level.Level.OVERWORLD && p.getY() < 0) {
+					StatsStore.add("general.deep_time", step);
+				}
 			}
 		}
 		lastTickTime = now;

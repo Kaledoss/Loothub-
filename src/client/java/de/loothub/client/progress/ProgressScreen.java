@@ -410,6 +410,42 @@ public class ProgressScreen extends LoothubScreen {
 				Component.translatable("loothub.lh.q.ends_in", Texts.left(week.get("ends").getAsLong() - now)), y);
 		y = quests(g, week.getAsJsonArray("list"), y, "w") + 6;
 
+		// Duo-Quest der Woche: zwei Spieler tragen sich gegenseitig ein und schaffen ein Ziel zusammen
+		if (s.has("duo") && s.get("duo").isJsonObject()) {
+			JsonObject duo = s.getAsJsonObject("duo");
+			String dst = duo.get("stat").getAsString();
+			long goal = duo.get("goal").getAsLong();
+			String partner = duo.get("partner").getAsString();
+			boolean paired = duo.get("paired").getAsBoolean(), paid = duo.get("paid").getAsBoolean();
+			y = section(g, Component.translatable("loothub.lh.duo.title"),
+					Component.translatable("loothub.lh.toast.points", duo.get("reward").getAsInt()), y);
+			g.fill(cl, y + 1, cl + 3, y + 17, 0xFF6BD5FF);
+			g.drawString(font, Component.translatable("loothub.lh.duo.goal", Texts.goal(dst, goal)), cl + 8, y + 2, paid ? FAINT : TEXT, false);
+			Component btn = Component.translatable(partner.isEmpty() ? "loothub.lh.duo.pick" : "loothub.lh.duo.change");
+			if (!paid) {
+				int bw = font.width(btn) + 14;
+				gameButton(g, cr - bw, y, bw, btn, () -> minecraft.setScreen(new DuoScreen(this, partner)));
+			}
+			if (partner.isEmpty()) {
+				g.drawString(font, Component.translatable("loothub.lh.duo.none"), cl + 8, y + 12, MUTED, false);
+				y += 26;
+			} else if (!paired) {
+				g.drawString(font, Component.translatable("loothub.lh.duo.waiting", partner), cl + 8, y + 12, MUTED, false);
+				y += 26;
+			} else {
+				long mine = duo.get("mine").getAsLong(), theirs = duo.get("theirs").getAsLong();
+				long have = paid ? goal : Math.min(goal, mine + theirs);
+				String prog = Texts.value(dst, have) + " / " + Texts.value(dst, goal);
+				int barW = Math.max(40, cw - 8 - font.width(prog) - 12);
+				bar(g, cl + 8, y + 15, barW, goal == 0 ? 1 : have / (double) goal, paid ? 0xFF55E06A : 0xFF6BD5FF);
+				g.drawString(font, prog, cl + 8 + barW + 8, y + 12, MUTED, false);
+				g.drawString(font, Component.translatable("loothub.lh.duo.split", Texts.value(dst, mine), partner, Texts.value(dst, theirs)),
+						cl + 8, y + 21, paid ? 0xFF55E06A : FAINT, false);
+				y += 34;
+			}
+			y += 6;
+		}
+
 		// Questkette der Woche: kleine Geschichte in drei Schritten
 		if (s.has("chain") && s.get("chain").isJsonObject()) {
 			JsonObject ch = s.getAsJsonObject("chain");
@@ -664,22 +700,19 @@ public class ProgressScreen extends LoothubScreen {
 	private int drawGames(GuiGraphics g, JsonObject s, int y) {
 		// Spielhalle: kleine Spiele mit Rekord, Ranglisten je Woche (Snake mit Taler für Platz 1–3)
 		y = section(g, Component.translatable("loothub.lh.mg.hall"), Component.translatable("loothub.lh.mg.hall.sub"), y);
-		String[][] games = {{"snake", "choco"}, {"tower", "mg_penguin"}, {"sheep", "mg_sheep"}, {"elf", "mg_elf"}, {"memory", ""}};
+		// Spiel, Symbol, Symbolgröße (Ludo-Grafiken)
+		String[][] games = {{"snake", "choco", "64"}, {"tower", "mg_penguin", "64"}, {"sheep", "mg_sheep", "64"}, {"elf", "mg_elf", "64"},
+				{"memory", "mg_icon_memory", "32"}, {"craft", "mg_icon_craft", "32"}, {"word", "mg_icon_word", "32"}};
 		for (String[] gm : games) {
 			String id = gm[0];
+			int ts = Integer.parseInt(gm[2]);
 			g.fill(cl + 4, y, cr - 4, y + 20, 0x18FFFFFF);
-			if (gm[1].isEmpty()) {
-				g.renderItem(new ItemStack(net.minecraft.world.item.Items.ENDER_EYE), cl + 8, y + 2);
-			} else {
-				int th = id.equals("sheep") ? 12 : 16;
-				g.blit(net.minecraft.client.renderer.RenderPipelines.GUI_TEXTURED, ArcadeScreen.tex(gm[1]), cl + 8, y + 2 + (16 - th) / 2,
-						0f, 0f, 16, th, id.equals("snake") ? 64 : 16, id.equals("snake") ? 64 : th, id.equals("snake") ? 64 : 16,
-						id.equals("snake") ? 64 : th);
-			}
+			g.blit(net.minecraft.client.renderer.RenderPipelines.GUI_TEXTURED, ArcadeScreen.tex(gm[1]), cl + 7, y + 1, 0f, 0f, 18, 18, ts, ts,
+					ts, ts);
 			g.drawString(font, Component.translatable("loothub.lh.mg." + id), cl + 30, y + 2, TEXT, false);
 			int rec = ArcadeScreen.best(id);
 			String recText = rec == 0 ? "–" : Fmt.whole(rec);
-			g.drawString(font, Component.translatable(id.equals("memory") ? "loothub.lh.mg.record.memory" : "loothub.lh.mg.record", recText),
+			g.drawString(font, Component.translatable("loothub.lh.mg.record." + id, recText),
 					cl + 30, y + 11, MUTED, false);
 			if (id.equals("snake")) {
 				Component rw = Component.translatable("loothub.lh.mg.weekly");
@@ -692,6 +725,8 @@ public class ProgressScreen extends LoothubScreen {
 				case "sheep" -> new SheepScreen(this);
 				case "elf" -> new ElfScreen(this);
 				case "memory" -> new MemoryScreen(this);
+				case "craft" -> new CraftScreen(this);
+				case "word" -> new WordScreen(this);
 				default -> new SnakeScreen(this);
 			}));
 			gameButton(g, px - 24, y + 2, 20, Component.empty(), () -> minecraft.setScreen(new MgBoardScreen(this, id)));

@@ -189,8 +189,11 @@ final class TowerScreen extends ArcadeScreen {
 	@Override
 	protected void drawField(GuiGraphics g, float partial) {
 		float c = lastCam + (cam - lastCam) * partial;
-		// Hintergrund: Nachthimmel, etwas heller nach oben
-		g.fillGradient(fx, fy, fx + fw, fy + fh, 0xFF0B1630, 0xFF1A2C52);
+		// Hintergrund: Eisturm (Ludo), scrollt langsamer mit (Tiefenwirkung)
+		int bgOff = Math.floorMod(Math.round(-c * 0.35f), 288);
+		for (int y = bgOff - 288; y < fh; y += 288) {
+			g.blit(RenderPipelines.GUI_TEXTURED, tex("mg_tower_bg"), fx, fy + y, 0f, 0f, fw, 288, 216, 288, 216, 288);
+		}
 		// Wände aus blauem Eis
 		for (int y = (int) (-(c % 16) - 16); y < fh + 16; y += 16) {
 			g.blit(RenderPipelines.GUI_TEXTURED, WALL, fx, fy + y, 0f, 0f, WALL_W, 16, 16, 16, 16, 16);
@@ -214,7 +217,8 @@ final class TowerScreen extends ArcadeScreen {
 		}
 		float x = lastPx + (px - lastPx) * partial, y = lastPy + (py - lastPy) * partial;
 		int sx = fx + Math.round(x), sy = fy + Math.round(y - c) - SIZE;
-		g.blit(RenderPipelines.GUI_TEXTURED, tex(facingLeft ? "mg_penguin_l" : "mg_penguin"), sx, sy, 0f, 0f, SIZE, SIZE, 16, 16, 16, 16);
+		g.blit(RenderPipelines.GUI_TEXTURED, tex(facingLeft ? "mg_penguin_l" : "mg_penguin"), sx - 3, sy - 6, 0f, 0f, SIZE + 6, SIZE + 6, 64, 64,
+				64, 64);
 		// Tempo-Anzeige links oben
 		if (scroll > 0) {
 			g.drawString(font, "▲", fx + WALL_W + 3, fy + 3, scroll > 3 ? 0xFFFF6B6B : 0xFFB9D7FF, true);

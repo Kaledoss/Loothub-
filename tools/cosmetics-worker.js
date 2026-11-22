@@ -582,12 +582,13 @@ function lhTz(now) {
 	return Math.round((local - Math.floor(now / 60000) * 60000) / LH_HOUR) * LH_HOUR;
 }
 const LH_SLOT = 4 * LH_HOUR;
-const LH_STATS = ["blocks", "placed", "mobs", "fish", "play", "treasures", "jobmoney", "jumps", "picked", "dropped"];
+const LH_STATS = ["blocks", "placed", "mobs", "fish", "play", "treasures", "jobmoney", "jumps", "picked", "dropped", "dist", "nether",
+	"deep"];
 // höchstens so viel Zuwachs pro Sekunde zwischen zwei Meldungen (dazu ein Puffer von 2 Minuten)
 const LH_RATE = { blocks: 25, placed: 25, mobs: 6, fish: 0.3, play: 0.025, dist: 120, treasures: 1, jobmoney: 50000,
-	itemdex: 5, eat: 2, jumps: 6, picked: 60, dropped: 60 };
+	itemdex: 5, eat: 2, jumps: 6, picked: 60, dropped: 60, nether: 0.025, deep: 0.025 };
 const LH_FIRST_MAX = { blocks: 5e7, placed: 5e7, mobs: 5e6, fish: 1e6, play: 2e6, dist: 5e8, treasures: 1e6,
-	jobmoney: 1e12, itemdex: 1e5, eat: 1e6, jumps: 5e7, picked: 1e8, dropped: 1e8 };
+	jobmoney: 1e12, itemdex: 1e5, eat: 1e6, jumps: 5e7, picked: 1e8, dropped: 1e8, nether: 2e6, deep: 2e6 };
 const LH_TIER_POINTS = [10, 12, 14, 16, 19, 23, 27, 32, 38, 44, 52, 62, 73, 86, 100, 120, 140, 170, 200, 230, 270, 320, 380, 450, 530, 630, 740, 870, 1000, 1200];
 const LH_HISTORY_SHARE = 0.25; // Anteil der Taler für Erfolgsstufen, die beim ersten Abgleich schon erreicht sind
 // Erfolge: je 30 Stufen
@@ -613,6 +614,10 @@ const LH_Q = {
 	fish: [[10, 30, 60], [150, 400, 900]],
 	play: [[30, 60, 120], [300, 600, 1200]],
 	jumps: [[200, 500, 1000], [3000, 8000, 20000]],
+	// Erkundung: Strecke (Meter), Minuten im Nether, Minuten unter Höhe 0
+	dist: [[1000, 2500, 5000], [20000, 50000, 100000]],
+	nether: [[10, 20, 45], [120, 300, 600]],
+	deep: [[10, 20, 45], [120, 300, 600]],
 };
 const LH_Q_POINTS = [[10, 20, 40], [100, 175, 300]];
 // Besondere Quests: bestimmte Blöcke abbauen (b), setzen (p) oder bestimmte Mobs besiegen (m) – nur Häufiges, das man
@@ -625,15 +630,20 @@ const LH_QS = {
 		stone_bricks: 0.5, glass: 0.4, sand: 0.5, oak_log: 0.3 } },
 	m: { base: [[15, 40, 100], [250, 600, 1500]], ids: { zombie: 1, skeleton: 1, creeper: 0.6, spider: 0.8, cow: 0.6, pig: 0.6,
 		sheep: 0.6, chicken: 0.6, enderman: 0.4, drowned: 0.4, slime: 0.5 } },
+	// Items aufsammeln (Ernte, Mob-Drops, Fische)
+	i: { base: [[200, 600, 1500], [4000, 12000, 30000]], ids: { pumpkin: 0.3, melon_slice: 1, carrot: 1, potato: 1, sugar_cane: 1,
+		cactus: 0.5, bamboo: 1, kelp: 1, sweet_berries: 0.5, bone: 0.3, string: 0.3, gunpowder: 0.2, rotten_flesh: 0.5,
+		cod: 0.05, salmon: 0.03, egg: 0.1, apple: 0.05 } },
 };
-const LH_QP_IDS = new Set(Object.keys(LH_QS.p.ids));
+// gesetzte Blöcke (p) und aufgesammelte Items (i) je Art: Rohwerte aus der Mod, Zuwachs gekappt auf den Gesamtzähler
+const LH_QX = { p: { src: "placed", ids: new Set(Object.keys(LH_QS.p.ids)) }, i: { src: "picked", ids: new Set(Object.keys(LH_QS.i.ids)) } };
 function lhQRound(v) { return v >= 100 ? Math.round(v / 10) * 10 : Math.max(1, Math.round(v)); }
 /** Aktueller Stand eines Quest-Zählers („blocks“ oder „b:stone“, „p:glass“, „m:zombie“). */
 function lhQVal(d, stat) {
 	const i = stat.indexOf(":");
 	if (i < 0) return (d.tot && d.tot[stat]) || 0;
 	const kind = stat.slice(0, i), id = stat.slice(i + 1);
-	if (kind === "p") return (d.cpl && d.cpl[id]) || 0;
+	if (LH_QX[kind]) return (d.qx && d.qx[kind] && d.qx[kind].tot[id]) || 0;
 	return (d.col && d.col[kind] && d.col[kind][id]) || 0;
 }
 /** Startwerte einer Quest-Periode: alle Gesamtzähler, dazu die besonderen Zähler der Quests. */
@@ -686,7 +696,52 @@ const LH_MG = {
 	sheep: { minMs: 500, max: 5000 },
 	elf: { minMs: 20, max: 200000 },
 	memory: { minMs: 400, min: 18, max: 1000, asc: true }, // Züge: weniger ist besser
+	craft: { minMs: 2500, max: 300 },
+	word: { minMs: 900, min: 15, max: 3600, asc: true }, // Sekunden: weniger ist besser
 };
+// Duo-Quest: jede Woche ein gemeinsames Ziel für zwei Spieler, die sich gegenseitig eintragen
+const LH_DUO = { blocks: 40000, placed: 20000, mobs: 2500, fish: 500, play: 1200, dist: 100000 };
+const LH_DUO_REWARD = 200;
+function lhDuoQuest(week) {
+	const stats = Object.keys(LH_DUO);
+	const s = stats[Math.floor(lhRand(`lh-duo-${week}`)() * stats.length)];
+	return { stat: s, goal: LH_DUO[s], reward: LH_DUO_REWARD };
+}
+/** Eigener Beitrag zur Duo-Quest dieser Woche (Zuwachs seit Wochenbeginn). */
+function lhDuoMine(d, week) {
+	if (!d.week || d.week.id !== week) return 0;
+	const q = lhDuoQuest(week);
+	return lhQHave(d, d.week, q.stat);
+}
+/** Duo-Stand neu berechnen (Partner lesen), ggf. Belohnung auszahlen. Ergebnis in d.duoView. */
+async function lhDuoUpdate(db, uuid, d, now, out) {
+	const week = lhWeekId(now);
+	const q = lhDuoQuest(week);
+	if (!d.duo || d.duo.week !== week) d.duo = { week, partner: "", pname: "", paid: false };
+	const view = { ...q, week, partner: d.duo.pname, paired: false, mine: lhDuoMine(d, week), theirs: 0, paid: d.duo.paid,
+		ends: lhWeekEnd(week) };
+	if (d.duo.partner) {
+		const t = await db.prepare("SELECT name, data FROM lh_player WHERE uuid = ?").bind(d.duo.partner).first();
+		let td = null;
+		try { td = t ? JSON.parse(t.data || "{}") : null; } catch { td = null; }
+		if (t) view.partner = t.name || d.duo.pname;
+		if (td && td.duo && td.duo.week === week && td.duo.partner === uuid) {
+			view.paired = true;
+			view.theirs = lhDuoMine(td, week);
+		}
+	}
+	if (view.paired && !d.duo.paid && view.mine + view.theirs >= q.goal) {
+		d.duo.paid = true;
+		view.paid = true;
+		if (out) {
+			out.earned += q.reward;
+			out.news.push({ k: "duo", stat: q.stat, p: q.reward });
+		}
+	}
+	d.duoView = view;
+	return view;
+}
+
 // Serien-Ranglisten (ohne Belohnung): längste Serie richtiger Antworten an aufeinanderfolgenden Tagen
 const LH_STREAK_GAMES = ["quiz", "guess"];
 
@@ -1008,26 +1063,30 @@ function lhColTier(kind, v) {
 /** Zähler je Block und je Mob übernehmen (nach lhAbsorb). Der Zuwachs wird auf den Zuwachs des Gesamtzählers gekappt. */
 function lhAbsorbCol(d, reported) {
 	const rep = reported && typeof reported === "object" ? reported : {};
-	// gesetzte Blöcke je Art (nur die für besondere Quests), Zuwachs gekappt auf den Zuwachs von „placed“
-	if (rep.p && typeof rep.p === "object") {
-		const firstP = !d.cplraw;
-		d.cplraw = d.cplraw || {};
-		d.cpl = d.cpl || {};
+	// gesetzte Blöcke (p) und aufgesammelte Items (i) je Art – nur die für besondere Quests
+	delete d.cpl; delete d.cplraw; // alte Felder
+	d.qx = d.qx || {};
+	for (const [kind, x] of Object.entries(LH_QX)) {
+		const src = rep[kind];
+		if (!src || typeof src !== "object") continue;
+		const q = d.qx[kind] || (d.qx[kind] = { raw: null, tot: {} });
+		const first = !q.raw;
+		q.raw = q.raw || {};
 		const deltas = {};
 		let sum = 0;
-		for (const id of LH_QP_IDS) {
-			let v = Number(rep.p[id]);
+		for (const id of x.ids) {
+			let v = Number(src[id]);
 			if (!Number.isFinite(v) || v < 0) continue;
 			v = Math.floor(v);
-			const prev = d.cplraw[id];
-			d.cplraw[id] = v;
-			if (firstP || prev === undefined) continue; // alte Statistik zählt für Quests nicht
+			const prev = q.raw[id];
+			q.raw[id] = v;
+			if (first || prev === undefined) continue; // alte Statistik zählt für Quests nicht
 			const delta = v >= prev ? v - prev : v;
 			if (delta > 0) { deltas[id] = delta; sum += delta; }
 		}
-		const budget = Math.ceil(((d.delta && d.delta.placed) || 0) * 1.1) + 20;
+		const budget = Math.ceil(((d.delta && d.delta[x.src]) || 0) * 1.1) + 20;
 		const f = sum > budget ? budget / sum : 1;
-		for (const [id, delta] of Object.entries(deltas)) d.cpl[id] = (d.cpl[id] || 0) + Math.floor(delta * f);
+		for (const [id, delta] of Object.entries(deltas)) q.tot[id] = (q.tot[id] || 0) + Math.floor(delta * f);
 	}
 	d.colFirst = false;
 	if (!rep.b && !rep.m) return; // ältere Mod-Version ohne Sammlung: nichts anlegen, damit später die Historie zählt
@@ -1271,6 +1330,7 @@ function lhView(row, d, extra, now) {
 			return { q, done, a: done ? d.quiz.a : -1, ok: done ? d.quiz.ok : false, right: done ? LH_QUIZ[q] : -1, reward: LH_QUIZ_REWARD,
 				streak: lhStreakView(d, "quiz", day) };
 		})(),
+		duo: d.duoView && d.duoView.week === lhWeekId(now) ? d.duoView : null,
 		guess: (() => {
 			const day = lhDayId(now), g = lhGuessDay(day), st = d.guess && d.guess.day === day ? d.guess : { picked: [], done: false };
 			return { opts: g.opts, picked: st.picked, done: st.done, answer: st.done ? g.answer : "", hint: g.answer, rewards: LH_GUESS_REWARD,
@@ -1407,6 +1467,7 @@ async function lhHandle(request, env) {
 		lhAbsorbCol(d, p.col);
 		extra = await lhProgress(db, d, now);
 		try { await lhMgPayout(db, uuid, d, now, extra); } catch { /* nächstes Mal */ }
+		try { await lhDuoUpdate(db, uuid, d, now, extra); } catch { /* nächstes Mal */ }
 		row.points = (row.points || 0) + extra.earned;
 	} else {
 		if (!d.tot || !d.slot || !d.week) return json({ error: "sync first" }, 409);
@@ -1483,6 +1544,24 @@ async function lhHandle(request, env) {
 					row.points = (row.points || 0) + p2;
 					extra.news.push({ k: "guess", p: p2 });
 				}
+			}
+		} else if (p.op === "duo") {
+			// Partner eintragen (oder mit leerem Namen austragen); zählt, sobald er einen auch einträgt
+			const week = lhWeekId(now);
+			const target = String(p.target || "");
+			extra = { news: [], earned: 0 };
+			if (d.duo && d.duo.week === week && d.duo.paid) error = "duo done";
+			else if (!target) d.duo = { week, partner: "", pname: "", paid: false };
+			else if (!NAME.test(target)) error = "no player";
+			else {
+				const t = await db.prepare("SELECT uuid, name FROM lh_player WHERE lower(name) = lower(?) ORDER BY updated DESC LIMIT 1").bind(target).first();
+				if (!t) error = "no player";
+				else if (t.uuid === uuid) error = "duo self";
+				else d.duo = { week, partner: t.uuid, pname: t.name, paid: false };
+			}
+			if (!error) {
+				await lhDuoUpdate(db, uuid, d, now, extra);
+				row.points = (row.points || 0) + extra.earned;
 			}
 		} else if (p.op === "mg") {
 			const game = String(p.game || ""), g = LH_MG[game];

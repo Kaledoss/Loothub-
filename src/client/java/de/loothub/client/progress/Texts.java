@@ -46,7 +46,8 @@ final class Texts {
 	/** Wert in der Einheit des Zählers (Spielzeit in Stunden/Minuten, Geld mit $, sonst Zahl). */
 	static String value(String stat, long v) {
 		return switch (stat) {
-			case "play" -> v >= 600 ? Fmt.whole(v / 60) + " h" : Fmt.whole(v) + " min";
+			case "play", "nether", "deep" -> v >= 600 ? Fmt.whole(v / 60) + " h" : Fmt.whole(v) + " min";
+			case "dist" -> v >= 1000 ? Fmt.compactPlain(v / 1000.0) + " km" : Fmt.whole(v) + " m";
 			case "jobmoney" -> Fmt.compact(v) + " $";
 			default -> v >= 100_000 ? Fmt.compact(v) : Fmt.whole(v);
 		};

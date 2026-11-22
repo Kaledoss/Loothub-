@@ -19,7 +19,7 @@ import net.minecraft.sounds.SoundEvents;
 final class SheepScreen extends ArcadeScreen {
 	private static final Identifier GRASS = Identifier.withDefaultNamespace("textures/block/grass_block_top.png");
 	private static final Identifier DIRT = Identifier.withDefaultNamespace("textures/block/dirt.png");
-	private static final int W = 320, H = 180, GROUND = 30, SW = 26, SH = 20;
+	private static final int W = 320, H = 180, GROUND = 30, SW = 26, SH = 20, FENCE_W = 14;
 
 	private record Fence(float x, int h, boolean[] counted) {
 	}
@@ -101,12 +101,12 @@ final class SheepScreen extends ArcadeScreen {
 		int sheepX = 40;
 		for (Fence f : fences) {
 			int fh = f.h * 16;
-			boolean overlapX = sheepX + SW - 5 > f.x && sheepX + 5 < f.x + 8;
+			boolean overlapX = sheepX + SW - 5 > f.x && sheepX + 5 < f.x + FENCE_W;
 			if (overlapX && -y < fh - 2) {
 				gameOver();
 				return;
 			}
-			if (!f.counted[0] && f.x + 8 < sheepX) {
+			if (!f.counted[0] && f.x + FENCE_W < sheepX) {
 				f.counted[0] = true;
 				score++;
 				if (minecraft != null && minecraft.player != null) {
@@ -127,19 +127,20 @@ final class SheepScreen extends ArcadeScreen {
 
 	@Override
 	protected void drawField(GuiGraphics g, float partial) {
-		g.fillGradient(fx, fy, fx + fw, fy + fh, 0xFF070B22, 0xFF1C2A55);
 		long t = System.currentTimeMillis();
+		float sc = lastScroll + (scrollX - lastScroll) * partial;
+		// Nachtwiese (Ludo), scrollt langsam (Tiefenwirkung)
+		int bgW = 392, bgOff = Math.floorMod(Math.round(sc * 0.25f), bgW);
+		for (int x = -bgOff; x < fw; x += bgW) {
+			g.blit(RenderPipelines.GUI_TEXTURED, tex("mg_sheep_bg"), fx + x, fy, 0f, 0f, bgW, fh, 392, 160, 392, 160);
+		}
 		for (int[] s : stars) {
-			boolean on = ((t / 400 + s[0]) % 7) != 0;
+			boolean on = ((t / 400 + s[0]) % 9) == 0;
 			if (s[0] < fw && on) {
-				g.fill(fx + s[0], fy + s[1], fx + s[0] + 1 + s[2] / 2, fy + s[1] + 1 + s[2] / 2, 0xFFFFF6C8);
+				g.fill(fx + s[0], fy + s[1] / 2, fx + s[0] + 1, fy + s[1] / 2 + 1, 0xFFFFF6C8); // funkeln
 			}
 		}
-		// Mond
-		g.fill(fx + fw - 46, fy + 14, fx + fw - 26, fy + 34, 0xFFFFF3B0);
-		g.fill(fx + fw - 40, fy + 14, fx + fw - 26, fy + 28, 0xFF1A2550);
 		// Boden scrollt
-		float sc = lastScroll + (scrollX - lastScroll) * partial;
 		int off = Math.round(sc) % 16;
 		int gy = fy + fh - GROUND;
 		for (int x = -off; x < fw; x += 16) {
@@ -150,20 +151,15 @@ final class SheepScreen extends ArcadeScreen {
 		}
 		g.fill(fx, gy, fx + fw, gy + 6, 0x5A1F6B1F);
 		g.fill(fx, gy, fx + fw, fy + fh, 0x40000020); // Nacht
-		// Zäune (Eichenzaun: Pfosten und zwei Latten)
+		// Zäune (Ludo): einfach oder doppelt hoch
 		for (Fence f : fences) {
 			int x = fx + Math.round(f.x - speed * partial);
-			int top = gy - f.h * 16;
-			g.fill(x + 2, top, x + 6, gy, 0xFF9C7A4A);
-			g.fill(x + 2, top, x + 3, gy, 0xFFB8946A);
-			for (int r = 0; r < f.h; r++) {
-				int ry = gy - r * 16;
-				g.fill(x - 3, ry - 13, x + 11, ry - 11, 0xFF8A6B3E);
-				g.fill(x - 3, ry - 7, x + 11, ry - 5, 0xFF8A6B3E);
-			}
+			int fhgt = f.h * 16 + 2;
+			int w = Math.round(fhgt * 81f / 48f);
+			g.blit(RenderPipelines.GUI_TEXTURED, tex("mg_fence"), x - (w - FENCE_W) / 2, gy - fhgt + 1, 0f, 0f, w, fhgt, 81, 48, 81, 48);
 		}
 		float yy = lastY + (y - lastY) * partial;
 		int bob = onGround ? (int) ((t / 120) % 2) : 0;
-		g.blit(RenderPipelines.GUI_TEXTURED, tex("mg_sheep"), fx + 40, gy - SH + Math.round(yy) - bob, 0f, 0f, SW, SH, 16, 12, 16, 12);
+		g.blit(RenderPipelines.GUI_TEXTURED, tex("mg_sheep"), fx + 40 - 4, gy - 30 + 4 + Math.round(yy) - bob, 0f, 0f, 34, 34, 64, 64, 64, 64);
 	}
 }

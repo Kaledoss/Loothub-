@@ -400,6 +400,8 @@ public final class Progress {
 		o.addProperty("jumps", all.getOrDefault("general.jumps", 0L));
 		o.addProperty("picked", picked);
 		o.addProperty("dropped", dropped);
+		o.addProperty("nether", all.getOrDefault("general.nether_time", 0L) / 60_000L);
+		o.addProperty("deep", all.getOrDefault("general.deep_time", 0L) / 60_000L);
 		return o;
 	}
 
@@ -456,6 +458,14 @@ public final class Progress {
 			JsonObject o = e.isJsonObject() && e.getAsJsonObject().has("list") ? e.getAsJsonObject() : null;
 			Minecraft.getInstance().execute(() -> done.accept(o));
 		});
+	}
+
+	/** Duo-Partner eintragen ("" = austragen). */
+	public static void duo(String target, Consumer<String> done) {
+		JsonObject p = new JsonObject();
+		p.addProperty("op", "duo");
+		p.addProperty("target", target);
+		send(p, done);
 	}
 
 	/** Tipp beim Block-Raten. */
@@ -723,6 +733,8 @@ public final class Progress {
 						Component.translatable(k.equals("week") ? "loothub.lh.toast.week" : "loothub.lh.toast.quest").getString(),
 						Texts.goal(stat, n.get("goal").getAsLong()).getString() + " · " + plus, 0x55E06A));
 				}
+				case "duo" -> TOASTS.add(new Toast(Component.translatable("loothub.lh.toast.duo").getString(),
+						Texts.stat(stat).getString() + " · " + plus, 0x6BD5FF));
 				case "mg" -> TOASTS.add(new Toast(Component.translatable("loothub.lh.toast.mg", n.get("r").getAsInt(),
 						Component.translatable("loothub.lh.mg." + n.get("g").getAsString())).getString(), plus, 0xF2C14E));
 				case "login" -> TOASTS.add(new Toast(

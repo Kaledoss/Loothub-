@@ -182,9 +182,13 @@ final class ElfScreen extends ArcadeScreen {
 	@Override
 	protected void drawField(GuiGraphics g, float partial) {
 		float c = lastCam + (cam - lastCam) * partial;
-		// Winterhimmel; wird mit der Höhe dunkler
+		// Winterhimmel (Ludo), scrollt langsamer mit; wird mit der Höhe dunkler
 		float h = Math.min(1f, highest / 6000f);
-		g.fillGradient(fx, fy, fx + fw, fy + fh, SnakeScreen.lerp(0xFF7FB2E0, 0xFF0A1030, h), SnakeScreen.lerp(0xFFCFE4F5, 0xFF2A3A70, h));
+		int bgOff = Math.floorMod(Math.round(-c * 0.3f), 288);
+		for (int y = bgOff - 288; y < fh; y += 288) {
+			g.blit(RenderPipelines.GUI_TEXTURED, tex("mg_elf_bg"), fx, fy + y, 0f, 0f, fw, 288, 216, 288, 216, 288);
+		}
+		g.fill(fx, fy, fx + fw, fy + fh, ((int) (h * 0xB0) << 24) | 0x0A1030);
 		// fallende Schneeflocken (Deko)
 		long t = System.currentTimeMillis();
 		for (int i = 0; i < 24; i++) {
@@ -212,22 +216,19 @@ final class ElfScreen extends ArcadeScreen {
 			}
 			if (p.gift) {
 				// Geschenk als Sprungfeder
-				g.fill(sx + PW / 2 - 6, sy - 10, sx + PW / 2 + 6, sy, 0xFFD83A3A);
-				g.fill(sx + PW / 2 - 1, sy - 10, sx + PW / 2 + 1, sy, 0xFFF2C14E);
-				g.fill(sx + PW / 2 - 6, sy - 6, sx + PW / 2 + 6, sy - 4, 0xFFF2C14E);
-				g.fill(sx + PW / 2 - 3, sy - 13, sx + PW / 2, sy - 10, 0xFFF2C14E);
-				g.fill(sx + PW / 2 + 1, sy - 13, sx + PW / 2 + 4, sy - 10, 0xFFF2C14E);
+				g.blit(RenderPipelines.GUI_TEXTURED, tex("mg_gift"), sx + PW / 2 - 7, sy - 14, 0f, 0f, 14, 14, 32, 32, 32, 32);
 			}
 		}
 		float x = lastPx + (px - lastPx) * partial, y = lastPy + (py - lastPy) * partial;
 		int sx = fx + Math.round(x), sy = fy + Math.round(y - c) - SIZE;
 		Identifier elf = tex(facingLeft ? "mg_elf_l" : "mg_elf");
-		g.blit(RenderPipelines.GUI_TEXTURED, elf, sx, sy, 0f, 0f, SIZE, SIZE, 16, 16, 16, 16);
+		int e = SIZE + 8;
+		g.blit(RenderPipelines.GUI_TEXTURED, elf, sx - 4, sy - 8, 0f, 0f, e, e, 64, 64, 64, 64);
 		// am Rand: halb auf der anderen Seite zeigen
 		if (sx < fx) {
-			g.blit(RenderPipelines.GUI_TEXTURED, elf, sx + fw, sy, 0f, 0f, SIZE, SIZE, 16, 16, 16, 16);
+			g.blit(RenderPipelines.GUI_TEXTURED, elf, sx - 4 + fw, sy - 8, 0f, 0f, e, e, 64, 64, 64, 64);
 		} else if (sx + SIZE > fx + fw) {
-			g.blit(RenderPipelines.GUI_TEXTURED, elf, sx - fw, sy, 0f, 0f, SIZE, SIZE, 16, 16, 16, 16);
+			g.blit(RenderPipelines.GUI_TEXTURED, elf, sx - 4 - fw, sy - 8, 0f, 0f, e, e, 64, 64, 64, 64);
 		}
 	}
 }

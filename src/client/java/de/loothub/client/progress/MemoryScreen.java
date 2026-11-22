@@ -146,8 +146,8 @@ final class MemoryScreen extends ArcadeScreen {
 			if (open[i] || found[i]) {
 				g.renderItem(cards.get(i), x + (cell - 16) / 2, y + (cell - 16) / 2);
 			} else {
-				g.fill(x + 3, y + 3, x + cell - 3, y + cell - 3, 0xFF8E1F26);
-				g.drawCenteredString(font, "?", x + cell / 2, y + cell / 2 - 4, 0xFFF2C14E);
+				g.blit(net.minecraft.client.renderer.RenderPipelines.GUI_TEXTURED, tex("mg_cardback"), x + 1, y + 1, 0f, 0f, cell - 2,
+						cell - 2, 64, 64, 64, 64);
 			}
 		}
 	}
