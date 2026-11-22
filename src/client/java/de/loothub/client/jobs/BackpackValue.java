@@ -205,7 +205,7 @@ public final class BackpackValue {
 
 	public static Value value() {
 		Data d = data();
-		int prestige = WidgetConfig.get().anglerPrestige;
+		int prestige = Math.min(2, WidgetConfig.get().anglerPrestige); // OPSUCHT hat Prestige 1 und 2
 		double mult = 1 + Math.max(0, prestige) * BONUS_PER_PRESTIGE;
 		double sum = 0;
 		int unknown = 0, fish = 0;

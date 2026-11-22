@@ -747,7 +747,7 @@ public class SettingsScreen extends LoothubScreen {
 					int pW = Math.min(200, cr - 8 - pDescX);
 					String cur = c.anglerPrestige < 0 ? "none" : String.valueOf(c.anglerPrestige);
 					buttons.add(addRenderableWidget(Button.builder(Component.translatable("loothub.settings.angler_prestige." + cur).append(" ▾"),
-							b -> openPicker(b, new String[]{"0", "1", "2", "3", "4", "5", "6", "7", "8", "9", "10"},
+							b -> openPicker(b, new String[]{"0", "1", "2"},
 									"loothub.settings.angler_prestige.", v -> {
 										WidgetConfig.get().anglerPrestige = Integer.parseInt(v);
 										WidgetConfig.get().save();
