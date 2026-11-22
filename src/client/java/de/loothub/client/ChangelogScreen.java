@@ -126,7 +126,10 @@ public class ChangelogScreen extends LoothubScreen {
 		CompletableFuture<String> runs = get("https://api.github.com/repos/" + REPO
 				+ "/actions/runs?branch=main&event=push&status=success&per_page=100")
 				.exceptionally(t -> null); // ohne Build-Läufe wird nach Tagen gruppiert
-		commits.thenCombine(runs, ChangelogScreen::parse).whenComplete((result, t) -> {
+		CompletableFuture<String> latest = get("https://api.github.com/repos/" + REPO + "/releases/tags/latest")
+				.exceptionally(t -> null);
+		commits.thenCombine(runs, (a, b) -> new String[]{a, b}).thenCombine(latest, (ab, l) -> parse(ab[0], ab[1], l))
+				.whenComplete((result, t) -> {
 			if (t != null) {
 				Throwable c = t.getCause() != null ? t.getCause() : t;
 				error = c instanceof IllegalStateException ? c.getMessage() : "offline";
@@ -137,6 +140,21 @@ public class ChangelogScreen extends LoothubScreen {
 			loading = false;
 			generation++;
 		});
+	}
+
+	/** „Loothub+ 1.0.85“ → {1, 0, 85}; null, wenn nicht lesbar. */
+	private static int[] latestVersion(String json) {
+		if (json == null) {
+			return null;
+		}
+		try {
+			String name = JsonParser.parseString(json).getAsJsonObject().get("name").getAsString();
+			java.util.regex.Matcher m = java.util.regex.Pattern.compile("(\\d+)\\.(\\d+)\\.(\\d+)").matcher(name);
+			return m.find() ? new int[]{Integer.parseInt(m.group(1)), Integer.parseInt(m.group(2)), Integer.parseInt(m.group(3))}
+					: null;
+		} catch (RuntimeException e) {
+			return null;
+		}
 	}
 
 	private static CompletableFuture<String> get(String url) {
@@ -157,15 +175,28 @@ public class ChangelogScreen extends LoothubScreen {
 		});
 	}
 
-	private static List<Group> parse(String commitsJson, String runsJson) {
-		// Build-Lauf je Commit: Laufnummer = dritte Stelle der Version
-		Map<String, Integer> versionAt = new HashMap<>();
-		if (runsJson != null) {
+	private static List<Group> parse(String commitsJson, String runsJson, String latestJson) {
+		// Jeder erfolgreiche Build auf main ist eine Version, lückenlos hochgezählt: der neueste Lauf ist die aktuelle
+		// Version (aus dem Release „latest“), jeder ältere eine Nummer darunter.
+		Map<String, String> versionAt = new HashMap<>();
+		int[] latest = latestVersion(latestJson);
+		if (runsJson != null && latest != null) {
+			List<JsonObject> list = new ArrayList<>();
 			for (JsonElement el : JsonParser.parseString(runsJson).getAsJsonObject().getAsJsonArray("workflow_runs")) {
-				JsonObject run = el.getAsJsonObject();
+				list.add(el.getAsJsonObject());
+			}
+			list.sort((a, b) -> Integer.compare(b.get("run_number").getAsInt(), a.get("run_number").getAsInt()));
+			java.util.Set<String> seen = new java.util.HashSet<>();
+			int n = latest[2];
+			for (JsonObject run : list) {
 				String sha = run.get("head_sha").getAsString();
-				int number = run.get("run_number").getAsInt();
-				versionAt.merge(sha, number, Math::max);
+				if (!seen.add(sha)) {
+					continue; // erneut gestarteter Lauf desselben Stands: keine neue Version
+				}
+				if (n < 0) {
+					break;
+				}
+				versionAt.put(sha, latest[0] + "." + latest[1] + "." + n--);
 			}
 		}
 		boolean byVersion = !versionAt.isEmpty();
@@ -188,9 +219,9 @@ public class ChangelogScreen extends LoothubScreen {
 				}
 			}
 			if (byVersion) {
-				Integer run = versionAt.get(c.get("sha").getAsString());
-				if (run != null) {
-					current = new Group("1.0." + run, time, new ArrayList<>(), new ArrayList<>());
+				String ver = versionAt.get(c.get("sha").getAsString());
+				if (ver != null) {
+					current = new Group(ver, time, new ArrayList<>(), new ArrayList<>());
 					out.add(current);
 				} else if (current == null) {
 					current = new Group(null, time, new ArrayList<>(), new ArrayList<>()); // gerade im Bau

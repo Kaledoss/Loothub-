@@ -4,6 +4,9 @@
 name: build
 on:
   push:
+    # Nur der Server (Worker) geändert: keine neue Mod-Version bauen und veröffentlichen
+    paths-ignore:
+      - 'tools/cosmetics-worker.js'
   workflow_dispatch:
 
 permissions:
