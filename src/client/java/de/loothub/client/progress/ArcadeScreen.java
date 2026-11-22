@@ -99,11 +99,29 @@ abstract class ArcadeScreen extends Screen {
 		}
 	}
 
+	/** Zeitpunkt des letzten Spielschritts (für flüssiges Zeichnen zwischen zwei Schritten). */
+	private long lastStepNanos = System.nanoTime();
+
 	@Override
 	public void tick() {
+		lastStepNanos = System.nanoTime();
 		if (started && !paused && !over) {
 			step();
 		}
+	}
+
+	/** Anteil (0–1) zwischen letztem und nächstem Spielschritt – unabhängig von der Bildrate. */
+	protected float partial() {
+		if (!started || paused || over) {
+			return 1f;
+		}
+		return Math.min(1f, (System.nanoTime() - lastStepNanos) / 50_000_000f);
+	}
+
+	/** Schlichter dunkler Hintergrund statt der teuren Unschärfe. */
+	@Override
+	public void renderBackground(GuiGraphics g, int mouseX, int mouseY, float delta) {
+		g.fill(0, 0, width, height, 0xE00C0809);
 	}
 
 	protected void gameOver() {
@@ -177,7 +195,7 @@ abstract class ArcadeScreen extends Screen {
 		g.drawCenteredString(font, scoreText(), width / 2, fy - 14, 0xFFFFFFFF);
 		g.fill(fx - 2, fy - 2, fx + fw + 2, fy + fh + 2, LoothubScreen.RED);
 		g.enableScissor(fx, fy, fx + fw, fy + fh);
-		drawField(g, delta);
+		drawField(g, partial());
 		g.disableScissor();
 		int cy = fy + fh / 2;
 		if (over) {

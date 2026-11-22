@@ -24,12 +24,13 @@ final class ElfScreen extends ArcadeScreen {
 	private static final float JUMP = -10.5f, SPRING = -19f, GRAV = 0.42f;
 
 	private static final class Plat {
-		float x, y, dir;
+		float x, y, dir, lx;
 		int kind; // 0 Schnee, 1 wandert, 2 brüchig
 		boolean gift, broken;
 
 		Plat(float x, float y, int kind) {
 			this.x = x;
+			this.lx = x;
 			this.y = y;
 			this.kind = kind;
 			this.dir = kind == 1 ? 1.2f : 0;
@@ -124,6 +125,7 @@ final class ElfScreen extends ArcadeScreen {
 		vy += GRAV;
 		py += vy;
 		for (Plat p : plats) {
+			p.lx = p.x;
 			if (p.kind == 1) {
 				p.x += p.dir;
 				if (p.x < 0 || p.x > W - PW) {
@@ -197,7 +199,7 @@ final class ElfScreen extends ArcadeScreen {
 			g.fill(fx + sx, fy + sy, fx + sx + 1 + i % 2, fy + sy + 1 + i % 2, 0xC0FFFFFF);
 		}
 		for (Plat p : plats) {
-			int sx = fx + Math.round(p.x), sy = fy + Math.round(p.y - c);
+			int sx = fx + Math.round(p.lx + (p.x - p.lx) * partial), sy = fy + Math.round(p.y - c);
 			if (sy < fy - 30 || sy > fy + fh + 10) {
 				continue;
 			}

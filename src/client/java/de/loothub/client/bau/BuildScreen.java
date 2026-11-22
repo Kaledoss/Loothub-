@@ -103,7 +103,12 @@ public final class BuildScreen extends de.loothub.client.LoothubScreen {
 
 		listX = cl;
 		listY = ct + 22;
-		listW = Math.max(130, Math.min(200, cw / 3));
+		// Liste so breit, dass Namen und Dateinamen ganz zu sehen sind (höchstens knapp die Hälfte)
+		int need = 130;
+		for (Plan p : Build.plans()) {
+			need = Math.max(need, Math.max(font.width(p.name) + 16, font.width(p.file) + 60));
+		}
+		listW = Math.max(130, Math.min(need, Math.max(200, cw * 45 / 100)));
 		listH = cb - listY;
 		detailX = listX + listW + 8;
 		detailW = cr - detailX;
