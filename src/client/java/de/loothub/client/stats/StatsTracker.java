@@ -61,17 +61,14 @@ public final class StatsTracker {
 		}
 		int n = Math.min(amount, stack.getCount());
 		StatsStore.add("dropped." + BuiltInRegistries.ITEM.getKey(stack.getItem()), n);
-		// Weggeworfenes merken: hebt man es wieder auf, zählt es nicht noch einmal (Aufgesammelt, Mob-Loot, Quests)
-		long now = System.currentTimeMillis();
-		OWN_DROPS.values().removeIf(d -> now - d[1] > OWN_DROP_MS);
-		long[] d = OWN_DROPS.computeIfAbsent(pickupKey(stack), k -> new long[2]);
-		d[0] += n;
-		d[1] = now;
+		// Weggeworfenes merken: das Item, das gleich neben einem auftaucht, ist das eigene (siehe trackOwnDrops)
+		PENDING_DROPS.add(new Object[]{pickupKey(stack), System.currentTimeMillis()});
 	}
 
-	/** Selbst weggeworfene Items: Schlüssel → {Anzahl, Zeitpunkt}. Gilt 10 Minuten. */
-	private static final Map<String, long[]> OWN_DROPS = new HashMap<>();
-	private static final long OWN_DROP_MS = 10 * 60_000L;
+	/** Eben weggeworfen: {Schlüssel, Zeitpunkt} – wartet darauf, dass das Item in der Welt erscheint. */
+	private static final java.util.List<Object[]> PENDING_DROPS = new java.util.ArrayList<>();
+	/** Item-Objekte in der Welt, die man selbst weggeworfen hat: Aufheben zählt nicht noch einmal. */
+	private static final java.util.Set<Integer> OWN_DROPS = new java.util.HashSet<>();
 
 	/** Zähl-Schlüssel eines Items wie beim Aufsammeln (eigener Name hat Vorrang). */
 	private static String pickupKey(ItemStack stack) {
@@ -83,19 +80,32 @@ public final class StatsTracker {
 		return BuiltInRegistries.ITEM.getKey(stack.getItem()).toString();
 	}
 
-	/** Wie viel vom Aufgesammelten neu ist (abzüglich zuvor selbst weggeworfener Items). */
-	private static int fresh(String key, int amount) {
-		long[] d = OWN_DROPS.get(key);
-		if (d == null || System.currentTimeMillis() - d[1] > OWN_DROP_MS) {
-			OWN_DROPS.remove(key);
-			return amount;
+	/** Frisch neben einem erschienene Items einem eben weggeworfenen Item zuordnen (genau dieses Objekt merken). */
+	private static void trackOwnDrops(Minecraft mc, long now) {
+		PENDING_DROPS.removeIf(d -> now - (long) d[1] > 1500);
+		if (mc.level == null || mc.player == null) {
+			return;
 		}
-		long back = Math.min(d[0], amount);
-		d[0] -= back;
-		if (d[0] <= 0) {
-			OWN_DROPS.remove(key);
+		if (!PENDING_DROPS.isEmpty()) {
+			var box = mc.player.getBoundingBox().inflate(3.0);
+			for (var it : mc.level.getEntitiesOfClass(net.minecraft.world.entity.item.ItemEntity.class, box)) {
+				if (it.tickCount > 20 || OWN_DROPS.contains(it.getId())) {
+					continue;
+				}
+				String key = pickupKey(it.getItem());
+				for (java.util.Iterator<Object[]> i = PENDING_DROPS.iterator(); i.hasNext();) {
+					if (key.equals(i.next()[0])) {
+						OWN_DROPS.add(it.getId());
+						i.remove();
+						break;
+					}
+				}
+			}
 		}
-		return (int) (amount - back);
+		// Objekte, die es nicht mehr gibt, vergessen
+		if (!OWN_DROPS.isEmpty() && mc.player.tickCount % 100 == 0) {
+			OWN_DROPS.removeIf(id -> mc.level.getEntity(id) == null);
+		}
 	}
 
 	public static void onBlockBroken(net.minecraft.core.BlockPos pos, BlockState state) {
@@ -185,10 +195,10 @@ public final class StatsTracker {
 		}
 		// Server-Items mit eigenem Namen (z. B. „Kasuarhorn“ als Mob-Drop) unter ihrem Namen zählen
 		String item = pickupKey(stack);
-		int n = fresh(item, Math.max(1, amount)); // selbst Weggeworfenes zählt beim Wiederaufheben nicht
-		if (n <= 0) {
+		int n = Math.max(1, amount);
+		if (entity != null && OWN_DROPS.remove(entity.getId())) {
 			pickupEntity = null;
-			return;
+			return; // selbst weggeworfen und wieder aufgehoben: zählt nicht noch einmal
 		}
 		StatsStore.add("picked." + item, n);
 		countLoot(item, n);
@@ -892,6 +902,7 @@ public final class StatsTracker {
 		trackHealth(p);
 		trackEating(p);
 		trackAreaHits(mc, now);
+		trackOwnDrops(mc, now);
 		trackTargets(mc, now);
 
 		StatsStore.saveIfDirty(false);
