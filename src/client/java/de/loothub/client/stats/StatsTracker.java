@@ -837,11 +837,57 @@ public final class StatsTracker {
 		}
 	}
 
+	/** Beim Erscheinen zugeordnete Drops: Item-Objekt → Mob. So zählt Loot auch, wenn man ihn erst später aufsammelt. */
+	private static final Map<Integer, String> LOOT_TAG = new HashMap<>();
+
+	/** Frisch erschienene Items einem Mob zuordnen, der eben in der Nähe gestorben ist. */
+	private static void tagDrops(Minecraft mc, long now) {
+		if (RECENT_KILLS.isEmpty() || mc.level == null || mc.player == null) {
+			return;
+		}
+		Kill newest = RECENT_KILLS.peekFirst();
+		if (now - newest.at() > 3000) {
+			return; // seit 3 s niemand gestorben: nichts zuzuordnen
+		}
+		var box = mc.player.getBoundingBox().inflate(48.0);
+		for (var it : mc.level.getEntitiesOfClass(net.minecraft.world.entity.item.ItemEntity.class, box)) {
+			if (it.tickCount > 20 || LOOT_TAG.containsKey(it.getId()) || OWN_DROPS.contains(it.getId())) {
+				continue;
+			}
+			long born = now - it.tickCount * 50L;
+			Kill best = null;
+			double bestDist = 3.0 * 3.0;
+			for (Kill k : RECENT_KILLS) {
+				if (born < k.at() - 1500 || born - k.at() > 3000) {
+					continue;
+				}
+				double dx = it.getX() - k.x(), dz = it.getZ() - k.z(), dy = Math.max(0, Math.abs(it.getY() - k.y()) - 2.0);
+				double d = dx * dx + dz * dz + dy * dy;
+				if (d <= bestDist) {
+					bestDist = d;
+					best = k;
+				}
+			}
+			if (best != null) {
+				LOOT_TAG.put(it.getId(), best.mob());
+			}
+		}
+		if (LOOT_TAG.size() > 500) {
+			LOOT_TAG.keySet().removeIf(id -> mc.level.getEntity(id) == null);
+		}
+	}
+
 	private static void countLoot(String item, int amount) {
 		var entity = pickupEntity;
 		pickupEntity = null;
 		if (entity == null) {
 			return; // ohne Item-Lage keine sichere Zuordnung
+		}
+		String tagged = LOOT_TAG.remove(entity.getId());
+		if (tagged != null) {
+			StatsStore.add("mobloot." + tagged, amount);
+			StatsStore.add("mobloot_item." + tagged + "|" + item, amount);
+			return;
 		}
 		long now = System.currentTimeMillis();
 		long itemBorn = now - entity.tickCount * 50L;
@@ -903,6 +949,7 @@ public final class StatsTracker {
 		trackEating(p);
 		trackAreaHits(mc, now);
 		trackOwnDrops(mc, now);
+		tagDrops(mc, now);
 		trackTargets(mc, now);
 
 		StatsStore.saveIfDirty(false);
