@@ -87,6 +87,79 @@ final class CraftScreen extends ArcadeScreen {
 		r(Items.PISTON, "PPP|CIC|CRC", 'P', p, 'C', c, 'I', i, 'R', Items.REDSTONE);
 		r(Items.BOWL, "P P| P ", 'P', p);
 		r(Items.GLASS_BOTTLE, "G G| G ", 'G', Items.GLASS);
+		// Werkzeuge und Rüstung
+		Item d = Items.DIAMOND;
+		r(Items.GOLDEN_PICKAXE, "GGG| S | S ", 'G', g, 'S', s);
+		r(Items.DIAMOND_PICKAXE, "DDD| S | S ", 'D', d, 'S', s);
+		r(Items.DIAMOND_AXE, "DD|DS| S", 'D', d, 'S', s);
+		r(Items.DIAMOND_SHOVEL, "D|S|S", 'D', d, 'S', s);
+		r(Items.DIAMOND_HOE, "DD| S| S", 'D', d, 'S', s);
+		r(Items.IRON_HOE, "II| S| S", 'I', i, 'S', s);
+		r(Items.STONE_SWORD, "C|C|S", 'C', c, 'S', s);
+		r(Items.WOODEN_SWORD, "P|P|S", 'P', p, 'S', s);
+		r(Items.DIAMOND_HELMET, "DDD|D D", 'D', d);
+		r(Items.DIAMOND_CHESTPLATE, "D D|DDD|DDD", 'D', d);
+		r(Items.DIAMOND_LEGGINGS, "DDD|D D|D D", 'D', d);
+		r(Items.DIAMOND_BOOTS, "D D|D D", 'D', d);
+		r(Items.GOLDEN_HELMET, "GGG|G G", 'G', g);
+		r(Items.CROSSBOW, "SIS|THT| S ", 'S', s, 'I', i, 'T', Items.STRING, 'H', Items.TRIPWIRE_HOOK);
+		r(Items.SPYGLASS, "A|C|C", 'A', Items.AMETHYST_SHARD, 'C', Items.COPPER_INGOT);
+		r(Items.LEAD, "TT |TB |  T", 'T', Items.STRING, 'B', Items.SLIME_BALL);
+		r(Items.MAP, "AAA|ACA|AAA", 'A', Items.PAPER, 'C', Items.COMPASS);
+		// Redstone
+		r(Items.TRIPWIRE_HOOK, "I|S|P", 'I', i, 'S', s, 'P', p);
+		r(Items.LEVER, "S|C", 'S', s, 'C', c);
+		r(Items.REDSTONE_TORCH, "R|S", 'R', Items.REDSTONE, 'S', s);
+		r(Items.DISPENSER, "CCC|CBC|CRC", 'C', c, 'B', Items.BOW, 'R', Items.REDSTONE);
+		r(Items.DROPPER, "CCC|C C|CRC", 'C', c, 'R', Items.REDSTONE);
+		r(Items.OBSERVER, "CCC|RRQ|CCC", 'C', c, 'R', Items.REDSTONE, 'Q', Items.QUARTZ);
+		r(Items.NOTE_BLOCK, "PPP|PRP|PPP", 'P', p, 'R', Items.REDSTONE);
+		r(Items.REPEATER, "TRT|SSS", 'T', Items.REDSTONE_TORCH, 'R', Items.REDSTONE, 'S', Items.STONE);
+		r(Items.COMPARATOR, " T |TQT|SSS", 'T', Items.REDSTONE_TORCH, 'Q', Items.QUARTZ, 'S', Items.STONE);
+		r(Items.DAYLIGHT_DETECTOR, "GGG|QQQ|LLL", 'G', Items.GLASS, 'Q', Items.QUARTZ, 'L', Items.OAK_SLAB);
+		r(Items.TARGET, " R |RHR| R ", 'R', Items.REDSTONE, 'H', Items.HAY_BLOCK);
+		r(Items.POWERED_RAIL, "G G|GSG|GRG", 'G', g, 'S', s, 'R', Items.REDSTONE);
+		r(Items.MINECART, "I I|III", 'I', i);
+		// Arbeitsblöcke
+		r(Items.BARREL, "PLP|P P|PLP", 'P', p, 'L', Items.OAK_SLAB);
+		r(Items.SMOKER, " L |LFL| L ", 'L', Items.OAK_LOG, 'F', Items.FURNACE);
+		r(Items.BLAST_FURNACE, "III|IFI|SSS", 'I', i, 'F', Items.FURNACE, 'S', Items.SMOOTH_STONE);
+		r(Items.LOOM, "TT|PP", 'T', Items.STRING, 'P', p);
+		r(Items.COMPOSTER, "L L|L L|LLL", 'L', Items.OAK_SLAB);
+		r(Items.CARTOGRAPHY_TABLE, "AA|PP|PP", 'A', Items.PAPER, 'P', p);
+		r(Items.FLETCHING_TABLE, "FF|PP|PP", 'F', Items.FLINT, 'P', p);
+		r(Items.SMITHING_TABLE, "II|PP|PP", 'I', i, 'P', p);
+		r(Items.GRINDSTONE, "SLS|P P", 'S', s, 'L', Items.STONE_SLAB, 'P', p);
+		r(Items.STONECUTTER, " I |SSS", 'I', i, 'S', Items.STONE);
+		r(Items.ENCHANTING_TABLE, " B |DOD|OOO", 'B', Items.BOOK, 'D', d, 'O', Items.OBSIDIAN);
+		r(Items.BREWING_STAND, " B |CCC", 'B', Items.BLAZE_ROD, 'C', c);
+		r(Items.BEACON, "GGG|GNG|OOO", 'G', Items.GLASS, 'N', Items.NETHER_STAR, 'O', Items.OBSIDIAN);
+		r(Items.ENDER_CHEST, "OOO|OEO|OOO", 'O', Items.OBSIDIAN, 'E', Items.ENDER_EYE);
+		// Deko und Blöcke
+		r(Items.ARMOR_STAND, "SSS| S |SBS", 'S', s, 'B', Items.SMOOTH_STONE_SLAB);
+		r(Items.ITEM_FRAME, "SSS|SLS|SSS", 'S', s, 'L', Items.LEATHER);
+		r(Items.FLOWER_POT, "B B| B ", 'B', Items.BRICK);
+		r(Items.GLASS_PANE, "GGG|GGG", 'G', Items.GLASS);
+		r(Items.IRON_BARS, "III|III", 'I', i);
+		r(Items.JACK_O_LANTERN, "K|T", 'K', Items.CARVED_PUMPKIN, 'T', Items.TORCH);
+		r(Items.SOUL_TORCH, "K|S|O", 'K', Items.COAL, 'S', s, 'O', Items.SOUL_SAND);
+		r(Items.SOUL_CAMPFIRE, " S |SOS|LLL", 'S', s, 'O', Items.SOUL_SAND, 'L', Items.OAK_LOG);
+		r(Items.SCAFFOLDING, "BTB|B B|B B", 'B', Items.BAMBOO, 'T', Items.STRING);
+		r(Items.CANDLE, "T|H", 'T', Items.STRING, 'H', Items.HONEYCOMB);
+		r(Items.WHITE_BANNER, "WWW|WWW| S ", 'W', Items.WHITE_WOOL, 'S', s);
+		r(Items.OAK_STAIRS, "P  |PP |PPP", 'P', p);
+		r(Items.STONE_SLAB, "TTT", 'T', Items.STONE);
+		r(Items.SANDSTONE, "SS|SS", 'S', Items.SAND);
+		r(Items.BRICKS, "BB|BB", 'B', Items.BRICK);
+		r(Items.SNOW_BLOCK, "SS|SS", 'S', Items.SNOWBALL);
+		r(Items.HAY_BLOCK, "WWW|WWW|WWW", 'W', Items.WHEAT);
+		r(Items.IRON_BLOCK, "III|III|III", 'I', i);
+		r(Items.OAK_BOAT, "P P|PPP", 'P', p);
+		r(Items.LIGHTNING_ROD, "C|C|C", 'C', Items.COPPER_INGOT);
+		// Essen
+		r(Items.PAPER, "SSS", 'S', Items.SUGAR_CANE);
+		r(Items.GOLDEN_CARROT, "NNN|NCN|NNN", 'N', Items.GOLD_NUGGET, 'C', Items.CARROT);
+		r(Items.GLISTERING_MELON_SLICE, "NNN|NMN|NNN", 'N', Items.GOLD_NUGGET, 'M', Items.MELON_SLICE);
 	}
 
 	private static final int ROUND_MS = 90_000, BONUS_MS = 5_000;
