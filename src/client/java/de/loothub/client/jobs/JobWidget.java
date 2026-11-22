@@ -124,25 +124,6 @@ public final class JobWidget {
 		WidgetConfig c = WidgetConfig.get();
 		boolean showJob = c.jobRowVisible("job");
 		List<Row> rows = new ArrayList<>();
-		// Anglerrucksack in der Nebenhand: Gesamtwert ganz oben
-		if (c.jobRowVisible("backpack") && BackpackValue.wearing()) {
-			String v;
-			int col = 0xFF55E06A;
-			if (c.anglerPrestige < 0) {
-				v = tr("loothub.job.backpack.prestige");
-				col = 0xFFFF8A2A;
-			} else {
-				BackpackValue.Value bv = BackpackValue.value();
-				if (!bv.seen()) {
-					v = tr("loothub.job.backpack.open");
-					col = MUTED;
-				} else {
-					v = Fmt.exact(bv.money()) + " $" + (bv.unknown() > 0
-							? Component.translatable("loothub.job.backpack.unknown", bv.unknown()).getString() : "");
-				}
-			}
-			rows.add(new Row(tr("loothub.job.row.backpack"), v, col));
-		}
 		addRow(rows, c, "level", s.level() >= 0 ? String.valueOf(s.level()) : "–");
 		if (c.jobRowVisible("progress")) {
 			rows.add(new Row(tr("loothub.job.row.progress"),
@@ -165,6 +146,25 @@ public final class JobWidget {
 		}
 		if (c.jobRowVisible("inv_shards")) {
 			rows.add(new Row(tr("loothub.job.row.inv_shards"), Fmt.exact(de.loothub.client.quick.InventoryValue.shards()) + " OPShards", 0xFF55D5E0));
+		}
+		// Anglerrucksack in der Nebenhand: Gesamtwert unter den Inventar-Werten
+		if (c.jobRowVisible("backpack") && BackpackValue.wearing()) {
+			String v;
+			int col = 0xFF55E06A;
+			if (c.anglerPrestige < 0) {
+				v = tr("loothub.job.backpack.prestige");
+				col = 0xFFFF8A2A;
+			} else {
+				BackpackValue.Value bv = BackpackValue.value();
+				if (!bv.seen()) {
+					v = tr("loothub.job.backpack.open");
+					col = MUTED;
+				} else {
+					v = Fmt.exact(bv.money()) + " $" + (bv.unknown() > 0
+							? Component.translatable("loothub.job.backpack.unknown", bv.unknown()).getString() : "");
+				}
+			}
+			rows.add(new Row(tr("loothub.job.row.backpack"), v, col));
 		}
 
 		int labelW = showJob ? font.width(tr("loothub.job.row.job")) : 0;
