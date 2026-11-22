@@ -64,7 +64,8 @@ final class SheepScreen extends ArcadeScreen {
 		lastY = y;
 		lastScroll = scrollX;
 		scrollX += speed;
-		speed = Math.min(8.5f, 3.2f + score * 0.06f);
+		// wird immer schneller: erst zügig, ab Punkt 90 langsamer weiter, bis zu einem hohen Höchsttempo
+		speed = score < 90 ? 3.2f + score * 0.06f : Math.min(14f, 8.6f + (score - 90) * 0.03f);
 		// springen: gedrückt halten trägt etwas länger
 		if (jumpHeld && onGround) {
 			vy = -8.2f;
@@ -92,10 +93,22 @@ final class SheepScreen extends ArcadeScreen {
 		fences.removeIf(f -> f.x < -30);
 		nextIn -= speed;
 		if (nextIn <= 0) {
-			boolean high = score >= 8 && random.nextInt(4) == 0;
-			fences.add(new Fence(fw + 10, high ? 2 : 1, new boolean[1]));
-			// Abstand: zufällig, aber immer schaffbar
-			nextIn = 120 + random.nextInt(140) + speed * 8;
+			// Höhe: doppelte Zäune werden häufiger, ab 40 Punkten auch dreifache
+			float highChance = score < 8 ? 0 : Math.min(0.55f, 0.2f + score * 0.004f);
+			int h = 1;
+			if (score >= 40 && random.nextFloat() < Math.min(0.25f, (score - 40) * 0.005f)) {
+				h = 3;
+			} else if (random.nextFloat() < highChance) {
+				h = 2;
+			}
+			fences.add(new Fence(fw + 10, h, new boolean[1]));
+			// ab 25 Punkten manchmal ein zweiter niedriger Zaun direkt dahinter (mit einem Sprung über beide)
+			if (score >= 25 && h == 1 && random.nextInt(5) == 0) {
+				fences.add(new Fence(fw + 10 + 34, 1, new boolean[1]));
+			}
+			// Abstand: wird mit der Zeit kürzer, bleibt aber immer schaffbar
+			int base = Math.max(70, 120 - score / 2), spread = Math.max(50, 140 - score);
+			nextIn = base + random.nextInt(spread) + speed * 7 + (h == 3 ? 30 : 0);
 		}
 		// Treffer und Zählen
 		int sheepX = 40;
