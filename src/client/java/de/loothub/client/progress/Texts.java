@@ -11,12 +11,36 @@ final class Texts {
 
 	/** Name eines Zählers („Abgebaute Blöcke“). */
 	static Component stat(String stat) {
+		int i = stat.indexOf(':');
+		if (i > 0) {
+			return specialName(stat.substring(0, i), stat.substring(i + 1));
+		}
 		return Component.translatable("loothub.lh.stat." + stat);
 	}
 
 	/** Quest-Ziel („300 Blöcke abbauen“). */
 	static Component goal(String stat, long goal) {
+		int i = stat.indexOf(':');
+		if (i > 0) {
+			// besondere Quest: bestimmter Block (b abbauen, p setzen) oder Mob (m)
+			String kind = stat.substring(0, i), id = stat.substring(i + 1);
+			if (kind.equals("b") && id.equals("wheat")) {
+				return Component.translatable("loothub.lh.goal.b.wheat", value(stat, goal));
+			}
+			return Component.translatable("loothub.lh.goal." + kind, value(stat, goal), specialName(kind, id));
+		}
 		return Component.translatable("loothub.lh.goal." + stat, value(stat, goal));
+	}
+
+	/** Name des Blocks bzw. Mobs einer besonderen Quest. */
+	static Component specialName(String kind, String id) {
+		net.minecraft.resources.Identifier rid = net.minecraft.resources.Identifier.withDefaultNamespace(id);
+		if (kind.equals("m")) {
+			return net.minecraft.core.registries.BuiltInRegistries.ENTITY_TYPE.getOptional(rid)
+					.map(net.minecraft.world.entity.EntityType::getDescription).orElse(Component.literal(id));
+		}
+		return net.minecraft.core.registries.BuiltInRegistries.ITEM.getOptional(rid)
+				.map(it -> new net.minecraft.world.item.ItemStack(it).getHoverName()).orElse(Component.literal(id));
 	}
 
 	/** Wert in der Einheit des Zählers (Spielzeit in Stunden/Minuten, Geld mit $, sonst Zahl). */

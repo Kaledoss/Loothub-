@@ -615,6 +615,37 @@ const LH_Q = {
 	jumps: [[200, 500, 1000], [3000, 8000, 20000]],
 };
 const LH_Q_POINTS = [[10, 20, 40], [100, 175, 300]];
+// Besondere Quests: bestimmte Blöcke abbauen (b), setzen (p) oder bestimmte Mobs besiegen (m) – nur Häufiges, das man
+// ohne lange Suche findet. Ziel = Grundziel der Schwierigkeit × Faktor (gerundet).
+const LH_QS = {
+	b: { base: [[400, 1200, 3000], [8000, 20000, 50000]], ids: { stone: 1, deepslate: 1, netherrack: 1, dirt: 0.5, sand: 0.5,
+		gravel: 0.3, end_stone: 0.5, oak_log: 0.2, spruce_log: 0.2, birch_log: 0.2, coal_ore: 0.05, iron_ore: 0.04, clay: 0.1,
+		wheat: 0.5, ice: 0.1, obsidian: 0.02 } },
+	p: { base: [[200, 600, 1500], [4000, 12000, 30000]], ids: { cobblestone: 1, stone: 1, dirt: 1, oak_planks: 0.6,
+		stone_bricks: 0.5, glass: 0.4, sand: 0.5, oak_log: 0.3 } },
+	m: { base: [[15, 40, 100], [250, 600, 1500]], ids: { zombie: 1, skeleton: 1, creeper: 0.6, spider: 0.8, cow: 0.6, pig: 0.6,
+		sheep: 0.6, chicken: 0.6, enderman: 0.4, drowned: 0.4, slime: 0.5 } },
+};
+const LH_QP_IDS = new Set(Object.keys(LH_QS.p.ids));
+function lhQRound(v) { return v >= 100 ? Math.round(v / 10) * 10 : Math.max(1, Math.round(v)); }
+/** Aktueller Stand eines Quest-Zählers („blocks“ oder „b:stone“, „p:glass“, „m:zombie“). */
+function lhQVal(d, stat) {
+	const i = stat.indexOf(":");
+	if (i < 0) return (d.tot && d.tot[stat]) || 0;
+	const kind = stat.slice(0, i), id = stat.slice(i + 1);
+	if (kind === "p") return (d.cpl && d.cpl[id]) || 0;
+	return (d.col && d.col[kind] && d.col[kind][id]) || 0;
+}
+/** Startwerte einer Quest-Periode: alle Gesamtzähler, dazu die besonderen Zähler der Quests. */
+function lhQBase(d, quests) {
+	const base = lhCopy(d.tot || {});
+	for (const q of quests) if (q.stat.includes(":")) base[q.stat] = lhQVal(d, q.stat);
+	return base;
+}
+function lhQHave(d, per, stat) {
+	if (!(stat in per.base)) per.base[stat] = lhQVal(d, stat); // Periode begann vor der neuen Quest-Art
+	return Math.max(0, lhQVal(d, stat) - per.base[stat]);
+}
 const LH_COMM = { blocks: 500000, mobs: 50000, fish: 5000, placed: 250000 };
 const LH_COMM_REWARD = 150;
 // Questketten: jede Woche eine kleine Geschichte in drei Schritten (Texte in der Mod), Belohnung je Schritt
@@ -767,7 +798,8 @@ const LH_NO_COLLECT = new Set(["farmland", "dirt_path", "pitcher_pod", "crafting
 	"lilac", "rose_bush", "peony", "torchflower", "pitcher_plant", "pink_petals", "spore_blossom", "closed_eyeblossom",
 	"open_eyeblossom", "wildflowers", "cactus_flower", "chorus_flower", "mangrove_propagule", "flower_pot", "mossy_cobblestone",
 	"deepslate_tiles", "cracked_deepslate_tiles", "azalea", "flowering_azalea"]);
-const LH_NO_MOBS = new Set(["wither", "illusioner", "giant", "copper_golem", "wandering_trader"]);
+const LH_NO_MOBS = new Set(["wither", "illusioner", "giant", "copper_golem", "wandering_trader", "ender_dragon", "happy_ghast",
+	"phantom", "trader_llama"]);
 function lhColExcluded(kind, id) {
 	if (kind === "m") return LH_NO_MOBS.has(id);
 	if (LH_NO_COLLECT.has(id) || /(_seeds|_stairs|_slab|_wall|_sapling|_leaves|_wool|_carpet|_tulip)$/.test(id) || id.includes("brick")
@@ -778,6 +810,7 @@ function lhColExcluded(kind, id) {
 		"quartz_block", "resin_block", "respawn_anchor", "beacon", "beehive", "bookshelf", "cake", "sculk_sensor", "calibrated_sculk_sensor",
 		"carved_pumpkin", "conduit"].includes(id) || /^raw_.*_block$/.test(id)
 		|| /(_froglight|_concrete|_concrete_powder)$/.test(id)) return true;
+	if (["slime_block", "brown_mushroom", "red_mushroom", "bamboo_block", "heavy_core", "lodestone"].includes(id)) return true;
 	if (id.startsWith("dead_") || ["decorated_pot", "dried_kelp_block", "end_rod", "frogspawn", "bush", "honeycomb_block"].includes(id)
 		|| /(_bush|_roots|_pressure_plate)$/.test(id)) return true;
 	if (/(_door|_trapdoor|_bars|_sprouts)$/.test(id) || id.includes("pillar")
@@ -788,7 +821,7 @@ function lhColExcluded(kind, id) {
 		|| id.startsWith("suspicious_") || ["snow", "tnt", "vault", "trial_spawner"].includes(id)) return true;
 	if (id.includes("copper") && !id.endsWith("copper_ore")) return true;
 	if (id.includes("deepslate") && id !== "deepslate" && id !== "cobbled_deepslate" && !id.endsWith("_ore")) return true;
-	return LH_WOODS.some((w) => id.startsWith(`${w}_`) && !/(_log|_stem|_nylium)$/.test(id) && id !== "bamboo_block");
+	return LH_WOODS.some((w) => id.startsWith(`${w}_`) && !/(_log|_stem|_nylium)$/.test(id));
 }
 // Cosmetics aus dem Shop: Eintrag in den Cosmetics → Wert → nötiger Shop-Artikel (Haustiere je Platz, durch Kommas getrennt)
 const LH_PETS_SHOP = { phoenix: "p_phoenix", golddragon: "p_golddragon", xmaspenguin: "p_xmaspenguin", chick: "p_chick", bat: "p_bat",
@@ -863,6 +896,18 @@ function lhQuests(kind, id) {
 	const stats = Object.keys(LH_Q).filter((s) => LH_Q[s][kind]);
 	const out = [];
 	for (let d = 0; d < 3; d++) {
+		// etwa jede dritte Quest ist eine besondere (bestimmter Block/Mob)
+		if (rnd() < 0.35) {
+			const kinds = Object.keys(LH_QS);
+			const k = kinds[Math.floor(rnd() * kinds.length)];
+			const ids = Object.keys(LH_QS[k].ids);
+			const id = ids[Math.floor(rnd() * ids.length)];
+			const stat = `${k}:${id}`;
+			if (!out.some((q) => q.stat === stat)) {
+				out.push({ stat, goal: lhQRound(LH_QS[k].base[kind][d] * LH_QS[k].ids[id]), points: LH_Q_POINTS[kind][d], diff: d });
+				continue;
+			}
+		}
 		let s;
 		do { s = stats[Math.floor(rnd() * stats.length)]; } while (out.some((q) => q.stat === s));
 		out.push({ stat: s, goal: LH_Q[s][kind][d], points: LH_Q_POINTS[kind][d], diff: d });
@@ -910,6 +955,27 @@ function lhColTier(kind, v) {
 /** Zähler je Block und je Mob übernehmen (nach lhAbsorb). Der Zuwachs wird auf den Zuwachs des Gesamtzählers gekappt. */
 function lhAbsorbCol(d, reported) {
 	const rep = reported && typeof reported === "object" ? reported : {};
+	// gesetzte Blöcke je Art (nur die für besondere Quests), Zuwachs gekappt auf den Zuwachs von „placed“
+	if (rep.p && typeof rep.p === "object") {
+		const firstP = !d.cplraw;
+		d.cplraw = d.cplraw || {};
+		d.cpl = d.cpl || {};
+		const deltas = {};
+		let sum = 0;
+		for (const id of LH_QP_IDS) {
+			let v = Number(rep.p[id]);
+			if (!Number.isFinite(v) || v < 0) continue;
+			v = Math.floor(v);
+			const prev = d.cplraw[id];
+			d.cplraw[id] = v;
+			if (firstP || prev === undefined) continue; // alte Statistik zählt für Quests nicht
+			const delta = v >= prev ? v - prev : v;
+			if (delta > 0) { deltas[id] = delta; sum += delta; }
+		}
+		const budget = Math.ceil(((d.delta && d.delta.placed) || 0) * 1.1) + 20;
+		const f = sum > budget ? budget / sum : 1;
+		for (const [id, delta] of Object.entries(deltas)) d.cpl[id] = (d.cpl[id] || 0) + Math.floor(delta * f);
+	}
 	d.colFirst = false;
 	if (!rep.b && !rep.m) return; // ältere Mod-Version ohne Sammlung: nichts anlegen, damit später die Historie zählt
 	// erster Abgleich der Sammlung (auch bei Spielern, die schon vorher dabei waren): alte Statistik übernehmen
@@ -1008,11 +1074,11 @@ async function lhProgress(db, d, now) {
 
 	// 4-Stunden-Quests
 	const slot = lhSlotId(now);
-	if (!d.slot || d.slot.id !== slot) d.slot = { id: slot, base: lhCopy(tot), done: [false, false, false] };
+	if (!d.slot || d.slot.id !== slot) d.slot = { id: slot, base: lhQBase(d, lhQuests(0, slot)), done: [false, false, false] };
 	const today = lhDayId(now);
 	lhQuests(0, slot).forEach((q, i) => {
 		if (d.slot.done[i]) return;
-		if ((tot[q.stat] || 0) - (d.slot.base[q.stat] || 0) >= q.goal) {
+		if (lhQHave(d, d.slot, q.stat) >= q.goal) {
 			d.slot.done[i] = true;
 			earned += q.points;
 			d.quests++;
@@ -1032,10 +1098,10 @@ async function lhProgress(db, d, now) {
 		}
 		d.week = null;
 	}
-	if (!d.week) d.week = { id: week, base: lhCopy(tot), done: [false, false, false], comm: 0, paid: false };
+	if (!d.week) d.week = { id: week, base: lhQBase(d, lhQuests(1, week)), done: [false, false, false], comm: 0, paid: false };
 	lhQuests(1, week).forEach((q, i) => {
 		if (d.week.done[i]) return;
-		if ((tot[q.stat] || 0) - (d.week.base[q.stat] || 0) >= q.goal) {
+		if (lhQHave(d, d.week, q.stat) >= q.goal) {
 			d.week.done[i] = true;
 			earned += q.points;
 			d.quests++;
@@ -1138,8 +1204,8 @@ async function lhProgress(db, d, now) {
 
 function lhView(row, d, extra, now) {
 	const slot = lhSlotId(now), week = lhWeekId(now);
-	const q4 = lhQuests(0, slot).map((q, i) => ({ ...q, have: Math.max(0, (d.tot[q.stat] || 0) - (d.slot.base[q.stat] || 0)), done: !!d.slot.done[i] }));
-	const qw = lhQuests(1, week).map((q, i) => ({ ...q, have: Math.max(0, (d.tot[q.stat] || 0) - (d.week.base[q.stat] || 0)), done: !!d.week.done[i] }));
+	const q4 = lhQuests(0, slot).map((q, i) => ({ ...q, have: lhQHave(d, d.slot, q.stat), done: !!d.slot.done[i] }));
+	const qw = lhQuests(1, week).map((q, i) => ({ ...q, have: lhQHave(d, d.week, q.stat), done: !!d.week.done[i] }));
 	return {
 		now, points: row.points, balance: row.points - row.spent, title: row.title, badge: row.badge, tcolor: row.tcolor || "",
 		tot: lhCopy(d.tot), ach: d.ach, quests: d.quests,

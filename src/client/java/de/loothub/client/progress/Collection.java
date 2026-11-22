@@ -34,7 +34,8 @@ final class Collection {
 	private static final Set<String> EXTRA_MOBS = Set.of("iron_golem", "snow_golem", "villager", "wandering_trader",
 			"copper_golem");
 	/** Mobs ohne eigenen Erfolg (Boss bzw. im Überleben nicht anzutreffen). */
-	private static final Set<String> NO_MOBS = Set.of("wither", "illusioner", "giant", "copper_golem", "wandering_trader");
+	private static final Set<String> NO_MOBS = Set.of("wither", "illusioner", "giant", "copper_golem", "wandering_trader",
+			"ender_dragon", "happy_ghast", "phantom", "trader_llama");
 	/** Blöcke, die man im Überleben nicht sinnvoll abbaut. */
 	private static final Set<String> NO_BLOCKS = Set.of("light", "structure_void", "barrier", "jigsaw", "structure_block",
 			"command_block", "chain_command_block", "repeating_command_block", "test_block", "test_instance_block");
@@ -52,7 +53,8 @@ final class Collection {
 			"large_fern", "seagrass", "dandelion", "poppy", "blue_orchid", "allium", "azure_bluet", "oxeye_daisy", "cornflower",
 			"lily_of_the_valley", "wither_rose", "sunflower", "lilac", "rose_bush", "peony", "torchflower", "pitcher_plant",
 			"pink_petals", "spore_blossom", "closed_eyeblossom", "open_eyeblossom", "wildflowers", "cactus_flower", "chorus_flower",
-			"mangrove_propagule", "flower_pot", "mossy_cobblestone", "deepslate_tiles", "cracked_deepslate_tiles");
+			"mangrove_propagule", "flower_pot", "mossy_cobblestone", "deepslate_tiles", "cracked_deepslate_tiles", "slime_block",
+			"brown_mushroom", "red_mushroom", "bamboo_block", "heavy_core", "lodestone");
 
 	/** Gehört dieser Block nicht in die Sammlung (Treppen, Stufen, Ziegel, Holzbauteile, Blumen, Glas, Wolle …)? */
 	static boolean excluded(String id) {
@@ -190,7 +192,7 @@ final class Collection {
 	/** Zähler je Block und je Mob aus der eigenen Statistik („mined.minecraft:stone“, „killed.minecraft:zombie“). */
 	static JsonObject counters(Map<String, Long> all) {
 		blocks(); // füllt BLOCK_KEY
-		Map<String, Long> b = new HashMap<>(), m = new HashMap<>();
+		Map<String, Long> b = new HashMap<>(), m = new HashMap<>(), pl = new HashMap<>();
 		for (Map.Entry<String, Long> e : all.entrySet()) {
 			String k = e.getKey();
 			long v = e.getValue();
@@ -204,6 +206,8 @@ final class Collection {
 				}
 			} else if (k.startsWith("picked.minecraft:") && PICKED_ONLY.contains(k.substring("picked.minecraft:".length()))) {
 				b.merge(k.substring("picked.minecraft:".length()), v, Long::sum);
+			} else if (k.startsWith("placed.minecraft:")) {
+				pl.put(k.substring("placed.minecraft:".length()), v); // gesetzte Blöcke je Art (für besondere Quests)
 			} else if (k.startsWith("killed.minecraft:")) {
 				String mob = k.substring("killed.minecraft:".length()); // „killed.~Name“ = Custom-Mob, zählt nicht
 				if (!NO_MOBS.contains(mob)) {
@@ -211,9 +215,11 @@ final class Collection {
 				}
 			}
 		}
-		JsonObject o = new JsonObject(), ob = new JsonObject(), om = new JsonObject();
+		JsonObject o = new JsonObject(), ob = new JsonObject(), om = new JsonObject(), op = new JsonObject();
 		b.forEach(ob::addProperty);
 		m.forEach(om::addProperty);
+		pl.forEach(op::addProperty);
+		o.add("p", op);
 		o.add("b", ob);
 		o.add("m", om);
 		return o;
