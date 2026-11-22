@@ -74,9 +74,10 @@ public final class BackpackValue {
 	private static final java.util.regex.Pattern MONEY = java.util.regex.Pattern.compile("([0-9][0-9.,]*)\\s*\\$");
 	private static final java.util.regex.Pattern SHARDS = java.util.regex.Pattern.compile("(?i)([0-9][0-9.,]*)\\s*(?:op)?shards");
 
-	/** „1.234,56“ oder „1234.5“ als Zahl. */
+	/** „1.234,56“, „94.750“ (deutscher Tausenderpunkt) oder „1234.5“ als Zahl. */
 	private static double number(String s) {
-		String t = s.contains(",") ? s.replace(".", "").replace(',', '.') : (s.indexOf('.') != s.lastIndexOf('.') ? s.replace(".", "") : s);
+		String t = s.contains(",") ? s.replace(".", "").replace(',', '.')
+				: (s.indexOf('.') != s.lastIndexOf('.') || s.matches("\\d{1,3}\\.\\d{3}") ? s.replace(".", "") : s);
 		try {
 			return Double.parseDouble(t);
 		} catch (NumberFormatException e) {
@@ -198,7 +199,8 @@ public final class BackpackValue {
 
 	private record Snap(long tick, Map<String, Integer> counts) {
 	}
-	private static final int WAIT_TICKS = 30, HISTORY_TICKS = 40;
+	/** Der Fang fliegt erst vom Schwimmer zum Spieler – bei weitem Wurf dauert das ein paar Sekunden. */
+	private static final int WAIT_TICKS = 100, HISTORY_TICKS = 140;
 
 	private static void watchInventory(Minecraft mc) {
 		invTick++;
