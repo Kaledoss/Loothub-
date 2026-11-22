@@ -64,6 +64,8 @@ public final class CustomChat {
 		public String sources = "";
 		/** Eigener Tab: was hier landet, erscheint in den anderen Tabs des Fensters nicht mehr. */
 		public boolean exclusive = false;
+		/** Ton abspielen, wenn eine neue Nachricht in diesem Tab landet (eigene Nachrichten nicht). */
+		public boolean sound = false;
 
 		public boolean hasSource(String src) {
 			for (String x : sources == null ? new String[0] : sources.split(",")) {
@@ -372,11 +374,16 @@ public final class CustomChat {
 		if (!active()) {
 			return;
 		}
+		boolean ping = false;
 		for (Window w : windows()) {
 			Tab current = w.tab();
 			for (Tab t : w.tabs) {
-				if (t != current && shows(w, t, m)) {
+				boolean in = shows(w, t, m);
+				if (t != current && in) {
 					UNREAD.merge(t, 1, Integer::sum);
+				}
+				if (in && t.sound && !m.own()) {
+					ping = true;
 				}
 			}
 			Integer s = SCROLL.get(w);
@@ -384,7 +391,13 @@ public final class CustomChat {
 				SCROLL.put(w, s + 1); // beim Zurückscrollen bleibt die Ansicht stehen
 			}
 		}
+		if (ping && m.time() - lastPing > 800L) { // bei vielen Nachrichten auf einmal nur ein Ton
+			lastPing = m.time();
+			de.loothub.client.Sounds.chat();
+		}
 	}
+
+	private static long lastPing;
 
 	private static synchronized List<Line> lines(Window w, Tab tab, int width) {
 		Cache c = CACHE.computeIfAbsent(tab, k -> new Cache());

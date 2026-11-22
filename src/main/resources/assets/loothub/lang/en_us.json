@@ -532,6 +532,8 @@
 	"loothub.settings.search": "Search …",
 	"loothub.settings.search.none": "No setting found",
 	"loothub.chatwin.bright": "Brighten dark text",
+	"loothub.chatwin.tab.sound": "Sound on new messages in this tab (on/off)",
+	"loothub.sound.group.chat": "Chat tabs",
 	"loothub.chatwin.tab.exclusive": "Own tab (not in other tabs)",
 	"loothub.chatwin.tab.delete": "Delete",
 	"loothub.chatwin.sources": "Sources (checked = in this tab):",

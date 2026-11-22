@@ -27,7 +27,8 @@ public final class Sounds {
 		JOBS("jobs"),
 		PCG("pcg"),
 		PROTECT("protect"),
-		BUILD("build");
+		BUILD("build"),
+		CHAT("chat");
 
 		public final String id;
 
@@ -125,6 +126,13 @@ public final class Sounds {
 	}
 
 	// ------------------------------------------------------------------ fertige Klänge
+
+	/** Neue Chat-Nachricht in einem Tab mit Ton: kurzes, helles Zweiton-Signal. */
+	public static void chat() {
+		play(Group.CHAT, List.of(
+				n(0, SoundEvents.NOTE_BLOCK_CHIME, 1.5F, 0.6F),
+				n(3, SoundEvents.NOTE_BLOCK_CHIME, 2.0F, 0.5F)));
+	}
 
 	/** Timer-Töne zur Auswahl: Glocke (bisher), Gong, alter Wecker. */
 	public static final String[] TIMER_SOUNDS = {"bell", "gong", "alarm"};

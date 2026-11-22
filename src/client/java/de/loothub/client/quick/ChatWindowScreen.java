@@ -99,7 +99,16 @@ public class ChatWindowScreen extends Screen {
 			tab.exclusive = !tab.exclusive;
 			b.setMessage(exclusiveLabel(tab.exclusive));
 			changed();
-		}).bounds(x + 164, y, w - 164 - 70, 16).build());
+		}).bounds(x + 164, y, w - 164 - 70 - 22, 16).build());
+		Button snd = addRenderableWidget(Button.builder(soundLabel(tab.sound), b -> {
+			tab.sound = !tab.sound;
+			b.setMessage(soundLabel(tab.sound));
+			if (tab.sound) {
+				de.loothub.client.Sounds.chat(); // Vorschau
+			}
+			WidgetConfig.get().save();
+		}).bounds(x + w - 66 - 22, y, 20, 16).build());
+		snd.setTooltip(net.minecraft.client.gui.components.Tooltip.create(Component.translatable("loothub.chatwin.tab.sound")));
 		Button del = addRenderableWidget(Button.builder(Component.translatable("loothub.chatwin.tab.delete").withStyle(ChatFormatting.RED), b -> {
 			tabs.remove(tab);
 			win.active = Math.max(0, win.active - 1);
@@ -338,6 +347,10 @@ public class ChatWindowScreen extends Screen {
 	private static Component sourceLabel(CustomChat.Tab t, String src) {
 		boolean on = t.hasSource(src);
 		return Component.literal((on ? "✔ " : "") + src).withStyle(on ? ChatFormatting.GOLD : ChatFormatting.GRAY);
+	}
+
+	private static Component soundLabel(boolean on) {
+		return Component.literal("♪").withStyle(on ? ChatFormatting.GOLD : ChatFormatting.DARK_GRAY);
 	}
 
 	private static Component exclusiveLabel(boolean on) {
