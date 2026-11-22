@@ -735,11 +735,14 @@ function fishPrice(v) {
 function fishParse(text) {
 	const rows = csvRows(text).map((r) => r.map((c) => c.trim()));
 	if (!rows.length) return [];
-	const head = rows[0].map((h) => h.toLowerCase());
+	// Kopfzeile suchen (darf auch weiter unten stehen, z. B. nach Leerzeilen oder einem Titel)
+	const isHead = (r) => r.some((c) => /preis|price|wert/i.test(c)) && r.some((c) => /fisch|fish|name/i.test(c));
+	const hi = Math.max(0, rows.findIndex(isHead));
+	const head = rows[hi].map((h) => h.toLowerCase());
 	const col = (...names) => head.findIndex((h) => names.some((n) => h.includes(n)));
 	let iF = col("fisch", "fish", "name"), iS = col("größe", "groesse", "grösse", "size"), iR = col("seltenheit", "rarity"),
 		iP = col("preis", "price", "wert", "value");
-	let start = 1;
+	let start = hi + 1;
 	if (iF < 0 || iP < 0) { iF = 0; iS = 1; iR = 2; iP = 3; start = 0; } // ohne Kopfzeile: feste Reihenfolge
 	const out = [];
 	for (const r of rows.slice(start)) {
