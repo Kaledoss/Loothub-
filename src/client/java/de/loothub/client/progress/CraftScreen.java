@@ -160,6 +160,77 @@ final class CraftScreen extends ArcadeScreen {
 		r(Items.PAPER, "SSS", 'S', Items.SUGAR_CANE);
 		r(Items.GOLDEN_CARROT, "NNN|NCN|NNN", 'N', Items.GOLD_NUGGET, 'C', Items.CARROT);
 		r(Items.GLISTERING_MELON_SLICE, "NNN|NMN|NNN", 'N', Items.GOLD_NUGGET, 'M', Items.MELON_SLICE);
+		// weitere Werkzeuge und Rüstungen
+		Item l = Items.LEATHER;
+		r(Items.GOLDEN_AXE, "GG|GS| S", 'G', g, 'S', s);
+		r(Items.GOLDEN_SHOVEL, "G|S|S", 'G', g, 'S', s);
+		r(Items.GOLDEN_SWORD, "G|G|S", 'G', g, 'S', s);
+		r(Items.GOLDEN_HOE, "GG| S| S", 'G', g, 'S', s);
+		r(Items.GOLDEN_CHESTPLATE, "G G|GGG|GGG", 'G', g);
+		r(Items.GOLDEN_LEGGINGS, "GGG|G G|G G", 'G', g);
+		r(Items.GOLDEN_BOOTS, "G G|G G", 'G', g);
+		r(Items.STONE_AXE, "CC|CS| S", 'C', c, 'S', s);
+		r(Items.STONE_SHOVEL, "C|S|S", 'C', c, 'S', s);
+		r(Items.STONE_HOE, "CC| S| S", 'C', c, 'S', s);
+		r(Items.WOODEN_AXE, "PP|PS| S", 'P', p, 'S', s);
+		r(Items.WOODEN_SHOVEL, "P|S|S", 'P', p, 'S', s);
+		r(Items.WOODEN_HOE, "PP| S| S", 'P', p, 'S', s);
+		r(Items.LEATHER_HELMET, "LLL|L L", 'L', l);
+		r(Items.LEATHER_CHESTPLATE, "L L|LLL|LLL", 'L', l);
+		r(Items.LEATHER_LEGGINGS, "LLL|L L|L L", 'L', l);
+		r(Items.LEATHER_BOOTS, "L L|L L", 'L', l);
+		r(Items.TURTLE_HELMET, "TTT|T T", 'T', Items.TURTLE_SCUTE);
+		r(Items.BRUSH, "F|C|S", 'F', Items.FEATHER, 'C', Items.COPPER_INGOT, 'S', s);
+		r(Items.RECOVERY_COMPASS, "EEE|ECE|EEE", 'E', Items.ECHO_SHARD, 'C', Items.COMPASS);
+		r(Items.BUNDLE, "T|L", 'T', Items.STRING, 'L', l);
+		r(Items.CARROT_ON_A_STICK, "F |  C", 'F', Items.FISHING_ROD, 'C', Items.CARROT);
+		r(Items.WARPED_FUNGUS_ON_A_STICK, "F |  W", 'F', Items.FISHING_ROD, 'W', Items.WARPED_FUNGUS);
+		// Loren und Schienen
+		r(Items.CHEST_MINECART, "C|M", 'C', Items.CHEST, 'M', Items.MINECART);
+		r(Items.HOPPER_MINECART, "H|M", 'H', Items.HOPPER, 'M', Items.MINECART);
+		r(Items.TNT_MINECART, "T|M", 'T', Items.TNT, 'M', Items.MINECART);
+		r(Items.FURNACE_MINECART, "F|M", 'F', Items.FURNACE, 'M', Items.MINECART);
+		r(Items.DETECTOR_RAIL, "I I|IPI|IRI", 'I', i, 'P', Items.STONE_PRESSURE_PLATE, 'R', Items.REDSTONE);
+		r(Items.ACTIVATOR_RAIL, "ISI|ITI|ISI", 'I', i, 'S', s, 'T', Items.REDSTONE_TORCH);
+		// Redstone und Türen
+		r(Items.STONE_PRESSURE_PLATE, "TT", 'T', Items.STONE);
+		r(Items.OAK_PRESSURE_PLATE, "PP", 'P', p);
+		r(Items.HEAVY_WEIGHTED_PRESSURE_PLATE, "II", 'I', i);
+		r(Items.LIGHT_WEIGHTED_PRESSURE_PLATE, "GG", 'G', g);
+		r(Items.REDSTONE_LAMP, " R |RGR| R ", 'R', Items.REDSTONE, 'G', Items.GLOWSTONE);
+		r(Items.CRAFTER, "III|ITI|RDR", 'I', i, 'T', Items.CRAFTING_TABLE, 'R', Items.REDSTONE, 'D', Items.DROPPER);
+		r(Items.OAK_FENCE_GATE, "SPS|SPS", 'S', s, 'P', p);
+		r(Items.OAK_TRAPDOOR, "PPP|PPP", 'P', p);
+		r(Items.IRON_TRAPDOOR, "II|II", 'I', i);
+		r(Items.IRON_DOOR, "II|II|II", 'I', i);
+		r(Items.OAK_SIGN, "PPP|PPP| S ", 'P', p, 'S', s);
+		// besondere Blöcke
+		r(Items.LECTERN, "LLL| B | L ", 'L', Items.OAK_SLAB, 'B', Items.BOOKSHELF);
+		r(Items.CHISELED_BOOKSHELF, "PPP|LLL|PPP", 'P', p, 'L', Items.OAK_SLAB);
+		r(Items.END_CRYSTAL, "GGG|GEG|GTG", 'G', Items.GLASS, 'E', Items.ENDER_EYE, 'T', Items.GHAST_TEAR);
+		r(Items.RESPAWN_ANCHOR, "OOO|GGG|OOO", 'O', Items.CRYING_OBSIDIAN, 'G', Items.GLOWSTONE);
+		r(Items.CONDUIT, "NNN|NHN|NNN", 'N', Items.NAUTILUS_SHELL, 'H', Items.HEART_OF_THE_SEA);
+		r(Items.BEEHIVE, "PPP|HHH|PPP", 'P', p, 'H', Items.HONEYCOMB);
+		r(Items.SOUL_LANTERN, "NNN|NTN|NNN", 'N', Items.IRON_NUGGET, 'T', Items.SOUL_TORCH);
+		r(Items.COBBLESTONE_WALL, "CCC|CCC", 'C', c);
+		r(Items.SNOW, "SSS", 'S', Items.SNOW_BLOCK);
+		// Blöcke aus 4 oder 9 Teilen
+		r(Items.GLOWSTONE, "GG|GG", 'G', Items.GLOWSTONE_DUST);
+		r(Items.QUARTZ_BLOCK, "QQ|QQ", 'Q', Items.QUARTZ);
+		r(Items.CLAY, "CC|CC", 'C', Items.CLAY_BALL);
+		r(Items.HONEY_BLOCK, "HH|HH", 'H', Items.HONEY_BOTTLE);
+		r(Items.MUD_BRICKS, "MM|MM", 'M', Items.PACKED_MUD);
+		r(Items.SLIME_BLOCK, "SSS|SSS|SSS", 'S', Items.SLIME_BALL);
+		r(Items.DRIED_KELP_BLOCK, "KKK|KKK|KKK", 'K', Items.DRIED_KELP);
+		r(Items.BONE_BLOCK, "BBB|BBB|BBB", 'B', Items.BONE_MEAL);
+		r(Items.COAL_BLOCK, "KKK|KKK|KKK", 'K', Items.COAL);
+		r(Items.GOLD_BLOCK, "GGG|GGG|GGG", 'G', g);
+		r(Items.DIAMOND_BLOCK, "DDD|DDD|DDD", 'D', d);
+		r(Items.EMERALD_BLOCK, "EEE|EEE|EEE", 'E', Items.EMERALD);
+		r(Items.LAPIS_BLOCK, "LLL|LLL|LLL", 'L', Items.LAPIS_LAZULI);
+		r(Items.REDSTONE_BLOCK, "RRR|RRR|RRR", 'R', Items.REDSTONE);
+		r(Items.PACKED_ICE, "III|III|III", 'I', Items.ICE);
+		r(Items.BLUE_ICE, "III|III|III", 'I', Items.PACKED_ICE);
 	}
 
 	private static final int ROUND_MS = 90_000, BONUS_MS = 5_000;
