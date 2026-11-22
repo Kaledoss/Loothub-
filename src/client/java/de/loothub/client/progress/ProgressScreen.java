@@ -294,6 +294,8 @@ public class ProgressScreen extends LoothubScreen {
 	@Override
 	public void render(GuiGraphics g, int mouseX, int mouseY, float delta) {
 		super.render(g, mouseX, mouseY, delta);
+		hoverX = mouseX;
+		hoverY = mouseY;
 		hits.clear();
 		if (!WidgetConfig.get().progress) {
 			centered(g, Component.translatable("loothub.lh.off"), ct + 20, MUTED);
@@ -1202,7 +1204,15 @@ public class ProgressScreen extends LoothubScreen {
 	}
 
 	/** Eine Shop-Zeile: Vorschau, Preis (oder Bedingung) und Knopf zum Kaufen, Anlegen bzw. Ablegen. */
+	/** Mausposition beim Zeichnen (zum Hervorheben der Zeile unter der Maus). */
+	private int hoverX, hoverY;
+
 	private int shopRow(GuiGraphics g, JsonObject s, JsonArray a, int y, int priceOverride) {
+		// Zeile unter der Maus hervorheben, damit man sieht, welcher Knopf zu welchem Artikel gehört
+		if (hoverX >= cl && hoverX < cr && hoverY >= y - 2 && hoverY < y + 16 && hoverY >= listTop && hoverY < cb) {
+			g.fill(cl, y - 2, cr, y + 16, 0x22FFFFFF);
+			g.fill(cl, y - 2, cl + 2, y + 16, RED);
+		}
 		long balance = s.get("balance").getAsLong();
 		String title = s.get("title").getAsString(), badge = s.get("badge").getAsString();
 		JsonObject cat = s.getAsJsonObject("cat");
