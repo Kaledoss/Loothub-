@@ -160,7 +160,8 @@ public final class JobWidget {
 					v = tr("loothub.job.backpack.open");
 					col = MUTED;
 				} else {
-					v = Fmt.exact(bv.money()) + " $" + (bv.unknown() > 0
+					v = Fmt.exact(bv.money()) + " $" + (bv.shards() > 0 ? " · " + Fmt.exact(bv.shards()) + " OPShards" : "")
+							+ (bv.unknown() > 0
 							? Component.translatable("loothub.job.backpack.unknown", bv.unknown()).getString() : "");
 				}
 			}

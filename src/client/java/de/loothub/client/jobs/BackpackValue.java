@@ -200,14 +200,14 @@ public final class BackpackValue {
 	// ------------------------------------------------------------------ Wert
 
 	/** Ergebnis für die Anzeige: Wert in $, Fische ohne Preis, Fische insgesamt. */
-	public record Value(double money, int unknown, int fish, boolean seen) {
+	public record Value(double money, double shards, int unknown, int fish, boolean seen) {
 	}
 
 	public static Value value() {
 		Data d = data();
 		int prestige = Math.min(2, WidgetConfig.get().anglerPrestige); // OPSUCHT hat Prestige 1 und 2
 		double mult = 1 + Math.max(0, prestige) * BONUS_PER_PRESTIGE;
-		double sum = 0;
+		double sum = 0, shards = 0;
 		int unknown = 0, fish = 0;
 		List<Stack> all = new ArrayList<>();
 		d.pages.values().forEach(all::addAll);
@@ -217,11 +217,18 @@ public final class BackpackValue {
 			Double p = price(s);
 			if (p == null) {
 				unknown += s.count;
+			} else if (paysShards(s.rarity)) {
+				shards += p * s.count; // Trödel und Schätze geben OPShards (ohne Prestige-Bonus)
 			} else {
 				sum += p * s.count * mult;
 			}
 		}
-		return new Value(sum, unknown, fish, !d.pages.isEmpty());
+		return new Value(sum, shards, unknown, fish, !d.pages.isEmpty());
+	}
+
+	private static boolean paysShards(String rarity) {
+		String r = rarity.strip().toLowerCase(Locale.ROOT);
+		return r.equals("trödel") || r.equals("schatz");
 	}
 
 	private static Double price(Stack s) {
