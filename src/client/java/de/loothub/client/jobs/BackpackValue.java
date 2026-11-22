@@ -113,7 +113,11 @@ public final class BackpackValue {
 	/** Rucksack in der Nebenhand? */
 	public static boolean wearing() {
 		Minecraft mc = Minecraft.getInstance();
-		return mc.player != null && mc.player.getOffhandItem().getHoverName().getString().toLowerCase(Locale.ROOT).contains("rucksack");
+		if (mc.player == null) {
+			return false;
+		}
+		String name = mc.player.getOffhandItem().getHoverName().getString().toLowerCase(Locale.ROOT);
+		return name.contains("rucksack") && !name.contains("talisman"); // nur der Anglerrucksack, nicht der Talisman-Rucksack
 	}
 
 	/** Neuer Fang (aus dem Angel-Verlauf): zählt dazu, wenn der Rucksack in der Nebenhand ist. */
