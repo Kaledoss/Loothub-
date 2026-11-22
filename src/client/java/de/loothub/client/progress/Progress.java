@@ -411,6 +411,7 @@ public final class Progress {
 		lastSync = System.currentTimeMillis();
 		JsonObject p = new JsonObject();
 		p.addProperty("op", "sync");
+		p.addProperty("mv", 2); // Feature-Stand der Mod: kann besondere/Erkundungs-Quests anzeigen
 		p.add("stats", counters());
 		p.add("col", Collection.counters(StatsStore.sum(StatsStore.Range.TOTAL)));
 		send(p, null);

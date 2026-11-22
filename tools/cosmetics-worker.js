@@ -633,7 +633,7 @@ const LH_QS = {
 	// Items aufsammeln (Ernte, Mob-Drops, Fische)
 	i: { base: [[200, 600, 1500], [4000, 12000, 30000]], ids: { pumpkin: 0.3, melon_slice: 1, carrot: 1, potato: 1, sugar_cane: 1,
 		cactus: 0.5, bamboo: 1, kelp: 1, sweet_berries: 0.5, bone: 0.3, string: 0.3, gunpowder: 0.2, rotten_flesh: 0.5,
-		cod: 0.05, salmon: 0.03, egg: 0.1, apple: 0.05 } },
+		egg: 0.1, apple: 0.05 } }, // keine Fische: Angeln zählt nur als Menge („fish“)
 };
 // gesetzte Blöcke (p) und aufgesammelte Items (i) je Art: Rohwerte aus der Mod, Zuwachs gekappt auf den Gesamtzähler
 const LH_QX = { p: { src: "placed", ids: new Set(Object.keys(LH_QS.p.ids)) }, i: { src: "picked", ids: new Set(Object.keys(LH_QS.i.ids)) } };
@@ -1075,10 +1075,21 @@ function lhSlotEnd(slot) { return lhLocalToUtc((slot + 1) * LH_SLOT); }
 function lhWeekEnd(week) { return lhLocalToUtc(((week + 1) * 7 + 4) * LH_DAY); }
 
 /** Drei Quests (je eine leichte, mittlere, schwere) für einen 4-Stunden-Abschnitt (kind 0) oder eine Woche (kind 1). */
-function lhQuests(kind, id) {
+// Quest-Arten, die ältere Mod-Versionen (ohne „mv“ im Abgleich) noch nicht anzeigen können
+const LH_Q_NEW = new Set(["dist", "nether", "deep"]);
+function lhQuests(kind, id, legacy) {
 	const rnd = lhRand(`lh-${kind}-${id}`);
-	const stats = Object.keys(LH_Q).filter((s) => LH_Q[s][kind]);
+	const stats = Object.keys(LH_Q).filter((s) => LH_Q[s][kind] && !(legacy && LH_Q_NEW.has(s)));
 	const out = [];
+	if (legacy) {
+		// genau wie früher: nur allgemeine Zähler
+		for (let d = 0; d < 3; d++) {
+			let s;
+			do { s = stats[Math.floor(rnd() * stats.length)]; } while (out.some((q) => q.stat === s));
+			out.push({ stat: s, goal: LH_Q[s][kind][d], points: LH_Q_POINTS[kind][d], diff: d });
+		}
+		return out;
+	}
 	for (let d = 0; d < 3; d++) {
 		// etwa jede dritte Quest ist eine besondere (bestimmter Block/Mob)
 		if (rnd() < 0.35) {
@@ -1262,9 +1273,9 @@ async function lhProgress(db, d, now) {
 
 	// 4-Stunden-Quests
 	const slot = lhSlotId(now);
-	if (!d.slot || d.slot.id !== slot) d.slot = { id: slot, base: lhQBase(d, lhQuests(0, slot)), done: [false, false, false] };
+	if (!d.slot || d.slot.id !== slot) d.slot = { id: slot, base: lhQBase(d, lhQuests(0, slot, d.legacy)), done: [false, false, false] };
 	const today = lhDayId(now);
-	lhQuests(0, slot).forEach((q, i) => {
+	lhQuests(0, slot, d.legacy).forEach((q, i) => {
 		if (d.slot.done[i]) return;
 		if (lhQHave(d, d.slot, q.stat) >= q.goal) {
 			d.slot.done[i] = true;
@@ -1286,8 +1297,8 @@ async function lhProgress(db, d, now) {
 		}
 		d.week = null;
 	}
-	if (!d.week) d.week = { id: week, base: lhQBase(d, lhQuests(1, week)), done: [false, false, false], comm: 0, paid: false };
-	lhQuests(1, week).forEach((q, i) => {
+	if (!d.week) d.week = { id: week, base: lhQBase(d, lhQuests(1, week, d.legacy)), done: [false, false, false], comm: 0, paid: false };
+	lhQuests(1, week, d.legacy).forEach((q, i) => {
 		if (d.week.done[i]) return;
 		if (lhQHave(d, d.week, q.stat) >= q.goal) {
 			d.week.done[i] = true;
@@ -1392,8 +1403,8 @@ async function lhProgress(db, d, now) {
 
 function lhView(row, d, extra, now) {
 	const slot = lhSlotId(now), week = lhWeekId(now);
-	const q4 = lhQuests(0, slot).map((q, i) => ({ ...q, have: lhQHave(d, d.slot, q.stat), done: !!d.slot.done[i] }));
-	const qw = lhQuests(1, week).map((q, i) => ({ ...q, have: lhQHave(d, d.week, q.stat), done: !!d.week.done[i] }));
+	const q4 = lhQuests(0, slot, d.legacy).map((q, i) => ({ ...q, have: lhQHave(d, d.slot, q.stat), done: !!d.slot.done[i] }));
+	const qw = lhQuests(1, week, d.legacy).map((q, i) => ({ ...q, have: lhQHave(d, d.week, q.stat), done: !!d.week.done[i] }));
 	return {
 		now, points: row.points, balance: row.points - row.spent, title: row.title, badge: row.badge, tcolor: row.tcolor || "",
 		tot: lhCopy(d.tot), ach: d.ach, quests: d.quests,
@@ -1538,6 +1549,7 @@ async function lhHandle(request, env) {
 		return json(await lhAdmin(db, env, p, now));
 	}
 	if (p.op === "sync") {
+		d.legacy = !p.mv; // ältere Mod ohne Feature-Stand: nur Quests, die sie anzeigen kann
 		if (!p.stats || typeof p.stats !== "object") return json({ error: "bad payload" }, 400);
 		lhAbsorb(d, p.stats, now);
 		lhAbsorbCol(d, p.col);
