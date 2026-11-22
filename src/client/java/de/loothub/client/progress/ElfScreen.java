@@ -79,7 +79,8 @@ final class ElfScreen extends ArcadeScreen {
 	private void fill() {
 		while (top > cam - 80) {
 			float h = -top;
-			float gap = Math.min(78, 34 + h / 160f) + random.nextInt(14);
+			// höchstens gut 2/3 der Sprunghöhe, damit jede Stelle schaffbar bleibt
+			float gap = Math.min(80, 34 + h / 160f + random.nextInt(14));
 			top -= gap;
 			int kind = 0;
 			int r = random.nextInt(100);
@@ -91,9 +92,10 @@ final class ElfScreen extends ArcadeScreen {
 			Plat p = new Plat(random.nextFloat() * (W - PW), top, kind);
 			p.gift = kind == 0 && random.nextInt(14) == 0;
 			plats.add(p);
-			// brüchige Platten nie allein: daneben immer eine feste
+			// brüchige Platten nie allein: auf gleicher Höhe immer eine feste daneben (sonst wird die Lücke zu groß)
 			if (kind == 2) {
-				plats.add(new Plat(random.nextFloat() * (W - PW), top - gap / 2, 0));
+				float x2 = (p.x + PW + 20 + random.nextFloat() * (W - 2 * PW - 40)) % (W - PW);
+				plats.add(new Plat(x2, top, 0));
 			}
 		}
 	}
