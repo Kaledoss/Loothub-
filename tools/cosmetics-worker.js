@@ -693,7 +693,7 @@ const LH_GUESS_REWARD = [40, 25, 15, 5];
 const LH_MG = {
 	snake: { minMs: 300, max: 3000, reward: [300, 200, 100] },
 	tower: { minMs: 120, max: 5000 },
-	sheep: { minMs: 500, max: 5000 },
+	sheep: { minMs: 300, max: 5000 },
 	elf: { minMs: 20, max: 200000 },
 	memory: { minMs: 400, min: 18, max: 1000, asc: true }, // Züge: weniger ist besser
 	craft: { minMs: 2500, max: 300 },
