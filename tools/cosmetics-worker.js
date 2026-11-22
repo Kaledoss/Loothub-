@@ -761,22 +761,30 @@ const FISH_SIZES = new Set(["", "klein", "mittel", "groß", "riesig"]);
 async function lhFishKnown(db, d, list) {
 	if (!Array.isArray(list) || !list.length) return;
 	const mine = new Set(Array.isArray(d.fk) ? d.fk : []);
-	const add = [];
+	const cand = [], seen = new Set();
 	for (const e of list.slice(0, 600)) {
 		if (!Array.isArray(e) || e.length < 3) continue;
 		const fish = String(e[0] || "").trim().slice(0, 40), size = String(e[1] || "").trim().toLowerCase(),
 			rarity = String(e[2] || "").trim().toLowerCase();
 		if (!fish || !/^[\p{L}\p{N} '\-]+$/u.test(fish) || !FISH_SIZES.has(size) || !FISH_RARITIES.has(rarity)) continue;
 		const key = `${fish.toLowerCase()}|${size}|${rarity}`;
-		if (mine.has(key)) continue;
-		mine.add(key);
-		add.push([fish, size, rarity]);
+		if (seen.has(key)) continue;
+		seen.add(key);
+		cand.push([fish, size, rarity, key]);
 	}
+	if (!cand.length) return;
+	// Arten, die schon in der gemeinsamen Liste stehen. Früher wurden pro Sync nur 80 Arten eingetragen,
+	// aber alle als „gemeldet“ gemerkt – so verlorene Arten werden hier nachgetragen.
+	const r = await db.prepare("SELECT fish, size, rarity FROM lh_fish").all();
+	const inDb = new Set((r.results || []).map((x) => `${String(x.fish).toLowerCase()}|${x.size}|${x.rarity}`));
+	const add = cand.filter(([, , , key]) => !mine.has(key) || !inDb.has(key)).slice(0, 80);
 	if (!add.length) return;
 	const now = Date.now();
-	const stmts = add.slice(0, 80).map(([f, z, r]) => db.prepare(`INSERT INTO lh_fish (fish, size, rarity, n, at) VALUES (?, ?, ?, 1, ?)
-		ON CONFLICT(fish, size, rarity) DO UPDATE SET n = n + 1`).bind(f, z, r, now));
+	const stmts = add.map(([f, z, rr]) => db.prepare(`INSERT INTO lh_fish (fish, size, rarity, n, at) VALUES (?, ?, ?, 1, ?)
+		ON CONFLICT(fish, size, rarity) DO UPDATE SET n = n + 1`).bind(f, z, rr, now));
 	await db.batch(stmts);
+	// nur wirklich eingetragene Arten merken – der Rest folgt beim nächsten Sync
+	for (const [, , , key] of add) mine.add(key);
 	d.fk = [...mine].slice(0, 1500);
 }
 
