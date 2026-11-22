@@ -57,11 +57,43 @@ public final class BackpackValue {
 		}
 	}
 
-	/** Gespeicherter Stand: Seiten des Fanglagers und Fänge seit dem letzten Öffnen. */
+	/** Ein Verkauf aus dem Rucksack. */
+	static final class Sale {
+		long t;
+		double money, shards;
+	}
+
+	/** Gespeicherter Stand: Seiten des Fanglagers, Fänge seit dem letzten Öffnen und Verkäufe. */
 	static final class Data {
 		Map<String, List<Stack>> pages = new LinkedHashMap<>();
 		List<Stack> pending = new ArrayList<>();
+		List<Sale> sales = new ArrayList<>();
 		long seen;
+	}
+
+	private static final java.util.regex.Pattern MONEY = java.util.regex.Pattern.compile("([0-9][0-9.,]*)\\s*\\$");
+	private static final java.util.regex.Pattern SHARDS = java.util.regex.Pattern.compile("(?i)([0-9][0-9.,]*)\\s*(?:op)?shards");
+
+	/** „1.234,56“ oder „1234.5“ als Zahl. */
+	private static double number(String s) {
+		String t = s.contains(",") ? s.replace(".", "").replace(',', '.') : (s.indexOf('.') != s.lastIndexOf('.') ? s.replace(".", "") : s);
+		try {
+			return Double.parseDouble(t);
+		} catch (NumberFormatException e) {
+			return 0;
+		}
+	}
+
+	/** Verkaufserlös (in $ und OPShards) zwischen zwei Zeitpunkten. */
+	public static double[] salesBetween(long from, long to) {
+		double m = 0, sh = 0;
+		for (Sale s : data().sales) {
+			if (s.t >= from && s.t < to) {
+				m += s.money;
+				sh += s.shards;
+			}
+		}
+		return new double[]{m, sh};
 	}
 
 	/** Bonus je Prestige-Stufe. */
@@ -100,9 +132,29 @@ public final class BackpackValue {
 			}
 			String title = mc.screen.getTitle().getString().toLowerCase(Locale.ROOT);
 			String text = message.getString().toLowerCase(Locale.ROOT);
-			if ((title.contains("fanglager") || title.contains("rucksack")) && text.contains("$")
+			if ((title.contains("fanglager") || title.contains("rucksack")) && (text.contains("$") || text.contains("shards"))
 					&& (text.contains("erhalten") || text.contains("verkauft"))) {
 				Data d = data();
+				// Erlös merken (für die Angel-Übersicht)
+				Sale s = new Sale();
+				s.t = System.currentTimeMillis();
+				java.util.regex.Matcher mm = MONEY.matcher(message.getString());
+				if (mm.find()) {
+					s.money = number(mm.group(1));
+				}
+				java.util.regex.Matcher sm = SHARDS.matcher(message.getString());
+				if (sm.find()) {
+					s.shards = number(sm.group(1));
+				}
+				if (s.money > 0 || s.shards > 0) {
+					if (d.sales == null) {
+						d.sales = new ArrayList<>();
+					}
+					d.sales.add(s);
+					if (d.sales.size() > 20_000) {
+						d.sales.subList(0, d.sales.size() - 20_000).clear();
+					}
+				}
 				d.pages.clear();
 				d.pending.clear();
 				save();
@@ -320,6 +372,9 @@ public final class BackpackValue {
 				try (Reader r = Files.newBufferedReader(p, StandardCharsets.UTF_8)) {
 					Data d = GSON.fromJson(r, Data.class);
 					if (d != null && d.pages != null && d.pending != null) {
+						if (d.sales == null) {
+							d.sales = new ArrayList<>();
+						}
 						data = d;
 					}
 				} catch (Exception e) {

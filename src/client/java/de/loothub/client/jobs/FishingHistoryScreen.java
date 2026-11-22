@@ -254,9 +254,9 @@ public class FishingHistoryScreen extends LoothubScreen {
 
 	private void renderKpis(GuiGraphics g) {
 		int gap = 6;
-		int w = (cw - 3 * gap) / 4;
+		int w = (cw - 4 * gap) / 5;
 		int h = 30;
-		int x1 = cl, x2 = cl + w + gap, x3 = cl + 2 * (w + gap), x4 = cl + 3 * (w + gap);
+		int x1 = cl, x2 = cl + w + gap, x3 = cl + 2 * (w + gap), x4 = cl + 3 * (w + gap), x5 = cl + 4 * (w + gap);
 		// Fänge
 		card(g, x1, kpiY, w, h);
 		g.drawString(font, Component.translatable("loothub.fishing.kpi.catches"), x1 + 6, kpiY + 5, MUTED, false);
@@ -291,7 +291,7 @@ public class FishingHistoryScreen extends LoothubScreen {
 			g.drawString(font, count, x3 + 6 + font.width(name), kpiY + 17, GOLD, false);
 		}
 		// Seltenster Fang
-		card(g, x4, kpiY, cr - x4, h);
+		card(g, x4, kpiY, w, h);
 		g.drawString(font, Component.translatable("loothub.fishing.kpi.best"), x4 + 6, kpiY + 5, MUTED, false);
 		FishingLog.Catch best = null;
 		for (FishingLog.Catch c : shown) {
@@ -304,9 +304,19 @@ public class FishingHistoryScreen extends LoothubScreen {
 		} else {
 			String r = best.rarity + " ";
 			g.drawString(font, r, x4 + 6, kpiY + 17, argb(best.rarityColor, GOLD), false);
-			g.drawString(font, ellipsize(best.fish, cr - x4 - 12 - font.width(r)), x4 + 6 + font.width(r), kpiY + 17,
+			g.drawString(font, ellipsize(best.fish, w - 12 - font.width(r)), x4 + 6 + font.width(r), kpiY + 17,
 					argb(best.fishColor, TEXT), false);
 		}
+		// Erlös aus Rucksack-Verkäufen im Zeitraum
+		card(g, x5, kpiY, cr - x5, h);
+		g.drawString(font, ellipsize(Component.translatable("loothub.fishing.kpi.sales").getString(), cr - x5 - 12), x5 + 6, kpiY + 5,
+				MUTED, false);
+		long[] rg = range();
+		double[] sold = BackpackValue.salesBetween(rg[0], rg[1]);
+		String money = sold[0] > 0 || sold[1] <= 0 ? de.loothub.client.Fmt.exact(sold[0]) + " $" : "";
+		String shards = sold[1] > 0 ? (money.isEmpty() ? "" : " · ") + de.loothub.client.Fmt.exact(sold[1]) + " Shards" : "";
+		g.drawString(font, ellipsize(money + shards, cr - x5 - 12), x5 + 6, kpiY + 17, sold[0] > 0 || sold[1] > 0 ? 0xFF55E06A : FAINT,
+				false);
 	}
 
 	/** Verteilung nach Seltenheit als farbiger Balken mit Beschriftung. */
