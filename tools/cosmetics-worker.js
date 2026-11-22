@@ -2075,13 +2075,24 @@ export default {
 
 		if (request.method === "GET" && url.pathname === "/fish/known.csv") {
 			// für Google Tabellen: =IMPORTDATA("…/fish/known.csv")
+			// Google zeigt #N/A bei jeder Nicht-200-Antwort – deshalb bei DB-Fehlern die letzte gute CSV ausliefern.
+			const csvHeaders = { "content-type": "text/csv; charset=utf-8", "access-control-allow-origin": "*" };
+			const lastGood = new Request(`${url.origin}/fish-known-cache/last.csv`);
 			try {
 				await lhInit(env.AH);
 				const r = await env.AH.prepare("SELECT fish, size, rarity, n FROM lh_fish ORDER BY rarity, fish, size").all();
 				const q = (v) => `"${String(v).replace(/"/g, '""')}"`;
 				const lines = ["Fisch,Größe,Seltenheit,Spieler", ...(r.results || []).map((x) => [x.fish, x.size, x.rarity, x.n].map(q).join(","))];
-				return new Response(lines.join("\n"), { headers: { "content-type": "text/csv; charset=utf-8", "access-control-allow-origin": "*" } });
+				const body = lines.join("\n");
+				ctx.waitUntil(caches.default.put(lastGood, new Response(body, {
+					headers: { ...csvHeaders, "cache-control": "public, max-age=2592000" },
+				})));
+				return new Response(body, { headers: csvHeaders });
 			} catch {
+				const hit = await caches.default.match(lastGood).catch(() => null);
+				if (hit) {
+					return new Response(await hit.text(), { headers: csvHeaders });
+				}
 				return new Response("error", { status: 503 });
 			}
 		}
