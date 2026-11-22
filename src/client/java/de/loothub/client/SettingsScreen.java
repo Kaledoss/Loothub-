@@ -752,8 +752,8 @@ public class SettingsScreen extends LoothubScreen {
 										WidgetConfig.get().anglerPrestige = Integer.parseInt(v);
 										WidgetConfig.get().save();
 										rebuildWidgets();
-									})).bounds(pDescX, pY + 20, pW, 16).build()));
-					y = cardNoToggle(pY, 40, "loothub.settings.angler_prestige", "loothub.settings.angler_prestige.tooltip");
+									})).bounds(pDescX, pY + 34, pW, 16).build()));
+					y = cardNoToggle(pY, 56, "loothub.settings.angler_prestige", "loothub.settings.angler_prestige.tooltip");
 				}
 				{
 					// Fang-Einblendung: an/aus, Seltenheiten als Kästchen, Test und Verschieben

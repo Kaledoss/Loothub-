@@ -89,16 +89,9 @@ public final class FishAlert {
 		c.save();
 	}
 
-	/** Alle Seltenheiten zur Auswahl: bekannte Reihenfolge plus alle, die schon einmal gefangen wurden. */
+	/** Seltenheiten zur Auswahl: nur die aktuellen OPSUCHT-Seltenheiten (alte Namen aus dem Fang-Log, z. B. „Sensation“, nicht). */
 	public static List<String> rarities() {
-		List<String> out = new ArrayList<>(FishingLog.knownRarities());
-		for (FishingLog.Catch c : FishingLog.all()) {
-			String k = c.rarity.strip().toLowerCase(Locale.ROOT);
-			if (!k.isEmpty() && !out.contains(k)) {
-				out.add(k);
-			}
-		}
-		return out;
+		return new ArrayList<>(FishingLog.knownRarities());
 	}
 
 	/** Neuer Fang (Spiel-Thread). */
