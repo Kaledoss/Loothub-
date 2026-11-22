@@ -131,6 +131,15 @@ public final class BuildScreen extends de.loothub.client.LoothubScreen {
 			}).bounds(dx, dy, font.width(Component.translatable("loothub.build.btn.recount")) + 14, 16).build();
 			recount.setTooltip(Tooltip.create(Component.translatable("loothub.build.btn.recount.tooltip")));
 			addRenderableWidget(recount);
+			dx += recount.getWidth() + 4;
+			// Einkaufsliste im HUD für diese Schematic ein/aus
+			Plan forList = selected;
+			Button shopping = Button.builder(toggle("loothub.build.btn.shopping", ShoppingList.on(forList)), b -> {
+				ShoppingList.toggle(forList);
+				b.setMessage(toggle("loothub.build.btn.shopping", ShoppingList.on(forList)));
+			}).bounds(dx, dy, font.width(toggle("loothub.build.btn.shopping", false)) + 14, 16).build();
+			shopping.setTooltip(Tooltip.create(Component.translatable("loothub.build.btn.shopping.tooltip")));
+			addRenderableWidget(shopping);
 			// Teilen: Name eintippen, Knopf
 			int sy = dy + 20;
 			shareBox = new EditBox(font, detailX + 4, sy, 110, 16, Component.translatable("loothub.build.share.name"));

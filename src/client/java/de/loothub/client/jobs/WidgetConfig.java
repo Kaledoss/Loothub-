@@ -226,6 +226,10 @@ public final class WidgetConfig {
 	/** Lage der Fehlt-Einblendung (wie die Twitch-Alerts: oben in der Mitte). */
 	public double buildWarnX = 0.5;
 	public double buildWarnY = 0.22;
+	/** Einkaufsliste im HUD: eingeschaltet für diese Schematics („Name|Datei“). */
+	public java.util.Set<String> buildShopping = new java.util.HashSet<>();
+	public double buildListX = 1.0;
+	public double buildListY = 0.3;
 	/** YouTube Music (Desktop-App, API Server): „Läuft gerade“ im HUD. */
 	public boolean musicEnabled = false;
 	public boolean musicLocked = false;
