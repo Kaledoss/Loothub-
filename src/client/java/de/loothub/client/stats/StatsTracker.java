@@ -196,6 +196,7 @@ public final class StatsTracker {
 		if (isRealBlock(state.getBlock()) || isPlant(state.getBlock())) {
 			StatsStore.add("mined." + BuiltInRegistries.BLOCK.getKey(state.getBlock()), 1);
 		}
+		lastMinedAt = System.currentTimeMillis();
 		toolStat("tool_mined.", mc.player.getMainHandItem());
 	}
 
@@ -956,6 +957,9 @@ public final class StatsTracker {
 	 * Magnete legen Drops oft direkt ins Inventar, ohne dass ein Item am Boden lag oder aufgesammelt wurde. Was kurz
 	 * nach einem Kill ohne Aufsammeln im Inventar dazukommt, zählt deshalb als Loot dieses Mobs (nur ohne offenes Menü).
 	 */
+	/** Zuletzt einen Block abgebaut – Inventar-Zugänge kurz danach sind Drops (auch per Magnet/Direkt-ins-Inventar). */
+	private static long lastMinedAt;
+
 	private static void inventoryLoot(Minecraft mc, long now) {
 		if (mc.player == null) {
 			return;
@@ -971,11 +975,12 @@ public final class StatsTracker {
 		Map<String, Long> before = lastInv;
 		lastInv = inv;
 		PICKED_RECENT.values().removeIf(x -> now - x[1] > 2000);
-		if (before == null || mc.screen != null || RECENT_KILLS.isEmpty()) {
+		boolean mining = now - lastMinedAt <= 2000;
+		if (before == null || mc.screen != null || (RECENT_KILLS.isEmpty() && !mining)) {
 			return;
 		}
 		Kill k = RECENT_KILLS.peekFirst();
-		boolean fresh = now - k.at() <= 1500;
+		boolean fresh = k != null && now - k.at() <= 1500;
 		for (Map.Entry<String, Long> e : inv.entrySet()) {
 			long gain = e.getValue() - before.getOrDefault(e.getKey(), 0L);
 			long[] ex = PICKED_RECENT.get(e.getKey());
@@ -987,6 +992,9 @@ public final class StatsTracker {
 			if (gain > 0 && fresh) {
 				StatsStore.add("mobloot." + k.mob(), gain);
 				StatsStore.add("mobloot_item." + k.mob() + "|" + e.getKey(), gain);
+			} else if (gain > 0 && mining && tracking(mc)) {
+				// Abbau-Drops, die ohne Aufsammel-Meldung im Inventar landen (Magnet, Server legt direkt ins Inventar)
+				StatsStore.add("picked." + e.getKey(), gain);
 			}
 		}
 	}
