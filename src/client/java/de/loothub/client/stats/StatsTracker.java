@@ -1096,6 +1096,7 @@ public final class StatsTracker {
 				&& mc.hitResult.getType() == net.minecraft.world.phys.HitResult.Type.BLOCK) {
 			BlockState st = mc.level.getBlockState(bhr.getBlockPos());
 			if (!st.isAir()) {
+				lastFaceAxis = bhr.getDirection().getAxis();
 				watchPos = bhr.getBlockPos().immutable();
 				watchState = st;
 				watchUntil = now + 1500;
@@ -1152,8 +1153,14 @@ public final class StatsTracker {
 		}
 		int r = areaRadius(mc.player.getMainHandItem());
 		// Bohrer bauen eine Fläche quer zur angeklickten Seite ab (3×3 bzw. 5×5), nicht in die Tiefe
+		// Ist der Block schon weg, zeigt das Fadenkreuz auf den Block dahinter: dann die zuletzt angeklickte Seite nehmen –
+		// nie einen ganzen Würfel, sonst landen verdeckte Blöcke dahinter in der Liste (die zeigt der Server wegen
+		// Anti-Xray oft als zufällige Erze an → „Gold abgebaut“, obwohl es Erde war)
 		net.minecraft.core.Direction.Axis axis = mc.hitResult instanceof net.minecraft.world.phys.BlockHitResult bhr
-				&& bhr.getBlockPos().equals(center) ? bhr.getDirection().getAxis() : null;
+				&& bhr.getBlockPos().equals(center) ? bhr.getDirection().getAxis() : lastFaceAxis;
+		if (axis == null) {
+			return;
+		}
 		int rx = axis == net.minecraft.core.Direction.Axis.X ? 0 : r;
 		int ry = axis == net.minecraft.core.Direction.Axis.Y ? 0 : r;
 		int rz = axis == net.minecraft.core.Direction.Axis.Z ? 0 : r;
@@ -1165,7 +1172,7 @@ public final class StatsTracker {
 					}
 					net.minecraft.core.BlockPos p = center.offset(x, y, z);
 					BlockState st = mc.level.getBlockState(p);
-					if (isRealBlock(st.getBlock()) || isPlant(st.getBlock())) {
+					if ((isRealBlock(st.getBlock()) || isPlant(st.getBlock())) && !(isOre(st) && hidden(mc, p, center))) {
 						AREA.put(p, st);
 					} else {
 						AREA.remove(p);
@@ -1179,6 +1186,24 @@ public final class StatsTracker {
 	 * Reichweite um den anvisierten Block: Bohrer V3 baut 5×5 ab (2 Blöcke), Bohrer, Bohrer V2 und Tunnelgräberschaufel
 	 * 3×3 (1 Block). Unbekannte Spezial-Werkzeuge: 3×3.
 	 */
+	private static net.minecraft.core.Direction.Axis lastFaceAxis;
+
+	private static boolean isOre(BlockState st) {
+		String id = BuiltInRegistries.BLOCK.getKey(st.getBlock()).getPath();
+		return id.endsWith("_ore") || id.equals("ancient_debris");
+	}
+
+	/** Rundum von festen Blöcken umgeben (der gerade abgebaute zählt als fest): echtes Aussehen unbekannt (Anti-Xray). */
+	private static boolean hidden(Minecraft mc, net.minecraft.core.BlockPos p, net.minecraft.core.BlockPos center) {
+		for (net.minecraft.core.Direction d : net.minecraft.core.Direction.values()) {
+			net.minecraft.core.BlockPos n = p.relative(d);
+			if (!n.equals(center) && !mc.level.getBlockState(n).isSolidRender()) {
+				return false;
+			}
+		}
+		return true;
+	}
+
 	private static int areaRadius(ItemStack tool) {
 		var name = tool.get(net.minecraft.core.component.DataComponents.CUSTOM_NAME);
 		String n = name == null ? "" : net.minecraft.ChatFormatting.stripFormatting(name.getString()).toLowerCase(java.util.Locale.ROOT);
@@ -1214,6 +1239,10 @@ public final class StatsTracker {
 			var e = it.next();
 			BlockState cur = mc.level.getBlockState(e.getKey());
 			if (cur.getBlock() != e.getValue().getBlock()) {
+				if (!(cur.isAir() || cur.canBeReplaced()) && (isRealBlock(cur.getBlock()) || isPlant(cur.getBlock()))) {
+					e.setValue(cur); // der Server zeigt jetzt den echten Block (vorher verdeckt): den merken
+					continue;
+				}
 				if ((cur.isAir() || cur.canBeReplaced()) && !recentlyCounted(e.getKey(), now)) {
 					markCounted(e.getKey(), now);
 					onBlockBroken(e.getValue());
