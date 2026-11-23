@@ -1048,9 +1048,14 @@ public final class StatsTracker {
 				long step = Math.min(now - lastTickTime, 1000);
 				StatsStore.add("general.active_time", step);
 				// Erkundung: Zeit im Nether und tief unter der Erde (für Quests)
-				if (mc.level.dimension() == net.minecraft.world.level.Level.NETHER) {
+				// OPSUCHT hat eigene Welten (Farmwelt, Farm-Nether …) mit eigenen Namen: nach dem Namen gehen,
+				// nicht nur nach der Vanilla-Oberwelt
+				String dim = mc.level.dimension().identifier().getPath().toLowerCase(java.util.Locale.ROOT);
+				boolean nether = mc.level.dimension() == net.minecraft.world.level.Level.NETHER || dim.contains("nether");
+				boolean end = mc.level.dimension() == net.minecraft.world.level.Level.END || dim.contains("end");
+				if (nether) {
 					StatsStore.add("general.nether_time", step);
-				} else if (mc.level.dimension() == net.minecraft.world.level.Level.OVERWORLD && p.getY() < 0) {
+				} else if (!end && p.getY() < 0) {
 					StatsStore.add("general.deep_time", step);
 				}
 			}

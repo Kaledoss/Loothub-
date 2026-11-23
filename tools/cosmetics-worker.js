@@ -1217,8 +1217,10 @@ function lhAbsorbCol(d, reported) {
 			v = Math.floor(v);
 			const prev = q.raw[id];
 			q.raw[id] = v;
-			if (first || prev === undefined) continue; // alte Statistik zählt für Quests nicht
-			const delta = v >= prev ? v - prev : v;
+			if (first) continue; // alte Statistik zählt für Quests nicht
+			// bisher nie gemeldet = bisher 0 (die Mod meldet nur Arten mit Zähler > 0) – sonst ginge der erste Schwung
+			// einer neuen Blockart verloren (z. B. Steinziegel erst für die Quest gesetzt)
+			const delta = prev === undefined ? v : v >= prev ? v - prev : v;
 			if (delta > 0) { deltas[id] = delta; sum += delta; }
 		}
 		const budget = Math.ceil(((d.delta && d.delta[x.src]) || 0) * 1.1) + 20;
