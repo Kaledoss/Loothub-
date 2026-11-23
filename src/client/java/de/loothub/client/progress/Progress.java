@@ -54,6 +54,10 @@ public final class Progress {
 
 	/** Fortschritt einer Quest jetzt: Stand vom Server plus was seit dem Abgleich dazukam. */
 	public static long liveHave(String stat, long serverHave) {
+		int colon = stat.indexOf(':');
+		if (colon > 0) {
+			return liveHaveSpecial(stat.substring(0, colon), stat.substring(colon + 1), serverHave);
+		}
 		JsonObject base = atSync;
 		if (base == null || !base.has(stat)) {
 			return serverHave;
@@ -65,6 +69,33 @@ public final class Progress {
 		}
 		long cur = liveCounters.has(stat) ? liveCounters.get(stat).getAsLong() : 0;
 		return serverHave + Math.max(0, cur - base.get(stat).getAsLong());
+	}
+
+	/** Zähler je Block/Mob/Item zum letzten Abgleich (b, m, p, i) – für besondere Quests wie „p:stone_bricks“. */
+	private static volatile JsonObject atSyncCol;
+	private static JsonObject liveCol;
+	private static long liveColAt;
+
+	private static long liveHaveSpecial(String kind, String id, long serverHave) {
+		JsonObject base = atSyncCol;
+		if (base == null) {
+			return serverHave;
+		}
+		long now = System.currentTimeMillis();
+		if (liveCol == null || now - liveColAt > 1000) {
+			liveCol = Collection.counters(StatsStore.sum(StatsStore.Range.TOTAL));
+			liveColAt = now;
+		}
+		long was = num(base, kind, id), cur = num(liveCol, kind, id); // nicht gemeldet = 0
+		return serverHave + Math.max(0, cur - was);
+	}
+
+	private static long num(JsonObject o, String kind, String id) {
+		if (o == null || !o.has(kind) || !o.get(kind).isJsonObject()) {
+			return 0;
+		}
+		JsonObject k = o.getAsJsonObject(kind);
+		return k.has(id) ? k.get(id).getAsLong() : 0;
 	}
 
 	// ------------------------------------------------------------------ angepinnte Quests (höchstens 2)
@@ -567,6 +598,7 @@ public final class Progress {
 					stateAt = System.currentTimeMillis();
 					if ("sync".equals(payload.get("op").getAsString())) {
 						atSync = payload.getAsJsonObject("stats"); // Stand der Zähler zu diesem Abgleich
+						atSyncCol = payload.has("col") ? payload.getAsJsonObject("col") : null;
 					}
 					status = "";
 					mc.execute(() -> announce(s));
