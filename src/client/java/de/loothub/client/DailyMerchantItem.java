@@ -32,7 +32,7 @@ public final class DailyMerchantItem {
 	}
 
 	public static void register() {
-		ClientTickEvents.END_CLIENT_TICK.register(mc -> {
+		de.loothub.client.util.Guard.tick("DailyMerchantItem", mc -> {
 			if (++ticks % 10 != 0 || !(mc.screen instanceof AbstractContainerScreen<?> screen) || mc.player == null) {
 				return;
 			}

@@ -36,7 +36,7 @@ public final class OtherAfk {
 	}
 
 	public static void register() {
-		ClientTickEvents.END_CLIENT_TICK.register(OtherAfk::tick);
+		de.loothub.client.util.Guard.tick("OtherAfk", OtherAfk::tick);
 	}
 
 	private static void tick(Minecraft mc) {

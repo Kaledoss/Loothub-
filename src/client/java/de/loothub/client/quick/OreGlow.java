@@ -34,7 +34,7 @@ public final class OreGlow {
 	}
 
 	public static void register() {
-		ClientTickEvents.END_CLIENT_TICK.register(OreGlow::tick);
+		de.loothub.client.util.Guard.tick("OreGlow", OreGlow::tick);
 		WorldRenderEvents.BEFORE_TRANSLUCENT.register(ctx -> render(ctx.matrices(), ctx.consumers()));
 	}
 

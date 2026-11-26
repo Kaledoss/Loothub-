@@ -314,9 +314,9 @@ public final class Progress {
 	}
 
 	public static void register() {
-		ClientTickEvents.END_CLIENT_TICK.register(Secrets::tick);
+		de.loothub.client.util.Guard.tick("Progress", Secrets::tick);
 		net.fabricmc.fabric.api.client.message.v1.ClientSendMessageEvents.CHAT.register(Secrets::chat);
-		ClientTickEvents.END_CLIENT_TICK.register(mc -> {
+		de.loothub.client.util.Guard.tick("Progress#2", mc -> {
 			long now = System.currentTimeMillis();
 			if (mc.player == null || mc.level == null) {
 				joinedAt = 0;

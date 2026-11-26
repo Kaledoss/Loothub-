@@ -56,7 +56,7 @@ public final class Build {
 			return;
 		}
 		BuildStorage.register();
-		ClientTickEvents.END_CLIENT_TICK.register(Build::tick);
+		de.loothub.client.util.Guard.tick("Build", Build::tick);
 	}
 
 	private static void tick(Minecraft mc) {

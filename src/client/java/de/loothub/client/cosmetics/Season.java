@@ -146,7 +146,7 @@ public final class Season {
 	}
 
 	public static void register() {
-		ClientTickEvents.END_CLIENT_TICK.register(Season::tick);
+		de.loothub.client.util.Guard.tick("Season", Season::tick);
 	}
 
 	// ------------------------------------------------------------------ Mütze

@@ -68,7 +68,7 @@ public final class CosmeticsServer {
 	}
 
 	public static void register() {
-		ClientTickEvents.END_CLIENT_TICK.register(mc -> {
+		de.loothub.client.util.Guard.tick("CosmeticsServer", mc -> {
 			if (!enabled() || !WidgetConfig.get().cosmetics) {
 				return;
 			}

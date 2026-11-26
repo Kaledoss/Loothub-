@@ -71,7 +71,7 @@ public final class InvTools {
 		sortKey = key("key.loothub.inv_sort", category);
 		sortMouseKey = key("key.loothub.inv_sort_mouse", category);
 		moveKey = key("key.loothub.inv_move", category);
-		ClientTickEvents.END_CLIENT_TICK.register(InvTools::tick);
+		de.loothub.client.util.Guard.tick("InvTools", InvTools::tick);
 		ScreenEvents.AFTER_INIT.register((client, screen, w, h) -> {
 			if (!(screen instanceof AbstractContainerScreen<?> cs)) {
 				return;

@@ -29,11 +29,11 @@ public final class BuildHud {
 	public static void register() {
 		net.fabricmc.fabric.api.client.rendering.v1.hud.HudElementRegistry.attachElementBefore(
 				net.fabricmc.fabric.api.client.rendering.v1.hud.VanillaHudElements.CHAT,
-				net.minecraft.resources.Identifier.fromNamespaceAndPath(de.loothub.Loothub.MOD_ID, "build"), BuildHud::render);
+				net.minecraft.resources.Identifier.fromNamespaceAndPath(de.loothub.Loothub.MOD_ID, "build"), de.loothub.client.util.Guard.hud("build", BuildHud::render));
 		net.fabricmc.fabric.api.client.rendering.v1.hud.HudElementRegistry.attachElementBefore(
 				net.fabricmc.fabric.api.client.rendering.v1.hud.VanillaHudElements.CHAT,
-				net.minecraft.resources.Identifier.fromNamespaceAndPath(de.loothub.Loothub.MOD_ID, "build_warning"),
-				EasyPlaceWarning::render);
+				net.minecraft.resources.Identifier.fromNamespaceAndPath(de.loothub.Loothub.MOD_ID, "build_warning"), de.loothub.client.util.Guard.hud("build_warning",
+				EasyPlaceWarning::render));
 	}
 
 	private static void render(GuiGraphics g, DeltaTracker delta) {

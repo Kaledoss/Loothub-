@@ -532,6 +532,7 @@
 	"loothub.villager.max": "⟳ Max trade",
 	"loothub.villager.max.tooltip": "Repeats the selected trade until payment, the villager's stock or inventory space runs out (at most 64 times).",
 	"loothub.villager.done": "✔ Traded %s times",
+	"loothub.guard.paused": "Loothub: The feature “%s” failed repeatedly and is paused until restart. The error was reported automatically.",
 	"loothub.feedback.button": "✉ Feedback",
 	"loothub.feedback.list_button": "📨 Reports",
 	"loothub.feedback.title": "Send feedback & report bugs",

@@ -24,7 +24,7 @@ public final class CosmeticEffects {
 			"glow", ParticleTypes.GLOW, "totem", ParticleTypes.TOTEM_OF_UNDYING);
 
 	public static void register() {
-		ClientTickEvents.END_CLIENT_TICK.register(CosmeticEffects::tick);
+		de.loothub.client.util.Guard.tick("CosmeticEffects", CosmeticEffects::tick);
 	}
 
 	private static int blend(int a, int b, float t) {

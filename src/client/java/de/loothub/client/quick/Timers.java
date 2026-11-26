@@ -94,7 +94,7 @@ public final class Timers {
 	}
 
 	public static void register() {
-		ClientTickEvents.END_CLIENT_TICK.register(mc -> {
+		de.loothub.client.util.Guard.tick("Timers", mc -> {
 			tick();
 			keys(mc);
 		});

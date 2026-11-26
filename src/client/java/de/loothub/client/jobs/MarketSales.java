@@ -30,7 +30,7 @@ public final class MarketSales {
 	}
 
 	public static void register() {
-		ClientTickEvents.END_CLIENT_TICK.register(mc -> {
+		de.loothub.client.util.Guard.tick("MarketSales", mc -> {
 			String title = mc.screen == null ? "" : mc.screen.getTitle().getString().toLowerCase(Locale.ROOT);
 			// Marktplatz und das /sell-Menü (Verkaufen) – das Geld daraus landet beides im Markt-Verlauf
 			if (mc.screen != null && (title.contains("marktplatz") || title.contains("verkauf") || title.contains("sell"))

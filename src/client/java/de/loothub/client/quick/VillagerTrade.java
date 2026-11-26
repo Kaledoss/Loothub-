@@ -40,7 +40,7 @@ public final class VillagerTrade {
 			b.setTooltip(Tooltip.create(Component.translatable("loothub.villager.max.tooltip")));
 			Screens.getButtons(screen).add(b);
 		});
-		ClientTickEvents.END_CLIENT_TICK.register(VillagerTrade::tick);
+		de.loothub.client.util.Guard.tick("VillagerTrade", VillagerTrade::tick);
 	}
 
 	private static void start(MerchantScreen ms) {

@@ -64,7 +64,7 @@ public class LoothubClient implements ClientModInitializer {
 		de.loothub.client.quick.Compressor.register();
 
 		// Eigene Statistik
-		ClientTickEvents.END_CLIENT_TICK.register(StatsTracker::tick);
+		de.loothub.client.util.Guard.tick("LoothubClient", StatsTracker::tick);
 		ClientPlayerBlockBreakEvents.AFTER.register((world, player, pos, state) -> StatsTracker.onBlockBroken(pos, state));
 		// Werkzeug-Einsätze per Rechtsklick (in die Luft bzw. auf einen Block, z. B. Hacke, Axt, Schaufel)
 		UseItemCallback.EVENT.register((player, world, hand) -> {
@@ -86,7 +86,7 @@ public class LoothubClient implements ClientModInitializer {
 			return InteractionResult.PASS;
 		});
 
-		ClientTickEvents.END_CLIENT_TICK.register(client -> {
+		de.loothub.client.util.Guard.tick("LoothubClient#2", client -> {
 			// Einmal pro Spielstart im Chat auf ein verfügbares Update hinweisen
 			if (!updateNoticeShown && client.player != null && Updater.state() == Updater.State.AVAILABLE) {
 				updateNoticeShown = true;
@@ -116,11 +116,11 @@ public class LoothubClient implements ClientModInitializer {
 
 		// Job-Widget im HUD (vor dem Chat zeichnen)
 		HudElementRegistry.attachElementBefore(VanillaHudElements.CHAT,
-				Identifier.fromNamespaceAndPath(Loothub.MOD_ID, "job_widget"), JobWidget::renderHud);
+				Identifier.fromNamespaceAndPath(Loothub.MOD_ID, "job_widget"), de.loothub.client.util.Guard.hud("job_widget", JobWidget::renderHud));
 
 		// Pokémon Community Game: Spawn-Anzeige oben rechts, Knöpfe über dem Inventar, Twitch-Chat im Hintergrund
 		HudElementRegistry.attachElementBefore(VanillaHudElements.CHAT,
-				Identifier.fromNamespaceAndPath(Loothub.MOD_ID, "pcg"), de.loothub.client.pcg.PcgOverlay::renderHud);
+				Identifier.fromNamespaceAndPath(Loothub.MOD_ID, "pcg"), de.loothub.client.util.Guard.hud("pcg", de.loothub.client.pcg.PcgOverlay::renderHud));
 		de.loothub.client.pcg.PcgPanel.register();
 		{
 			de.loothub.client.jobs.WidgetConfig wc = de.loothub.client.jobs.WidgetConfig.get();
@@ -139,18 +139,18 @@ public class LoothubClient implements ClientModInitializer {
 		de.loothub.client.quick.ShaderPack.install();
 		// Eigene Timer (Restzeit)
 		HudElementRegistry.attachElementBefore(VanillaHudElements.CHAT,
-				Identifier.fromNamespaceAndPath(Loothub.MOD_ID, "timers"), de.loothub.client.quick.Timers::renderHud);
+				Identifier.fromNamespaceAndPath(Loothub.MOD_ID, "timers"), de.loothub.client.util.Guard.hud("timers", de.loothub.client.quick.Timers::renderHud));
 		// Block-Info oben in der Mitte (was man anschaut)
 		HudElementRegistry.attachElementBefore(VanillaHudElements.CHAT,
-				Identifier.fromNamespaceAndPath(Loothub.MOD_ID, "look_info"), de.loothub.client.quick.LookInfo::renderHud);
+				Identifier.fromNamespaceAndPath(Loothub.MOD_ID, "look_info"), de.loothub.client.util.Guard.hud("look_info", de.loothub.client.quick.LookInfo::renderHud));
 
 		// Inventar über der Hotbar
 		HudElementRegistry.attachElementBefore(VanillaHudElements.CHAT,
-				Identifier.fromNamespaceAndPath(Loothub.MOD_ID, "inventory_hud"), de.loothub.client.quick.InventoryHud::renderHud);
+				Identifier.fromNamespaceAndPath(Loothub.MOD_ID, "inventory_hud"), de.loothub.client.util.Guard.hud("inventory_hud", de.loothub.client.quick.InventoryHud::renderHud));
 
 		// YouTube Music: „Läuft gerade“ im HUD, im Chat verschiebbar
 		HudElementRegistry.attachElementBefore(VanillaHudElements.CHAT,
-				Identifier.fromNamespaceAndPath(Loothub.MOD_ID, "music"), de.loothub.client.music.MusicWidget::renderHud);
+				Identifier.fromNamespaceAndPath(Loothub.MOD_ID, "music"), de.loothub.client.util.Guard.hud("music", de.loothub.client.music.MusicWidget::renderHud));
 		de.loothub.client.music.MusicWidget.register();
 		// Bau-Funktionen (nur mit Litematica): Fortschritt, Lager-Fässer, Easy-Place-Warnung, gemeinsam bauen
 		if (de.loothub.client.bau.Build.present()) {
@@ -162,23 +162,23 @@ public class LoothubClient implements ClientModInitializer {
 
 		// Streamer-Modus: offene Kanalbelohnungen im HUD, Twitch-Chat und Belohnungen im Hintergrund
 		HudElementRegistry.attachElementBefore(VanillaHudElements.CHAT,
-				Identifier.fromNamespaceAndPath(Loothub.MOD_ID, "redemptions"), de.loothub.client.streamer.RedemptionHud::renderHud);
+				Identifier.fromNamespaceAndPath(Loothub.MOD_ID, "redemptions"), de.loothub.client.util.Guard.hud("redemptions", de.loothub.client.streamer.RedemptionHud::renderHud));
 		de.loothub.client.streamer.RedemptionHud.register();
 		HudElementRegistry.attachElementBefore(VanillaHudElements.CHAT,
-				Identifier.fromNamespaceAndPath(Loothub.MOD_ID, "stream_alerts"), de.loothub.client.streamer.Alerts::renderHud);
+				Identifier.fromNamespaceAndPath(Loothub.MOD_ID, "stream_alerts"), de.loothub.client.util.Guard.hud("stream_alerts", de.loothub.client.streamer.Alerts::renderHud));
 		de.loothub.client.streamer.Streamer.apply();
 		// Fang-Einblendung (gefangener Fisch), im Chat verschiebbar
 		HudElementRegistry.attachElementBefore(VanillaHudElements.CHAT,
-				Identifier.fromNamespaceAndPath(Loothub.MOD_ID, "fish_alert"), de.loothub.client.jobs.FishAlert::renderHud);
+				Identifier.fromNamespaceAndPath(Loothub.MOD_ID, "fish_alert"), de.loothub.client.util.Guard.hud("fish_alert", de.loothub.client.jobs.FishAlert::renderHud));
 		// Erfolge, Quests, Punkte: Abgleich mit dem Loothub-Server und Einblendungen
 		HudElementRegistry.attachElementBefore(VanillaHudElements.CHAT,
-				Identifier.fromNamespaceAndPath(Loothub.MOD_ID, "progress_toasts"), de.loothub.client.progress.Progress::renderHud);
+				Identifier.fromNamespaceAndPath(Loothub.MOD_ID, "progress_toasts"), de.loothub.client.util.Guard.hud("progress_toasts", de.loothub.client.progress.Progress::renderHud));
 		HudElementRegistry.attachElementBefore(VanillaHudElements.CHAT,
-				Identifier.fromNamespaceAndPath(Loothub.MOD_ID, "quest_pins"), de.loothub.client.progress.Progress::renderPins);
+				Identifier.fromNamespaceAndPath(Loothub.MOD_ID, "quest_pins"), de.loothub.client.util.Guard.hud("quest_pins", de.loothub.client.progress.Progress::renderPins));
 		de.loothub.client.progress.Progress.register();
 		de.loothub.client.stats.OpsuchtAfk.register();
 		// eigene Sprache für Loothub (Einstellung), unabhängig von Minecraft
-		net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents.END_CLIENT_TICK.register(mc -> LoothubLanguage.tick());
+		net.fabricmc.fabric.api.client.event.lifecycle.v1.de.loothub.client.util.Guard.tick("LoothubClient#3", mc -> LoothubLanguage.tick());
 		de.loothub.client.jobs.FishAlert.register();
 		de.loothub.client.quick.AuctionWatch.register();
 		de.loothub.client.music.YtMusic.ensure(de.loothub.client.jobs.WidgetConfig.get().musicEnabled);
@@ -231,11 +231,11 @@ public class LoothubClient implements ClientModInitializer {
 		de.loothub.client.quick.PickupWarning.register();
 		de.loothub.client.feedback.Feedback.register();
 		HudElementRegistry.attachElementBefore(VanillaHudElements.CHAT,
-				Identifier.fromNamespaceAndPath(Loothub.MOD_ID, "pickup_warning"), de.loothub.client.quick.PickupWarning::render);
+				Identifier.fromNamespaceAndPath(Loothub.MOD_ID, "pickup_warning"), de.loothub.client.util.Guard.hud("pickup_warning", de.loothub.client.quick.PickupWarning::render));
 		de.loothub.client.quick.FoodHud.register();
 		de.loothub.client.quick.VillagerTrade.register();
 		HudElementRegistry.attachElementAfter(VanillaHudElements.FOOD_BAR,
-				Identifier.fromNamespaceAndPath(Loothub.MOD_ID, "food_hud"), de.loothub.client.quick.FoodHud::renderHud);
+				Identifier.fromNamespaceAndPath(Loothub.MOD_ID, "food_hud"), de.loothub.client.util.Guard.hud("food_hud", de.loothub.client.quick.FoodHud::renderHud));
 		de.loothub.client.quick.RenameScreen.register();
 		de.loothub.client.quick.AmountShortcut.register();
 		DailyMerchantItem.register();
@@ -255,7 +255,7 @@ public class LoothubClient implements ClientModInitializer {
 		MarketPrices.refreshIfStale();
 		// Auktionshaus regelmäßig im Hintergrund abfragen (nur im Spiel), damit Verkäufe lückenlos mitgeschrieben
 		// werden – nicht nur, wenn gerade ein Tooltip offen ist
-		net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents.END_CLIENT_TICK.register(client -> {
+		net.fabricmc.fabric.api.client.event.lifecycle.v1.de.loothub.client.util.Guard.tick("LoothubClient#4", client -> {
 			if (client.player != null && client.level != null && client.player.tickCount % 200 == 0) {
 				AuctionPrices.refreshIfStale();
 				AuctionNames.refreshServer(); // lückenloser Verlauf vom Loothub-Server

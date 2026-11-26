@@ -121,7 +121,7 @@ public final class Cosmetics {
 	}
 
 	public static void register() {
-		ClientTickEvents.END_CLIENT_TICK.register(mc -> {
+		de.loothub.client.util.Guard.tick("Cosmetics", mc -> {
 			if (WidgetConfig.get().cosmetics && !loading && System.currentTimeMillis() - lastFetch > REFRESH_MS) {
 				fetch();
 			}

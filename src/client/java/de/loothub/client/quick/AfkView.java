@@ -49,7 +49,7 @@ public final class AfkView {
 	}
 
 	public static void register() {
-		ClientTickEvents.END_CLIENT_TICK.register(AfkView::tick);
+		de.loothub.client.util.Guard.tick("AfkView", AfkView::tick);
 	}
 
 	/** Wie weit der eigene Charakter liegt (0 = steht, 1 = liegt). */

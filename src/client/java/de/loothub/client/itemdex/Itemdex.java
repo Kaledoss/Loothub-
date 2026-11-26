@@ -142,7 +142,7 @@ public final class Itemdex {
 	}
 
 	public static void register() {
-		ClientTickEvents.END_CLIENT_TICK.register(Itemdex::tick);
+		de.loothub.client.util.Guard.tick("Itemdex", Itemdex::tick);
 		ClientReceiveMessageEvents.GAME.register((message, overlay) -> scanChat(message));
 		ClientReceiveMessageEvents.CHAT.register((message, signed, sender, params, time) -> scanChat(message));
 		ClientLifecycleEvents.CLIENT_STOPPING.register(c -> save(true));

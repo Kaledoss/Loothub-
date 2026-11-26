@@ -55,7 +55,7 @@ public final class EmoteShare {
 	}
 
 	public static void register() {
-		ClientTickEvents.END_CLIENT_TICK.register(mc -> {
+		de.loothub.client.util.Guard.tick("EmoteShare", mc -> {
 			if (mc.level == null || mc.player == null) {
 				return;
 			}

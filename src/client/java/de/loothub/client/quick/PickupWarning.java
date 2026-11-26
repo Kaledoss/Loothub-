@@ -27,7 +27,7 @@ public final class PickupWarning {
 	}
 
 	public static void register() {
-		ClientTickEvents.END_CLIENT_TICK.register(PickupWarning::tick);
+		de.loothub.client.util.Guard.tick("PickupWarning", PickupWarning::tick);
 	}
 
 	private static void tick(Minecraft mc) {

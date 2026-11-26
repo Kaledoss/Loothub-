@@ -48,7 +48,7 @@ public class RenameScreen extends Screen {
 			}
 			return true;
 		});
-		ClientTickEvents.END_CLIENT_TICK.register(mc -> {
+		de.loothub.client.util.Guard.tick("RenameScreen", mc -> {
 			if (pending != null && mc.screen == null) {
 				String c = pending;
 				pending = null;

@@ -45,7 +45,7 @@ public final class ShoppingList {
 	}
 
 	public static void register() {
-		ClientTickEvents.END_CLIENT_TICK.register(mc -> {
+		de.loothub.client.util.Guard.tick("ShoppingList", mc -> {
 			if (--refreshIn <= 0) {
 				refreshIn = 20;
 				sections = compute();
@@ -53,7 +53,7 @@ public final class ShoppingList {
 		});
 		net.fabricmc.fabric.api.client.rendering.v1.hud.HudElementRegistry.attachElementBefore(
 				net.fabricmc.fabric.api.client.rendering.v1.hud.VanillaHudElements.CHAT,
-				Identifier.fromNamespaceAndPath(de.loothub.Loothub.MOD_ID, "build_shopping"), ShoppingList::render);
+				Identifier.fromNamespaceAndPath(de.loothub.Loothub.MOD_ID, "build_shopping"), de.loothub.client.util.Guard.hud("build_shopping", ShoppingList::render));
 	}
 
 	/**

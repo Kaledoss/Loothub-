@@ -104,7 +104,7 @@ public final class AuctionWatch {
 				forget(key(lastClicked));
 			}
 		});
-		ClientTickEvents.END_CLIENT_TICK.register(mc -> {
+		de.loothub.client.util.Guard.tick("AuctionWatch", mc -> {
 			if (mc.player != null && mc.level != null && mc.level.getGameTime() % 20 == 0) {
 				check(mc);
 			}

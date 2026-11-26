@@ -34,7 +34,7 @@ public final class Feedback {
 	}
 
 	public static void register() {
-		ClientTickEvents.END_CLIENT_TICK.register(mc -> {
+		de.loothub.client.util.Guard.tick("Feedback", mc -> {
 			if (captureIn < 0) {
 				return;
 			}
@@ -115,6 +115,16 @@ public final class Feedback {
 				done.accept(null);
 			}
 		});
+	}
+
+	/** Automatische Meldung, wenn eine Funktion wegen wiederholter Fehler pausiert wurde (ohne Bildschirmfoto). */
+	public static void autoReport(String feature, Throwable t) {
+		StringBuilder sb = new StringBuilder("[Automatisch] Funktion „" + feature + "“ wurde wegen Fehlern pausiert:\n" + t);
+		StackTraceElement[] st = t.getStackTrace();
+		for (int i = 0; i < Math.min(12, st.length); i++) {
+			sb.append("\n  at ").append(st[i]);
+		}
+		send(sb.toString(), false, err -> { });
 	}
 
 	/** Loothub-Einstellungen (ohne Zugangsdaten – die liegen in eigenen Dateien). */

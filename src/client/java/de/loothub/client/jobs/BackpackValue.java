@@ -108,7 +108,7 @@ public final class BackpackValue {
 	}
 
 	public static void register() {
-		ClientTickEvents.END_CLIENT_TICK.register(mc -> {
+		de.loothub.client.util.Guard.tick("BackpackValue", mc -> {
 			watchInventory(mc);
 			if (++tick % 10 != 0) {
 				return;

@@ -124,7 +124,7 @@ public final class DataBackup {
 			}
 		});
 		// lange Sitzungen: alle paar Stunden prüfen, ob heute schon gesichert wurde
-		ClientTickEvents.END_CLIENT_TICK.register(client -> {
+		de.loothub.client.util.Guard.tick("DataBackup", client -> {
 			long now = System.currentTimeMillis();
 			if (now - lastCheck > CHECK_MS) {
 				backupNow();

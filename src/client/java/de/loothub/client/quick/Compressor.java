@@ -62,7 +62,7 @@ public final class Compressor {
 				openKey = null;
 			}
 		});
-		ClientTickEvents.END_CLIENT_TICK.register(Compressor::tick);
+		de.loothub.client.util.Guard.tick("Compressor", Compressor::tick);
 	}
 
 	private static void tick(Minecraft mc) {

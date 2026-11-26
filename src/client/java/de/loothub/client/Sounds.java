@@ -55,7 +55,7 @@ public final class Sounds {
 	}
 
 	public static void register() {
-		ClientTickEvents.END_CLIENT_TICK.register(mc -> {
+		de.loothub.client.util.Guard.tick("Sounds", mc -> {
 			tick++;
 			synchronized (QUEUE) {
 				Iterator<Pending> it = QUEUE.iterator();

@@ -82,7 +82,7 @@ public final class ToolProtection {
 				world.isClientSide() ? check(player, hand) : InteractionResult.PASS);
 		UseItemCallback.EVENT.register((player, world, hand) ->
 				world.isClientSide() ? check(player, hand) : InteractionResult.PASS);
-		ClientTickEvents.END_CLIENT_TICK.register(client -> warnTick());
+		de.loothub.client.util.Guard.tick("ToolProtection", client -> warnTick());
 	}
 
 	/** Resthaltbarkeit, oder -1 bei Dingen ohne Haltbarkeit. */
