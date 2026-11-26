@@ -1072,7 +1072,7 @@ const LH_BOARDS = ["points", "ach", "login", "dquests", "wquests", "blocks", "pl
 const LH_DROP_MIN_PLAY = { d: 30, w: 180, m: 600, a: 1200 }; // Mindest-Spielminuten für „am wenigsten weggeworfen“
 const LH_PERIODS = ["d", "w", "m"]; // täglich, wöchentlich, monatlich (dazu „a“ = gesamt)
 /** Stand dieses Workers – die Mod zeigt Admins einen Hinweis, wenn er älter ist als sie erwartet. Bei jeder Änderung erhöhen. */
-const WORKER_VERSION = 12;
+const WORKER_VERSION = 13;
 
 let lhReady = false;
 async function lhInit(db) {
@@ -1586,6 +1586,31 @@ async function lhAdmin(db, env, p, now) {
 		]);
 		return { ok: true };
 	}
+	// Admin-Übersicht: wer nutzt welche Version, welche Funktionen sind eingeschaltet (aktive Spieler)
+	if (p.op === "admin_overview") {
+		const rows = await db.prepare("SELECT name, data, updated FROM lh_player WHERE updated > ?").bind(now - 30 * 86400_000).all();
+		const versions = {}, features = {};
+		let active7 = 0, active30 = 0, withFeat = 0;
+		const recent = [];
+		for (const r of rows.results || []) {
+			let dd;
+			try { dd = JSON.parse(r.data || "{}"); } catch { dd = {}; }
+			active30++;
+			const week = r.updated > now - 7 * 86400_000;
+			if (!week) continue;
+			active7++;
+			const v = dd.ver || "?";
+			versions[v] = (versions[v] || 0) + 1;
+			if (Array.isArray(dd.feat)) {
+				withFeat++;
+				for (const f of dd.feat) features[f] = (features[f] || 0) + 1;
+			}
+			recent.push([r.name || "?", v, r.updated]);
+		}
+		recent.sort((a, b) => b[2] - a[2]);
+		const sorted = (o) => Object.entries(o).sort((a, b) => b[1] - a[1]);
+		return { ok: true, active7, active30, withFeat, versions: sorted(versions), features: sorted(features), recent: recent.slice(0, 50) };
+	}
 	// Feedback-Liste (Admin): Übersicht, einzelne Meldung (mit Bild), Status ändern, löschen
 	if (p.op === "admin_fb_list") {
 		const rows = await db.prepare(`SELECT id, at, name, ver, substr(text, 1, 2000) AS text, status, seen, length(shot) > 0 AS shot
@@ -1651,7 +1676,10 @@ async function lhHandle(request, env) {
 		return json({ ok: true });
 	}
 	if (p.op === "sync") {
-		d.legacy = !p.mv; // ältere Mod ohne Feature-Stand: nur Quests, die sie anzeigen kann
+		d.legacy = !p.mv;
+		// Admin-Übersicht: Version und eingeschaltete Funktionen merken
+		if (typeof p.ver === "string") d.ver = p.ver.slice(0, 40);
+		if (Array.isArray(p.feat)) d.feat = p.feat.filter((x) => typeof x === "string" && /^[A-Za-z0-9_]{1,40}$/.test(x)).slice(0, 200); // ältere Mod ohne Feature-Stand: nur Quests, die sie anzeigen kann
 		// gefangene Fisch-Arten (Fisch|Größe|Seltenheit) für die gemeinsame Liste aller bekannten Fänge
 		try { await lhFishKnown(db, d, p.fk); } catch { /* nächstes Mal */ }
 		if (!p.stats || typeof p.stats !== "object") return json({ error: "bad payload" }, 400);

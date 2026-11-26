@@ -160,6 +160,10 @@ public abstract class LoothubScreen extends Screen {
 			int aw = font.width(al) + 12;
 			addRenderableWidget(Button.builder(al, x -> minecraft.setScreen(new de.loothub.client.feedback.FeedbackListScreen(this)))
 					.bounds(fx - 4 - aw, frameY + 2, aw, b.getHeight()).build());
+			Component ol = Component.translatable("loothub.admin.overview_button");
+			int ow = font.width(ol) + 12;
+			addRenderableWidget(Button.builder(ol, x -> minecraft.setScreen(new de.loothub.client.feedback.AdminOverviewScreen(this)))
+					.bounds(fx - 8 - aw - ow, frameY + 2, ow, b.getHeight()).build());
 		}
 
 		initPage();

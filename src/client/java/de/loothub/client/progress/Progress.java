@@ -288,7 +288,7 @@ public final class Progress {
 
 	/** Ist man laut Server Admin (Taler ändern, Ranglisten zurücksetzen)? */
 	/** Worker-Stand, den diese Mod-Version braucht (muss zu WORKER_VERSION in cosmetics-worker.js passen). */
-	public static final int WORKER_NEEDED = 12;
+	public static final int WORKER_NEEDED = 13;
 
 	/** Admin: Läuft auf dem Server ein älterer Worker, als diese Mod braucht? (unbekannt = nein) */
 	public static boolean workerOutdated() {
@@ -472,6 +472,20 @@ public final class Progress {
 		p.add("stats", counters());
 		p.add("col", Collection.counters(StatsStore.sum(StatsStore.Range.TOTAL)));
 		p.add("fk", de.loothub.client.jobs.FishingLog.knownKinds());
+		// für die Admin-Übersicht: Mod-Version und welche Loothub-Funktionen eingeschaltet sind (nur Namen der Schalter)
+		p.addProperty("ver", de.loothub.client.Updater.currentVersion());
+		com.google.gson.JsonArray feat = new com.google.gson.JsonArray();
+		de.loothub.client.jobs.WidgetConfig cfg = de.loothub.client.jobs.WidgetConfig.get();
+		for (java.lang.reflect.Field f : de.loothub.client.jobs.WidgetConfig.class.getFields()) {
+			try {
+				if (f.getType() == boolean.class && !java.lang.reflect.Modifier.isStatic(f.getModifiers()) && f.getBoolean(cfg)) {
+					feat.add(f.getName());
+				}
+			} catch (IllegalAccessException ignored) {
+				// nicht lesbar: weglassen
+			}
+		}
+		p.add("feat", feat);
 		send(p, null);
 	}
 
