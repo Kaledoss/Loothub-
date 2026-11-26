@@ -297,6 +297,12 @@ public class StatsScreen extends LoothubScreen {
 					if (kind == Kind.PLANT) {
 						id = plantKey(id); // Feldfrucht-Block (z. B. „Wheat Crops“) und Samen in eine Zeile
 					}
+					if (kind == Kind.MOB && id.startsWith("~")) {
+						String mob = StatsTracker.mobIdForName(id.substring(1)); // „⚠ Huhn“ → Huhn
+						if (mob != null) {
+							id = mob;
+						}
+					}
 					if (category == Category.FOOD && isFoodPlant(id)) {
 						id = isGlowBerries(id) ? "minecraft:glow_berries" : plantKey(id); // Pflanze und Frucht in eine Zeile
 					}

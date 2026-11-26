@@ -385,6 +385,9 @@ public final class CustomChat {
 				if (in && t.sound && !m.own()) {
 					ping = true;
 				}
+				if (in) {
+					LAST_IN.put(w, m.time()); // Fenster bei neuer Nachricht (egal welcher Tab) kurz ganz einblenden
+				}
 			}
 			Integer s = SCROLL.get(w);
 			if (s != null && s > 0 && shows(w, current, m)) {
@@ -398,6 +401,7 @@ public final class CustomChat {
 	}
 
 	private static long lastPing;
+	private static final Map<Window, Long> LAST_IN = new java.util.WeakHashMap<>();
 
 	private static synchronized List<Line> lines(Window w, Tab tab, int width) {
 		Cache c = CACHE.computeIfAbsent(tab, k -> new Cache());
@@ -485,10 +489,18 @@ public final class CustomChat {
 			scroll = Mth.clamp(scroll, 0, Math.max(0, lines.size() - visible));
 			SCROLL.put(w, scroll);
 
-			if (focused) {
-				a.fill(b[0], b[1], b[0] + b[2], b[1] + b[3], (bgA << 24) | (w.bg & 0xFFFFFF));
+			// Chat zu: bei einer neuen Nachricht (in irgendeinem Tab) das ganze Fenster mit Tabs so lange zeigen wie
+			// die Nachrichten sichtbar bleiben – so sieht man auch, in welchem Tab etwas Neues ist
+			long life = Math.max(1, w.fadeSec) * 1000L;
+			long sinceNew = now - LAST_IN.getOrDefault(w, 0L);
+			boolean shown = !focused && sinceNew < life;
+			if (focused || shown) {
+				int a0 = shown ? (int) (bgA * Mth.clamp((life - sinceNew) / 1000F, 0F, 1F)) : bgA;
+				a.fill(b[0], b[1], b[0] + b[2], b[1] + b[3], (a0 << 24) | (w.bg & 0xFFFFFF));
 				header(a, w, b);
 				corners(a, w, b);
+			}
+			if (focused) {
 				// Bildlaufleiste
 				if (lines.size() > visible) {
 					int barH = Math.max(6, b[3] * visible / lines.size());
@@ -506,13 +518,15 @@ public final class CustomChat {
 				float alpha = 1F;
 				if (!focused) {
 					long age = now - l.time();
-					long life = Math.max(1, w.fadeSec) * 1000L;
-					if (age >= life) {
+					if (age >= life && !shown) {
 						break;
 					}
-					alpha = Mth.clamp((life - age) / 1000F, 0F, 1F);
-					int la = (int) (bgA * alpha);
-					a.fill(b[0], b[1] + b[3] - (i + 1) * lineH, b[0] + b[2], b[1] + b[3] - i * lineH, (la << 24) | (w.bg & 0xFFFFFF));
+					// solange das Fenster eingeblendet ist, bleiben auch ältere Zeilen lesbar
+					alpha = shown ? Mth.clamp((life - sinceNew) / 1000F, 0F, 1F) : Mth.clamp((life - age) / 1000F, 0F, 1F);
+					if (!shown) {
+						int la = (int) (bgA * alpha);
+						a.fill(b[0], b[1] + b[3] - (i + 1) * lineH, b[0] + b[2], b[1] + b[3] - i * lineH, (la << 24) | (w.bg & 0xFFFFFF));
+					}
 				}
 				int y = b[1] + b[3] - (i + 1) * lineH;
 				if (focused) {

@@ -31,6 +31,7 @@ public class ItemdexScreen extends LoothubScreen {
 
 	private static String search = "";
 	private static Category category; // null = alle
+	private static boolean favOnly; // nur Favoriten
 	private static boolean showHidden;
 
 	private Button categoryButton;
@@ -77,7 +78,8 @@ public class ItemdexScreen extends LoothubScreen {
 
 	private static Component categoryLabel() {
 		return Component.translatable("loothub.itemdex.category",
-				category == null ? Component.translatable("loothub.itemdex.cat.all") : Component.translatable(category.key))
+				favOnly ? Component.translatable("loothub.itemdex.cat.fav")
+						: category == null ? Component.translatable("loothub.itemdex.cat.all") : Component.translatable(category.key))
 				.append(" ▾");
 	}
 
@@ -93,7 +95,7 @@ public class ItemdexScreen extends LoothubScreen {
 		Collator collator = Collator.getInstance(Locale.GERMANY);
 		collator.setStrength(Collator.PRIMARY);
 		all.sort(Comparator.comparing((Entry e) -> e.name, collator).thenComparing(e -> e.itemId));
-		numbers.clear();
+		numbers.clear(); // Nummern nach A–Z, Favoriten stehen in der Liste danach oben
 		int n = 0;
 		for (Entry e : all) {
 			if (!e.hidden) {
@@ -108,12 +110,16 @@ public class ItemdexScreen extends LoothubScreen {
 			if (category != null && e.category != category) {
 				continue;
 			}
+			if (favOnly && !e.favorite) {
+				continue;
+			}
 			if (!q.isEmpty() && !e.text.contains(q) && !e.itemId.contains(q)
 					&& !String.valueOf(numbers.getOrDefault(e, -1)).equals(q.replaceFirst("^0+(?=\\d)", ""))) {
 				continue;
 			}
 			out.add(e);
 		}
+		out.sort(Comparator.comparing((Entry e) -> !e.favorite)); // stabil: Favoriten zuerst, sonst A–Z
 		rows = out;
 	}
 
@@ -142,7 +148,7 @@ public class ItemdexScreen extends LoothubScreen {
 	public void render(GuiGraphics g, int mouseX, int mouseY, float delta) {
 		super.render(g, mouseX, mouseY, delta);
 		if (rows.isEmpty()) {
-			boolean filtered = !search.isBlank() || category != null || showHidden;
+			boolean filtered = !search.isBlank() || category != null || favOnly || showHidden;
 			Component msg = Component.translatable(filtered ? "loothub.screen.no_results" : "loothub.itemdex.empty");
 			g.drawString(font, msg, cl + (cw - font.width(msg)) / 2, listTop + 20, FAINT, false);
 			drawDropdown(g, mouseX, mouseY);
@@ -157,14 +163,17 @@ public class ItemdexScreen extends LoothubScreen {
 			int y = listTop + i * ROW_H;
 			g.fill(cl, y, cr, y + ROW_H - 1, e == hovered ? 0x30E23B3B : (i % 2 == 0 ? 0x14FFFFFF : 0x08FFFFFF));
 			Integer number = numbers.get(e);
-			g.drawString(font, number == null ? "  –" : String.format(Locale.ROOT, "#%04d", number), cl + 4, y + 6, MUTED, false);
+			// Stern: Favorit an/aus
+			boolean starHover = mouseX >= cl && mouseX < cl + STAR_W && mouseY >= y && mouseY < y + ROW_H - 1 && !dropdownOpen;
+			g.drawString(font, "★", cl + 3, y + 6, e.favorite ? 0xFFFFC93B : (starHover ? 0xFFB08A3A : 0x40FFFFFF), false);
+			g.drawString(font, number == null ? "  –" : String.format(Locale.ROOT, "#%04d", number), cl + STAR_W + 2, y + 6, MUTED, false);
 			ItemStack stack = e.stack();
 			// Manche Server-Items sind riesige Menü-Bilder – Symbol auf 16×16 begrenzen
-			g.enableScissor(cl + 40, Math.max(y + 2, listTop), cl + 56, Math.min(y + 18, cb));
-			g.renderItem(stack, cl + 40, y + 2);
+			g.enableScissor(cl + STAR_W + 38, Math.max(y + 2, listTop), cl + STAR_W + 54, Math.min(y + 18, cb));
+			g.renderItem(stack, cl + STAR_W + 38, y + 2);
 			g.disableScissor();
 			Component name = stack.isEmpty() ? Component.literal(Itemdex.clean(e.name)) : cleanOr(stack.getHoverName(), e.name);
-			int nameX = cl + 60;
+			int nameX = cl + STAR_W + 58;
 			String right = Fmt.date(e.firstSeen, false) + " · " + Itemdex.clean(e.where);
 			String cat = Component.translatable(e.category.key).getString();
 			int rightW = font.width(right);
@@ -210,6 +219,8 @@ public class ItemdexScreen extends LoothubScreen {
 					.withStyle(ChatFormatting.DARK_GRAY).getVisualOrderText());
 			tip.add(Component.translatable(hovered.hidden ? "loothub.itemdex.unhide_hint" : "loothub.itemdex.hide_hint")
 					.withStyle(ChatFormatting.DARK_GRAY).getVisualOrderText());
+			tip.add(Component.translatable(hovered.favorite ? "loothub.itemdex.unfav_hint" : "loothub.itemdex.fav_hint")
+					.withStyle(ChatFormatting.DARK_GRAY).getVisualOrderText());
 			g.setTooltipForNextFrame(font, tip, mouseX, mouseY);
 		}
 		drawDropdown(g, mouseX, mouseY);
@@ -217,6 +228,7 @@ public class ItemdexScreen extends LoothubScreen {
 
 	// ------------------------------------------------------------------ Auktionshaus-Spalten
 
+	private static final int STAR_W = 12;
 	private static final int AH_COL = 52;
 	private static final String[] AH_HEADS = {"loothub.itemdex.ah.offer", "loothub.itemdex.ah.sales7", "loothub.itemdex.ah.avg7",
 			"loothub.itemdex.ah.sales_all", "loothub.itemdex.ah.avg_all"};
@@ -255,7 +267,7 @@ public class ItemdexScreen extends LoothubScreen {
 		int x = categoryButton.getX();
 		int y = categoryButton.getY() + categoryButton.getHeight() + 1;
 		int w = categoryButton.getWidth();
-		int n = Category.values().length + 1;
+		int n = Category.values().length + 2;
 		if (mx < x || mx >= x + w || my < y || my >= y + n * DD_ROW) {
 			return -1;
 		}
@@ -271,29 +283,32 @@ public class ItemdexScreen extends LoothubScreen {
 		int y = categoryButton.getY() + categoryButton.getHeight() + 1;
 		int w = categoryButton.getWidth();
 		Category[] cats = Category.values();
-		int n = cats.length + 1;
+		int n = cats.length + 2;
 		// Anzahl je Art (eingeblendete Items)
 		int[] counts = new int[cats.length];
-		int all = 0;
+		int all = 0, favs = 0;
 		for (Entry e : Itemdex.entries()) {
 			if (e.hidden) {
 				continue;
 			}
 			all++;
+			if (e.favorite) {
+				favs++;
+			}
 			counts[e.category.ordinal()]++;
 		}
 		g.fill(x - 1, y - 1, x + w + 1, y + n * DD_ROW + 1, RED);
 		g.fill(x, y, x + w, y + n * DD_ROW, 0xF0140B0D);
 		int hover = dropdownIndexAt(mx, my);
 		for (int i = 0; i < n; i++) {
-			Category cat = i == 0 ? null : cats[i - 1];
+			Category cat = i <= 1 ? null : cats[i - 2];
 			int ry = y + i * DD_ROW;
-			boolean selected = cat == category;
+			boolean selected = i == 1 ? favOnly : !favOnly && cat == category;
 			if (i == hover) {
 				g.fill(x, ry, x + w, ry + DD_ROW, 0x40E23B3B);
 			}
-			String label = Component.translatable(cat == null ? "loothub.itemdex.cat.all" : cat.key).getString();
-			int count = cat == null ? all : counts[cat.ordinal()];
+			String label = Component.translatable(i == 0 ? "loothub.itemdex.cat.all" : i == 1 ? "loothub.itemdex.cat.fav" : cat.key).getString();
+			int count = i == 0 ? all : i == 1 ? favs : counts[cat.ordinal()];
 			g.drawString(font, (selected ? "✔ " : "   ") + label, x + 4, ry + 3, selected ? TEXT : (count > 0 ? MUTED : FAINT), false);
 			String c = String.valueOf(count);
 			g.drawString(font, c, x + w - 4 - font.width(c), ry + 3, FAINT, false);
@@ -306,7 +321,8 @@ public class ItemdexScreen extends LoothubScreen {
 			int i = dropdownIndexAt(event.x(), event.y());
 			boolean onButton = categoryButton.isMouseOver(event.x(), event.y());
 			if (i >= 0) {
-				category = i == 0 ? null : Category.values()[i - 1];
+				favOnly = i == 1;
+				category = i <= 1 ? null : Category.values()[i - 2];
 				categoryButton.setMessage(categoryLabel());
 				scroll = 0;
 				refresh();
@@ -315,6 +331,13 @@ public class ItemdexScreen extends LoothubScreen {
 			}
 			if (!onButton) {
 				dropdownOpen = false; // Klick daneben schließt die Liste
+				return true;
+			}
+		}
+		if (event.button() == 0 && event.x() < cl + STAR_W) {
+			Entry e = rowAt(event.x(), event.y());
+			if (e != null) {
+				Itemdex.setFavorite(e, !e.favorite);
 				return true;
 			}
 		}

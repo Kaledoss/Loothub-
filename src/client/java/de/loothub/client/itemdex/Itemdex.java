@@ -104,6 +104,8 @@ public final class Itemdex {
 		public String where;
 		public Source source;
 		public boolean hidden;
+		/** Als Favorit markiert (★): steht oben und lässt sich filtern. */
+		public boolean favorite;
 		JsonElement stackJson;
 		private ItemStack cached;
 
@@ -154,6 +156,12 @@ public final class Itemdex {
 
 	public static int version() {
 		return version;
+	}
+
+	public static synchronized void setFavorite(Entry e, boolean favorite) {
+		e.favorite = favorite;
+		dirty = true;
+		version++;
 	}
 
 	public static synchronized void setHidden(Entry e, boolean hidden) {
@@ -689,6 +697,7 @@ public final class Itemdex {
 				e.where = o.has("where") ? o.get("where").getAsString() : "";
 				e.source = parseEnum(Source.class, o, "source", Source.CONTAINER);
 				e.hidden = o.has("hidden") && o.get("hidden").getAsBoolean();
+				e.favorite = o.has("fav") && o.get("fav").getAsBoolean();
 				e.stackJson = o.get("stack");
 				entries.add(e);
 				byKey.put(e.key, e);
@@ -725,6 +734,9 @@ public final class Itemdex {
 			o.addProperty("source", e.source.name());
 			if (e.hidden) {
 				o.addProperty("hidden", true);
+			}
+			if (e.favorite) {
+				o.addProperty("fav", true);
 			}
 			if (e.stackJson != null) {
 				o.add("stack", e.stackJson);

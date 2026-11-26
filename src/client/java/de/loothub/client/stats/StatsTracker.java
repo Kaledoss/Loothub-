@@ -1035,7 +1035,38 @@ public final class StatsTracker {
 	}
 
 	private static String killKey(Target t) {
-		return t.name() != null ? "killed.~" + t.name() : "killed." + BuiltInRegistries.ENTITY_TYPE.getKey(t.type());
+		if (t.name() != null) {
+			// OPSUCHT benennt normale Mobs oft nur um („⚠ Huhn“, „Schwein“): dann als normalen Mob zählen
+			String id = mobIdForName(t.name());
+			if (id == null) {
+				return "killed.~" + t.name();
+			}
+			return "killed." + id;
+		}
+		return "killed." + BuiltInRegistries.ENTITY_TYPE.getKey(t.type());
+	}
+
+	private static Map<String, String> mobNames;
+
+	/** Name eines Mobs (deutsch oder in Spielsprache, Zeichen wie ⚠ egal) → ID des normalen Mobs, sonst null. */
+	public static synchronized String mobIdForName(String name) {
+		if (mobNames == null) {
+			mobNames = new HashMap<>();
+			for (var type : BuiltInRegistries.ENTITY_TYPE) {
+				String id = BuiltInRegistries.ENTITY_TYPE.getKey(type).toString();
+				mobNames.putIfAbsent(cleanName(type.getDescription().getString()), id);
+				mobNames.putIfAbsent(cleanName(GermanLang.entity(type)), id);
+			}
+			mobNames.remove("");
+		}
+		return mobNames.get(cleanName(name));
+	}
+
+	private static String cleanName(String s) {
+		String t = net.minecraft.ChatFormatting.stripFormatting(s == null ? "" : s);
+		// nur Buchstaben und Leerzeichen (Symbole, Zahlen wie „x3“ oder Herzen weg)
+		t = t.replaceAll("[^\\p{L} ]", " ").replaceAll("\\s+", " ").strip().toLowerCase(java.util.Locale.ROOT);
+		return t;
 	}
 
 	// ------------------------------------------------------------------ Jeder Tick
