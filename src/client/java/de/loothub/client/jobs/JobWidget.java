@@ -34,7 +34,7 @@ public final class JobWidget {
 	private static final int MUTED = 0xFFAAAAAA;
 
 	/** Zeilen-IDs in Anzeigereihenfolge; Sprachschlüssel: loothub.job.row.&lt;id&gt;. In den Einstellungen einzeln schaltbar. */
-	public static final List<String> ROW_IDS = List.of("job", "level", "progress", "time", "money", "money_rate", "xp", "xp_rate",
+	public static final List<String> ROW_IDS = List.of("job", "level", "progress", "eta", "time", "money", "money_rate", "xp", "xp_rate",
 			"money_total", "xp_total", "treasure", "inv_market", "inv_shards", "backpack");
 
 	/** Eine Zeile des Widgets. */
@@ -129,6 +129,8 @@ public final class JobWidget {
 			rows.add(new Row(tr("loothub.job.row.progress"),
 					Double.isNaN(s.progress()) ? "–" : Fmt.exact(s.progress()) + " %", progressColor(s.progress())));
 		}
+		// Prognose: so lange dauert es beim aktuellen Tempo bis zum nächsten Level
+		addRow(rows, c, "eta", s.etaMs() > 0 ? "~" + Fmt.duration(s.etaMs()) : "–");
 		addRow(rows, c, "time", Fmt.clock(s.trackingMs()));
 		addRow(rows, c, "money", Fmt.exact(s.sessionMoney()) + " $");
 		addRow(rows, c, "money_rate", orDash(s.moneyPerHour(), " $"));

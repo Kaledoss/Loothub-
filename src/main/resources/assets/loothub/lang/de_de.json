@@ -35,6 +35,7 @@
 	"loothub.job.row.job": "Job:",
 	"loothub.job.row.level": "Level:",
 	"loothub.job.row.progress": "Fortschritt:",
+	"loothub.job.row.eta": "Nächstes Level in:",
 	"loothub.job.row.time": "Tracking-Zeit:",
 	"loothub.job.row.money": "Geld:",
 	"loothub.job.row.money_rate": "Geld/h:",
