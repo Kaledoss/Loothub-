@@ -938,7 +938,7 @@ const LH_SHOP = [
 	["c_cherry", "steps", 3000], ["c_glow", "steps", 4000], ["c_totem", "steps", 8000], ["c_rainbow", "steps", 14000],
 	["k_flower", "crown", 4000], ["k_ice", "crown", 6000], ["k_nether", "crown", 9000], ["k_halo", "crown", 18000],
 	["e_rainbow", "eyes", 8000],
-	["p_phoenix", "pet", 20000], ["p_golddragon", "pet", 25000], ["p_starbear", "pet", 5000],
+	["p_phoenix", "pet", 20000], ["p_golddragon", "pet", 25000], ["p_starbear", "pet", 5000], ["p_crownbear", "pet", 7500],
 	// Geheimniskrämer: alle Geheimnisse gefunden
 	["a_secrets", "title", 0, { secrets: true }],
 	// Titelfarben (statt Gold)
@@ -1056,7 +1056,7 @@ function lhColExcluded(kind, id) {
 }
 // Cosmetics aus dem Shop: Eintrag in den Cosmetics → Wert → nötiger Shop-Artikel (Haustiere je Platz, durch Kommas getrennt)
 const LH_PETS_SHOP = { phoenix: "p_phoenix", golddragon: "p_golddragon", xmaspenguin: "p_xmaspenguin", chick: "p_chick", bat: "p_bat",
-	parrot: "p_parrot", starbear: "p_starbear" };
+	parrot: "p_parrot", starbear: "p_starbear", crownbear: "p_crownbear" };
 const LH_COSM_ITEMS = {
 	footsteps: { hearts: "c_hearts", notes: "c_notes", snow: "c_snow", magic: "c_magic", soul: "c_soul", stars: "c_stars",
 		cherry: "c_cherry", glow: "c_glow", totem: "c_totem", rainbow: "c_rainbow", candy: "c_candy",

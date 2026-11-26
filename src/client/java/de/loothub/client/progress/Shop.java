@@ -21,7 +21,7 @@ public final class Shop {
 			"k_halo", "halo", "k_holly", "holly", "k_easter", "easter", "k_shell", "shell", "k_pumpkin", "pumpkin");
 	/** Haustiere aus dem Shop. */
 	public static final Map<String, String> PETS = Map.of("p_phoenix", "phoenix", "p_golddragon", "golddragon", "p_xmaspenguin",
-			"xmaspenguin", "p_chick", "chick", "p_bat", "bat", "p_parrot", "parrot", "p_starbear", "starbear");
+			"xmaspenguin", "p_chick", "chick", "p_bat", "bat", "p_parrot", "parrot", "p_starbear", "starbear", "p_crownbear", "crownbear");
 	/** Augen-Effekte aus dem Shop. */
 	public static final Map<String, String> EYES = Map.of("e_rainbow", "rainbow");
 

@@ -448,6 +448,104 @@ final class PetModels {
 		}
 	}
 
+	/** Zustand für den Kronenbären: Tanzen (beim Spielen) und Sitzen (AFK). */
+	static final class CrownBearState extends LivingEntityRenderState {
+		float dance, sit;
+	}
+
+	/**
+	 * Kronenbär (eigener Entwurf, Würfel, 64×64-Pixeltextur): schwarzer Bär, der auf zwei Beinen läuft, mit goldener
+	 * Krone auf dem Kopf, einem Kronen-Symbol auf dem Bauch und einer kleinen Krone auf der linken Pobacke. Schwingt beim
+	 * Laufen die Arme, tanzt beim Spielen und setzt sich beim AFK hin.
+	 */
+	static final class CrownBear extends EntityModel<CrownBearState> {
+		private final ModelPart body, head, armL, armR, legL, legR;
+
+		CrownBear() {
+			this(create().bakeRoot());
+		}
+
+		private CrownBear(ModelPart root) {
+			super(root);
+			body = root.getChild("body");
+			head = body.getChild("head");
+			armL = body.getChild("arm_l");
+			armR = body.getChild("arm_r");
+			legL = root.getChild("leg_l");
+			legR = root.getChild("leg_r");
+		}
+
+		static LayerDefinition create() {
+			MeshDefinition mesh = new MeshDefinition();
+			PartDefinition r = mesh.getRoot();
+			// aufrechter Rumpf, Drehpunkt an der Hüfte
+			PartDefinition body = r.addOrReplaceChild("body", CubeListBuilder.create().texOffs(0, 0)
+					.addBox(-4F, -10F, -3F, 8F, 10F, 6F), PartPose.offset(0F, 19F, 0F));
+			PartDefinition head = body.addOrReplaceChild("head", CubeListBuilder.create().texOffs(0, 18)
+					.addBox(-3.5F, -6F, -3F, 7F, 6F, 6F), PartPose.offset(0F, -10F, -0.5F));
+			head.addOrReplaceChild("snout", CubeListBuilder.create().texOffs(28, 18).addBox(-1.5F, -2.5F, -5F, 3F, 2F, 2F),
+					PartPose.ZERO);
+			head.addOrReplaceChild("ear_l", CubeListBuilder.create().texOffs(40, 18).addBox(2F, -7F, -1F, 2F, 2F, 1F),
+					PartPose.ZERO);
+			head.addOrReplaceChild("ear_r", CubeListBuilder.create().texOffs(40, 22).addBox(-4F, -7F, -1F, 2F, 2F, 1F),
+					PartPose.ZERO);
+			head.addOrReplaceChild("crown", CubeListBuilder.create().texOffs(32, 34).addBox(-2F, -8F, -2F, 4F, 2F, 4F),
+					PartPose.ZERO);
+			body.addOrReplaceChild("tail", CubeListBuilder.create().texOffs(48, 18).addBox(-1F, -1F, 0F, 2F, 2F, 2F),
+					PartPose.offset(0F, -1.5F, 3F));
+			body.addOrReplaceChild("arm_l", CubeListBuilder.create().texOffs(16, 34).addBox(0F, -1F, -1F, 2F, 7F, 2F),
+					PartPose.offset(4F, -8.5F, 0F));
+			body.addOrReplaceChild("arm_r", CubeListBuilder.create().texOffs(24, 34).addBox(-2F, -1F, -1F, 2F, 7F, 2F),
+					PartPose.offset(-4F, -8.5F, 0F));
+			r.addOrReplaceChild("leg_l", CubeListBuilder.create().texOffs(0, 34).addBox(-1F, 0F, -1F, 2F, 5F, 2F),
+					PartPose.offset(2F, 19F, 0F));
+			r.addOrReplaceChild("leg_r", CubeListBuilder.create().texOffs(8, 34).addBox(-1F, 0F, -1F, 2F, 5F, 2F),
+					PartPose.offset(-2F, 19F, 0F));
+			return LayerDefinition.create(mesh, 64, 64);
+		}
+
+		@Override
+		public void setupAnim(CrownBearState s) {
+			super.setupAnim(s);
+			float t = s.ageInTicks;
+			float walk = Math.min(1F, s.walkAnimationSpeed);
+			float ph = s.walkAnimationPos * 1.1F;
+			float dance = s.dance, sit = s.sit;
+			// Gehen auf zwei Beinen: Beine gegengleich, Arme schwingen mit, Körper wiegt leicht
+			legL.xRot = Mth.sin(ph) * 0.8F * walk;
+			legR.xRot = -Mth.sin(ph) * 0.8F * walk;
+			armL.xRot = -Mth.sin(ph) * 0.6F * walk;
+			armR.xRot = Mth.sin(ph) * 0.6F * walk;
+			armL.zRot = -0.12F;
+			armR.zRot = 0.12F;
+			body.zRot = Mth.sin(ph) * 0.06F * walk;
+			body.xRot = 0.05F * walk;
+			// ruhiges Atmen und Umschauen im Stand
+			float idle = 1F - walk;
+			body.y = 19F + Mth.sin(t * 0.08F) * 0.15F * idle;
+			head.yRot = Mth.sin(t * 0.025F) * 0.35F * idle;
+			head.xRot = Mth.sin(t * 0.05F) * 0.05F;
+			// Tanzen (Spielen): Arme hoch, Hüftschwung
+			if (dance > 0F) {
+				armL.xRot = -2.6F * dance + Mth.sin(t * 0.5F) * 0.3F;
+				armR.xRot = -2.6F * dance - Mth.sin(t * 0.5F) * 0.3F;
+				body.zRot += Mth.sin(t * 0.35F) * 0.2F * dance;
+				head.zRot = -Mth.sin(t * 0.35F) * 0.15F * dance;
+			} else {
+				head.zRot = 0F;
+			}
+			// Sitzen (AFK): Beine nach vorn, Körper tiefer
+			if (sit > 0F) {
+				legL.xRot = legR.xRot = -1.45F * sit;
+				legL.y = legR.y = 19F + 3F * sit;
+				body.y = 19F + 3.5F * sit;
+				armL.xRot = armR.xRot = -0.4F * sit;
+			} else {
+				legL.y = legR.y = 19F;
+			}
+		}
+	}
+
 	/**
 	 * Kleine Schildkröte im Minecraft-Stil (Würfel, 64×64-Pixeltextur): gewölbter grüner Panzer mit Muster, heller
 	 * Bauchpanzer, Kopf mit Augen, vier Flossen-Beine und kurzer Schwanz. Läuft gemütlich, zieht beim AFK den Kopf ein.
