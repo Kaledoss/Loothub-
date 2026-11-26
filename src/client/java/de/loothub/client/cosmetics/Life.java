@@ -29,6 +29,7 @@ public final class Life {
 		float prevVy;
 		float squash, squashVel; // Feder: <0 gestaucht, >0 gestreckt
 		float lagYaw; // nachschwingender Kopf
+		float breathPhase; // Atemzüge mal schneller, mal langsamer
 		float armSwing, armSwingVel; // Arme schwingen bei Sprung/Landung nach
 		float gazeYaw, gazePitch, gazeToYaw, gazeToPitch;
 		float nextGaze;
@@ -81,6 +82,29 @@ public final class Life {
 		return s;
 	}
 
+	/**
+	 * Glattes Rauschen (−1..1): wie ein Sinus, aber ohne Wiederholung – jede Welle anders hoch und lang. Zwei Lagen
+	 * übereinander, damit es organisch wirkt. {@code seed} trennt die Bewegungen voneinander.
+	 */
+	public static float noise(float x, int seed) {
+		return value(x, seed) * 0.7F + value(x * 2.13F + 17.7F, seed * 31 + 7) * 0.3F;
+	}
+
+	private static float value(float x, int seed) {
+		int i = Mth.floor(x);
+		float f = x - i;
+		float u = f * f * (3F - 2F * f);
+		return Mth.lerp(u, hash(i, seed), hash(i + 1, seed));
+	}
+
+	private static float hash(int i, int seed) {
+		int h = i * 0x27D4EB2D ^ seed * 0x165667B1;
+		h ^= h >>> 15;
+		h *= 0x85EBCA77;
+		h ^= h >>> 13;
+		return (h & 0xFFFF) / 32767.5F - 1F;
+	}
+
 	private static float rnd(S s) {
 		s.seed ^= s.seed << 13;
 		s.seed ^= s.seed >>> 7;
@@ -114,7 +138,9 @@ public final class Life {
 		}
 		float phase = slot * 1.37F;
 		// Atmen: jedes Mini-Me in seinem eigenen Takt
-		float breath = (float) Math.sin(t * (0.10F + slot * 0.007F) + phase);
+		int ns = (int) (s.seed >>> 33) ^ slot * 977; // eigenes Rauschen je Mini-Me
+		s.breathPhase += dt * 20F * (0.10F + slot * 0.007F) * (1F + 0.35F * noise(t * 0.01F, ns));
+		float breath = (float) Math.sin(s.breathPhase + phase);
 		p.breath = breath * L;
 
 		// Landen und Springen: Feder für Stauchen/Strecken, Arme schwingen nach
@@ -151,8 +177,8 @@ public final class Life {
 		s.prevFwd = fwd;
 		p.armFwd = s.armFwd * L;
 		// kleine, nie ganz gleiche Eigenbewegungen der Arme (links und rechts in anderem Takt)
-		p.armIdleL = (float) (Math.sin(t * 0.071F + phase) * 0.045F + Math.sin(t * 0.023F + phase * 2) * 0.03F) * L;
-		p.armIdleR = (float) (Math.sin(t * 0.063F + phase + 1.3F) * 0.045F + Math.sin(t * 0.019F + phase) * 0.03F) * L;
+		p.armIdleL = noise(t * 0.03F, ns + 3) * 0.07F * L;
+		p.armIdleR = noise(t * 0.027F, ns + 4) * 0.07F * L;
 
 		// Kopf schwingt bei Drehungen nach
 		float lag = Motion.yawLag(player);
@@ -166,8 +192,9 @@ public final class Life {
 			}
 			s.kick = Math.max(0, s.kick - dt * 1.2F);
 			float k = s.kick > 0 ? (float) Math.sin(t * 0.9F) * 0.45F * s.kick : 0;
-			p.legR = ((float) Math.sin(t * 0.13F + phase) * 0.22F + k) * L;
-			p.legL = ((float) Math.sin(t * 0.13F + phase + 2.1F) * 0.22F - k) * L;
+			// baumeln ohne festen Takt: mal ruhig, mal stärker, die Beine nicht im Gleichschritt
+			p.legR = (noise(t * 0.045F, ns + 1) * 0.3F + k) * L;
+			p.legL = (noise(t * 0.041F, ns + 2) * 0.3F - k) * L;
 		} else {
 			p.legL = p.legR = 0;
 		}
@@ -179,7 +206,7 @@ public final class Life {
 			float spd = Mth.clamp(Math.max(0, Motion.forward(player)) * 2.5F + fly * 0.4F, 0, 1);
 			p.armDrag = spd * L;
 			p.armSpread = (0.15F + 0.2F * spd) * L;
-			dy -= (float) Math.sin(t * 0.25F + slot * 1.3F) * 0.03F * L;
+			dy -= (float) Math.sin(t * 0.25F + slot * 1.3F) * 0.03F * L * (0.7F + 0.3F * noise(t * 0.02F, ns + 6));
 			rz = Mth.clamp(lag * 0.25F, -15F, 15F) * L; // in die Kurve legen
 		} else {
 			p.armDrag = 0;
@@ -187,8 +214,7 @@ public final class Life {
 		}
 
 		// Gewicht verlagern: langsames, unregelmäßiges Wiegen; der Kopf gleicht leicht dagegen aus
-		float sway = (float) (Math.sin(t * 0.031F + phase) * 1.4F + Math.sin(t * 0.0117F + phase * 3F) * 0.9F)
-				* (kind == 0 ? 0.8F : 1.3F) * L;
+		float sway = noise(t * 0.012F, ns + 5) * 2.2F * (kind == 0 ? 0.8F : 1.3F) * L;
 		rz += sway;
 		p.headTilt = (float) Math.toRadians(-sway * 0.7F);
 
@@ -250,8 +276,10 @@ public final class Life {
 			s.gazeYaw += s.gazeVY * dt;
 			s.gazePitch += s.gazeVP * dt;
 		}
-		float lookYaw = baseYaw + (s.gazeYaw + s.lagYaw - baseYaw) * L;
-		float lookPitch = basePitch + (s.gazePitch - basePitch) * L + (player.isCrouching ? 15F * L : 0) + s.flinch * 20F * L;
+		// kleines, ruhiges Abdriften des Blicks – nie ganz starr, nie im Takt
+		float drift = noise(t * 0.02F, ns + 7) * 4F;
+		float lookYaw = baseYaw + (s.gazeYaw + s.lagYaw + drift - baseYaw) * L;
+		float lookPitch = basePitch + (s.gazePitch + noise(t * 0.017F, ns + 8) * 2.5F - basePitch) * L + (player.isCrouching ? 15F * L : 0) + s.flinch * 20F * L;
 
 		// unter Wasser: kleine Luftblasen
 		if ((Motion.env(player) & Motion.ENV_WATER) != 0 && dt > 0 && rnd(s) < dt * 1.5F * L) {

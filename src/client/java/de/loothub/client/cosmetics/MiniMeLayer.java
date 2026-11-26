@@ -261,9 +261,9 @@ public final class MiniMeLayer extends RenderLayer<AvatarRenderState, PlayerMode
 			}
 			case Emotes.DANGLE -> {
 				// Beine baumeln abwechselnd
-				float swing = (float) Math.sin(p * 4.5F) * 0.35F;
-				m.rightLeg.xRot += swing;
-				m.leftLeg.xRot -= swing;
+				// ohne festen Takt: jedes Bein für sich, mal ruhiger, mal schwungvoller
+				m.rightLeg.xRot += Life.noise(p * 0.07F, 91) * 0.45F;
+				m.leftLeg.xRot += Life.noise(p * 0.064F, 92) * 0.45F;
 			}
 			default -> {
 			}
@@ -398,7 +398,7 @@ public final class MiniMeLayer extends RenderLayer<AvatarRenderState, PlayerMode
 				// sitzend auf der Schulter (Reit-Haltung: Beine nach vorn)
 				tx = side * 0.52F; // weit genug außen, damit der große Chibi-Kopf nicht im Kopf des Spielers steckt
 				// Hüfte auf der Schulter: Halspunkt liegt eine Rumpflänge (12 px × SCALE) darüber
-				ty = (state.isCrouching ? 0.075F : -0.105F) - 0.75F * SCALE + (float) Math.sin(t * 0.08F + i) * 0.01F;
+				ty = (state.isCrouching ? 0.075F : -0.105F) - 0.75F * SCALE + Life.noise(t * 0.03F, i * 13 + 1) * 0.01F;
 				tz = 0.0F;
 				rx = -fwd * 20.0F; // beim Loslaufen leicht nach hinten
 				rz = Mth.clamp(lag * 0.3F, -12.0F, 12.0F); // wackelt beim Drehen mit
@@ -408,12 +408,12 @@ public final class MiniMeLayer extends RenderLayer<AvatarRenderState, PlayerMode
 				// fliegend: schräg hinter dem Spieler, weich schwebend und leicht nach vorn geneigt
 				// weiter außen und höher als die Schulter-Mini-Mes, damit sie nicht dahinter verschwinden
 				// deutlich weiter weg, damit ihre Flügel nicht durch den Spieler (oder seine Flügel) gehen
-				tx = side * (1.7F + (float) Math.sin(t * 0.045F + i) * 0.1F);
-				ty = -0.85F + (float) Math.sin(t * 0.07F + i * 1.3F) * 0.12F;
+				tx = side * (1.7F + Life.noise(t * 0.015F, i * 13 + 2) * 0.12F);
+				ty = -0.85F + Life.noise(t * 0.022F, i * 13 + 3) * 0.13F;
 				tz = 1.15F;
 				rx = 15.0F + Math.max(0.0F, fwd) * 60.0F;
 				rx = rx + (75.0F - rx) * fly; // fliegt der Spieler, liegen sie auch waagerecht in der Luft
-				rz = side * (float) Math.sin(t * 0.05F + i) * 5.0F + Mth.clamp(lag * 0.4F, -20.0F, 20.0F);
+				rz = side * Life.noise(t * 0.016F, i * 13 + 4) * 6.0F + Mth.clamp(lag * 0.4F, -20.0F, 20.0F);
 			} else {
 				// krabbelnd auf allen vieren: Rumpf waagerecht in Beinlänge über dem Boden, Kopf nach vorn
 				tx = side * 1.0F; // etwas Abstand zum Spieler
@@ -423,7 +423,7 @@ public final class MiniMeLayer extends RenderLayer<AvatarRenderState, PlayerMode
 				if (fly > 0.0F) {
 					// fliegt der Spieler, fliegen auch die Krabbler mit – unter den anderen, etwas weiter hinten
 					tx += (side * 0.75F - tx) * fly;
-					ty += (0.25F + (float) Math.sin(t * 0.08F + i) * 0.06F - ty) * fly;
+					ty += (0.25F + Life.noise(t * 0.025F, i * 13 + 5) * 0.07F - ty) * fly;
 					tz += (1.1F - tz) * fly;
 					rx += (75.0F - rx) * fly;
 				}
