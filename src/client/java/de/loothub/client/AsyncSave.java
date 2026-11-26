@@ -26,8 +26,21 @@ public final class AsyncSave {
 		return t;
 	});
 	private static final Map<Path, String> PENDING = new LinkedHashMap<>();
+	/** Dateien, die gepackt (GZIP) geschrieben werden. */
+	private static final java.util.Set<Path> GZIP = java.util.concurrent.ConcurrentHashMap.newKeySet();
+	/** Nach dem ersten erfolgreichen Schreiben zu löschende Altdatei (z. B. ungepackte Vorgängerversion). */
+	private static final Map<Path, Path> REPLACES = new java.util.concurrent.ConcurrentHashMap<>();
 
 	private AsyncSave() {
+	}
+
+	/** Wie {@link #write}, aber GZIP-gepackt; {@code oldFile} (falls nicht null) wird danach gelöscht. */
+	public static void writeGzip(Path path, String content, Path oldFile) {
+		GZIP.add(path);
+		if (oldFile != null) {
+			REPLACES.put(path, oldFile);
+		}
+		write(path, content);
 	}
 
 	public static void write(Path path, String content) {
@@ -66,8 +79,19 @@ public final class AsyncSave {
 		try {
 			Files.createDirectories(path.getParent());
 			Path tmp = path.resolveSibling(path.getFileName() + ".tmp");
-			Files.writeString(tmp, content, StandardCharsets.UTF_8);
+			if (GZIP.contains(path)) {
+				try (java.io.Writer w = new java.io.OutputStreamWriter(new java.util.zip.GZIPOutputStream(
+						new java.io.BufferedOutputStream(Files.newOutputStream(tmp)), 1 << 16), StandardCharsets.UTF_8)) {
+					w.write(content);
+				}
+			} else {
+				Files.writeString(tmp, content, StandardCharsets.UTF_8);
+			}
 			Files.move(tmp, path, StandardCopyOption.REPLACE_EXISTING);
+			Path old = REPLACES.remove(path);
+			if (old != null) {
+				Files.deleteIfExists(old);
+			}
 		} catch (IOException e) {
 			Loothub.LOGGER.warn("Konnte {} nicht speichern", path.getFileName(), e);
 		}

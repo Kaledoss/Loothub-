@@ -129,7 +129,7 @@ public final class Itemdex {
 		}
 	}
 
-	private static final Gson GSON = new GsonBuilder().setPrettyPrinting().create();
+	private static final Gson GSON = new GsonBuilder().create(); // kompakt – die Datei wird ohnehin gepackt
 	private static List<Entry> entries;
 	private static Map<String, Entry> byKey;
 	private static boolean dirty;
@@ -676,8 +676,25 @@ public final class Itemdex {
 
 	// ------------------------------------------------------------------ Speichern
 
-	private static Path file() {
+	/** Alte, ungepackte Datei (bis 1.1.2) – wird beim ersten Speichern durch die gepackte ersetzt. */
+	private static Path legacyFile() {
 		return FabricLoader.getInstance().getConfigDir().resolve("loothub-itemdex.json");
+	}
+
+	/** Gepackte Itemdex-Datei: ohne Einrückung und GZIP – nur noch ein Bruchteil der alten Größe. */
+	private static Path file() {
+		return FabricLoader.getInstance().getConfigDir().resolve("loothub-itemdex.json.gz");
+	}
+
+	/** Liest die gepackte Datei, sonst die alte ungepackte; null, wenn keine existiert. */
+	private static Reader openReader() throws IOException {
+		Path gz = file();
+		if (Files.exists(gz)) {
+			return new java.io.BufferedReader(new java.io.InputStreamReader(new java.util.zip.GZIPInputStream(
+					new java.io.BufferedInputStream(Files.newInputStream(gz)), 1 << 16), StandardCharsets.UTF_8));
+		}
+		Path old = legacyFile();
+		return Files.exists(old) ? Files.newBufferedReader(old, StandardCharsets.UTF_8) : null;
 	}
 
 	/** Vorab im Hintergrund gelesene Datei (ohne Sperre, damit das Spiel weiterläuft). */
@@ -691,9 +708,8 @@ public final class Itemdex {
 		prefetchStarted = true;
 		Thread t = new Thread(() -> {
 			try {
-				Path p = file();
-				if (Files.exists(p)) {
-					try (Reader r = Files.newBufferedReader(p, StandardCharsets.UTF_8)) {
+				try (Reader r = openReader()) {
+					if (r != null) {
 						prefetched = JsonParser.parseReader(r);
 					}
 				}
@@ -715,12 +731,11 @@ public final class Itemdex {
 		prefetched = null;
 		entries = new ArrayList<>();
 		byKey = new HashMap<>();
-		Path p = file();
-		if (pre == null && !Files.exists(p)) {
+		if (pre == null && !Files.exists(file()) && !Files.exists(legacyFile())) {
 			return;
 		}
-		try (Reader r = pre != null ? Reader.nullReader() : Files.newBufferedReader(p, StandardCharsets.UTF_8)) {
-			JsonElement root = pre != null ? pre : JsonParser.parseReader(r);
+		try (Reader r = pre != null ? Reader.nullReader() : openReader()) {
+			JsonElement root = pre != null ? pre : r == null ? null : JsonParser.parseReader(r);
 			if (root == null || !root.isJsonArray()) {
 				return;
 			}
@@ -783,7 +798,7 @@ public final class Itemdex {
 			}
 			arr.add(o);
 		}
-		de.loothub.client.AsyncSave.write(file(), GSON.toJson(arr));
+		de.loothub.client.AsyncSave.writeGzip(file(), GSON.toJson(arr), legacyFile());
 		dirty = false;
 		lastSave = System.currentTimeMillis();
 	}
