@@ -66,7 +66,7 @@ public final class Feedback {
 	private static byte[] shrink(NativeImage img, int maxW) throws IOException {
 		int w = img.getWidth(), h = img.getHeight();
 		if (w <= maxW) {
-			return img.asByteArray();
+			return png(img);
 		}
 		int nw = maxW, nh = Math.max(1, h * maxW / w);
 		try (NativeImage small = new NativeImage(nw, nh, false)) {
@@ -75,11 +75,22 @@ public final class Feedback {
 					small.setPixel(x, y, img.getPixel(x * w / nw, y * h / nh));
 				}
 			}
-			byte[] png = small.asByteArray();
+			byte[] png = png(small);
 			if (png.length > 560_000 && maxW > 480) {
 				return shrink(img, maxW * 3 / 4); // noch zu groß: kleiner machen
 			}
 			return png;
+		}
+	}
+
+	/** Bild als PNG-Bytes (über eine kurze Temp-Datei). */
+	private static byte[] png(NativeImage img) throws IOException {
+		Path tmp = Files.createTempFile("loothub-feedback", ".png");
+		try {
+			img.writeToFile(tmp);
+			return Files.readAllBytes(tmp);
+		} finally {
+			Files.deleteIfExists(tmp);
 		}
 	}
 
