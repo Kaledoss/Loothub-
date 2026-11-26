@@ -718,7 +718,7 @@ public class ProgressScreen extends LoothubScreen {
 		y = section(g, Component.translatable("loothub.lh.mg.hall"), Component.translatable("loothub.lh.mg.hall.sub"), y);
 		// Spiel, Symbol, Symbolgröße (Ludo-Grafiken)
 		String[][] games = {{"snake", "choco", "64"}, {"tower", "mg_penguin", "64"}, {"sheep", "mg_sheep", "64"}, {"elf", "mg_elf", "64"},
-				{"memory", "mg_icon_memory", "32"}, {"craft", "mg_icon_craft", "32"}, {"word", "mg_icon_word", "32"}};
+				{"memory", "mg_icon_memory", "32"}, {"craft", "mg_icon_craft", "32"}, {"word", "mg_icon_word", "32"}, {"dulli", "mg_dulli", "96"}};
 		for (String[] gm : games) {
 			String id = gm[0];
 			int ts = Integer.parseInt(gm[2]);
@@ -743,6 +743,7 @@ public class ProgressScreen extends LoothubScreen {
 				case "memory" -> new MemoryScreen(this);
 				case "craft" -> new CraftScreen(this);
 				case "word" -> new WordScreen(this);
+				case "dulli" -> new DulliScreen(this);
 				default -> new SnakeScreen(this);
 			}));
 			gameButton(g, px - 24, y + 2, 20, Component.empty(), () -> minecraft.setScreen(new MgBoardScreen(this, id)));

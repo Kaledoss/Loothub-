@@ -698,6 +698,7 @@ const LH_MG = {
 	memory: { minMs: 400, min: 18, max: 1000, asc: true }, // Züge: weniger ist besser
 	craft: { minMs: 2500, max: 300 },
 	word: { minMs: 900, min: 15, max: 3600, asc: true }, // Sekunden: weniger ist besser
+	dulli: { minMs: 20, max: 4000 }, // Dulli-Jagd: 90 Sekunden, Punkte
 };
 // Fischpreise: Google-Tabelle (veröffentlicht als CSV), Spalten Fisch | Größe | Seltenheit | Preis.
 // Wird alle ~9 Minuten neu geholt; eine leere Zelle bei Größe oder Seltenheit gilt für alle.
