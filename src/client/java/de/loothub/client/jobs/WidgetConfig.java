@@ -65,6 +65,8 @@ public final class WidgetConfig {
 	public boolean dropProtection = true;
 	/** Warnung, wenn ein Item neben einem liegt, aber wegen vollem Inventar nicht aufgesammelt wird. */
 	public boolean pickupWarning = true;
+	/** Sättigung unter den Hungerkeulen und Vorschau beim Essen in der Hand (wie AppleSkin). */
+	public boolean foodHud = true;
 	/** Offhand-Filter: gewählte Items in der zweiten Hand nicht per Rechtsklick benutzen. */
 	public boolean offhandFilter = true;
 	/** true = alles sperren außer den gelisteten Items. */
@@ -390,6 +392,7 @@ public final class WidgetConfig {
 		durabilityNumbers = false;
 		dropProtection = false;
 		pickupWarning = false;
+		foodHud = false;
 		offhandFilter = false;
 		timersEnabled = false;
 		glowingOres = false;

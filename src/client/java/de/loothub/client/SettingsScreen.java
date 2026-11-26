@@ -586,6 +586,8 @@ public class SettingsScreen extends LoothubScreen {
 							() -> c.dropProtection, v -> c.dropProtection = v);
 					y = card(y, 40, "loothub.settings.pickup_warning", "loothub.settings.pickup_warning.tooltip",
 							() -> c.pickupWarning, v -> c.pickupWarning = v);
+					y = card(y, 40, "loothub.settings.food_hud", "loothub.settings.food_hud.tooltip",
+							() -> c.foodHud, v -> c.foodHud = v);
 				}
 				y = section(y, INV_SUBS[2]);
 				{
