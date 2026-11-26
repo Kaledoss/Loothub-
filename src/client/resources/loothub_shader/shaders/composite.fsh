@@ -83,11 +83,11 @@ void main() {
 		// Dunst fast farblos (sonst faerbt der Abendhimmel alles lila)
 		// Dunst in der (leicht entsaettigten) Himmelsfarbe statt als hellgrauer Schleier
 		vec3 haze = mix(fogColor, vec3(luma(fogColor)), 0.3);
-#if SUN_GLOW > 0
+	if (SUN_GLOW > 0.0) {
 		// in Richtung der Sonne leuchtet der Dunst warm auf (Streulicht), abgewandt bleibt er kuehl
 		float toward = max(dot(normalize(view.xyz), normalize(shadowLightPosition)), 0.0);
 		haze = mix(haze, lightCol * max(luma(fogColor) * 1.6, 0.25), pow(toward, 6.0) * SUN_GLOW * lightAmt);
-#endif
+	}
 		color = mix(color, haze, clamp(amount, 0.0, 0.85));
 	}
 

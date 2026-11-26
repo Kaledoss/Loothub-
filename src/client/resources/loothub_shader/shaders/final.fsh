@@ -53,12 +53,12 @@ void main() {
 	lin = filmic(lin * 0.6) / filmic(vec3(0.96)).x;
 	color = pow(clamp(lin, 0.0, 1.0), vec3(1.0 / 2.2));
 
-#if SPLIT_TONE > 0
+	if (SPLIT_TONE > 0.0) {
 	// Lichter leicht golden, Schatten leicht blau – der warme Abend-Look, ohne die Mitten zu verfaerben
 	float lt = luma(color);
 	color += (vec3(0.06, 0.025, -0.04) * smoothstep(0.45, 1.0, lt) + vec3(-0.025, -0.005, 0.035) * (1.0 - smoothstep(0.0, 0.40, lt)))
 			* SPLIT_TONE;
-#endif
+	}
 
 	// luftig: Schatten etwas anheben und leicht kuehl-weiss toenen (heller, klarer Look)
 	vec3 airTint = vec3(0.97, 0.98, 1.0);
