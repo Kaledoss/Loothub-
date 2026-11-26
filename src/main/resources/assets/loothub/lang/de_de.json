@@ -344,7 +344,7 @@
 	"loothub.settings.container_value": "Kistenwert",
 	"loothub.settings.container_value.tooltip": "Zeigt neben geöffneten Kisten, Fässern und Shulkerkisten den Marktwert des Inhalts (und OPShards beim Wertstoffhändler).",
 	"loothub.settings.market_sales": "Marktverkäufe",
-	"loothub.settings.market_sales.tooltip": "Geld, das du am Marktplatz einsammelst (einzeln oder alles auf einmal), erscheint als „Markt“ im Job-Verlauf.",
+	"loothub.settings.market_sales.tooltip": "Geld, das du am Marktplatz einsammelst (einzeln oder alles auf einmal) oder über das /sell-Menü bekommst, erscheint als „Markt“ im Job-Verlauf.",
 	"loothub.settings.afk_view": "AFK-Ansicht",
 	"loothub.settings.afk_view.tooltip": "Nach 5 Minuten ohne Bewegung legt sich dein Charakter hin und die Kamera gleitet langsam heraus – auch bei offenem Chat. Laufen oder Springen lässt ihn aufstehen, die Kamera fährt zurück. Umschauen mit der Maus zählt nicht, mit einer Angel in der Hand bleibst du wach. Andere Spieler, die 5 Minuten nicht von der Stelle gehen, legen sich ebenfalls hin. Nur für dich sichtbar.",
 	"loothub.stats.cat.plants": "Pflanzen",

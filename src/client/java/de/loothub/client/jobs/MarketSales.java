@@ -16,7 +16,9 @@ import net.fabricmc.fabric.api.client.message.v1.ClientReceiveMessageEvents;
 public final class MarketSales {
 	public static final String JOB = "Markt";
 
-	private static final Pattern RECEIVED = Pattern.compile("(?i)du hast\\s+([\\d.,]+)\\s*\\$\\s+erhalten");
+	/** „Du hast 1.234 $ erhalten“, beim /sell-Menü auch „… für 1.234 $ verkauft“. */
+	private static final Pattern RECEIVED = Pattern.compile(
+			"(?i)(?:du hast\\s+([\\d.,]+)\\s*\\$\\s+erhalten|f(?:ü|ue)r\\s+([\\d.,]+)\\s*\\$\\s+verkauft)");
 	/** So lange nach dem Schließen des Marktplatz-Menüs zählen Meldungen noch dazu. */
 	private static final long MENU_GRACE_MS = 5_000;
 	/** Ohne neue Meldung so lange warten, dann den Eintrag speichern. */
@@ -32,7 +34,10 @@ public final class MarketSales {
 
 	public static void register() {
 		ClientTickEvents.END_CLIENT_TICK.register(mc -> {
-			if (mc.screen != null && mc.screen.getTitle().getString().toLowerCase(Locale.ROOT).contains("marktplatz")) {
+			String title = mc.screen == null ? "" : mc.screen.getTitle().getString().toLowerCase(Locale.ROOT);
+			// Marktplatz und das /sell-Menü (Verkaufen) – das Geld daraus landet beides im Markt-Verlauf
+			if (mc.screen != null && (title.contains("marktplatz") || title.contains("verkauf") || title.contains("sell"))
+					&& !title.contains("fanglager") && !title.contains("rucksack")) {
 				marketSeenAt = System.currentTimeMillis();
 			}
 			if (pending > 0 && System.currentTimeMillis() - pendingLast > FLUSH_AFTER_MS) {
@@ -57,7 +62,7 @@ public final class MarketSales {
 		if (!m.find()) {
 			return;
 		}
-		double amount = parse(m.group(1));
+		double amount = parse(m.group(1) != null ? m.group(1) : m.group(2));
 		if (Double.isNaN(amount) || amount <= 0) {
 			return;
 		}

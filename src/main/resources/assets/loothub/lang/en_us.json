@@ -344,7 +344,7 @@
 	"loothub.settings.container_value": "Container value",
 	"loothub.settings.container_value.tooltip": "Shows the market value of the contents next to opened chests, barrels and shulker boxes (and OPShards at the resource merchant).",
 	"loothub.settings.market_sales": "Market sales",
-	"loothub.settings.market_sales.tooltip": "Money you collect at the marketplace (one by one or all at once) appears as “Market” in the job history.",
+	"loothub.settings.market_sales.tooltip": "Money you collect at the marketplace (one by one or all at once) or get from the /sell menu appears as “Market” in the job history.",
 	"loothub.settings.afk_view": "AFK view",
 	"loothub.settings.afk_view.tooltip": "After 5 minutes without moving, your character lies down and the camera slowly glides out – also with chat open. Walking or jumping makes it stand up again. Looking around with the mouse does not count, holding a fishing rod keeps you awake. Other players who don't move for 5 minutes lie down too. Only visible to you.",
 	"loothub.stats.cat.plants": "Plants",
