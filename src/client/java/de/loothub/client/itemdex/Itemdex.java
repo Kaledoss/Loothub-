@@ -291,6 +291,35 @@ public final class Itemdex {
 	}
 
 	/** Kopie ohne Verkäufer, Gebote, Restzeit und Klick-Hinweise; doppelte Leerzeilen werden zusammengefasst. */
+	/** Wie viele Angaben ein Item mitbringt (Beschreibungszeilen, Verzauberungen, Attribute, gespeicherte Verzauberungen). */
+	private static int richness(ItemStack s) {
+		if (s == null || s.isEmpty()) {
+			return 0;
+		}
+		int n = 0;
+		ItemLore lore = s.get(DataComponents.LORE);
+		if (lore != null) {
+			for (Component line : lore.lines()) {
+				if (!line.getString().isBlank()) {
+					n++;
+				}
+			}
+		}
+		var ench = s.get(DataComponents.ENCHANTMENTS);
+		if (ench != null) {
+			n += ench.size() * 2;
+		}
+		var stored = s.get(DataComponents.STORED_ENCHANTMENTS);
+		if (stored != null) {
+			n += stored.size() * 2;
+		}
+		var attrs = s.get(DataComponents.ATTRIBUTE_MODIFIERS);
+		if (attrs != null) {
+			n += attrs.modifiers().size() * 2;
+		}
+		return n;
+	}
+
 	static ItemStack clean(ItemStack s) {
 		ItemLore lore = s.get(DataComponents.LORE);
 		if (lore == null) {
@@ -607,7 +636,9 @@ public final class Itemdex {
 				e = old;
 			}
 		}
-		if (e != null && e.source != null && e.source.priority >= source.priority) {
+		// Bessere Quelle gewinnt – aber eine Version mit mehr Angaben (Werte, Verzauberungen, Beschreibung) ersetzt
+		// immer eine ärmere: Chat-Vorschauen kommen vom Server oft ohne die Werte des Items
+		if (e != null && e.source != null && e.source.priority >= source.priority && richness(s) <= richness(e.stack())) {
 			return;
 		}
 		HolderLookup.Provider regs = registries();
