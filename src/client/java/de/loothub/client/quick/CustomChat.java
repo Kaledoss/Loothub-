@@ -406,6 +406,27 @@ public final class CustomChat {
 	private static synchronized List<Line> lines(Window w, Tab tab, int width) {
 		Cache c = CACHE.computeIfAbsent(tab, k -> new Cache());
 		boolean dbg = DEBUG.contains(w);
+		int added = version - c.version;
+		if (c.version >= 0 && !dbg && c.width == width && c.debug == dbg && added > 0 && added <= MESSAGES.size()) {
+			// Nur neue Nachrichten dazu (jede Versions-Erhöhung ist eine neue Nachricht): nicht den ganzen Verlauf neu
+			// umbrechen – spart bei vollem Chat und mehreren Tabs viel Zeit
+			Font font = Minecraft.getInstance().font;
+			long oldest = MESSAGES.isEmpty() ? 0 : MESSAGES.get(0).time();
+			List<Line> out = c.lines;
+			while (!out.isEmpty() && out.get(0).msg().time() < oldest) {
+				out.remove(0); // aus dem Verlauf gefallen
+			}
+			for (int i = MESSAGES.size() - added; i < MESSAGES.size(); i++) {
+				Msg m = MESSAGES.get(i);
+				if (shows(w, tab, m)) {
+					for (FormattedCharSequence seq : font.split(m.text(), Math.max(20, width))) {
+						out.add(new Line(seq, m.time(), m));
+					}
+				}
+			}
+			c.version = version;
+			return out;
+		}
 		if (c.version != version || c.width != width || c.debug != dbg) {
 			c.debug = dbg;
 			Font font = Minecraft.getInstance().font;

@@ -944,15 +944,99 @@ public class SettingsScreen extends LoothubScreen {
 		return !query.isBlank();
 	}
 
+	private static final java.util.Map<String, String> HAY = new java.util.HashMap<>();
+	private static String hayLang = "";
+
+	/**
+	 * Suche: Titel, Beschreibung, Reiter und Gruppe; ohne Rücksicht auf Umlaute/Groß-/Kleinschreibung („ae“ = „ä“),
+	 * mit Wortanfängen, einem Tippfehler bei längeren Wörtern und Begriffen in der anderen Sprache („backpack“ findet
+	 * den Rucksack). Alle Wörter der Suche müssen passen.
+	 */
 	private static boolean matches(String titleKey, String descKey, Tab t) {
-		String hay = (Component.translatable(titleKey).getString() + " " + Component.translatable(descKey).getString()
-				+ " " + Component.translatable(t.key).getString()).toLowerCase(java.util.Locale.ROOT);
-		for (String word : query.strip().toLowerCase(java.util.Locale.ROOT).split("\\s+")) {
-			if (!hay.contains(word)) {
+		String lang = net.minecraft.client.Minecraft.getInstance().options.languageCode;
+		if (!lang.equals(hayLang)) {
+			HAY.clear();
+			hayLang = lang;
+		}
+		String hay = HAY.computeIfAbsent(titleKey + "|" + descKey + "|" + t, k -> {
+			String sec = SECTION_OF.get(titleKey);
+			return " " + fold(Component.translatable(titleKey).getString() + " " + Component.translatable(descKey).getString()
+					+ " " + Component.translatable(t.key).getString() + " " + (sec == null ? "" : Component.translatable(sec).getString())) + " ";
+		});
+		for (String word : fold(query).split(" ")) {
+			if (!word.isEmpty() && !wordMatches(hay, word)) {
 				return false;
 			}
 		}
 		return true;
+	}
+
+	/** Klein, Umlaute als Grundbuchstabe + e, Satzzeichen weg. */
+	static String fold(String s) {
+		String t = net.minecraft.ChatFormatting.stripFormatting(s).toLowerCase(java.util.Locale.ROOT)
+				.replace("ä", "ae").replace("ö", "oe").replace("ü", "ue").replace("ß", "ss");
+		return t.replaceAll("[^\\p{L}\\p{N}]+", " ").strip();
+	}
+
+	/** Begriffe, die dasselbe meinen (Deutsch/Englisch/Umgangssprache). */
+	private static final String[][] SYNONYMS = {
+			{"rucksack", "backpack", "anglerrucksack"}, {"angeln", "angel", "fishing", "fish", "fisch", "fang"},
+			{"ausblenden", "verstecken", "hide", "unsichtbar"}, {"ton", "sound", "klang", "lautstaerke", "volume"},
+			{"farbe", "color", "colour"}, {"inventar", "inventory", "inv"}, {"markt", "market", "marktplatz", "sell", "verkauf"},
+			{"auktion", "auktionshaus", "ah", "auction"}, {"haustier", "pet", "tier"}, {"minime", "mini", "mini me"},
+			{"chat", "nachricht", "message", "nachrichten"}, {"hud", "anzeige", "overlay", "einblendung"},
+			{"bau", "bauen", "build", "litematica", "schematic"}, {"job", "jobs", "beruf", "tracker"},
+			{"warnung", "warn", "warning", "alarm"}, {"schild", "sign"}, {"dorfbewohner", "villager", "handel", "trade"},
+			{"quest", "quests", "aufgabe"}, {"twitch", "stream", "streamer"}, {"umhang", "cape"}, {"fluegel", "wings"},
+			{"essen", "food", "hunger", "saettigung", "saturation"}, {"werkzeug", "tool", "schutz", "protection"}};
+
+	private static boolean wordMatches(String hay, String word) {
+		if (hay.contains(" " + word) || (word.length() >= 4 && hay.contains(word))) {
+			return true; // Wortanfang, bei längeren Suchwörtern auch mitten im Wort
+		}
+		for (String[] group : SYNONYMS) {
+			for (String g : group) {
+				if (g.startsWith(word) && word.length() >= 2 || word.equals(g)) {
+					for (String other : group) {
+						if (hay.contains(" " + other)) {
+							return true;
+						}
+					}
+				}
+			}
+		}
+		if (word.length() >= 5) {
+			// ein Tippfehler erlaubt
+			for (String w : hay.split(" ")) {
+				if (Math.abs(w.length() - word.length()) <= 1 && w.length() >= 4 && oneEdit(w, word)) {
+					return true;
+				}
+			}
+		}
+		return false;
+	}
+
+	private static boolean oneEdit(String a, String b) {
+		int i = 0, j = 0, edits = 0;
+		while (i < a.length() && j < b.length()) {
+			if (a.charAt(i) == b.charAt(j)) {
+				i++;
+				j++;
+				continue;
+			}
+			if (++edits > 1) {
+				return false;
+			}
+			if (a.length() > b.length()) {
+				i++;
+			} else if (a.length() < b.length()) {
+				j++;
+			} else {
+				i++;
+				j++;
+			}
+		}
+		return edits + (a.length() - i) + (b.length() - j) <= 1;
 	}
 
 	private int matchCount(Tab t) {
@@ -1163,6 +1247,7 @@ public class SettingsScreen extends LoothubScreen {
 
 	/** Überschrift über einer Gruppe von Karten. */
 	private int section(int y, String key) {
+		currentSection = key;
 		if (searching()) {
 			return y;
 		}
@@ -1170,7 +1255,14 @@ public class SettingsScreen extends LoothubScreen {
 		return y + HEADER_H + ROW_GAP;
 	}
 
+	/** Gruppe (Überschrift), in der eine Karte steht – damit die Suche auch Gruppennamen wie „Angeln“ findet. */
+	private static final java.util.Map<String, String> SECTION_OF = new java.util.HashMap<>();
+	private static String currentSection;
+
 	private int card(int y, int h, String titleKey, String descKey, BooleanSupplier get, Consumer<Boolean> set) {
+		if (currentSection != null) {
+			SECTION_OF.put(titleKey, currentSection);
+		}
 		if (h == 40) {
 			// einfacher Schalter ohne weitere Knöpfe: kompakte Zeile
 			Toggle t = new Toggle(cr - 8 - Toggle.W, y + (ROW_H - Toggle.H) / 2, get, set);

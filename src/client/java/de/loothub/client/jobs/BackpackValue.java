@@ -351,7 +351,20 @@ public final class BackpackValue {
 	public record Value(double money, double shards, int unknown, int fish, boolean seen) {
 	}
 
+	private static Value cachedValue;
+	private static long cachedAt;
+
+	/** Wert des Rucksacks – höchstens zweimal pro Sekunde neu berechnet (das HUD fragt jedes Bild). */
 	public static Value value() {
+		long now = System.currentTimeMillis();
+		if (cachedValue != null && now - cachedAt < 500) {
+			return cachedValue;
+		}
+		cachedAt = now;
+		return cachedValue = compute();
+	}
+
+	private static Value compute() {
 		Data d = data();
 		int prestige = Math.min(2, WidgetConfig.get().anglerPrestige); // OPSUCHT hat Prestige 1 und 2
 		double mult = 1 + Math.max(0, prestige) * BONUS_PER_PRESTIGE;
