@@ -217,6 +217,10 @@ public class SettingsScreen extends LoothubScreen {
 				int bw = 100;
 				buttons.add(addRenderableWidget(Button.builder(Component.translatable("loothub.settings.update_now"), b -> Updater.checkAgain())
 						.bounds(cr - 8 - bw, versionY + 24, bw, 16).build()));
+				int ww = 150;
+				buttons.add(addRenderableWidget(Button.builder(Component.translatable("loothub.welcome.open"),
+						b -> minecraft.setScreen(new de.loothub.client.WelcomeScreen(this)))
+						.bounds(cr - 8 - bw - 4 - ww, versionY + 24, ww, 16).build()));
 				y = versionY + 50;
 				y = section(y, "loothub.settings.section.general");
 				// Sprache von Loothub (Dropdown)

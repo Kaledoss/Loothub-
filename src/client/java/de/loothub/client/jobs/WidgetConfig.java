@@ -69,6 +69,8 @@ public final class WidgetConfig {
 	public boolean foodHud = true;
 	/** Knopf „Max handeln“ im Dorfbewohner-Fenster. */
 	public boolean villagerTrade = true;
+	/** Willkommens-Assistent schon gezeigt? (bestehende Spieler: ja – nur Neuinstallationen bekommen ihn) */
+	public boolean welcomeDone = true;
 	/** Offhand-Filter: gewählte Items in der zweiten Hand nicht per Rechtsklick benutzen. */
 	public boolean offhandFilter = true;
 	/** true = alles sperren außer den gelisteten Items. */
@@ -396,6 +398,7 @@ public final class WidgetConfig {
 		pickupWarning = false;
 		foodHud = false;
 		villagerTrade = false;
+		welcomeDone = false;
 		offhandFilter = false;
 		timersEnabled = false;
 		glowingOres = false;

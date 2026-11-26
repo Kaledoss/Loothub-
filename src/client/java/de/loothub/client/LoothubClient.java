@@ -230,6 +230,7 @@ public class LoothubClient implements ClientModInitializer {
 		de.loothub.client.quick.ToolProtection.register();
 		de.loothub.client.quick.PickupWarning.register();
 		de.loothub.client.feedback.Feedback.register();
+		de.loothub.client.WelcomeScreen.register();
 		HudElementRegistry.attachElementBefore(VanillaHudElements.CHAT,
 				Identifier.fromNamespaceAndPath(Loothub.MOD_ID, "pickup_warning"), de.loothub.client.util.Guard.hud("pickup_warning", de.loothub.client.quick.PickupWarning::render));
 		de.loothub.client.quick.FoodHud.register();
