@@ -46,6 +46,26 @@ dependencies {
 	// optional: Bau-Reiter (Baukosten, Fortschritt, gemeinsam bauen) nur, wenn Litematica installiert ist
 	modCompileOnly "maven.modrinth:litematica:${project.litematica_version}"
 	modCompileOnly "maven.modrinth:malilib:${project.malilib_version}"
+
+	// Automatische Tests (laufen bei jedem Build; ein Fehler stoppt den Build)
+	testImplementation "org.junit.jupiter:junit-jupiter:5.11.4"
+	testRuntimeOnly "org.junit.platform:junit-platform-launcher"
+}
+
+// Tests prüfen auch Code aus dem Client-Teil (reine Lese-/Such-Logik ohne Minecraft)
+sourceSets {
+	test {
+		compileClasspath += sourceSets.client.output
+		runtimeClasspath += sourceSets.client.output
+	}
+}
+
+test {
+	useJUnitPlatform()
+	testLogging {
+		events "failed"
+		exceptionFormat "full"
+	}
 }
 
 processResources {

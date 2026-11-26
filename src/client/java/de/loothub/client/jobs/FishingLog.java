@@ -203,19 +203,15 @@ public final class FishingLog {
 		String fish;
 		String size = "";
 		String rarity;
-		Matcher m = FULL.matcher(plain);
-		if (m.find()) {
-			fish = m.group(1).strip();
-			size = m.group(2).strip();
-			rarity = m.group(3).strip();
-		} else {
-			Matcher n = NO_SIZE.matcher(plain);
-			if (!n.find()) {
-				return;
-			}
-			fish = n.group(1).strip();
-			rarity = n.group(2).strip();
+		String[] got = de.loothub.client.util.Parse.fishCatch(plain);
+		if (got == null) {
+			return;
 		}
+		fish = got[0];
+		if (!got[1].isEmpty()) {
+			size = got[1];
+		}
+		rarity = got[2];
 		long now = System.currentTimeMillis();
 		if (plain.equals(lastLine) && now - lastText < 500) {
 			return; // doppelt zugestellt

@@ -16,9 +16,6 @@ import net.fabricmc.fabric.api.client.message.v1.ClientReceiveMessageEvents;
 public final class MarketSales {
 	public static final String JOB = "Markt";
 
-	/** „Du hast 1.234 $ erhalten“, beim /sell-Menü auch „… für 1.234 $ verkauft“. */
-	private static final Pattern RECEIVED = Pattern.compile(
-			"(?i)(?:du hast\\s+([\\d.,]+)\\s*\\$\\s+erhalten|f(?:ü|ue)r\\s+([\\d.,]+)\\s*\\$\\s+verkauft)");
 	/** So lange nach dem Schließen des Marktplatz-Menüs zählen Meldungen noch dazu. */
 	private static final long MENU_GRACE_MS = 5_000;
 	/** Ohne neue Meldung so lange warten, dann den Eintrag speichern. */
@@ -58,14 +55,11 @@ public final class MarketSales {
 			return; // nicht am Marktplatz – anderes Geld (Belohnung, Überweisung …)
 		}
 		String plain = text.replaceAll("§.", "").replaceAll("\\s+", " ");
-		Matcher m = RECEIVED.matcher(plain);
-		if (!m.find()) {
+		Double found = de.loothub.client.util.Parse.marketAmount(plain);
+		if (found == null) {
 			return;
 		}
-		double amount = parse(m.group(1) != null ? m.group(1) : m.group(2));
-		if (Double.isNaN(amount) || amount <= 0) {
-			return;
-		}
+		double amount = found;
 		synchronized (MarketSales.class) {
 			if (pending == 0) {
 				pendingStart = now;
@@ -93,16 +87,6 @@ public final class MarketSales {
 
 	/** „7.715,6“ → 7715.6 */
 	static double parse(String s) {
-		String t = s.strip();
-		if (t.contains(",")) {
-			t = t.replace(".", "").replace(',', '.');
-		} else if (t.matches("\\d{1,3}(\\.\\d{3})+")) {
-			t = t.replace(".", "");
-		}
-		try {
-			return Double.parseDouble(t);
-		} catch (NumberFormatException ex) {
-			return Double.NaN;
-		}
+		return de.loothub.client.util.Parse.money(s);
 	}
 }

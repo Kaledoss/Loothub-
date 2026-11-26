@@ -76,13 +76,7 @@ public final class BackpackValue {
 
 	/** „1.234,56“, „94.750“ (deutscher Tausenderpunkt) oder „1234.5“ als Zahl. */
 	private static double number(String s) {
-		String t = s.contains(",") ? s.replace(".", "").replace(',', '.')
-				: (s.indexOf('.') != s.lastIndexOf('.') || s.matches("\\d{1,3}\\.\\d{3}") ? s.replace(".", "") : s);
-		try {
-			return Double.parseDouble(t);
-		} catch (NumberFormatException e) {
-			return 0;
-		}
+		return de.loothub.client.util.Parse.money(s);
 	}
 
 	/** Verkaufserlös (in $ und OPShards) zwischen zwei Zeitpunkten. */
