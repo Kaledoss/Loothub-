@@ -142,6 +142,12 @@ public abstract class LoothubScreen extends Screen {
 		fx -= fw;
 		addRenderableWidget(Button.builder(fbl, x -> minecraft.setScreen(new de.loothub.client.feedback.FeedbackScreen(this)))
 				.bounds(fx, frameY + 2, fw, b.getHeight()).build());
+		// Datensicherung & Umzug (Export/Import)
+		Component bkl = Component.translatable("loothub.backup.button");
+		int bkw = font.width(bkl) + 12;
+		fx -= bkw + 4;
+		addRenderableWidget(Button.builder(bkl, x -> minecraft.setScreen(new BackupScreen(this)))
+				.bounds(fx, frameY + 2, bkw, b.getHeight()).build());
 		if (de.loothub.client.progress.Progress.workerOutdated()) {
 			// Admin-Hinweis: Server-Worker ist älter als diese Mod – neue Funktionen fehlen sonst still
 			Component wl = Component.translatable("loothub.worker.outdated").withStyle(net.minecraft.ChatFormatting.GOLD);

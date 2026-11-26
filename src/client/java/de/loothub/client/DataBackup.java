@@ -87,8 +87,171 @@ public final class DataBackup {
 		return out;
 	}
 
+	// ------------------------------------------------------------------ Export / Import (Umzug auf anderen PC)
+
+	public static Path exportDir() {
+		return Path.of(System.getProperty("user.home"), ".loothub", "export");
+	}
+
+	private static Path pendingFile() {
+		return Path.of(System.getProperty("user.home"), ".loothub", "einspielen.txt");
+	}
+
+	/** Eine Sicherungsquelle für die Auswahl: tägliche Sicherung (Ordner) oder exportierte Zip-Datei. */
+	public record Source(Path path, boolean zip, String label, long modified) {
+	}
+
+	/** Alle Daten als eine Zip-Datei in den Export-Ordner packen (ohne Zugangsdaten). Gibt die Datei zurück. */
+	public static Path exportZip() throws IOException {
+		de.loothub.client.AsyncSave.flushAll();
+		List<Path> files = dataFiles(configDir());
+		if (files.isEmpty()) {
+			throw new IOException("keine Daten");
+		}
+		Files.createDirectories(exportDir());
+		String stamp = java.time.LocalDateTime.now().format(java.time.format.DateTimeFormatter.ofPattern("yyyy-MM-dd_HH-mm"));
+		Path zip = exportDir().resolve("loothub-daten-" + stamp + ".zip");
+		Path tmp = zip.resolveSibling(zip.getFileName() + ".tmp");
+		try (java.util.zip.ZipOutputStream out = new java.util.zip.ZipOutputStream(Files.newOutputStream(tmp))) {
+			for (Path f : files) {
+				out.putNextEntry(new java.util.zip.ZipEntry(f.getFileName().toString()));
+				Files.copy(f, out);
+				out.closeEntry();
+			}
+		}
+		Files.move(tmp, zip, StandardCopyOption.REPLACE_EXISTING);
+		return zip;
+	}
+
+	/** Exportierte Zips (neueste zuerst), dann die täglichen Sicherungen (neueste zuerst). */
+	public static List<Source> sources() {
+		List<Source> out = new ArrayList<>();
+		if (Files.isDirectory(exportDir())) {
+			try (DirectoryStream<Path> s = Files.newDirectoryStream(exportDir(), "*.zip")) {
+				for (Path p : s) {
+					out.add(new Source(p, true, p.getFileName().toString(), Files.getLastModifiedTime(p).toMillis()));
+				}
+			} catch (IOException e) {
+				Loothub.LOGGER.debug("Export-Ordner nicht lesbar", e);
+			}
+		}
+		out.sort(Comparator.comparingLong(Source::modified).reversed());
+		List<Path> daily = backups();
+		for (int i = daily.size() - 1; i >= 0; i--) {
+			Path d = daily.get(i);
+			long m;
+			try {
+				m = Files.getLastModifiedTime(d).toMillis();
+			} catch (IOException e) {
+				m = 0;
+			}
+			out.add(new Source(d, false, d.getFileName().toString(), m));
+		}
+		return out;
+	}
+
+	/** Merkt die Quelle vor; eingespielt wird beim nächsten Spielstart, bevor irgendetwas gelesen wird. */
+	public static void scheduleRestore(Path source) throws IOException {
+		Files.createDirectories(pendingFile().getParent());
+		Files.writeString(pendingFile(), source.toAbsolutePath().toString(), StandardCharsets.UTF_8);
+	}
+
+	public static boolean restorePending() {
+		return Files.exists(pendingFile());
+	}
+
+	public static void cancelRestore() {
+		try {
+			Files.deleteIfExists(pendingFile());
+		} catch (IOException ignored) {
+			// egal
+		}
+	}
+
+	/** Vorgemerkte Sicherung einspielen: aktueller Stand wird vorher nach backups/vor-import gesichert. */
+	private static boolean restorePendingNow() {
+		Path pf = pendingFile();
+		if (!Files.exists(pf)) {
+			return false;
+		}
+		try {
+			Path src = Path.of(Files.readString(pf, StandardCharsets.UTF_8).trim());
+			Files.deleteIfExists(pf); // nur einmal versuchen – nie in einer Schleife hängen bleiben
+			if (!Files.exists(src)) {
+				Loothub.LOGGER.warn("Loothub: vorgemerkte Sicherung {} gibt es nicht mehr", src);
+				return false;
+			}
+			// Sicherheitskopie des aktuellen Stands
+			Path safety = backupRoot().resolve("vor-import");
+			if (Files.isDirectory(safety)) {
+				try (DirectoryStream<Path> s = Files.newDirectoryStream(safety)) {
+					for (Path p : s) {
+						Files.deleteIfExists(p);
+					}
+				}
+			}
+			Files.createDirectories(safety);
+			List<Path> current = dataFiles(configDir());
+			for (Path f : current) {
+				Files.copy(f, safety.resolve(f.getFileName()), StandardCopyOption.REPLACE_EXISTING);
+			}
+			int n = 0;
+			if (Files.isDirectory(src)) {
+				List<Path> files = dataFiles(src);
+				if (files.isEmpty()) {
+					return false;
+				}
+				for (Path f : current) {
+					Files.deleteIfExists(f);
+				}
+				for (Path f : files) {
+					Files.copy(f, configDir().resolve(f.getFileName()), StandardCopyOption.REPLACE_EXISTING);
+					n++;
+				}
+			} else {
+				// Zip: nur flache Loothub-Dateinamen annehmen (keine Pfade, keine Zugangsdaten)
+				List<String> names = new ArrayList<>();
+				try (java.util.zip.ZipInputStream in = new java.util.zip.ZipInputStream(Files.newInputStream(src))) {
+					for (java.util.zip.ZipEntry e; (e = in.getNextEntry()) != null; ) {
+						names.add(e.getName());
+					}
+				}
+				if (names.stream().noneMatch(DataBackup::safeName)) {
+					Loothub.LOGGER.warn("Loothub: {} enthält keine Loothub-Daten", src);
+					return false;
+				}
+				for (Path f : current) {
+					Files.deleteIfExists(f);
+				}
+				try (java.util.zip.ZipInputStream in = new java.util.zip.ZipInputStream(Files.newInputStream(src))) {
+					for (java.util.zip.ZipEntry e; (e = in.getNextEntry()) != null; ) {
+						if (!e.isDirectory() && safeName(e.getName())) {
+							Files.copy(in, configDir().resolve(e.getName()), StandardCopyOption.REPLACE_EXISTING);
+							n++;
+						}
+					}
+				}
+			}
+			restoredFrom = src.getFileName().toString();
+			Loothub.LOGGER.info("Loothub: Sicherung {} eingespielt ({} Dateien, vorheriger Stand in {})", restoredFrom, n, safety);
+			return true;
+		} catch (IOException | RuntimeException e) {
+			Loothub.LOGGER.warn("Loothub: vorgemerkte Sicherung konnte nicht eingespielt werden", e);
+			return false;
+		}
+	}
+
+	private static boolean safeName(String n) {
+		String l = n.toLowerCase(java.util.Locale.ROOT);
+		return n.matches("[A-Za-z0-9._-]+") && l.startsWith(Loothub.MOD_ID) && !l.contains("token") && !l.contains("account")
+				&& !l.endsWith(".tmp") && !l.endsWith(".csv");
+	}
+
 	/** Ganz am Anfang aufrufen (vor dem ersten Lesen der Einstellungen). */
 	public static void restoreIfEmpty() {
+		if (restorePendingNow()) {
+			return;
+		}
 		try {
 			if (!dataFiles(configDir()).isEmpty()) {
 				return; // Daten da – nichts zu tun
