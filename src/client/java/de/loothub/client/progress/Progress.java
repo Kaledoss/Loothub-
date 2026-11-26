@@ -98,9 +98,9 @@ public final class Progress {
 		return k.has(id) ? k.get(id).getAsLong() : 0;
 	}
 
-	// ------------------------------------------------------------------ angepinnte Quests (höchstens 2)
+	// ------------------------------------------------------------------ angepinnte Quests (höchstens 3)
 
-	public static final int MAX_PINS = 2;
+	public static final int MAX_PINS = 3;
 
 	/** Schlüssel einer Quest: „s|blocks|300“ (4 Stunden) bzw. „w|…“ (Woche). */
 	public static String pinKey(String kind, JsonObject q) {

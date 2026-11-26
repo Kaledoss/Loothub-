@@ -90,6 +90,26 @@ public class SignEditorScreen extends Screen {
 			addRenderableWidget(Button.builder(Component.literal(st[1]), b -> insert("&" + st[0]))
 					.bounds(x + i * 26, by + 36, 22, 14).build());
 		}
+		// Ganzes Schild kopieren / einfügen (alle vier Zeilen samt &-Codes, z. B. für gleiche Schilder)
+		int cx = x + STYLES.length * 26 + 4;
+		int cpw = (x + w - cx - 4) / 2;
+		addRenderableWidget(Button.builder(Component.translatable("loothub.sign.copy"), b -> {
+			StringBuilder all = new StringBuilder();
+			for (int i = 0; i < 4; i++) {
+				all.append(i > 0 ? "\n" : "").append(lines[i].getValue());
+			}
+			minecraft.keyboardHandler.setClipboard(all.toString());
+		}).bounds(cx, by + 36, cpw, 14).build());
+		addRenderableWidget(Button.builder(Component.translatable("loothub.sign.paste"), b -> {
+			String[] parts = minecraft.keyboardHandler.getClipboard().replace("\r", "").split("\n", -1);
+			for (int i = 0; i < 4; i++) {
+				String v = i < parts.length ? parts[i] : "";
+				while (!v.isEmpty() && font.width(rendered(v)) > maxWidth()) {
+					v = v.substring(0, v.length() - 1); // passt nicht aufs Schild: kürzen
+				}
+				lines[i].setValue(v);
+			}
+		}).bounds(cx + cpw + 4, by + 36, cpw, 14).build());
 		int half = (w - 6) / 2;
 		addRenderableWidget(Button.builder(Component.translatable("loothub.color.apply"), b -> finish(true))
 				.bounds(x, by + 58, half, 20).build());
@@ -172,7 +192,6 @@ public class SignEditorScreen extends Screen {
 			String code = "&" + CODES[i];
 			g.drawString(font, code, bx + (cw - font.width(code)) / 2, bby + 3, lum > 1200 ? 0xFF1A1A1A : 0xFFFFFFFF, false);
 		}
-		g.drawString(font, Component.translatable("loothub.rename.codes"), x + STYLES.length * 26 + 4, by + 39, LoothubScreen.FAINT, false);
 		// Rechts neben jeder Zeile: wie viel Platz noch ist
 		for (int i = 0; i < 4; i++) {
 			int used = font.width(rendered(lines[i].getValue()));

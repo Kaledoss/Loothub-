@@ -63,6 +63,8 @@ public final class WidgetConfig {
 	public boolean durabilityNumbers = true;
 	/** Wegwerf-Schutz: wertvolle Items erst beim zweiten Q (bzw. zweiten Wurf) fallen lassen. */
 	public boolean dropProtection = true;
+	/** Warnung, wenn ein Item neben einem liegt, aber wegen vollem Inventar nicht aufgesammelt wird. */
+	public boolean pickupWarning = true;
 	/** Offhand-Filter: gewählte Items in der zweiten Hand nicht per Rechtsklick benutzen. */
 	public boolean offhandFilter = true;
 	/** true = alles sperren außer den gelisteten Items. */
@@ -387,6 +389,7 @@ public final class WidgetConfig {
 		customChat = false;
 		durabilityNumbers = false;
 		dropProtection = false;
+		pickupWarning = false;
 		offhandFilter = false;
 		timersEnabled = false;
 		glowingOres = false;

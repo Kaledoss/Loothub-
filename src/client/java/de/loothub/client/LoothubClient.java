@@ -228,6 +228,7 @@ public class LoothubClient implements ClientModInitializer {
 		de.loothub.client.quick.QuickCommandPanel.register();
 		de.loothub.client.quick.InventoryTitle.register();
 		de.loothub.client.quick.ToolProtection.register();
+		de.loothub.client.quick.PickupWarning.register();
 		de.loothub.client.quick.RenameScreen.register();
 		de.loothub.client.quick.AmountShortcut.register();
 		DailyMerchantItem.register();

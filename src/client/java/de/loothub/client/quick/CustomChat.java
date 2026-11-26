@@ -159,7 +159,7 @@ public final class CustomChat {
 	}
 
 	/** Zuletzt gezeichnete Zeilen im offenen Chat (für Rechtsklick). */
-	private record Row(Window win, int x0, int y0, int x1, int y1, Msg msg) {
+	private record Row(Window win, int x0, int y0, int x1, int y1, Msg msg, FormattedCharSequence seq, float scale) {
 	}
 
 	private static final List<Row> ROWS = new ArrayList<>();
@@ -530,7 +530,7 @@ public final class CustomChat {
 				}
 				int y = b[1] + b[3] - (i + 1) * lineH;
 				if (focused) {
-					ROWS.add(new Row(w, b[0], y, b[0] + b[2], y + lineH, l.msg()));
+					ROWS.add(new Row(w, b[0], y, b[0] + b[2], y + lineH, l.msg(), l.seq(), s));
 				}
 				text(a, b[0] + 3, y + Math.max(0, (lineH - Math.round(8 * s)) / 2), s, alpha, brighten(l.seq(), w.minBright));
 			}
@@ -728,6 +728,50 @@ public final class CustomChat {
 		});
 	}
 
+	/** Spielername unter dem Mauszeiger in einer Chat-Zeile (nur Spieler, die gerade online sind), sonst null. */
+	private static String playerAt(Row r, double mx) {
+		Minecraft mc = Minecraft.getInstance();
+		if (mc.getConnection() == null) {
+			return null;
+		}
+		StringBuilder sb = new StringBuilder();
+		r.seq().accept((i, style, cp) -> {
+			sb.appendCodePoint(cp);
+			return true;
+		});
+		String text = sb.toString();
+		Font f = mc.font;
+		float rel = (float) ((mx - r.x0() - 3) / r.scale());
+		if (rel < 0) {
+			return null;
+		}
+		int idx = f.plainSubstrByWidth(text, Math.round(rel)).length();
+		if (idx >= text.length()) {
+			return null;
+		}
+		int a = idx, b = idx;
+		while (a > 0 && isNameChar(text.charAt(a - 1))) {
+			a--;
+		}
+		while (b < text.length() && isNameChar(text.charAt(b))) {
+			b++;
+		}
+		if (b - a < 3) {
+			return null;
+		}
+		String word = text.substring(a, b);
+		for (var info : mc.getConnection().getOnlinePlayers()) {
+			if (info.getProfile().name().equalsIgnoreCase(word)) {
+				return info.getProfile().name();
+			}
+		}
+		return null;
+	}
+
+	private static boolean isNameChar(char c) {
+		return Character.isLetterOrDigit(c) || c == '_';
+	}
+
 	private static boolean click(Screen screen, MouseButtonEvent e) {
 		searchFocused = false; // wird unten wieder gesetzt, wenn ins Suchfeld geklickt wurde
 		int[] cg = e.button() == 0 ? cornerAt(e.x(), e.y()) : null;
@@ -740,6 +784,12 @@ public final class CustomChat {
 			if (e.button() == 1) {
 				for (Row r : new ArrayList<>(ROWS)) {
 					if (e.x() >= r.x0() && e.x() < r.x1() && e.y() >= r.y0() && e.y() < r.y1()) {
+						// Rechtsklick auf einen Spielernamen: Privatnachricht an ihn beginnen
+						String player = playerAt(r, e.x());
+						if (player != null) {
+							Minecraft.getInstance().setScreen(new net.minecraft.client.gui.screens.ChatScreen("/msg " + player + " ", false));
+							return true;
+						}
 						Minecraft.getInstance().setScreen(new ChatAssignScreen(r.win(), r.msg()));
 						return true;
 					}
