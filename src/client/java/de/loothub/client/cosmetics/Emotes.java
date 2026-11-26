@@ -283,8 +283,19 @@ public final class Emotes {
 
 	/** Fortschritt 0..1 im Zeitfenster eines Zyklus, sonst −1. */
 	private static float window(long now, long cycle, long offset, long length) {
-		long pos = Math.floorMod(now - offset, cycle);
-		return pos < length ? pos / (float) length : -1.0F;
+		// Nicht wie ein Uhrwerk: jeder Durchgang beginnt an einer anderen Stelle, manche fallen ganz aus
+		long idx = Math.floorDiv(now - offset, cycle);
+		long h = (idx * 0x9E3779B97F4A7C15L) ^ (offset * 0xC2B2AE3D27D4EB4FL) ^ cycle;
+		h ^= h >>> 31;
+		h *= 0xBF58476D1CE4E5B9L;
+		h ^= h >>> 29;
+		if (Math.floorMod(h, 4L) == 0) {
+			return -1.0F; // diesmal nicht
+		}
+		long room = Math.max(0, cycle - length);
+		long start = room == 0 ? 0 : Math.floorMod(h >>> 8, room);
+		long pos = Math.floorMod(now - offset, cycle) - start;
+		return pos >= 0 && pos < length ? pos / (float) length : -1.0F;
 	}
 
 	public static void attach(Object miniState, float[] emote) {
