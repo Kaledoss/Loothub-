@@ -533,6 +533,8 @@
 	"loothub.villager.max.tooltip": "Wiederholt den gewählten Handel, bis die Bezahlung, der Vorrat des Dorfbewohners oder der Platz im Inventar ausgeht (höchstens 64-mal).",
 	"loothub.villager.done": "✔ %s-mal gehandelt",
 	"loothub.guard.paused": "Loothub: Die Funktion „%s“ hatte wiederholt einen Fehler und ist bis zum Neustart pausiert. Der Fehler wurde automatisch gemeldet.",
+	"loothub.worker.outdated": "⚠ Worker veraltet",
+	"loothub.worker.outdated.tooltip": "Auf dem Server läuft ein älterer Loothub-Worker, als diese Mod-Version braucht (Stand %s). Bitte die aktuelle cosmetics-worker.js in Cloudflare einspielen – sonst fehlen neue Funktionen wie Ranglisten oder Shop-Einträge. Nur Admins sehen diesen Hinweis.",
 	"loothub.feedback.button": "✉ Feedback",
 	"loothub.feedback.list_button": "📨 Meldungen",
 	"loothub.feedback.title": "Feedback & Fehler melden",

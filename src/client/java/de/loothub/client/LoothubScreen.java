@@ -142,6 +142,15 @@ public abstract class LoothubScreen extends Screen {
 		fx -= fw;
 		addRenderableWidget(Button.builder(fbl, x -> minecraft.setScreen(new de.loothub.client.feedback.FeedbackScreen(this)))
 				.bounds(fx, frameY + 2, fw, b.getHeight()).build());
+		if (de.loothub.client.progress.Progress.workerOutdated()) {
+			// Admin-Hinweis: Server-Worker ist älter als diese Mod – neue Funktionen fehlen sonst still
+			Component wl = Component.translatable("loothub.worker.outdated").withStyle(net.minecraft.ChatFormatting.GOLD);
+			int ww = font.width(wl) + 12;
+			Button wb = addRenderableWidget(Button.builder(wl, x -> { }).bounds(fx - 4 - ww, frameY + 2, ww, b.getHeight()).build());
+			wb.setTooltip(net.minecraft.client.gui.components.Tooltip.create(
+					Component.translatable("loothub.worker.outdated.tooltip", de.loothub.client.progress.Progress.WORKER_NEEDED)));
+			fx -= ww + 4;
+		}
 		if (de.loothub.client.progress.Progress.isAdmin()) {
 			int unread = de.loothub.client.progress.Progress.feedbackUnread();
 			Component al = Component.translatable("loothub.feedback.list_button");

@@ -1071,6 +1071,9 @@ const LH_BOARDS = ["points", "ach", "login", "dquests", "wquests", "blocks", "pl
 
 const LH_DROP_MIN_PLAY = { d: 30, w: 180, m: 600, a: 1200 }; // Mindest-Spielminuten für „am wenigsten weggeworfen“
 const LH_PERIODS = ["d", "w", "m"]; // täglich, wöchentlich, monatlich (dazu „a“ = gesamt)
+/** Stand dieses Workers – die Mod zeigt Admins einen Hinweis, wenn er älter ist als sie erwartet. Bei jeder Änderung erhöhen. */
+const WORKER_VERSION = 12;
+
 let lhReady = false;
 async function lhInit(db) {
 	if (lhReady) return;
@@ -1775,6 +1778,7 @@ async function lhHandle(request, env) {
 	}
 	if (!error) await lhSave(db, row, d, now, name);
 	const view = lhView(row, d, extra, now);
+	view.wv = WORKER_VERSION;
 	if (lhIsAdmin(env, uuid)) {
 		view.admin = true;
 		// ungelesene Feedback-Meldungen für das „+1“ am Knopf

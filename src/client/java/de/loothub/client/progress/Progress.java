@@ -287,6 +287,19 @@ public final class Progress {
 	}
 
 	/** Ist man laut Server Admin (Taler ändern, Ranglisten zurücksetzen)? */
+	/** Worker-Stand, den diese Mod-Version braucht (muss zu WORKER_VERSION in cosmetics-worker.js passen). */
+	public static final int WORKER_NEEDED = 12;
+
+	/** Admin: Läuft auf dem Server ein älterer Worker, als diese Mod braucht? (unbekannt = nein) */
+	public static boolean workerOutdated() {
+		JsonObject s = state;
+		if (s == null || !isAdmin()) {
+			return false;
+		}
+		int wv = s.has("wv") ? s.get("wv").getAsInt() : 0;
+		return wv < WORKER_NEEDED;
+	}
+
 	/** Admin: ungelesene Feedback-Meldungen (für das „+1“ am Knopf). */
 	public static int feedbackUnread() {
 		JsonObject s = state;
