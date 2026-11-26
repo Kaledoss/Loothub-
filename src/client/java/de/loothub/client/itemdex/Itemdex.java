@@ -221,7 +221,16 @@ public final class Itemdex {
 		}
 		message.visit((Style style, String text) -> {
 			if (style.getHoverEvent() instanceof HoverEvent.ShowItem show) {
-				see(show.item(), Source.CHAT, "Chat");
+				ItemStack it = show.item();
+				if (!isCustom(it)) {
+					// zur Fehlersuche: warum ein Chat-Item nicht aufgenommen wird
+					de.loothub.Loothub.LOGGER.info("[Loothub-Itemdex] Chat-Item nicht aufgenommen: {} ({}) model={} cmd={} lore={}",
+							it.getHoverName().getString(), BuiltInRegistries.ITEM.getKey(it.getItem()), it.get(DataComponents.ITEM_MODEL),
+							it.has(DataComponents.CUSTOM_MODEL_DATA), it.has(DataComponents.LORE));
+				}
+				see(it, Source.CHAT, "Chat");
+			} else if (style.getHoverEvent() != null && !(style.getHoverEvent() instanceof HoverEvent.ShowText)) {
+				de.loothub.Loothub.LOGGER.info("[Loothub-Itemdex] Chat-Hover ohne Item: {}", style.getHoverEvent().action());
 			}
 			return Optional.empty();
 		}, Style.EMPTY);

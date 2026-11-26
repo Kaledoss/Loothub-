@@ -342,13 +342,16 @@ public final class StatsTracker {
 	/** Zeitpunkt des letzten eigenen Schlags (für Flächenschaden: Schwungangriff, Flächen-Waffen). */
 	private static long lastSwingAt;
 	/** So lange nach einem Schlag zählen auch Mobs, die nebenbei Schaden nehmen. */
-	private static final long AREA_HIT_MS = 700;
-	private static final double AREA_RANGE = 8.0;
+	private static final long AREA_HIT_MS = 400;
+	/** Reichweite: normaler Schwungangriff nur direkt um das Ziel, Spezialwaffen (eigener Name/Modell) weiter. */
+	private static final double SWEEP_RANGE = 3.5, AREA_RANGE = 8.0;
+	private static net.minecraft.world.phys.Vec3 lastHitAt;
 
 	/** Treffer auf ein Lebewesen merken: für ausgeteilten Schaden und Kills. */
 	public static void onAttack(Entity entity) {
 		Minecraft mc = Minecraft.getInstance();
 		lastSwingAt = System.currentTimeMillis();
+		lastHitAt = entity.position();
 		if (tracking(mc)) {
 			toolStat("tool_hits.", mc.player.getMainHandItem());
 		}
@@ -1090,8 +1093,12 @@ public final class StatsTracker {
 				// OPSUCHT hat eigene Welten (Farmwelt, Farm-Nether …) mit eigenen Namen: nach dem Namen gehen,
 				// nicht nur nach der Vanilla-Oberwelt
 				String dim = mc.level.dimension().identifier().getPath().toLowerCase(java.util.Locale.ROOT);
-				boolean nether = mc.level.dimension() == net.minecraft.world.level.Level.NETHER || dim.contains("nether");
-				boolean end = mc.level.dimension() == net.minecraft.world.level.Level.END || dim.contains("end");
+				// Welt-Art statt Name: Nether = Decke und kein Himmelslicht, End = weder noch (Farm-Nether heißen beliebig)
+				var dt = mc.level.dimensionType();
+				boolean nether = mc.level.dimension() == net.minecraft.world.level.Level.NETHER || dim.contains("nether")
+						|| (!dt.hasSkyLight() && dt.hasCeiling());
+				boolean end = !nether && (mc.level.dimension() == net.minecraft.world.level.Level.END || dim.contains("end")
+						|| (!dt.hasSkyLight() && !dt.hasCeiling()));
 				if (nether) {
 					StatsStore.add("general.nether_time", step);
 				} else if (!end && p.getY() < 0) {
@@ -1375,16 +1382,19 @@ public final class StatsTracker {
 		if (now - lastSwingAt > AREA_HIT_MS || mc.level == null || mc.player == null) {
 			return;
 		}
-		var box = mc.player.getBoundingBox().inflate(AREA_RANGE);
+		// Nur Mobs rund um den eigenen Treffer – sonst zählen in Mob-Farmen Mobs mit, die andere (oder die Farm) töten
+		boolean wide = isSpecialTool(mc.player.getMainHandItem());
+		double range = wide ? AREA_RANGE : SWEEP_RANGE;
+		net.minecraft.world.phys.Vec3 at = wide || lastHitAt == null ? mc.player.position() : lastHitAt;
+		var box = new net.minecraft.world.phys.AABB(at, at).inflate(range);
 		for (LivingEntity l : mc.level.getEntitiesOfClass(LivingEntity.class, box)) {
 			if (l == mc.player || l instanceof net.minecraft.world.entity.player.Player || TARGETS.containsKey(l.getId())
 					|| l instanceof net.minecraft.world.entity.decoration.ArmorStand) {
 				continue;
 			}
-			// gerade getroffen (Treffer-Aufleuchten) oder frisch gestorben
+			// gerade getroffen (Treffer-Aufleuchten) – ein Mob, der nur stirbt, ohne von uns getroffen zu sein, zählt nicht
 			boolean hit = l.hurtTime > 0 && l.hurtTime >= l.hurtDuration - 2;
-			boolean dying = l.isDeadOrDying() && l.deathTime <= 3;
-			if (!hit && !dying) {
+			if (!hit) {
 				continue;
 			}
 			// vorige Lebenspunkte unbekannt: ab jetzt beobachten (der Schaden dieses Treffers zählt nicht doppelt)

@@ -287,6 +287,19 @@ public final class LookInfo {
 	private static ItemStack toolFor(BlockState st) {
 		boolean diamond = st.is(BlockTags.NEEDS_DIAMOND_TOOL), iron = st.is(BlockTags.NEEDS_IRON_TOOL),
 				stone = st.is(BlockTags.NEEDS_STONE_TOOL);
+		// Ranken, Gräser, Spinnweben & Co.: nur mit der Schere bekommt man den Block selbst
+		var b = st.getBlock();
+		if (st.is(BlockTags.LEAVES) || st.is(BlockTags.WOOL) || b == net.minecraft.world.level.block.Blocks.VINE
+				|| b == net.minecraft.world.level.block.Blocks.GLOW_LICHEN || b == net.minecraft.world.level.block.Blocks.COBWEB
+				|| b == net.minecraft.world.level.block.Blocks.SHORT_GRASS || b == net.minecraft.world.level.block.Blocks.TALL_GRASS
+				|| b == net.minecraft.world.level.block.Blocks.FERN || b == net.minecraft.world.level.block.Blocks.LARGE_FERN
+				|| b == net.minecraft.world.level.block.Blocks.DEAD_BUSH || b == net.minecraft.world.level.block.Blocks.SEAGRASS
+				|| b == net.minecraft.world.level.block.Blocks.TALL_SEAGRASS || b == net.minecraft.world.level.block.Blocks.HANGING_ROOTS
+				|| b == net.minecraft.world.level.block.Blocks.NETHER_SPROUTS
+				|| b == net.minecraft.world.level.block.Blocks.WEEPING_VINES || b == net.minecraft.world.level.block.Blocks.WEEPING_VINES_PLANT
+				|| b == net.minecraft.world.level.block.Blocks.TWISTING_VINES || b == net.minecraft.world.level.block.Blocks.TWISTING_VINES_PLANT) {
+			return new ItemStack(Items.SHEARS);
+		}
 		if (st.is(BlockTags.MINEABLE_WITH_PICKAXE)) {
 			return new ItemStack(diamond ? Items.DIAMOND_PICKAXE : iron ? Items.IRON_PICKAXE
 					: stone ? Items.STONE_PICKAXE : Items.WOODEN_PICKAXE);
@@ -299,9 +312,6 @@ public final class LookInfo {
 		}
 		if (st.is(BlockTags.MINEABLE_WITH_HOE)) {
 			return new ItemStack(Items.IRON_HOE);
-		}
-		if (st.is(BlockTags.LEAVES) || st.is(BlockTags.WOOL)) {
-			return new ItemStack(Items.SHEARS);
 		}
 		return ItemStack.EMPTY;
 	}
