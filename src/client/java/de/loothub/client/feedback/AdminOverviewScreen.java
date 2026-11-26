@@ -122,7 +122,7 @@ public class AdminOverviewScreen extends Screen {
 				break;
 			}
 			JsonArray f = feats.get(i);
-			bar(g, fx + col * (colW + 10), 54 + row * 13, colW - 10, pretty(f.get(0).getAsString()), f.get(1).getAsInt(), Math.max(1, wf));
+			bar(g, fx + col * (colW + 10), 54 + row * 13, colW - 10, FeatureNames.of(f.get(0).getAsString()), f.get(1).getAsInt(), Math.max(1, wf));
 		}
 		g.disableScissor();
 	}
