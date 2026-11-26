@@ -12,6 +12,12 @@
 #define HAZE 0.10             // [0.00 0.04 0.08 0.10 0.15 0.25 0.35 0.50 0.70]
 #define AIRY 0.00             // [0.00 0.05 0.10 0.15 0.20 0.30]
 
+// Atmosphaere (Fassung 11, angelehnt an den Look grosser Shader): Lichtstrahlen, Sonnen-Dunst, Licht-/Schatten-Toenung
+#define GODRAYS 12            // [0 8 12 16 24] Lichtstrahlen (0 = aus; mehr = feiner, aber langsamer)
+#define GODRAY_STRENGTH 0.35  // [0.15 0.25 0.35 0.45 0.60 0.80]
+#define SUN_GLOW 0.60         // [0.00 0.30 0.60 0.90 1.20] Dunst leuchtet in Richtung Sonne warm auf
+#define SPLIT_TONE 0.50       // [0.00 0.25 0.50 0.75 1.00] Lichter warm, Schatten kuehl
+
 // Licht (Fassung 9): Sonne mit Richtung, Schatten, kuehle Schattenseiten, warmes Abendlicht
 #define SHADOWS               // echte Schatten von Sonne und Mond
 #define SUN_LIGHT 0.60        // [0.30 0.40 0.50 0.60 0.70 0.80 0.90 1.00 1.20]
@@ -46,7 +52,7 @@ const bool shadowtex1Nearest = true;
 #define LIGHT_NEUTRAL 0.75    // [0.00 0.25 0.50 0.75 0.90 1.00]
 #define LIGHT_MODE 0          // [0 1 2 3]
 #define DEBUG_VIEW 0          // [0 1 2 3 4 5]
-#define PACK_VERSION 10       // [10]
+#define PACK_VERSION 11       // [11]
 
 float luma(vec3 c) {
 	return dot(c, vec3(0.2126, 0.7152, 0.0722));

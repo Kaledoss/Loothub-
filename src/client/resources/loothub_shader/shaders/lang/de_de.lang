@@ -95,3 +95,12 @@ value.AUTO_EXPOSURE.1=Leicht
 value.AUTO_EXPOSURE.2=Mittel
 value.AUTO_EXPOSURE.3=Stark
 value.AUTO_EXPOSURE.4=Sehr stark
+option.GODRAYS=Lichtstrahlen
+option.GODRAYS.comment=Sichtbare Sonnenstrahlen durch Bl\u00e4tter, Wolken und \u00fcber Kanten. 0 = aus, mehr = feiner, kostet etwas Leistung.
+value.GODRAYS.0=Aus
+option.GODRAY_STRENGTH=St\u00e4rke der Lichtstrahlen
+option.GODRAY_STRENGTH.comment=Wie hell die Lichtstrahlen sind.
+option.SUN_GLOW=Sonnen-Dunst
+option.SUN_GLOW.comment=Der Dunst leuchtet in Richtung Sonne warm auf (morgens und abends golden). Kostet fast keine Leistung.
+option.SPLIT_TONE=Licht- und Schattenton
+option.SPLIT_TONE.comment=Helle Stellen leicht golden, Schatten leicht blau. Kostet keine Leistung.

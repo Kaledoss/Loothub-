@@ -8,6 +8,8 @@ uniform sampler2D depthtex0;
 uniform sampler2D colortex2;
 uniform mat4 gbufferModelViewInverse;
 uniform vec3 sunPosition;
+uniform vec3 shadowLightPosition;
+uniform mat4 gbufferProjection;
 uniform vec3 upPosition;
 uniform vec3 skyColor;
 uniform vec3 fogColor;
@@ -64,6 +66,13 @@ void main() {
 		color = mix(color * absorb, wc, murk);
 	}
 
+	// Farbe des Sonnen- bzw. Mondlichts: tagsueber warmweiss, tief stehend golden-orange, nachts kuehl und schwach
+	float sunUp = dot(normalize(sunPosition), normalize(upPosition));
+	vec3 lightCol = sunUp > 0.0
+			? mix(vec3(1.0, 0.52, 0.22), vec3(1.0, 0.90, 0.76), smoothstep(0.0, 0.40, sunUp))
+			: vec3(0.35, 0.45, 0.70) * 0.35;
+	float lightAmt = (sunUp > 0.0 ? smoothstep(-0.02, 0.10, sunUp) : 0.5 * smoothstep(0.02, 0.15, -sunUp)) * (1.0 - rainStrength * 0.85);
+
 	// Dunst: nur auf Bloecken (nicht am Himmel), ueber Wasser, nimmt mit der Entfernung zu
 	if (depth < 1.0 && isEyeInWater == 0 && HAZE > 0.0) {
 		vec4 view = gbufferProjectionInverse * vec4(texcoord * 2.0 - 1.0, depth * 2.0 - 1.0, 1.0);
@@ -74,8 +83,39 @@ void main() {
 		// Dunst fast farblos (sonst faerbt der Abendhimmel alles lila)
 		// Dunst in der (leicht entsaettigten) Himmelsfarbe statt als hellgrauer Schleier
 		vec3 haze = mix(fogColor, vec3(luma(fogColor)), 0.3);
+#if SUN_GLOW > 0
+		// in Richtung der Sonne leuchtet der Dunst warm auf (Streulicht), abgewandt bleibt er kuehl
+		float toward = max(dot(normalize(view.xyz), normalize(shadowLightPosition)), 0.0);
+		haze = mix(haze, lightCol * max(luma(fogColor) * 1.6, 0.25), pow(toward, 6.0) * SUN_GLOW * lightAmt);
+#endif
 		color = mix(color, haze, clamp(amount, 0.0, 0.85));
 	}
+
+#if GODRAYS > 0
+	// Lichtstrahlen: vom Bildpunkt Richtung Sonne/Mond nachschauen, wie viel freier Himmel dazwischen liegt
+	if (isEyeInWater == 0 && lightAmt > 0.01) {
+		vec4 sp = gbufferProjection * vec4(shadowLightPosition, 1.0);
+		if (sp.w > 0.0) {
+			vec2 sun = sp.xy / sp.w * 0.5 + 0.5;
+			vec2 asp = vec2(viewWidth / viewHeight, 1.0);
+			float fall = 1.0 - smoothstep(0.0, 0.85, length((texcoord - sun) * asp));
+			if (fall > 0.0) {
+				vec2 stepv = (sun - texcoord) / float(GODRAYS) * 0.9;
+				float jitter = fract(sin(dot(gl_FragCoord.xy, vec2(12.9898, 78.233))) * 43758.5453);
+				vec2 uv = texcoord + stepv * jitter;
+				float open = 0.0;
+				for (int i = 0; i < GODRAYS; i++) {
+					if (uv.x > 0.0 && uv.x < 1.0 && uv.y > 0.0 && uv.y < 1.0) {
+						open += texture2D(depthtex0, uv).r >= 1.0 ? 1.0 : 0.0;
+					}
+					uv += stepv;
+				}
+				open /= float(GODRAYS);
+				color += lightCol * open * fall * fall * GODRAY_STRENGTH * lightAmt;
+			}
+		}
+	}
+#endif
 
 	// helle Stellen (weiche Schwelle)
 	vec3 bright = vec3(0.0);

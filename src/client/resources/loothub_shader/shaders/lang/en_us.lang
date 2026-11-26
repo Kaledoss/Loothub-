@@ -93,3 +93,12 @@ value.AUTO_EXPOSURE.1=Light
 value.AUTO_EXPOSURE.2=Medium
 value.AUTO_EXPOSURE.3=Strong
 value.AUTO_EXPOSURE.4=Very strong
+option.GODRAYS=Light shafts
+option.GODRAYS.comment=Visible sun rays through leaves, clouds and over edges. 0 = off, more = finer, costs some performance.
+value.GODRAYS.0=Off
+option.GODRAY_STRENGTH=Light shaft strength
+option.GODRAY_STRENGTH.comment=How bright the light shafts are.
+option.SUN_GLOW=Sun haze
+option.SUN_GLOW.comment=Haze glows warmly towards the sun (golden in the morning and evening). Almost free.
+option.SPLIT_TONE=Light & shadow tint
+option.SPLIT_TONE.comment=Highlights slightly golden, shadows slightly blue. Free.
