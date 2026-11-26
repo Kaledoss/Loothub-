@@ -4,6 +4,7 @@
 	"compatibilityLevel": "JAVA_21",
 	"client": [
 		"ItemDisplayAccessor",
+		"MerchantScreenAccessor",
 		"TextDisplayAccessor",
 		"InventoryEntityMixin",
 		"GuiMixin",
