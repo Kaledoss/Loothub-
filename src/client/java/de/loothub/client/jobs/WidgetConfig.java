@@ -71,6 +71,8 @@ public final class WidgetConfig {
 	public boolean villagerTrade = true;
 	/** Willkommens-Assistent schon gezeigt? (bestehende Spieler: ja – nur Neuinstallationen bekommen ihn) */
 	public boolean welcomeDone = true;
+	/** Zuletzt gesehene Mod-Version – nach einem Update zeigt Loothub einmal „Was ist neu?“. */
+	public String lastSeenVersion = "";
 	/** Offhand-Filter: gewählte Items in der zweiten Hand nicht per Rechtsklick benutzen. */
 	public boolean offhandFilter = true;
 	/** true = alles sperren außer den gelisteten Items. */

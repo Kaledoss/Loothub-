@@ -145,6 +145,32 @@ public class ChangelogScreen extends LoothubScreen {
 		});
 	}
 
+	/** Für „Was ist neu?“: Changelog im Hintergrund laden (falls noch nicht geschehen). */
+	public static void ensureLoaded() {
+		load(false);
+	}
+
+	/**
+	 * Änderungen einer Version als {Art („Add“/„Remove“/„Fix“), Text}; null, solange noch nicht geladen; leer, wenn es
+	 * die Version (noch) nicht gibt.
+	 */
+	public static List<String[]> changesFor(String version) {
+		List<Group> g = groups;
+		if (g == null) {
+			return error != null ? List.of() : null;
+		}
+		for (Group gr : g) {
+			if (version.equals(gr.version())) {
+				List<String[]> out = new ArrayList<>();
+				for (Change c : gr.shown()) {
+					out.add(new String[]{c.kind().label, c.text()});
+				}
+				return out;
+			}
+		}
+		return List.of();
+	}
+
 	/** „Loothub+ 1.0.85“ → {1, 0, 85}; null, wenn nicht lesbar. */
 	private static int[] latestVersion(String json) {
 		if (json == null) {
