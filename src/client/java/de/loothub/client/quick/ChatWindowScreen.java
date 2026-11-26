@@ -46,7 +46,50 @@ public class ChatWindowScreen extends Screen {
 		int x = px + 10, y = py + 22, w = pw - 20;
 		int half = (w - 4) / 2;
 
-		// Aussehen
+		// Zwei Seiten: Aussehen | Tabs & Filter – damit nicht alles auf einmal auf dem Bildschirm steht
+		Button p0 = addRenderableWidget(Button.builder(Component.translatable("loothub.chatwin.page.look"), b -> {
+			page = 0;
+			rebuildWidgets();
+		}).bounds(x, y, half, 18).build());
+		Button p1 = addRenderableWidget(Button.builder(Component.translatable("loothub.chatwin.page.tabs"), b -> {
+			page = 1;
+			rebuildWidgets();
+		}).bounds(x + half + 4, y, half, 18).build());
+		p0.active = page != 0;
+		p1.active = page != 1;
+		y += 26;
+		if (page == 0) {
+			initLook(x, y, w, half);
+			addRenderableWidget(Button.builder(Component.translatable("loothub.job.editor.done"), b -> onClose())
+					.bounds(px + pw - 90, py + ph - 22, 80, 16).build());
+			return;
+		}
+		initTabs(x, y, w);
+	}
+
+	/** Fertige Stile: Hintergrund, Akzent, Deckkraft. */
+	private static final Object[][] PRESETS = {
+			{"loothub", 0x140B0D, 0xE23B3B, 70}, {"glass", 0x000000, 0xFFFFFF, 25}, {"night", 0x0A0F1E, 0x4DA3FF, 75},
+			{"gold", 0x1A1408, 0xF2C14E, 70}, {"forest", 0x0B140D, 0x55E06A, 65}};
+	private static int page;
+	private int previewY;
+
+	private void initLook(int x, int y, int w, int half) {
+		// Stil-Vorlagen mit einem Klick
+		int n = PRESETS.length, bw = (w - (n - 1) * 3) / n;
+		for (int i = 0; i < n; i++) {
+			Object[] pr = PRESETS[i];
+			int accent = (int) pr[2];
+			addRenderableWidget(Button.builder(Component.literal("■ ").withStyle(st -> st.withColor(accent))
+					.append(Component.translatable("loothub.chatwin.preset." + pr[0]).withStyle(ChatFormatting.WHITE)), b -> {
+						win.bg = (int) pr[1];
+						win.accent = (int) pr[2];
+						win.opacity = (int) pr[3];
+						changed();
+						rebuildWidgets();
+					}).bounds(x + i * (bw + 3), y + 10, bw, 18).build());
+		}
+		y += 36;
 		addRenderableWidget(Button.builder(colorLabel("loothub.chatwin.bg", win.bg), b -> minecraft.setScreen(
 				new ColorPickerScreen(this, Component.translatable("loothub.chatwin.bg"), win.bg, rgb -> {
 					win.bg = rgb;
@@ -63,9 +106,15 @@ public class ChatWindowScreen extends Screen {
 		y += 20;
 		addRenderableWidget(slider(x, y, half, "loothub.chatwin.fade", win.fadeSec, 1, 120, " s", v -> win.fadeSec = v));
 		addRenderableWidget(slider(x + half + 4, y, half, "loothub.chatwin.bright", win.minBright, 0, 100, "%", v -> win.minBright = v));
+		previewY = y + 30;
+	}
 
+	private int tabsLabelY, nameY;
+
+	private void initTabs(int x, int y, int w) {
 		// Tab-Reiter
-		y += 28;
+		tabsLabelY = y;
+		y += 10;
 		List<CustomChat.Tab> tabs = win.tabs;
 		CustomChat.Tab tab = win.tab();
 		int tx = x;
@@ -94,6 +143,7 @@ public class ChatWindowScreen extends Screen {
 
 		// Gewählter Tab
 		y += 22;
+		nameY = y;
 		EditBox name = box(x + 40, y, 120, tab.name, 20, "loothub.chatwin.tab.name", v -> tab.name = v.isBlank() ? "Tab" : v);
 		addRenderableWidget(Button.builder(exclusiveLabel(tab.exclusive), b -> {
 			tab.exclusive = !tab.exclusive;
@@ -267,7 +317,7 @@ public class ChatWindowScreen extends Screen {
 		if (editBox != null && !editBox.isMouseOver(event.x(), event.y())) {
 			commitEdit(); // woanders hingeklickt: Änderung übernehmen
 		}
-		if (doubleClick && event.y() >= entriesTop() && event.y() < entriesTop() + entriesVisible() * ENTRY_H) {
+		if (page == 1 && doubleClick && event.y() >= entriesTop() && event.y() < entriesTop() + entriesVisible() * ENTRY_H) {
 			int x = px + 10, w = pw - 20, colW = (w - 6) / 2;
 			int col = event.x() >= x && event.x() < x + colW - 16 ? 0
 					: event.x() >= x + colW + 6 && event.x() < x + w - 16 ? 1 : -1;
@@ -315,7 +365,7 @@ public class ChatWindowScreen extends Screen {
 
 	@Override
 	public boolean mouseScrolled(double mx, double my, double h, double v) {
-		if (my >= entriesTop()) {
+		if (page == 1 && my >= entriesTop()) {
 			if (mx < px + pw / 2.0) {
 				incScroll = Math.max(0, incScroll - (int) Math.signum(v));
 			} else {
@@ -393,8 +443,14 @@ public class ChatWindowScreen extends Screen {
 		g.fill(px + 4, py + 3, px + pw - 4, py + 4, LoothubScreen.RED);
 		g.drawString(font, getTitle(), px + 10, py + 9, LoothubScreen.RED, false);
 		int x = px + 10;
-		g.drawString(font, Component.translatable("loothub.chatwin.tabs"), x, py + 80, LoothubScreen.FAINT, false);
-		g.drawString(font, Component.translatable("loothub.chatwin.tab.name"), x, py + 116, LoothubScreen.TEXT, false);
+		if (page == 0) {
+			g.drawString(font, Component.translatable("loothub.chatwin.presets"), x, py + 48, LoothubScreen.FAINT, false);
+			drawPreview(g, x, previewY, pw - 20, py + ph - 28 - previewY);
+			super.render(g, mx, my, delta);
+			return;
+		}
+		g.drawString(font, Component.translatable("loothub.chatwin.tabs"), x, tabsLabelY, LoothubScreen.FAINT, false);
+		g.drawString(font, Component.translatable("loothub.chatwin.tab.name"), x, nameY + 4, LoothubScreen.TEXT, false);
 		CustomChat.Tab tab = win.tab();
 		Component src = Component.translatable(tab.sources == null || tab.sources.isBlank()
 				? "loothub.chatwin.sources.all" : "loothub.chatwin.sources");
@@ -428,6 +484,47 @@ public class ChatWindowScreen extends Screen {
 			}
 		}
 		super.render(g, mx, my, delta);
+	}
+
+	/** Live-Vorschau des Fensters mit den gewählten Farben, Deckkraft und Schriftgröße. */
+	private void drawPreview(GuiGraphics g, int x, int y, int w, int h) {
+		if (h < 40) {
+			return;
+		}
+		g.drawString(font, Component.translatable("loothub.chatwin.preview"), x, y - 10, LoothubScreen.FAINT, false);
+		int accent = 0xFF000000 | (win.accent & 0xFFFFFF);
+		int bgA = Mth.clamp(win.opacity, 0, 100) * 255 / 100;
+		// Kopfzeile mit Tabs
+		g.fill(x, y, x + w, y + 12, 0xE0100A0C);
+		g.fill(x, y + 11, x + w, y + 12, accent);
+		int tx = x + 2;
+		for (int i = 0; i < win.tabs.size() && tx < x + w - 40; i++) {
+			String name = win.tabs.get(i).name;
+			int tw = font.width(name) + 8;
+			if (i == win.active) {
+				g.fill(tx, y + 1, tx + tw, y + 11, accent & 0x90FFFFFF);
+			}
+			g.drawString(font, name, tx + 4, y + 2, i == win.active ? 0xFFFFFFFF : 0xFFB0B0B0, false);
+			tx += tw + 2;
+		}
+		// Nachrichten
+		int top = y + 12;
+		g.fill(x, top, x + w, y + h, (bgA << 24) | (win.bg & 0xFFFFFF));
+		float s = Mth.clamp(win.textScale, 50, 200) / 100F;
+		String[][] lines = {{"§b[Angelverein] §fMisskowalski §7» §fPetri Heil!", ""}, {"§6[Anführer] §fKaledoss §7» §fMoin zusammen", ""},
+				{"§d@CLAN §7| §ffarm-5 ist frei", ""}, {"§a+1.250 $ §7Marktverkauf", ""}};
+		g.enableScissor(x, top, x + w, y + h);
+		g.pose().pushMatrix();
+		g.pose().translate(x + 3, top + 3);
+		g.pose().scale(s, s);
+		for (int i = 0; i < lines.length; i++) {
+			g.drawString(font, lines[i][0], 0, i * 10, 0xFFFFFFFF, false);
+		}
+		g.pose().popMatrix();
+		g.disableScissor();
+		// Akzent-Ecken wie im Spiel
+		g.fill(x, y + h - 1, x + 8, y + h, accent);
+		g.fill(x + w - 8, y + h - 1, x + w, y + h, accent);
 	}
 
 	@Override
