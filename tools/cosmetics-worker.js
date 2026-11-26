@@ -1074,6 +1074,12 @@ const LH_PERIODS = ["d", "w", "m"]; // täglich, wöchentlich, monatlich (dazu �
 let lhReady = false;
 async function lhInit(db) {
 	if (lhReady) return;
+	await lhInitTables(db);
+	// spätere Spalten für ältere Tabellen nachrüsten (Fehler = gibt es schon)
+	try { await db.prepare("ALTER TABLE lh_feedback ADD COLUMN seen INTEGER DEFAULT 0").run(); } catch { /* schon da */ }
+}
+
+async function lhInitTables(db) {
 	await db.batch([
 		db.prepare(`CREATE TABLE IF NOT EXISTS lh_player (uuid TEXT PRIMARY KEY, name TEXT, data TEXT, points INTEGER DEFAULT 0,
 			spent INTEGER DEFAULT 0, title TEXT DEFAULT '', badge TEXT DEFAULT '', ach INTEGER DEFAULT 0, quests INTEGER DEFAULT 0,
@@ -1579,12 +1585,15 @@ async function lhAdmin(db, env, p, now) {
 	}
 	// Feedback-Liste (Admin): Übersicht, einzelne Meldung (mit Bild), Status ändern, löschen
 	if (p.op === "admin_fb_list") {
-		const rows = await db.prepare(`SELECT id, at, name, ver, substr(text, 1, 2000) AS text, status, length(shot) > 0 AS shot
+		const rows = await db.prepare(`SELECT id, at, name, ver, substr(text, 1, 2000) AS text, status, seen, length(shot) > 0 AS shot
 			FROM lh_feedback ORDER BY (status = 'open') DESC, at DESC LIMIT 150`).all();
-		return { ok: true, list: rows.results || [] };
+		const list = rows.results || [];
+		return { ok: true, list, unread: list.filter((r) => !r.seen).length };
 	}
 	if (p.op === "admin_fb_get") {
-		const f = await db.prepare("SELECT * FROM lh_feedback WHERE id = ?").bind(Math.trunc(Number(p.id))).first();
+		const fid = Math.trunc(Number(p.id));
+		await db.prepare("UPDATE lh_feedback SET seen = 1 WHERE id = ?").bind(fid).run();
+		const f = await db.prepare("SELECT * FROM lh_feedback WHERE id = ?").bind(fid).first();
 		return f ? { ok: true, fb: f } : { error: "no feedback" };
 	}
 	if (p.op === "admin_fb_status") {
@@ -1766,7 +1775,14 @@ async function lhHandle(request, env) {
 	}
 	if (!error) await lhSave(db, row, d, now, name);
 	const view = lhView(row, d, extra, now);
-	if (lhIsAdmin(env, uuid)) view.admin = true;
+	if (lhIsAdmin(env, uuid)) {
+		view.admin = true;
+		// ungelesene Feedback-Meldungen für das „+1“ am Knopf
+		try {
+			const u = await db.prepare("SELECT COUNT(*) AS n FROM lh_feedback WHERE seen = 0").first();
+			view.fbUnread = u ? u.n : 0;
+		} catch { /* Tabelle noch nicht da */ }
+	}
 	if (error) view.error = error;
 	return json(view);
 }

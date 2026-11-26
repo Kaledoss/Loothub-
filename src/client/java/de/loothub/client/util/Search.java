@@ -58,8 +58,14 @@ public final class Search {
 		}
 		if (word.length() >= 5) {
 			for (String w : hay.split(" ")) {
-				if (Math.abs(w.length() - word.length()) <= 1 && w.length() >= 4 && oneEdit(w, word)) {
-					return true; // ein Tippfehler erlaubt
+				if (w.length() < 4) {
+					continue;
+				}
+				// ganzes Wort oder Wortanfang (z. B. „rucksak“ → „Rucksacks“) mit einem Tippfehler
+				for (int k = word.length() - 1; k <= word.length() + 1; k++) {
+					if (k <= w.length() && oneEdit(w.substring(0, k), word)) {
+						return true;
+					}
 				}
 			}
 		}

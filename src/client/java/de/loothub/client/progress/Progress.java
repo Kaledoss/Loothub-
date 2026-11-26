@@ -287,6 +287,19 @@ public final class Progress {
 	}
 
 	/** Ist man laut Server Admin (Taler ändern, Ranglisten zurücksetzen)? */
+	/** Admin: ungelesene Feedback-Meldungen (für das „+1“ am Knopf). */
+	public static int feedbackUnread() {
+		JsonObject s = state;
+		return s != null && s.has("fbUnread") ? s.get("fbUnread").getAsInt() : 0;
+	}
+
+	public static void setFeedbackUnread(int n) {
+		JsonObject s = state;
+		if (s != null) {
+			s.addProperty("fbUnread", Math.max(0, n));
+		}
+	}
+
 	public static boolean isAdmin() {
 		JsonObject s = state;
 		return s != null && s.has("admin") && s.get("admin").getAsBoolean();

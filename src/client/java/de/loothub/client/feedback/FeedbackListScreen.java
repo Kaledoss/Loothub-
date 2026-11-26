@@ -89,6 +89,9 @@ public class FeedbackListScreen extends Screen {
 					list.add(e.getAsJsonObject());
 				}
 				status = Component.translatable("loothub.feedback.count", list.size()).getString();
+				if (res.has("unread")) {
+					Progress.setFeedbackUnread(res.get("unread").getAsInt());
+				}
 			} else {
 				status = Component.translatable("loothub.lh.error.offline").getString();
 			}
@@ -96,6 +99,10 @@ public class FeedbackListScreen extends Screen {
 	}
 
 	private void open(JsonObject row) {
+		if (row.has("seen") && row.get("seen").getAsInt() == 0) {
+			row.addProperty("seen", 1); // gelesen: „+1“ am Knopf zählt herunter
+			Progress.setFeedbackUnread(Progress.feedbackUnread() - 1);
+		}
 		status = Component.translatable("loothub.feedback.loading").getString();
 		JsonObject p = new JsonObject();
 		p.addProperty("op", "admin_fb_get");
@@ -228,7 +235,11 @@ public class FeedbackListScreen extends Screen {
 			}
 			boolean done = "done".equals(str(r, "status"));
 			g.fill(8, y, 10, y + ROW - 1, done ? 0xFF55E06A : LoothubScreen.RED);
-			String head = DATE.format(Instant.ofEpochMilli(r.get("at").getAsLong())) + "  " + str(r, "name") + "  " + str(r, "ver")
+			boolean unread = r.has("seen") && r.get("seen").getAsInt() == 0;
+			if (unread) {
+				g.fill(lw - 8, y + 7, lw - 3, y + 12, LoothubScreen.RED); // ungelesen
+			}
+			String head = (unread ? "● " : "") + DATE.format(Instant.ofEpochMilli(r.get("at").getAsLong())) + "  " + str(r, "name") + "  " + str(r, "ver")
 					+ (r.has("shot") && r.get("shot").getAsInt() > 0 ? "  📷" : "");
 			g.drawString(font, head, 14, y + 2, done ? LoothubScreen.FAINT : LoothubScreen.MUTED, false);
 			g.drawString(font, font.plainSubstrByWidth(str(r, "text").replace('\n', ' '), lw - 20), 14, y + 12,

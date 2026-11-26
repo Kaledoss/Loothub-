@@ -143,7 +143,11 @@ public abstract class LoothubScreen extends Screen {
 		addRenderableWidget(Button.builder(fbl, x -> minecraft.setScreen(new de.loothub.client.feedback.FeedbackScreen(this)))
 				.bounds(fx, frameY + 2, fw, b.getHeight()).build());
 		if (de.loothub.client.progress.Progress.isAdmin()) {
+			int unread = de.loothub.client.progress.Progress.feedbackUnread();
 			Component al = Component.translatable("loothub.feedback.list_button");
+			if (unread > 0) {
+				al = al.copy().append(Component.literal(" +" + unread).withStyle(net.minecraft.ChatFormatting.RED, net.minecraft.ChatFormatting.BOLD));
+			}
 			int aw = font.width(al) + 12;
 			addRenderableWidget(Button.builder(al, x -> minecraft.setScreen(new de.loothub.client.feedback.FeedbackListScreen(this)))
 					.bounds(fx - 4 - aw, frameY + 2, aw, b.getHeight()).build());
