@@ -58,12 +58,16 @@ public final class MiniMeLayer extends RenderLayer<AvatarRenderState, PlayerMode
 				return;
 			}
 			float br = (lp.breath + 1F) * 0.5F;
-			rightArm.zRot += 0.04F * br + lp.armSpread + 0.45F * lp.armSwing;
-			leftArm.zRot -= 0.04F * br + lp.armSpread + 0.45F * lp.armSwing;
+			rightArm.zRot += 0.04F * br + lp.armSpread + 0.45F * lp.armSwing + lp.armIdleR;
+			leftArm.zRot -= 0.04F * br + lp.armSpread + 0.45F * lp.armSwing + lp.armIdleL;
+			// Trägheit beim Anlaufen/Anhalten (links etwas schwächer – nie ganz symmetrisch)
+			rightArm.xRot += lp.armFwd;
+			leftArm.xRot += lp.armFwd * 0.85F;
 			head.xRot += 0.025F * lp.breath;
+			head.zRot += lp.headTilt;
 			if (!legsBusy) {
-				rightLeg.xRot += lp.legR;
-				leftLeg.xRot += lp.legL;
+				rightLeg.xRot += lp.legR + lp.armFwd * 0.5F;
+				leftLeg.xRot += lp.legL + lp.armFwd * 0.45F;
 			}
 			// Flug: Arme und Beine ziehen nach hinten
 			rightArm.xRot += 0.6F * lp.armDrag;
@@ -515,6 +519,9 @@ public final class MiniMeLayer extends RenderLayer<AvatarRenderState, PlayerMode
 			}
 			ty += life.dy();
 			rz += life.rz();
+			if (!sleeping && !crawling && !swimming) {
+				ry += life.ry(); // Körper dreht verzögert ein Stück mit dem Blick
+			}
 			float[] emote = crawling || swimming ? null : Emotes.pick(state, i, sleeping, i < 2 || sitDown, partner, trait);
 			if (emote != null && (emote[0] == Emotes.NOD || emote[0] == Emotes.POKE || emote[0] == Emotes.HIGHFIVE
 					|| emote[0] == Emotes.GAME)) {

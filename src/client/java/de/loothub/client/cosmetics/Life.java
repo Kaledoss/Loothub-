@@ -40,11 +40,16 @@ public final class Life {
 		long seed;
 		float[] special;
 		float specialAt = -100;
+		float gazeVY, gazeVP; // Blick als Feder (leichtes Überschwingen wie bei echten Kopfbewegungen)
+		float bodyYaw, bodyYawVel; // Körper dreht verzögert hinter dem Kopf her
+		float armFwd, armFwdVel, prevFwd; // Arme schwingen beim Anlaufen/Anhalten nach
 	}
 
 	/** Werte für das Modell (in {@code setupAnim}) je Mini-Render-Zustand. */
 	public static final class Pose {
 		public float breath, legL, legR, armDrag, armSpread, flinch, duck, armSwing;
+		/** Trägheit beim Anlaufen/Anhalten, kleine eigene Armbewegungen, Kopf gegen die Gewichtsverlagerung. */
+		public float armFwd, armIdleL, armIdleR, headTilt;
 		/** +1 = Mini-Me sitzt/fliegt links vom Spieler (Modell-x positiv), −1 = rechts. */
 		public float side = 1F;
 		/** Platz des Mini-Mes (0 …). */
@@ -84,7 +89,7 @@ public final class Life {
 	}
 
 	/** Ergebnis für einen Frame: Lage-Versatz und Skalierung des ganzen Mini-Mes. */
-	public record Frame(float dy, float sx, float sy, float rz, float lookYaw, float lookPitch, boolean look) {
+	public record Frame(float dy, float sx, float sy, float rz, float lookYaw, float lookPitch, boolean look, float ry) {
 	}
 
 	/**
@@ -104,7 +109,8 @@ public final class Life {
 		p.slot = slot;
 		if (L <= 0 || sleeping) {
 			p.breath = p.legL = p.legR = p.armDrag = p.armSpread = p.flinch = p.duck = p.armSwing = 0;
-			return new Frame(0, 1, 1, 0, baseYaw, basePitch, false);
+			p.armFwd = p.armIdleL = p.armIdleR = p.headTilt = 0;
+			return new Frame(0, 1, 1, 0, baseYaw, basePitch, false, 0);
 		}
 		float phase = slot * 1.37F;
 		// Atmen: jedes Mini-Me in seinem eigenen Takt
@@ -135,6 +141,18 @@ public final class Life {
 		}
 		s.squash = Mth.clamp(s.squash, -0.6F, 0.6F);
 		p.armSwing = s.armSwing * L;
+		// Trägheit: beim Anlaufen schwingen Arme (und baumelnde Beine) nach hinten, beim Anhalten nach vorn aus
+		float fwd = Motion.forward(player);
+		if (dt > 0) {
+			s.armFwdVel += Mth.clamp(fwd - s.prevFwd, -0.3F, 0.3F) * 22F;
+			s.armFwdVel += (-55F * s.armFwd - 5.5F * s.armFwdVel) * dt;
+			s.armFwd = Mth.clamp(s.armFwd + s.armFwdVel * dt, -0.9F, 0.9F);
+		}
+		s.prevFwd = fwd;
+		p.armFwd = s.armFwd * L;
+		// kleine, nie ganz gleiche Eigenbewegungen der Arme (links und rechts in anderem Takt)
+		p.armIdleL = (float) (Math.sin(t * 0.071F + phase) * 0.045F + Math.sin(t * 0.023F + phase * 2) * 0.03F) * L;
+		p.armIdleR = (float) (Math.sin(t * 0.063F + phase + 1.3F) * 0.045F + Math.sin(t * 0.019F + phase) * 0.03F) * L;
 
 		// Kopf schwingt bei Drehungen nach
 		float lag = Motion.yawLag(player);
@@ -167,6 +185,12 @@ public final class Life {
 			p.armDrag = 0;
 			p.armSpread = 0;
 		}
+
+		// Gewicht verlagern: langsames, unregelmäßiges Wiegen; der Kopf gleicht leicht dagegen aus
+		float sway = (float) (Math.sin(t * 0.031F + phase) * 1.4F + Math.sin(t * 0.0117F + phase * 3F) * 0.9F)
+				* (kind == 0 ? 0.8F : 1.3F) * L;
+		rz += sway;
+		p.headTilt = (float) Math.toRadians(-sway * 0.7F);
 
 		// Reaktionen
 		if (player.hasRedOverlay || System.currentTimeMillis() - lightningAt < 400L) {
@@ -217,12 +241,16 @@ public final class Life {
 		}
 		// Sakkade: bei einem neuen Blickziel schnell hin, beim Verfolgen (Ziel wandert in kleinen Schritten, z. B. ein
 		// laufendes Tier – es wird nur alle paar Ticks neu gesucht) weich hinterher, damit der Kopf nicht ruckelt/zittert
+		// Feder mit leichtem Überschwingen: neue Ziele zügig, Verfolgen weich
 		float dist = Math.max(Math.abs(ty - s.gazeYaw), Math.abs(tp - s.gazePitch));
-		float k = dist < 0.5F ? 0 : Math.min(1, dt * (dist > 20F ? 12F : 4F));
-		s.gazeYaw += (ty - s.gazeYaw) * k;
-		s.gazePitch += (tp - s.gazePitch) * k;
-		float jitter = 0;
-		float lookYaw = baseYaw + (s.gazeYaw + s.lagYaw + jitter - baseYaw) * L;
+		float stiff = dist > 20F ? 150F : 40F, damp = dist > 20F ? 17F : 11F;
+		if (dt > 0) {
+			s.gazeVY += ((ty - s.gazeYaw) * stiff - s.gazeVY * damp) * dt;
+			s.gazeVP += ((tp - s.gazePitch) * stiff - s.gazeVP * damp) * dt;
+			s.gazeYaw += s.gazeVY * dt;
+			s.gazePitch += s.gazeVP * dt;
+		}
+		float lookYaw = baseYaw + (s.gazeYaw + s.lagYaw - baseYaw) * L;
 		float lookPitch = basePitch + (s.gazePitch - basePitch) * L + (player.isCrouching ? 15F * L : 0) + s.flinch * 20F * L;
 
 		// unter Wasser: kleine Luftblasen
@@ -235,10 +263,18 @@ public final class Life {
 				mc.level.addParticle(net.minecraft.core.particles.ParticleTypes.BUBBLE, wx, wy, wz, 0, 0.05, 0);
 			}
 		}
+		// Erst schauen Kopf/Augen, der Körper dreht sich etwas später ein Stück mit
+		if (dt > 0) {
+			float bodyTarget = Mth.clamp(lookYaw * 0.35F, -25F, 25F);
+			s.bodyYawVel += ((bodyTarget - s.bodyYaw) * 22F - s.bodyYawVel * 8.5F) * dt;
+			s.bodyYaw += s.bodyYawVel * dt;
+		}
+		float ry = s.bodyYaw * L;
+		lookYaw -= ry;
 		float sq = s.squash * L;
 		float sy = 1F + sq * 0.45F + breath * 0.012F * L - (player.isCrouching ? 0.06F * L : 0);
 		float sx = 1F - sq * 0.25F;
-		return new Frame(dy, sx, sy, rz, lookYaw, lookPitch, true);
+		return new Frame(dy, sx, sy, rz, lookYaw, lookPitch, true, ry);
 	}
 
 	/** Block, den der Spieler abbaut, oder ein Lebewesen in der Nähe: {Gier, Neigung} relativ zum Körper. */
