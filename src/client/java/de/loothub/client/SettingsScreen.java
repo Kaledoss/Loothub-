@@ -249,10 +249,15 @@ public class SettingsScreen extends LoothubScreen {
 				}
 				y = card(y, 40, "loothub.settings.stats", "loothub.settings.stats.tooltip",
 						() -> c.statsEnabled, v -> c.statsEnabled = v);
-				y = card(y, 40, "loothub.settings.timers", "loothub.settings.timers.tooltip",
-						() -> c.timersEnabled, v -> c.timersEnabled = v);
 				y = card(y, 40, "loothub.settings.itemdex", "loothub.settings.itemdex.tooltip",
 						() -> c.itemdexEnabled, v -> c.itemdexEnabled = v);
+				y = section(y, "loothub.settings.section.everyday");
+				y = card(y, 40, "loothub.settings.timers", "loothub.settings.timers.tooltip",
+						() -> c.timersEnabled, v -> c.timersEnabled = v);
+				y = card(y, 40, "loothub.settings.food_hud", "loothub.settings.food_hud.tooltip",
+						() -> c.foodHud, v -> c.foodHud = v);
+				y = card(y, 40, "loothub.settings.villager_trade", "loothub.settings.villager_trade.tooltip",
+						() -> c.villagerTrade, v -> c.villagerTrade = v);
 				y = section(y, "loothub.settings.tab.sounds");
 				y = sounds(y, c);
 			}
@@ -398,6 +403,8 @@ public class SettingsScreen extends LoothubScreen {
 							c.inventoryDesign = v;
 							Theme.setPackActive(v);
 						});
+				y = card(y, 40, "loothub.settings.inventory_anim", "loothub.settings.inventory_anim.tooltip",
+						() -> c.inventoryAnim, v -> c.inventoryAnim = v);
 				y = card(y, 40, "loothub.settings.pulse", "loothub.settings.pulse.tooltip",
 						() -> c.pulseBorders, v -> c.pulseBorders = v);
 				// Leuchtende Erze: an/aus + Stärke + Reichweite
@@ -497,8 +504,6 @@ public class SettingsScreen extends LoothubScreen {
 							.bounds(cDescX, cY + 30, Math.min(160, cr - 8 - cDescX), 16).build()));
 					y = cardNoToggle(cY, 52, "loothub.settings.composer", "loothub.settings.composer.tooltip");
 				}
-				y = card(y, 40, "loothub.settings.fish_chat_hide", "loothub.settings.fish_chat_hide.tooltip",
-						() -> c.fishChatHide, v -> c.fishChatHide = v);
 			}
 			case INVENTORY -> {
 				// vier aufklappbare Gruppen statt einer langen Liste
@@ -590,10 +595,6 @@ public class SettingsScreen extends LoothubScreen {
 							() -> c.dropProtection, v -> c.dropProtection = v);
 					y = card(y, 40, "loothub.settings.pickup_warning", "loothub.settings.pickup_warning.tooltip",
 							() -> c.pickupWarning, v -> c.pickupWarning = v);
-					y = card(y, 40, "loothub.settings.food_hud", "loothub.settings.food_hud.tooltip",
-							() -> c.foodHud, v -> c.foodHud = v);
-					y = card(y, 40, "loothub.settings.villager_trade", "loothub.settings.villager_trade.tooltip",
-							() -> c.villagerTrade, v -> c.villagerTrade = v);
 				}
 				y = section(y, INV_SUBS[2]);
 				{
@@ -611,8 +612,6 @@ public class SettingsScreen extends LoothubScreen {
 						y = card(hY, 56, "loothub.settings.hotbar_anim", "loothub.settings.hotbar_anim.tooltip",
 								() -> c.hotbarAnim, v -> c.hotbarAnim = v);
 					}
-					y = card(y, 40, "loothub.settings.inventory_anim", "loothub.settings.inventory_anim.tooltip",
-							() -> c.inventoryAnim, v -> c.inventoryAnim = v);
 					y = card(y, 40, "loothub.settings.rarity_frames", "loothub.settings.rarity_frames.tooltip",
 							() -> c.rarityFrames, v -> c.rarityFrames = v);
 					y = card(y, 40, "loothub.settings.compressor_icon", "loothub.settings.compressor_icon.tooltip",
@@ -750,6 +749,8 @@ public class SettingsScreen extends LoothubScreen {
 				y = card(y, 40, "loothub.settings.market_sales", "loothub.settings.market_sales.tooltip",
 						() -> c.marketSales, v -> c.marketSales = v);
 				y = section(y, "loothub.settings.section.fishing");
+				y = card(y, 40, "loothub.settings.fish_chat_hide", "loothub.settings.fish_chat_hide.tooltip",
+						() -> c.fishChatHide, v -> c.fishChatHide = v);
 				// Angler-Prestige (Pflichtauswahl für den Rucksack-Wert im Job-Tracker)
 				{
 					int pY = y;
