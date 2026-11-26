@@ -1081,6 +1081,9 @@ async function lhInit(db) {
 			dist INTEGER DEFAULT 0, jobmoney INTEGER DEFAULT 0, itemdex INTEGER DEFAULT 0, updated INTEGER DEFAULT 0)`),
 		db.prepare("CREATE TABLE IF NOT EXISTS lh_comm (week INTEGER PRIMARY KEY, stat TEXT, goal INTEGER, sum INTEGER DEFAULT 0)"),
 		db.prepare("CREATE TABLE IF NOT EXISTS lh_meta (k TEXT PRIMARY KEY, v TEXT)"),
+		// Feedback/Fehlermeldungen aus der Mod (Liste nur für Admins)
+		db.prepare(`CREATE TABLE IF NOT EXISTS lh_feedback (id INTEGER PRIMARY KEY AUTOINCREMENT, at INTEGER, uuid TEXT, name TEXT,
+			ver TEXT, text TEXT, settings TEXT, log TEXT, shot TEXT, status TEXT DEFAULT 'open')`),
 		db.prepare(`CREATE TABLE IF NOT EXISTS lh_fish (fish TEXT, size TEXT, rarity TEXT, n INTEGER DEFAULT 0, at INTEGER DEFAULT 0,
 			PRIMARY KEY (fish, size, rarity))`),
 		db.prepare(`CREATE TABLE IF NOT EXISTS lh_mg (game TEXT, week INTEGER, uuid TEXT, name TEXT, score INTEGER DEFAULT 0,
@@ -1574,13 +1577,34 @@ async function lhAdmin(db, env, p, now) {
 		]);
 		return { ok: true };
 	}
+	// Feedback-Liste (Admin): Übersicht, einzelne Meldung (mit Bild), Status ändern, löschen
+	if (p.op === "admin_fb_list") {
+		const rows = await db.prepare(`SELECT id, at, name, ver, substr(text, 1, 2000) AS text, status, length(shot) > 0 AS shot
+			FROM lh_feedback ORDER BY (status = 'open') DESC, at DESC LIMIT 150`).all();
+		return { ok: true, list: rows.results || [] };
+	}
+	if (p.op === "admin_fb_get") {
+		const f = await db.prepare("SELECT * FROM lh_feedback WHERE id = ?").bind(Math.trunc(Number(p.id))).first();
+		return f ? { ok: true, fb: f } : { error: "no feedback" };
+	}
+	if (p.op === "admin_fb_status") {
+		const id = Math.trunc(Number(p.id));
+		if (p.status === "delete") {
+			await db.prepare("DELETE FROM lh_feedback WHERE id = ?").bind(id).run();
+		} else if (p.status === "open" || p.status === "done") {
+			await db.prepare("UPDATE lh_feedback SET status = ? WHERE id = ?").bind(p.status, id).run();
+		} else {
+			return { error: "bad status" };
+		}
+		return { ok: true };
+	}
 	return { error: "bad op" };
 }
 
 async function lhHandle(request, env) {
 	if (!env.AH) return json({ error: "no-db" }, 503);
 	const [body, err] = await signedBody(request, env, async (b) =>
-		typeof b.payload === "string" && b.payload.length < 120000 ? // mit Sammlung (Zähler je Block und Mob) deutlich größer
+		typeof b.payload === "string" && b.payload.length < (b.payload.startsWith('{"op":"feedback"') ? 900000 : 120000) ? // mit Sammlung (Zähler je Block und Mob) deutlich größer; Feedback mit Bildschirmfoto
 		 `loothub-lh\n${b.uuid}\n${b.ts}\n${b.payload}` : null);
 	if (err) return err;
 	let p;
@@ -1601,6 +1625,18 @@ async function lhHandle(request, env) {
 	if (typeof p.op === "string" && p.op.startsWith("admin_")) {
 		if (!lhIsAdmin(env, uuid)) return json({ error: "not admin" }, 403);
 		return json(await lhAdmin(db, env, p, now));
+	}
+	if (p.op === "feedback") {
+		// höchstens 5 Meldungen pro Stunde und Spieler
+		const recent = await db.prepare("SELECT COUNT(*) AS n FROM lh_feedback WHERE uuid = ? AND at > ?").bind(uuid, now - 3600_000).first();
+		if (recent && recent.n >= 5) return json({ error: "too_many" });
+		const str = (v, max) => (typeof v === "string" ? v.slice(0, max) : "");
+		const text = str(p.text, 2000).trim();
+		if (!text) return json({ error: "empty" });
+		const shot = typeof p.shot === "string" && /^[A-Za-z0-9+/=]+$/.test(p.shot) && p.shot.length < 800000 ? p.shot : "";
+		await db.prepare("INSERT INTO lh_feedback (at, uuid, name, ver, text, settings, log, shot, status) VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'open')")
+			.bind(now, uuid, name || row.name || "", str(p.ver, 40), text, str(p.set, 60000), str(p.log, 40000), shot).run();
+		return json({ ok: true });
 	}
 	if (p.op === "sync") {
 		d.legacy = !p.mv; // ältere Mod ohne Feature-Stand: nur Quests, die sie anzeigen kann

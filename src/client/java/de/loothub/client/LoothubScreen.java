@@ -135,6 +135,19 @@ public abstract class LoothubScreen extends Screen {
 		Button b = Tabs.updateButton(frameY + 2);
 		b.setX(frameX + frameW - 4 - b.getWidth());
 		updateButton = addRenderableWidget(b);
+		// Feedback melden (alle) und Meldungen ansehen (nur Admins) – oben rechts neben „Update“
+		int fx = b.getX() - 4;
+		Component fbl = Component.translatable("loothub.feedback.button");
+		int fw = font.width(fbl) + 12;
+		fx -= fw;
+		addRenderableWidget(Button.builder(fbl, x -> minecraft.setScreen(new de.loothub.client.feedback.FeedbackScreen(this)))
+				.bounds(fx, frameY + 2, fw, b.getHeight()).build());
+		if (de.loothub.client.progress.Progress.isAdmin()) {
+			Component al = Component.translatable("loothub.feedback.list_button");
+			int aw = font.width(al) + 12;
+			addRenderableWidget(Button.builder(al, x -> minecraft.setScreen(new de.loothub.client.feedback.FeedbackListScreen(this)))
+					.bounds(fx - 4 - aw, frameY + 2, aw, b.getHeight()).build());
+		}
 
 		initPage();
 	}
