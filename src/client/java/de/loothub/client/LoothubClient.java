@@ -178,7 +178,7 @@ public class LoothubClient implements ClientModInitializer {
 		de.loothub.client.progress.Progress.register();
 		de.loothub.client.stats.OpsuchtAfk.register();
 		// eigene Sprache für Loothub (Einstellung), unabhängig von Minecraft
-		net.fabricmc.fabric.api.client.event.lifecycle.v1.de.loothub.client.util.Guard.tick("LoothubClient#3", mc -> LoothubLanguage.tick());
+		de.loothub.client.util.Guard.tick("LoothubClient#3", mc -> LoothubLanguage.tick());
 		de.loothub.client.jobs.FishAlert.register();
 		de.loothub.client.quick.AuctionWatch.register();
 		de.loothub.client.music.YtMusic.ensure(de.loothub.client.jobs.WidgetConfig.get().musicEnabled);
@@ -255,7 +255,7 @@ public class LoothubClient implements ClientModInitializer {
 		MarketPrices.refreshIfStale();
 		// Auktionshaus regelmäßig im Hintergrund abfragen (nur im Spiel), damit Verkäufe lückenlos mitgeschrieben
 		// werden – nicht nur, wenn gerade ein Tooltip offen ist
-		net.fabricmc.fabric.api.client.event.lifecycle.v1.de.loothub.client.util.Guard.tick("LoothubClient#4", client -> {
+		de.loothub.client.util.Guard.tick("LoothubClient#4", client -> {
 			if (client.player != null && client.level != null && client.player.tickCount % 200 == 0) {
 				AuctionPrices.refreshIfStale();
 				AuctionNames.refreshServer(); // lückenloser Verlauf vom Loothub-Server

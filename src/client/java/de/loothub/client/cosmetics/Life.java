@@ -355,7 +355,7 @@ public final class Life {
 			}
 			return net.minecraft.world.InteractionResult.PASS;
 		});
-		net.fabricmc.fabric.api.client.event.lifecycle.v1.de.loothub.client.util.Guard.tick("Life", mc -> {
+		de.loothub.client.util.Guard.tick("Life", mc -> {
 			if (mc.level == null || mc.player == null) {
 				return;
 			}
