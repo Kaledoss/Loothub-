@@ -2,7 +2,6 @@ package de.loothub.client.quick;
 
 import de.loothub.client.jobs.WidgetConfig;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
-import net.minecraft.ChatFormatting;
 import net.minecraft.client.Minecraft;
 import net.minecraft.network.chat.Component;
 import net.minecraft.sounds.SoundEvents;
@@ -19,6 +18,9 @@ public final class PickupWarning {
 	/** So lange muss das Item schon in Reichweite liegen (frisch gedroppte Items haben eine kurze Aufsammel-Sperre). */
 	private static final int WAIT_TICKS = 15;
 	private static long lastWarn;
+	private static final long SHOW_MS = 3500;
+	private static ItemStack shown = ItemStack.EMPTY;
+	private static long until;
 	private static int stuckTicks;
 
 	private PickupWarning() {
@@ -58,9 +60,27 @@ public final class PickupWarning {
 			return;
 		}
 		lastWarn = now;
-		mc.gui.setOverlayMessage(Component.translatable("loothub.pickup_warning", blocked.getHoverName())
-				.withStyle(ChatFormatting.RED), false);
+		shown = blocked.copyWithCount(1);
+		until = now + SHOW_MS;
 		de.loothub.client.Sounds.play(de.loothub.client.Sounds.Group.PROTECT, SoundEvents.NOTE_BLOCK_BASS.value(), 0.7F, 0.6F);
+	}
+
+	/** Einblendung wie die Bau-Warnung „Block fehlt“ (gleicher Stil, gleiche Stelle): ⚠ Inventar voll + Item. */
+	public static void render(net.minecraft.client.gui.GuiGraphics g, net.minecraft.client.DeltaTracker delta) {
+		Minecraft mc = Minecraft.getInstance();
+		long now = System.currentTimeMillis();
+		if (shown.isEmpty() || now > until || mc.options.hideGui) {
+			return;
+		}
+		String title = "⚠ " + Component.translatable("loothub.pickup_warning.title").getString();
+		String sub = Component.translatable("loothub.pickup_warning.sub", shown.getHoverName()).getString();
+		int[] size = de.loothub.client.streamer.Alerts.boxSize(mc.font, title, sub, true);
+		int[] p = de.loothub.client.bau.EasyPlaceWarning.pos(g.guiWidth(), g.guiHeight(), size[0], size[1]);
+		long age = SHOW_MS - (until - now);
+		float a = age < 200 ? age / 200F : until - now < 400 ? (until - now) / 400F : 1F;
+		a = Math.max(0F, Math.min(1F, a));
+		int y = p[1] + (int) ((1 - Math.min(1F, age / 200F)) * -12);
+		de.loothub.client.streamer.Alerts.drawBox(g, mc.font, title, sub, 0xFFE23B3B, p[0], y, a, shown);
 	}
 
 	/** Passt das Item noch auf einen vorhandenen Stapel? */

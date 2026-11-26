@@ -126,7 +126,7 @@ public final class EasyPlaceWarning {
 		return sampleBox(mc, "⚠ Glas fehlt", Component.translatable("loothub.build.warn.sub").getString());
 	}
 
-	static int[] pos(int sw, int sh, int w, int h) {
+	public static int[] pos(int sw, int sh, int w, int h) {
 		WidgetConfig c = WidgetConfig.get();
 		return new int[]{(int) Math.round(c.buildWarnX * Math.max(0, sw - w)), (int) Math.round(c.buildWarnY * Math.max(0, sh - h))};
 	}
