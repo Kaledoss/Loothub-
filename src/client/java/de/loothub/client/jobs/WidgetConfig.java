@@ -67,6 +67,12 @@ public final class WidgetConfig {
 	public boolean pickupWarning = true;
 	/** Sättigung unter den Hungerkeulen und Vorschau beim Essen in der Hand (wie AppleSkin). */
 	public boolean foodHud = true;
+	/** Freunde: online zeigen und Freundesliste abrufen (nur Freunde sehen den Status). */
+	public boolean friendsOn = false;
+	/** Freunde sehen, was man gerade macht (Job und Level). */
+	public boolean friendsShare = false;
+	/** Hinweis, wenn ein Freund online kommt. */
+	public boolean friendsNotify = true;
 	/** Knopf „Max handeln“ im Dorfbewohner-Fenster. */
 	public boolean villagerTrade = true;
 	/** Willkommens-Assistent schon gezeigt? (bestehende Spieler: ja – nur Neuinstallationen bekommen ihn) */

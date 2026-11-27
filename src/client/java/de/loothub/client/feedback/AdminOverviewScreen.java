@@ -80,6 +80,26 @@ public class AdminOverviewScreen extends Screen {
 		}
 		int a7 = data.get("active7").getAsInt(), a30 = data.get("active30").getAsInt(), wf = data.get("withFeat").getAsInt();
 		g.drawString(font, Component.translatable("loothub.admin.active", a7, a30), 10, 24, LoothubScreen.TEXT, false);
+		// Worker-Verbrauch: Datenbankgröße, Einträge, Anfragen (grob gezählt)
+		if (data.has("usage") && data.get("usage").isJsonObject()) {
+			JsonObject u = data.getAsJsonObject("usage");
+			double mb = u.has("size") ? u.get("size").getAsDouble() / (1024 * 1024) : 0;
+			JsonArray days = u.has("days") ? u.getAsJsonArray("days") : new JsonArray();
+			long week = 0, today = 0;
+			for (int i = 0; i < days.size(); i++) {
+				week += days.get(i).getAsLong();
+				today = days.get(i).getAsLong();
+			}
+			java.util.Map<String, Long> cnt = new java.util.HashMap<>();
+			if (u.has("counts")) {
+				for (JsonElement e : u.getAsJsonArray("counts")) {
+					cnt.put(e.getAsJsonArray().get(0).getAsString(), e.getAsJsonArray().get(1).getAsLong());
+				}
+			}
+			Component line = Component.translatable("loothub.admin.usage", String.format(java.util.Locale.ROOT, "%.1f", mb), today, week,
+					cnt.getOrDefault("lh_player", 0L), cnt.getOrDefault("lh_feedback", 0L), cnt.getOrDefault("lh_friend", 0L));
+			g.drawString(font, line, width - 10 - font.width(line), 24, LoothubScreen.MUTED, false);
+		}
 		int colW = (width - 30) / 3;
 		// Versionen
 		int x = 10, y = 42;

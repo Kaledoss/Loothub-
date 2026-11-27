@@ -51,6 +51,7 @@ public class LoothubClient implements ClientModInitializer {
 		// zuerst: fehlen im Spielordner alle Loothub-Daten, die letzte Sicherung einspielen (bevor etwas gelesen wird)
 		DataBackup.restoreIfEmpty();
 		DataBackup.register();
+		de.loothub.client.friends.Friends.register();
 		// L öffnet das Loothub+-Menü mit dem ersten Reiter „Verlauf“ (daneben „Markt“ und „Job-Widget“).
 		// Hinweis: In Minecraft liegt L standardmäßig auf „Fortschritte“ – das bitte unter Steuerung umlegen.
 		menuKey = KeyBindingHelper.registerKeyBinding(new KeyMapping(

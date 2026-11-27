@@ -288,7 +288,7 @@ public final class Progress {
 
 	/** Ist man laut Server Admin (Taler ändern, Ranglisten zurücksetzen)? */
 	/** Worker-Stand, den diese Mod-Version braucht (muss zu WORKER_VERSION in cosmetics-worker.js passen). */
-	public static final int WORKER_NEEDED = 13;
+	public static final int WORKER_NEEDED = 14;
 
 	/** Admin: Läuft auf dem Server ein älterer Worker, als diese Mod braucht? (unbekannt = nein) */
 	public static boolean workerOutdated() {
@@ -582,6 +582,11 @@ public final class Progress {
 	/** Unterschriebene Anfrage im Hintergrund; done bekommt null (ok) oder einen Fehlerschlüssel. */
 	private static void send(JsonObject payload, Consumer<String> done) {
 		send(payload, done, null);
+	}
+
+	/** Beliebige unterschriebene Anfrage, deren Antwort (oder null) direkt zurückkommt – z. B. für Freunde. */
+	public static void request(JsonObject payload, Consumer<JsonObject> result) {
+		send(payload, null, result);
 	}
 
 	/** Admin: Taler eines Spielers ändern bzw. eine Rangliste zurücksetzen; result bekommt die Antwort (oder null). */

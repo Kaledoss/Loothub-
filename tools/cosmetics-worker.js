@@ -1072,7 +1072,7 @@ const LH_BOARDS = ["points", "ach", "login", "dquests", "wquests", "blocks", "pl
 const LH_DROP_MIN_PLAY = { d: 30, w: 180, m: 600, a: 1200 }; // Mindest-Spielminuten für „am wenigsten weggeworfen“
 const LH_PERIODS = ["d", "w", "m"]; // täglich, wöchentlich, monatlich (dazu „a“ = gesamt)
 /** Stand dieses Workers – die Mod zeigt Admins einen Hinweis, wenn er älter ist als sie erwartet. Bei jeder Änderung erhöhen. */
-const WORKER_VERSION = 13;
+const WORKER_VERSION = 14;
 
 let lhReady = false;
 async function lhInit(db) {
@@ -1095,6 +1095,10 @@ async function lhInitTables(db) {
 			ver TEXT, text TEXT, settings TEXT, log TEXT, shot TEXT, status TEXT DEFAULT 'open')`),
 		db.prepare(`CREATE TABLE IF NOT EXISTS lh_fish (fish TEXT, size TEXT, rarity TEXT, n INTEGER DEFAULT 0, at INTEGER DEFAULT 0,
 			PRIMARY KEY (fish, size, rarity))`),
+		// Freunde: a hat b angefragt; status 'pending' oder 'ok' (dann gilt es für beide)
+		db.prepare(`CREATE TABLE IF NOT EXISTS lh_friend (a TEXT, b TEXT, status TEXT, at INTEGER, PRIMARY KEY (a, b))`),
+		// Online-Status nur für Freunde: zuletzt gesehen und (falls geteilt) aktuelle Tätigkeit
+		db.prepare(`CREATE TABLE IF NOT EXISTS lh_presence (uuid TEXT PRIMARY KEY, name TEXT DEFAULT '', at INTEGER, act TEXT DEFAULT '')`),
 		db.prepare(`CREATE TABLE IF NOT EXISTS lh_mg (game TEXT, week INTEGER, uuid TEXT, name TEXT, score INTEGER DEFAULT 0,
 			at INTEGER DEFAULT 0, PRIMARY KEY (game, week, uuid))`),
 	]);
@@ -1533,6 +1537,119 @@ async function lhSave(db, row, d, now, name, resets) {
 		.bind(...names.map((n) => cols[n])).run();
 }
 
+// Anfragen grob mitzählen (Admin-Übersicht): im Speicher sammeln und nur gelegentlich schreiben, damit es kaum kostet
+let lhReqCount = 0, lhReqFlushed = 0;
+async function lhCountRequest(db, now) {
+	lhReqCount++;
+	if (lhReqCount < 25 && now - lhReqFlushed < 5 * 60_000) return;
+	const n = lhReqCount, key = "req:" + lhDayId(now);
+	lhReqCount = 0;
+	lhReqFlushed = now;
+	await db.prepare(`INSERT INTO lh_meta (k, v) VALUES (?, ?) ON CONFLICT(k) DO UPDATE SET v = CAST(CAST(v AS INTEGER) + ? AS TEXT)`)
+		.bind(key, String(n), n).run();
+}
+
+/** Admin: Datenbank-Größe, Einträge je Tabelle und Anfragen der letzten Tage. */
+async function lhUsage(db, now) {
+	const tables = ["lh_player", "lh_feedback", "lh_friend", "lh_presence", "lh_fish", "lh_mg", "ah_sales", "ah_kv"];
+	const counts = [];
+	let size = 0;
+	for (const t of tables) {
+		try {
+			const r = await db.prepare(`SELECT COUNT(*) AS n FROM ${t}`).all();
+			counts.push([t, (r.results && r.results[0] && r.results[0].n) || 0]);
+			if (r.meta && r.meta.size_after) size = r.meta.size_after;
+		} catch { /* Tabelle fehlt */ }
+	}
+	const today = lhDayId(now), days = [];
+	const keys = [];
+	for (let i = 6; i >= 0; i--) keys.push("req:" + (today - i));
+	const r = await db.prepare(`SELECT k, v FROM lh_meta WHERE k IN (${keys.map(() => "?").join(",")})`).bind(...keys).all();
+	const got = Object.fromEntries((r.results || []).map((x) => [x.k, Number(x.v) || 0]));
+	for (const k of keys) days.push(got[k] || 0);
+	days[days.length - 1] += lhReqCount; // noch nicht geschriebene
+	try {
+		await db.prepare("DELETE FROM lh_meta WHERE k LIKE 'req:%' AND k < ?").bind("req:" + (today - 30)).run();
+	} catch { /* egal */ }
+	return { size, counts, days };
+}
+
+const LH_FRIEND_MAX = 100, LH_FRIEND_PENDING_MAX = 20, LH_ONLINE_MS = 3 * 60_000;
+
+/**
+ * Freundesystem. Freundschaft nur, wenn beide zustimmen; Online-Status und Tätigkeit sehen nur Freunde.
+ * friends: Liste abrufen (und eigenen Online-Stand setzen) · friend_add {target} · friend_accept/decline/remove {u}
+ */
+async function lhFriends(db, uuid, myName, p, now) {
+	const other = typeof p.u === "string" && /^[0-9a-f-]{32,36}$/.test(p.u) ? p.u : null;
+	const pair = (x) => db.prepare("SELECT * FROM lh_friend WHERE (a = ? AND b = ?) OR (a = ? AND b = ?)").bind(uuid, x, x, uuid).first();
+	let msg = null, error = null;
+	// jede Freunde-Anfrage zählt als „online“; Tätigkeit setzt nur der regelmäßige Abruf (friends)
+	await db.prepare(`INSERT INTO lh_presence (uuid, name, at, act) VALUES (?, ?, ?, '')
+		ON CONFLICT(uuid) DO UPDATE SET at = excluded.at, name = CASE WHEN excluded.name <> '' THEN excluded.name ELSE name END`)
+		.bind(uuid, myName, now).run();
+	if (p.op === "friend_add") {
+		const target = String(p.target || "");
+		// Loothub-Nutzer suchen: aus den Ranglisten oder aus dem Freunde-Stand (wer Fortschritt aus hat)
+		const t = NAME.test(target)
+			? (await db.prepare("SELECT uuid, name FROM lh_player WHERE lower(name) = lower(?) ORDER BY updated DESC LIMIT 1").bind(target).first())
+				|| (await db.prepare("SELECT uuid, name FROM lh_presence WHERE lower(name) = lower(?) ORDER BY at DESC LIMIT 1").bind(target).first())
+			: null;
+		if (!t) error = "no player";
+		else if (t.uuid === uuid) error = "self";
+		else {
+			const r = await pair(t.uuid);
+			if (r && r.status === "ok") error = "already";
+			else if (r && r.a === t.uuid) {
+				// er hat mich schon angefragt → annehmen
+				await db.prepare("UPDATE lh_friend SET status = 'ok', at = ? WHERE a = ? AND b = ?").bind(now, t.uuid, uuid).run();
+				msg = "accepted";
+			} else if (r) error = "pending";
+			else {
+				const c = await db.prepare(`SELECT SUM(status = 'ok') AS ok, SUM(status = 'pending' AND a = ?) AS out
+					FROM lh_friend WHERE a = ? OR b = ?`).bind(uuid, uuid, uuid).first();
+				if (c && (c.ok || 0) >= LH_FRIEND_MAX) error = "full";
+				else if (c && (c.out || 0) >= LH_FRIEND_PENDING_MAX) error = "too_many";
+				else {
+					await db.prepare("INSERT INTO lh_friend (a, b, status, at) VALUES (?, ?, 'pending', ?)").bind(uuid, t.uuid, now).run();
+					msg = "sent";
+				}
+			}
+		}
+	} else if (p.op === "friend_accept") {
+		if (!other) error = "bad";
+		else await db.prepare("UPDATE lh_friend SET status = 'ok', at = ? WHERE a = ? AND b = ? AND status = 'pending'").bind(now, other, uuid).run();
+	} else if (p.op === "friend_decline" || p.op === "friend_remove") {
+		if (!other) error = "bad";
+		else await db.prepare("DELETE FROM lh_friend WHERE (a = ? AND b = ?) OR (a = ? AND b = ?)").bind(uuid, other, other, uuid).run();
+	} else if (p.op === "friends") {
+		// eigener Online-Stand; Tätigkeit nur, wenn der Spieler sie teilen möchte
+		const act = p.share && typeof p.act === "string" ? p.act.slice(0, 60) : "";
+		await db.prepare("UPDATE lh_presence SET act = ? WHERE uuid = ?").bind(act, uuid).run();
+	} else {
+		return { error: "bad op" };
+	}
+	const rows = ((await db.prepare(`SELECT f.a, f.b, f.status, COALESCE(NULLIF(pr.name, ''), pl.name) AS name, pr.at AS seen, pr.act
+		FROM lh_friend f
+		LEFT JOIN lh_presence pr ON pr.uuid = (CASE WHEN f.a = ? THEN f.b ELSE f.a END)
+		LEFT JOIN lh_player pl ON pl.uuid = (CASE WHEN f.a = ? THEN f.b ELSE f.a END)
+		WHERE f.a = ? OR f.b = ?`).bind(uuid, uuid, uuid, uuid).all()).results) || [];
+	const friends = [], incoming = [], outgoing = [];
+	for (const r of rows) {
+		const u = r.a === uuid ? r.b : r.a;
+		if (r.status === "ok") {
+			const online = !!r.seen && now - r.seen < LH_ONLINE_MS;
+			friends.push({ u, name: r.name || "?", online, seen: r.seen || 0, act: online ? (r.act || "") : "" });
+		} else if (r.b === uuid) incoming.push({ u, name: r.name || "?" });
+		else outgoing.push({ u, name: r.name || "?" });
+	}
+	friends.sort((x, y) => (y.online - x.online) || x.name.localeCompare(y.name));
+	const out = { friends, incoming, outgoing, wv: WORKER_VERSION };
+	if (msg) out.msg = msg;
+	if (error) out.error = error;
+	return out;
+}
+
 /** Ist diese UUID Admin? Liste in der Cloudflare-Variable LH_ADMINS (UUIDs, durch Komma getrennt). */
 function lhIsAdmin(env, uuid) {
 	const list = String(env.LH_ADMINS || "").toLowerCase().split(/[\s,;]+/).map((x) => x.replace(/-/g, "")).filter(Boolean);
@@ -1609,7 +1726,9 @@ async function lhAdmin(db, env, p, now) {
 		}
 		recent.sort((a, b) => b[2] - a[2]);
 		const sorted = (o) => Object.entries(o).sort((a, b) => b[1] - a[1]);
-		return { ok: true, active7, active30, withFeat, versions: sorted(versions), features: sorted(features), recent: recent.slice(0, 50) };
+		let usage = null;
+		try { usage = await lhUsage(db, now); } catch { /* ohne Verbrauch */ }
+		return { ok: true, active7, active30, withFeat, versions: sorted(versions), features: sorted(features), recent: recent.slice(0, 50), usage };
 	}
 	// Feedback-Liste (Admin): Übersicht, einzelne Meldung (mit Bild), Status ändern, löschen
 	if (p.op === "admin_fb_list") {
@@ -1651,6 +1770,7 @@ async function lhHandle(request, env) {
 	const uuid = body.uuid;
 	const name = typeof body.me === "string" && NAME.test(body.me) ? body.me : "";
 	const now = Date.now();
+	try { await lhCountRequest(db, now); } catch { /* nur Statistik */ }
 	let row = await db.prepare("SELECT * FROM lh_player WHERE uuid = ?").bind(uuid).first();
 	if (!row) row = { uuid, name, data: "{}", points: 0, spent: 0, title: "", badge: "" };
 	let d;
@@ -1674,6 +1794,9 @@ async function lhHandle(request, env) {
 		await db.prepare("INSERT INTO lh_feedback (at, uuid, name, ver, text, settings, log, shot, status) VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'open')")
 			.bind(now, uuid, name || row.name || "", str(p.ver, 40), text, str(p.set, 60000), str(p.log, 40000), shot).run();
 		return json({ ok: true });
+	}
+	if (typeof p.op === "string" && p.op.startsWith("friend")) {
+		return json(await lhFriends(db, uuid, name || row.name || "", p, now));
 	}
 	if (p.op === "sync") {
 		d.legacy = !p.mv;

@@ -54,6 +54,7 @@ public abstract class LoothubScreen extends Screen {
 		BUILD("loothub.tab.build", Items.BRICKS),
 		STREAMER("loothub.tab.streamer", Items.AMETHYST_CLUSTER),
 		QUESTS("loothub.tab.quests", Items.EXPERIENCE_BOTTLE),
+		FRIENDS("loothub.tab.friends", Items.CAKE),
 		CHANGELOG("loothub.tab.changelog", Items.BOOK),
 		SETTINGS("loothub.tab.settings", Items.COMPARATOR);
 
@@ -104,6 +105,7 @@ public abstract class LoothubScreen extends Screen {
 			case POKEDEX -> new PokedexScreen();
 			case ITEMDEX -> new ItemdexScreen();
 			case QUESTS -> new de.loothub.client.progress.ProgressScreen();
+			case FRIENDS -> new de.loothub.client.friends.FriendsScreen();
 			case COSMETICS -> new CosmeticsScreen();
 			case ALLTAG -> new AlltagScreen();
 			case BUILD -> new de.loothub.client.bau.BuildScreen();
