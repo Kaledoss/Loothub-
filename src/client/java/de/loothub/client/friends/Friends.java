@@ -174,6 +174,11 @@ public final class Friends {
 				if (res.has("friends")) {
 					apply(res);
 				}
+				if (res.has("bonus") && res.get("bonus").isJsonObject()) {
+					JsonObject b = res.getAsJsonObject("bonus");
+					toast(Component.translatable("loothub.friends.toast.bonus.title"),
+							Component.translatable("loothub.friends.toast.bonus", b.get("p").getAsInt(), str(b, "with")));
+				}
 				err = res.has("error") ? res.get("error").getAsString() : res.has("msg") ? "msg_" + res.get("msg").getAsString() : null;
 			}
 			if (done != null) {

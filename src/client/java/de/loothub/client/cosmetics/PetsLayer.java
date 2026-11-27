@@ -168,7 +168,7 @@ public final class PetsLayer extends RenderLayer<AvatarRenderState, PlayerModel>
 				case "turtle" -> 0.7F;
 				case "hummingbird" -> 0.75F;
 				default -> 0.65F;
-			};
+			} * PetLevels.growth(PetLevels.level(state, slot)); // wächst mit dem Haustier-Level
 			float tx = side * 1.35F, tz = 0.35F;
 			float ty;
 			float squish = 0.0F;

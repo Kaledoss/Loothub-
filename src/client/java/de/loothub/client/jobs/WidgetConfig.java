@@ -252,6 +252,8 @@ public final class WidgetConfig {
 	public int anglerPrestige = -1;
 	/** Rekorde der Minispiele (Spiel → Punkte; bei Memory die wenigsten Züge). */
 	public java.util.Map<String, Integer> mgBest = new java.util.HashMap<>();
+	/** Haustier-Erfahrung je Haustier-Art (Haustier-Level). */
+	public java.util.Map<String, Integer> petXp = new java.util.HashMap<>();
 	public double buildListX = 1.0;
 	public double buildListY = 0.3;
 	/** YouTube Music (Desktop-App, API Server): „Läuft gerade“ im HUD. */

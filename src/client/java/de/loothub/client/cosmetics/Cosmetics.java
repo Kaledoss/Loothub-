@@ -82,6 +82,8 @@ public final class Cosmetics {
 	public static final String HEAD_MINI = "minime";
 	/** Spielername je Kopf-Platz (Mini-Me mit fremdem Skin), leer = eigener Skin. */
 	public static final String HEAD_SKINS = "headskins";
+	/** Level der folgenden Haustiere je Platz, z. B. "3,5" (andere sehen die Größe). */
+	public static final String PET_LEVELS = "petlevels";
 	/** Flügel-Stile (Textur textures/entity/wing_<stil>.png). */
 	public static final List<String> WING_STYLES = List.of("dragon", "devil", "angel", "drake");
 
@@ -425,6 +427,7 @@ public final class Cosmetics {
 		putOwn(mine, values, MINI_WING_COLOR_OUTER, cfg.miniMeWingColorOuter);
 		putOwn(mine, values, FOOTSTEPS, cfg.footsteps);
 		putOwn(mine, values, PETS, cfg.pets == null || cfg.pets.replace(",", "").isBlank() ? "" : cfg.pets);
+		putOwn(mine, values, PET_LEVELS, cfg.pets == null || cfg.pets.replace(",", "").isBlank() ? "" : PetLevels.ownProfileValue());
 		putOwn(mine, values, HEAD_PETS, cfg.headPets == null || cfg.headPets.replace(",", "").isBlank() ? "" : cfg.headPets);
 		putOwn(mine, values, HEAD_SKINS, cfg.headSkins == null || cfg.headSkins.replace(",", "").isBlank() ? "" : cfg.headSkins);
 		putOwn(mine, values, MINI_TRAITS, cfg.miniMeTraits == null || cfg.miniMeTraits.replace(",", "").isBlank() ? "" : cfg.miniMeTraits);

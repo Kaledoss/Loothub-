@@ -77,6 +77,8 @@ public class CosmeticsScreen extends LoothubScreen {
 	private long headNamesChangedAt;
 	private Dropdown openDropdown;
 	private int jsonY = -1;
+	/** y der Haustier-Level-Zeilen, -1 = nicht auf dieser Seite. */
+	private int petLevelY = -1;
 	private int descX;
 
 	public CosmeticsScreen() {
@@ -92,6 +94,7 @@ public class CosmeticsScreen extends LoothubScreen {
 		nameBoxes = List.of();
 		openDropdown = null;
 		jsonY = -1;
+		petLevelY = -1;
 		for (int i = 0; i < skinStatus.length; i++) {
 			skinStatus[i] = null;
 		}
@@ -249,6 +252,11 @@ public class CosmeticsScreen extends LoothubScreen {
 				toggle(lx, y + 20, lw, () -> c.petReactions, v -> c.petReactions = v);
 				sections.add(new Section(y, 42, "loothub.cosmetics.pet_react", "loothub.cosmetics.pet_react.desc"));
 				y += 42 + GAP;
+
+				// Haustier-Level (nur Anzeige)
+				petLevelY = y + 30;
+				sections.add(new Section(y, 30 + Cosmetics.MAX_PETS * 22 + 4, "loothub.petlevel.title", "loothub.petlevel.desc"));
+				y += 30 + Cosmetics.MAX_PETS * 22 + 4 + GAP;
 
 				// Lebendigkeit
 				addRenderableWidget(new net.minecraft.client.gui.components.AbstractSliderButton(lx, y + 20, lw, 16,
@@ -721,6 +729,27 @@ public class CosmeticsScreen extends LoothubScreen {
 			}
 		}
 		WidgetConfig c = WidgetConfig.get();
+		if (petLevelY >= 0) {
+			int w = cr - 8 - descX;
+			for (int slot = 0; slot < Cosmetics.MAX_PETS; slot++) {
+				int y = petLevelY + slot * 22;
+				String type = de.loothub.client.cosmetics.PetLevels.type(slot);
+				if (type.isEmpty()) {
+					g.drawString(font, Component.translatable("loothub.petlevel.none"), descX, y + 2, FAINT, false);
+					continue;
+				}
+				int xp = de.loothub.client.cosmetics.PetLevels.xp(type);
+				int lv = de.loothub.client.cosmetics.PetLevels.level(xp);
+				float pr = de.loothub.client.cosmetics.PetLevels.progress(xp);
+				Component head = Component.translatable("loothub.petlevel.line",
+						Component.translatable("loothub.cosmetics.pets.type." + type), lv);
+				g.drawString(font, head, descX, y, TEXT, false);
+				int bx = descX + font.width(head) + 8, bw = Math.max(40, Math.min(120, w - font.width(head) - 8));
+				g.fill(bx, y + 1, bx + bw, y + 7, 0xFF2A2A2A);
+				g.fill(bx, y + 1, bx + Math.round(bw * pr), y + 7, lv >= de.loothub.client.cosmetics.PetLevels.MAX ? 0xFFFFD66B : GREEN);
+				g.drawString(font, de.loothub.client.cosmetics.PetLevels.nextReward(lv), descX, y + 11, MUTED, false);
+			}
+		}
 		// Status je Mini-Me
 		for (int i = 0; i < skinStatus.length && i < c.miniMes.size(); i++) {
 			if (skinStatus[i] == null || c.miniMes.get(i) == null || c.miniMes.get(i).isBlank()) {

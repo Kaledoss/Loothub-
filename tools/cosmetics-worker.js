@@ -1072,7 +1072,7 @@ const LH_BOARDS = ["points", "ach", "login", "dquests", "wquests", "blocks", "pl
 const LH_DROP_MIN_PLAY = { d: 30, w: 180, m: 600, a: 1200 }; // Mindest-Spielminuten für „am wenigsten weggeworfen“
 const LH_PERIODS = ["d", "w", "m"]; // täglich, wöchentlich, monatlich (dazu „a“ = gesamt)
 /** Stand dieses Workers – die Mod zeigt Admins einen Hinweis, wenn er älter ist als sie erwartet. Bei jeder Änderung erhöhen. */
-const WORKER_VERSION = 15;
+const WORKER_VERSION = 16;
 
 let lhReady = false;
 async function lhInit(db) {
@@ -1082,6 +1082,7 @@ async function lhInit(db) {
 	try { await db.prepare("ALTER TABLE lh_feedback ADD COLUMN seen INTEGER DEFAULT 0").run(); } catch { /* schon da */ }
 	try { await db.prepare("ALTER TABLE lh_presence ADD COLUMN ev TEXT DEFAULT '[]'").run(); } catch { /* schon da */ }
 	try { await db.prepare("ALTER TABLE lh_presence ADD COLUMN share INTEGER DEFAULT 0").run(); } catch { /* schon da */ }
+	try { await db.prepare("ALTER TABLE lh_presence ADD COLUMN bonus INTEGER DEFAULT 0").run(); } catch { /* schon da */ }
 }
 
 async function lhInitTables(db) {
@@ -1100,7 +1101,7 @@ async function lhInitTables(db) {
 		// Freunde: a hat b angefragt; status 'pending' oder 'ok' (dann gilt es für beide)
 		db.prepare(`CREATE TABLE IF NOT EXISTS lh_friend (a TEXT, b TEXT, status TEXT, at INTEGER, PRIMARY KEY (a, b))`),
 		// Online-Status nur für Freunde: zuletzt gesehen und (falls geteilt) aktuelle Tätigkeit
-		db.prepare(`CREATE TABLE IF NOT EXISTS lh_presence (uuid TEXT PRIMARY KEY, name TEXT DEFAULT '', at INTEGER, act TEXT DEFAULT '', ev TEXT DEFAULT '[]', share INTEGER DEFAULT 0)`),
+		db.prepare(`CREATE TABLE IF NOT EXISTS lh_presence (uuid TEXT PRIMARY KEY, name TEXT DEFAULT '', at INTEGER, act TEXT DEFAULT '', ev TEXT DEFAULT '[]', share INTEGER DEFAULT 0, bonus INTEGER DEFAULT 0)`),
 		db.prepare(`CREATE TABLE IF NOT EXISTS lh_mg (game TEXT, week INTEGER, uuid TEXT, name TEXT, score INTEGER DEFAULT 0,
 			at INTEGER DEFAULT 0, PRIMARY KEY (game, week, uuid))`),
 	]);
@@ -1576,7 +1577,7 @@ async function lhUsage(db, now) {
 	return { size, counts, days };
 }
 
-const LH_FRIEND_MAX = 100, LH_FRIEND_PENDING_MAX = 20, LH_ONLINE_MS = 3 * 60_000, LH_FEED_MS = 2 * 86400_000;
+const LH_FRIEND_MAX = 100, LH_FRIEND_PENDING_MAX = 20, LH_ONLINE_MS = 3 * 60_000, LH_FEED_MS = 2 * 86400_000, LH_FRIEND_BONUS = 20;
 
 /**
  * Freundesystem. Freundschaft nur, wenn beide zustimmen; Online-Status und Tätigkeit sehen nur Freunde.
@@ -1671,6 +1672,19 @@ async function lhFriends(db, uuid, myName, p, now) {
 	friends.sort((x, y) => (y.online - x.online) || x.name.localeCompare(y.name));
 	feed.sort((x, y) => y.t - x.t);
 	const out = { friends, incoming, outgoing, feed: feed.slice(0, 40), wv: WORKER_VERSION };
+	// Glücksbonus: einmal am Tag, wenn man gleichzeitig mit einem Freund online ist
+	const buddy = friends.find((f) => f.online);
+	if (p.op === "friends" && buddy) {
+		const day = lhDayId(now);
+		const me = await db.prepare("SELECT bonus FROM lh_presence WHERE uuid = ?").bind(uuid).first();
+		if (!me || me.bonus !== day) {
+			const r = await db.prepare("UPDATE lh_player SET points = points + ? WHERE uuid = ?").bind(LH_FRIEND_BONUS, uuid).run();
+			if (r.meta && r.meta.changes) {
+				await db.prepare("UPDATE lh_presence SET bonus = ? WHERE uuid = ?").bind(day, uuid).run();
+				out.bonus = { p: LH_FRIEND_BONUS, with: buddy.name };
+			}
+		}
+	}
 	if (msg) out.msg = msg;
 	if (error) out.error = error;
 	return out;

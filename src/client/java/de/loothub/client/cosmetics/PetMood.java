@@ -29,8 +29,14 @@ public final class PetMood {
 	}
 
 	public static void joy() {
+		joyQuiet();
+		PetLevels.joy();
+	}
+
+	/** Freuen ohne Erfahrung (z. B. beim Haustier-Level-up selbst). */
+	public static void joyQuiet() {
 		joyAt = System.currentTimeMillis();
-		heartsPending = true;
+		heartsPending = PetLevels.bestOwnLevel() >= PetLevels.HEARTS; // Herzchen ab Haustier-Level 2
 	}
 
 	private static void tick(Minecraft mc) {
@@ -70,7 +76,14 @@ public final class PetMood {
 			float env = Mth.sin(ph * Mth.PI);
 			float hop = Math.abs(Mth.sin(ph * 3F * Mth.PI)) * 0.45F * Math.min(1F, env * 2F);
 			pose.translate(0.0F, -hop, 0.0F);
-			pose.mulPose(Axis.YP.rotationDegrees(smooth(ph) * 360F));
+			if (PetLevels.level(PetLevels.xp(PetLevels.type(slot))) >= PetLevels.FLIP) {
+				// ab Haustier-Level 5: Salto statt Drehung
+				pose.translate(0.0F, -0.5F, 0.0F);
+				pose.mulPose(Axis.XP.rotationDegrees(smooth(ph) * 360F));
+				pose.translate(0.0F, 0.5F, 0.0F);
+			} else {
+				pose.mulPose(Axis.YP.rotationDegrees(smooth(ph) * 360F));
+			}
 			return;
 		}
 		long sinceScare = now - scaredAt;

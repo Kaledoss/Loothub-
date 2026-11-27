@@ -53,6 +53,7 @@ public class LoothubClient implements ClientModInitializer {
 		DataBackup.register();
 		de.loothub.client.friends.Friends.register();
 		de.loothub.client.cosmetics.PetMood.register();
+		de.loothub.client.cosmetics.PetLevels.register();
 		// L öffnet das Loothub+-Menü mit dem ersten Reiter „Verlauf“ (daneben „Markt“ und „Job-Widget“).
 		// Hinweis: In Minecraft liegt L standardmäßig auf „Fortschritte“ – das bitte unter Steuerung umlegen.
 		menuKey = KeyBindingHelper.registerKeyBinding(new KeyMapping(
