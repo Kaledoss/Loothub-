@@ -19,6 +19,16 @@ final class Texts {
 	}
 
 	/** Quest-Ziel („300 Blöcke abbauen“). */
+	/** Wo und wie eine Quest zählt (Tooltip in der Quest-Liste). */
+	static Component where(String stat) {
+		int c = stat.indexOf(':');
+		String key = c > 0 ? stat.substring(0, c) : stat;
+		String full = "loothub.lh.where." + key;
+		Component main = net.minecraft.client.resources.language.I18n.exists(full) ? Component.translatable(full)
+				: Component.translatable("loothub.lh.where.any");
+		return Component.empty().append(main).append("\n\n").append(Component.translatable("loothub.lh.where.note"));
+	}
+
 	static Component goal(String stat, long goal) {
 		int i = stat.indexOf(':');
 		if (i > 0) {

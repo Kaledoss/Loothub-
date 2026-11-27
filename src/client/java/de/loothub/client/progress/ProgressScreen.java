@@ -377,6 +377,10 @@ public class ProgressScreen extends LoothubScreen {
 			g.fill(cl, y + 1, cl + 3, y + 17, DIFF[Math.max(0, Math.min(2, diff))]);
 			Component text = Texts.goal(stat, goal);
 			g.drawString(font, text, cl + 8, y + 2, done ? FAINT : TEXT, false);
+			// Wo zählt das? – Hinweis beim Darüberfahren (kleines ⓘ hinter dem Text)
+			int tw = font.width(text);
+			g.drawString(font, "ⓘ", cl + 12 + tw, y + 2, FAINT, false);
+			hits.add(new Hit(cl + 8, y, tw + 14, 12, null, Texts.where(stat)));
 			String right = done ? "✔ " + Component.translatable("loothub.lh.toast.points", q.get("points").getAsInt()).getString()
 					: Component.translatable("loothub.lh.toast.points", q.get("points").getAsInt()).getString();
 			g.drawString(font, right, cr - font.width(right), y + 2, done ? 0xFF55E06A : 0xFFF2C14E, false);

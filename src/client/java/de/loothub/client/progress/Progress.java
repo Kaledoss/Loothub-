@@ -43,7 +43,7 @@ import de.loothub.client.stats.StatsStore;
 public final class Progress {
 	private static final HttpClient HTTP = HttpClient.newBuilder().connectTimeout(Duration.ofSeconds(8)).build();
 	private static final long SYNC_MS = 10 * 60_000L;
-	private static final long FIRST_DELAY_MS = 20_000L;
+	private static final long FIRST_DELAY_MS = 5_000L;
 	private static final long TAGS_MS = 5 * 60_000L;
 	private static final long BOARD_MS = 5 * 60_000L;
 
@@ -147,6 +147,9 @@ public final class Progress {
 			JsonObject part = s.getAsJsonObject(kind.equals("s") ? "slot" : "week");
 			if (part == null) {
 				continue;
+			}
+			if (part.has("ends") && part.get("ends").getAsLong() < System.currentTimeMillis()) {
+				continue; // Abschnitt vorbei (z. B. gespeicherter Stand vom letzten Spielen) – neue Quests kommen mit dem Abgleich
 			}
 			for (JsonElement e : part.getAsJsonArray("list")) {
 				String key = pinKey(kind, e.getAsJsonObject());
@@ -326,6 +329,55 @@ public final class Progress {
 		return status;
 	}
 
+	// ------------------------------------------------------------------ Zwischenspeicher (Quests sofort nach dem Einloggen)
+
+	private static java.nio.file.Path cacheFile() {
+		return net.fabricmc.loader.api.FabricLoader.getInstance().getConfigDir().resolve("loothub-quests-cache.json");
+	}
+
+	private static String ownId() {
+		var u = Minecraft.getInstance().getUser().getProfileId();
+		return u == null ? "" : u.toString();
+	}
+
+	private static void saveCache(JsonObject s) {
+		try {
+			JsonObject o = new JsonObject();
+			o.addProperty("id", ownId());
+			o.add("state", s);
+			if (atSync != null) {
+				o.add("atSync", atSync);
+			}
+			if (atSyncCol != null) {
+				o.add("atSyncCol", atSyncCol);
+			}
+			de.loothub.client.AsyncSave.write(cacheFile(), o.toString());
+		} catch (RuntimeException e) {
+			Loothub.LOGGER.debug("Quest-Zwischenspeicher nicht geschrieben", e);
+		}
+	}
+
+	private static void loadCache(Minecraft mc) {
+		if (state != null) {
+			return;
+		}
+		try {
+			java.nio.file.Path f = cacheFile();
+			if (!java.nio.file.Files.exists(f)) {
+				return;
+			}
+			JsonObject o = JsonParser.parseString(java.nio.file.Files.readString(f)).getAsJsonObject();
+			if (!ownId().equals(o.has("id") ? o.get("id").getAsString() : "")) {
+				return; // anderes Konto
+			}
+			atSync = o.has("atSync") ? o.getAsJsonObject("atSync") : null;
+			atSyncCol = o.has("atSyncCol") ? o.getAsJsonObject("atSyncCol") : null;
+			state = o.getAsJsonObject("state");
+		} catch (Exception e) {
+			Loothub.LOGGER.debug("Quest-Zwischenspeicher nicht lesbar", e);
+		}
+	}
+
 	public static void register() {
 		de.loothub.client.util.Guard.tick("Progress", Secrets::tick);
 		net.fabricmc.fabric.api.client.message.v1.ClientSendMessageEvents.CHAT.register(Secrets::chat);
@@ -340,6 +392,20 @@ public final class Progress {
 			}
 			if (joinedAt == 0) {
 				joinedAt = now;
+				loadCache(mc); // angepinnte Quests sofort zeigen, nicht erst nach dem ersten Abgleich
+			}
+			// Neuer 4-Stunden-Abschnitt bzw. neue Woche: gleich abgleichen, damit die neuen Quests sofort da sind
+			JsonObject st = state;
+			if (st != null && !busy && now - lastSync > 15_000L) {
+				for (String part : new String[]{"slot", "week"}) {
+					if (st.has(part) && st.get(part).isJsonObject() && st.getAsJsonObject(part).has("ends")) {
+						long ends = st.getAsJsonObject(part).get("ends").getAsLong();
+						if (now > ends + 2_000L && lastSync < ends + 2_000L) {
+							sync();
+							break;
+						}
+					}
+				}
 			}
 			if (!busy && now - joinedAt > FIRST_DELAY_MS && now - lastSync > SYNC_MS) {
 				sync();
@@ -390,6 +456,9 @@ public final class Progress {
 			ALERTED.removeIf(k -> k.startsWith("w|"));
 		}
 		for (String kind : new String[]{"s", "w"}) {
+			if ((kind.equals("s") ? slotEnds : weekEnds) < System.currentTimeMillis()) {
+				continue; // Abschnitt vorbei: nichts mehr als geschafft melden
+			}
 			for (JsonElement e : s.getAsJsonObject(kind.equals("s") ? "slot" : "week").getAsJsonArray("list")) {
 				JsonObject q = e.getAsJsonObject();
 				String key = pinKey(kind, q);
@@ -644,6 +713,7 @@ public final class Progress {
 					if ("sync".equals(payload.get("op").getAsString())) {
 						atSync = payload.getAsJsonObject("stats"); // Stand der Zähler zu diesem Abgleich
 						atSyncCol = payload.has("col") ? payload.getAsJsonObject("col") : null;
+						saveCache(s);
 					}
 					status = "";
 					mc.execute(() -> announce(s));

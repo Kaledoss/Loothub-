@@ -1812,5 +1812,20 @@
 	"loothub.petlevel.unlock.sparkle": "Neu: Funkeln um dich herum",
 	"loothub.petlevel.unlock.gold": "Neu: Goldglanz",
 	"loothub.friends.toast.bonus.title": "Glücksbonus",
-	"loothub.friends.toast.bonus": "+%s Taler – heute zusammen mit %s online"
+	"loothub.friends.toast.bonus": "+%s Taler – heute zusammen mit %s online",
+	"loothub.lh.where.any": "Zählt in allen Welten auf OPSUCHT.",
+	"loothub.lh.where.blocks": "Zählt beim Abbauen in allen Welten – überall, wo du abbauen darfst (Farmwelten, Plot, CB).",
+	"loothub.lh.where.placed": "Zählt beim Setzen in allen Welten – überall, wo du bauen darfst (meist dein Plot oder die Farmwelten).",
+	"loothub.lh.where.mobs": "Zählt in allen Welten, wenn du den Mob selbst triffst (auch mit Flächenwaffen in deiner Nähe).",
+	"loothub.lh.where.fish": "Zählt bei jedem Fang mit der Angel, in allen Welten.",
+	"loothub.lh.where.play": "Aktive Spielzeit in allen Welten – AFK-Zeit zählt nicht.",
+	"loothub.lh.where.jumps": "Zählt in allen Welten.",
+	"loothub.lh.where.dist": "Gelaufene, geschwommene, geflogene und gerittene Strecke in allen Welten.",
+	"loothub.lh.where.nether": "Zeit in jedem Nether, auch im Farm-Nether – AFK-Zeit zählt nicht.",
+	"loothub.lh.where.deep": "Zeit unter Höhe 0, nicht im Nether oder End. Geht nur in Welten, die so tief reichen – AFK-Zeit zählt nicht.",
+	"loothub.lh.where.b": "Zählt beim Abbauen dieses Blocks, in allen Welten.",
+	"loothub.lh.where.p": "Zählt beim Setzen dieses Blocks – überall, wo du bauen darfst.",
+	"loothub.lh.where.m": "Zählt, wenn du diesen Mob selbst besiegst, in allen Welten.",
+	"loothub.lh.where.i": "Zählt beim Aufsammeln dieses Items (auch direkt ins Inventar), in allen Welten.",
+	"loothub.lh.where.note": "Im HUD siehst du den Fortschritt sofort; gutgeschrieben wird er beim nächsten Abgleich (spätestens nach 10 Minuten)."
 }

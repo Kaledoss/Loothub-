@@ -995,6 +995,10 @@ public final class StatsTracker {
 			if (gain > 0 && fresh) {
 				StatsStore.add("mobloot." + k.mob(), gain);
 				StatsStore.add("mobloot_item." + k.mob() + "|" + e.getKey(), gain);
+				if (tracking(mc)) {
+					// per Magnet direkt ins Inventar: zählt auch als aufgesammelt (z. B. Quest „Knochen sammeln“)
+					StatsStore.add("picked." + e.getKey(), gain);
+				}
 			} else if (gain > 0 && mining && tracking(mc)) {
 				// Abbau-Drops, die ohne Aufsammel-Meldung im Inventar landen (Magnet, Server legt direkt ins Inventar)
 				StatsStore.add("picked." + e.getKey(), gain);

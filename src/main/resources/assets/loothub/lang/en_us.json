@@ -1812,5 +1812,20 @@
 	"loothub.petlevel.unlock.sparkle": "New: sparkles around you",
 	"loothub.petlevel.unlock.gold": "New: golden glow",
 	"loothub.friends.toast.bonus.title": "Lucky bonus",
-	"loothub.friends.toast.bonus": "+%s Taler – online together with %s today"
+	"loothub.friends.toast.bonus": "+%s Taler – online together with %s today",
+	"loothub.lh.where.any": "Counts in all worlds on OPSUCHT.",
+	"loothub.lh.where.blocks": "Counts when mining in all worlds – wherever you're allowed to mine (farm worlds, plot, CB).",
+	"loothub.lh.where.placed": "Counts when placing in all worlds – wherever you're allowed to build (usually your plot or the farm worlds).",
+	"loothub.lh.where.mobs": "Counts in all worlds when you hit the mob yourself (area weapons near you too).",
+	"loothub.lh.where.fish": "Counts for every catch with a fishing rod, in all worlds.",
+	"loothub.lh.where.play": "Active play time in all worlds – AFK time doesn't count.",
+	"loothub.lh.where.jumps": "Counts in all worlds.",
+	"loothub.lh.where.dist": "Distance walked, swum, flown and ridden in all worlds.",
+	"loothub.lh.where.nether": "Time in any Nether, including the farm Nether – AFK time doesn't count.",
+	"loothub.lh.where.deep": "Time below height 0, not in the Nether or End. Only works in worlds that go that deep – AFK time doesn't count.",
+	"loothub.lh.where.b": "Counts when mining this block, in all worlds.",
+	"loothub.lh.where.p": "Counts when placing this block – wherever you're allowed to build.",
+	"loothub.lh.where.m": "Counts when you defeat this mob yourself, in all worlds.",
+	"loothub.lh.where.i": "Counts when picking up this item (also straight into your inventory), in all worlds.",
+	"loothub.lh.where.note": "The HUD shows progress right away; it's credited at the next sync (within 10 minutes)."
 }
