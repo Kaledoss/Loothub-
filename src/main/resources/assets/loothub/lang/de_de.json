@@ -1827,5 +1827,6 @@
 	"loothub.lh.where.p": "Zählt beim Setzen dieses Blocks – überall, wo du bauen darfst.",
 	"loothub.lh.where.m": "Zählt, wenn du diesen Mob selbst besiegst, in allen Welten.",
 	"loothub.lh.where.i": "Zählt beim Aufsammeln dieses Items (auch direkt ins Inventar), in allen Welten.",
-	"loothub.lh.where.note": "Im HUD siehst du den Fortschritt sofort; gutgeschrieben wird er beim nächsten Abgleich (spätestens nach 10 Minuten)."
+	"loothub.lh.where.note": "Im HUD siehst du den Fortschritt sofort; gutgeschrieben wird er beim nächsten Abgleich (spätestens nach 10 Minuten).",
+	"loothub.more.button": "⋯ Mehr"
 }

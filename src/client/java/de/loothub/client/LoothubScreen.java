@@ -137,19 +137,34 @@ public abstract class LoothubScreen extends Screen {
 		Button b = Tabs.updateButton(frameY + 2);
 		b.setX(frameX + frameW - 4 - b.getWidth());
 		updateButton = addRenderableWidget(b);
-		// Feedback melden (alle) und Meldungen ansehen (nur Admins) – oben rechts neben „Update“
+		// Selten Gebrauchtes (Feedback, Sicherung, für Admins: Meldungen & Übersicht) liegt im „⋯“-Menü neben „Update“
 		int fx = b.getX() - 4;
-		Component fbl = Component.translatable("loothub.feedback.button");
-		int fw = font.width(fbl) + 12;
-		fx -= fw;
-		addRenderableWidget(Button.builder(fbl, x -> minecraft.setScreen(new de.loothub.client.feedback.FeedbackScreen(this)))
-				.bounds(fx, frameY + 2, fw, b.getHeight()).build());
-		// Datensicherung & Umzug (Export/Import)
-		Component bkl = Component.translatable("loothub.backup.button");
-		int bkw = font.width(bkl) + 12;
-		fx -= bkw + 4;
-		addRenderableWidget(Button.builder(bkl, x -> minecraft.setScreen(new BackupScreen(this)))
-				.bounds(fx, frameY + 2, bkw, b.getHeight()).build());
+		int unread = de.loothub.client.progress.Progress.isAdmin() ? de.loothub.client.progress.Progress.feedbackUnread() : 0;
+		Component ml = Component.translatable("loothub.more.button");
+		if (unread > 0) {
+			ml = ml.copy().append(Component.literal(" +" + unread).withStyle(net.minecraft.ChatFormatting.RED, net.minecraft.ChatFormatting.BOLD));
+		}
+		int mw = font.width(ml) + 12;
+		fx -= mw;
+		final int menuY = frameY + 2 + b.getHeight() + 2;
+		final int menuRight = fx + mw;
+		addRenderableWidget(Button.builder(ml, x -> {
+			java.util.List<MoreMenuScreen.Entry> items = new java.util.ArrayList<>();
+			items.add(new MoreMenuScreen.Entry(Component.translatable("loothub.feedback.button"),
+					() -> minecraft.setScreen(new de.loothub.client.feedback.FeedbackScreen(this))));
+			items.add(new MoreMenuScreen.Entry(Component.translatable("loothub.backup.button"),
+					() -> minecraft.setScreen(new BackupScreen(this))));
+			if (de.loothub.client.progress.Progress.isAdmin()) {
+				Component al = Component.translatable("loothub.feedback.list_button");
+				if (unread > 0) {
+					al = al.copy().append(Component.literal(" +" + unread).withStyle(net.minecraft.ChatFormatting.RED, net.minecraft.ChatFormatting.BOLD));
+				}
+				items.add(new MoreMenuScreen.Entry(al, () -> minecraft.setScreen(new de.loothub.client.feedback.FeedbackListScreen(this))));
+				items.add(new MoreMenuScreen.Entry(Component.translatable("loothub.admin.overview_button"),
+						() -> minecraft.setScreen(new de.loothub.client.feedback.AdminOverviewScreen(this))));
+			}
+			minecraft.setScreen(new MoreMenuScreen(this, menuRight, menuY, items));
+		}).bounds(fx, frameY + 2, mw, b.getHeight()).build());
 		if (de.loothub.client.progress.Progress.workerOutdated()) {
 			// Admin-Hinweis: Server-Worker ist älter als diese Mod – neue Funktionen fehlen sonst still
 			Component wl = Component.translatable("loothub.worker.outdated").withStyle(net.minecraft.ChatFormatting.GOLD);
@@ -157,21 +172,6 @@ public abstract class LoothubScreen extends Screen {
 			Button wb = addRenderableWidget(Button.builder(wl, x -> { }).bounds(fx - 4 - ww, frameY + 2, ww, b.getHeight()).build());
 			wb.setTooltip(net.minecraft.client.gui.components.Tooltip.create(
 					Component.translatable("loothub.worker.outdated.tooltip", de.loothub.client.progress.Progress.WORKER_NEEDED)));
-			fx -= ww + 4;
-		}
-		if (de.loothub.client.progress.Progress.isAdmin()) {
-			int unread = de.loothub.client.progress.Progress.feedbackUnread();
-			Component al = Component.translatable("loothub.feedback.list_button");
-			if (unread > 0) {
-				al = al.copy().append(Component.literal(" +" + unread).withStyle(net.minecraft.ChatFormatting.RED, net.minecraft.ChatFormatting.BOLD));
-			}
-			int aw = font.width(al) + 12;
-			addRenderableWidget(Button.builder(al, x -> minecraft.setScreen(new de.loothub.client.feedback.FeedbackListScreen(this)))
-					.bounds(fx - 4 - aw, frameY + 2, aw, b.getHeight()).build());
-			Component ol = Component.translatable("loothub.admin.overview_button");
-			int ow = font.width(ol) + 12;
-			addRenderableWidget(Button.builder(ol, x -> minecraft.setScreen(new de.loothub.client.feedback.AdminOverviewScreen(this)))
-					.bounds(fx - 8 - aw - ow, frameY + 2, ow, b.getHeight()).build());
 		}
 
 		initPage();
