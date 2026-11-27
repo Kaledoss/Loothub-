@@ -111,6 +111,18 @@ public class ChatWindowScreen extends Screen {
 
 	private int tabsLabelY, nameY;
 
+	private void moveTab(CustomChat.Tab tab, int dir) {
+		int i = win.tabs.indexOf(tab), j = i + dir;
+		if (i < 0 || j < 0 || j >= win.tabs.size()) {
+			return;
+		}
+		win.tabs.remove(i);
+		win.tabs.add(j, tab);
+		win.active = j;
+		changed();
+		rebuildWidgets();
+	}
+
 	/** Neuen Tab anlegen; mit Quelle als „eigener Tab“ (nimmt seine Nachrichten den anderen Tabs weg). */
 	private void addTab(String name, String source, boolean exclusive) {
 		CustomChat.Tab t = new CustomChat.Tab();
@@ -168,7 +180,17 @@ public class ChatWindowScreen extends Screen {
 			tab.exclusive = !tab.exclusive;
 			b.setMessage(exclusiveLabel(tab.exclusive));
 			changed();
-		}).bounds(x + 164, y, w - 164 - 70 - 22, 16).build());
+		}).bounds(x + 164, y, w - 164 - 70 - 22 - 40, 16).build());
+		// Tab nach links/rechts schieben (im Chat geht das auch per Ziehen mit der Maus)
+		int ai = tabs.indexOf(tab);
+		Button left = addRenderableWidget(Button.builder(Component.literal("◀"), b -> moveTab(tab, -1))
+				.bounds(x + w - 66 - 22 - 40, y, 18, 16).build());
+		left.active = ai > 0;
+		Button right = addRenderableWidget(Button.builder(Component.literal("▶"), b -> moveTab(tab, 1))
+				.bounds(x + w - 66 - 22 - 20, y, 18, 16).build());
+		right.active = ai < tabs.size() - 1;
+		left.setTooltip(net.minecraft.client.gui.components.Tooltip.create(Component.translatable("loothub.chatwin.tab.move")));
+		right.setTooltip(net.minecraft.client.gui.components.Tooltip.create(Component.translatable("loothub.chatwin.tab.move")));
 		Button snd = addRenderableWidget(Button.builder(soundLabel(tab.sound), b -> {
 			tab.sound = !tab.sound;
 			b.setMessage(soundLabel(tab.sound));

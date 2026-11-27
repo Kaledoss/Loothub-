@@ -387,6 +387,11 @@ public final class CustomChat {
 
 	// Ziehen
 	private static Window dragWin;
+	/** Tab wird gerade mit der Maus verschoben: Fenster, Tab und Startpunkt. */
+	private static Window tabDragWin;
+	private static Tab tabDrag;
+	private static double tabGrabX;
+	private static boolean tabMoved;
 	/** 0 = verschieben, sonst Ecke: 1 oben links, 2 oben rechts, 3 unten links, 4 unten rechts. */
 	private static int corner;
 	private static final int GRIP = 6;
@@ -831,6 +836,16 @@ public final class CustomChat {
 			ScreenMouseEvents.allowMouseClick(screen).register((s, e) -> !active() || !chatOpen(s) || !click(s, e));
 			ScreenMouseEvents.allowMouseDrag(screen).register((s, e, dx, dy) -> !active() || !drag(e));
 			ScreenMouseEvents.allowMouseRelease(screen).register((s, e) -> {
+				if (tabDrag != null) {
+					boolean moved = tabMoved;
+					tabDrag = null;
+					tabDragWin = null;
+					if (moved) {
+						WidgetConfig.get().save();
+						return false;
+					}
+					return true;
+				}
 				if (dragWin != null) {
 					dragWin = null;
 					WidgetConfig.get().save();
@@ -969,6 +984,11 @@ public final class CustomChat {
 					UNREAD.remove(w.tab());
 					SCROLL.put(w, 0);
 					WidgetConfig.get().save();
+					// gedrückt halten und ziehen: Tab an eine andere Stelle schieben
+					tabDragWin = w;
+					tabDrag = w.tab();
+					tabGrabX = e.x();
+					tabMoved = false;
 				}
 			}
 			case ADD_TAB -> {
@@ -1068,6 +1088,9 @@ public final class CustomChat {
 	}
 
 	private static boolean drag(MouseButtonEvent e) {
+		if (tabDrag != null) {
+			return dragTab(e);
+		}
 		if (dragWin == null) {
 			return false;
 		}
@@ -1086,6 +1109,29 @@ public final class CustomChat {
 			dragWin.bottom = startBottom - dy;
 		}
 		box(dragWin); // begrenzen
+		return true;
+	}
+
+	/** Tab verschieben: liegt die Maus über einem anderen Tab, rückt der gezogene an dessen Stelle. */
+	private static boolean dragTab(MouseButtonEvent e) {
+		Window w = tabDragWin;
+		if (w == null || !w.tabs.contains(tabDrag)) {
+			tabDrag = null;
+			return false;
+		}
+		if (!tabMoved && Math.abs(e.x() - tabGrabX) < 4) {
+			return true; // erst ab ein paar Pixeln zählt es als Ziehen
+		}
+		tabMoved = true;
+		int from = w.tabs.indexOf(tabDrag);
+		for (Hit h : hits(w, box(w))) {
+			if (h.kind == Kind.TAB && e.x() >= h.x && e.x() < h.x + h.w && h.index != from) {
+				w.tabs.remove(from);
+				w.tabs.add(h.index, tabDrag);
+				w.active = h.index;
+				break;
+			}
+		}
 		return true;
 	}
 

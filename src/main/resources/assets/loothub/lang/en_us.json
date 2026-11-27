@@ -1872,5 +1872,6 @@
 	"loothub.cal.mon.9": "September",
 	"loothub.cal.mon.10": "October",
 	"loothub.cal.mon.11": "November",
-	"loothub.cal.mon.12": "December"
+	"loothub.cal.mon.12": "December",
+	"loothub.chatwin.tab.move": "Move tab – in the chat you can also just drag it to another spot with the mouse."
 }
