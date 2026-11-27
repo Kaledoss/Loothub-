@@ -147,6 +147,8 @@ public final class WidgetConfig {
 	/** Spielername je Kopf-Platz für ein Mini-Me mit fremdem Skin (leer = eigener Skin), durch Komma getrennt. */
 	public String headSkins = "";
 	public boolean miniMeEmotes = false;
+	/** Eigene Haustiere reagieren: freuen sich bei Level-up, seltenem Fisch, Heldentat; erschrecken bei wenig Leben. */
+	public boolean petReactions = true;
 	/** Lebendigkeit der Mini-Mes in Prozent (Atmen, Blick, Nachschwingen, Reaktionen; 0 = steif wie früher). */
 	public int miniMeLife = 100;
 	/** Charakter je Mini-Me, mit Komma je Platz (playful, shy, brave, lazy, curious; leer = normal). */

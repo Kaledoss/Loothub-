@@ -1072,7 +1072,7 @@ const LH_BOARDS = ["points", "ach", "login", "dquests", "wquests", "blocks", "pl
 const LH_DROP_MIN_PLAY = { d: 30, w: 180, m: 600, a: 1200 }; // Mindest-Spielminuten für „am wenigsten weggeworfen“
 const LH_PERIODS = ["d", "w", "m"]; // täglich, wöchentlich, monatlich (dazu „a“ = gesamt)
 /** Stand dieses Workers – die Mod zeigt Admins einen Hinweis, wenn er älter ist als sie erwartet. Bei jeder Änderung erhöhen. */
-const WORKER_VERSION = 14;
+const WORKER_VERSION = 15;
 
 let lhReady = false;
 async function lhInit(db) {
@@ -1080,6 +1080,8 @@ async function lhInit(db) {
 	await lhInitTables(db);
 	// spätere Spalten für ältere Tabellen nachrüsten (Fehler = gibt es schon)
 	try { await db.prepare("ALTER TABLE lh_feedback ADD COLUMN seen INTEGER DEFAULT 0").run(); } catch { /* schon da */ }
+	try { await db.prepare("ALTER TABLE lh_presence ADD COLUMN ev TEXT DEFAULT '[]'").run(); } catch { /* schon da */ }
+	try { await db.prepare("ALTER TABLE lh_presence ADD COLUMN share INTEGER DEFAULT 0").run(); } catch { /* schon da */ }
 }
 
 async function lhInitTables(db) {
@@ -1098,7 +1100,7 @@ async function lhInitTables(db) {
 		// Freunde: a hat b angefragt; status 'pending' oder 'ok' (dann gilt es für beide)
 		db.prepare(`CREATE TABLE IF NOT EXISTS lh_friend (a TEXT, b TEXT, status TEXT, at INTEGER, PRIMARY KEY (a, b))`),
 		// Online-Status nur für Freunde: zuletzt gesehen und (falls geteilt) aktuelle Tätigkeit
-		db.prepare(`CREATE TABLE IF NOT EXISTS lh_presence (uuid TEXT PRIMARY KEY, name TEXT DEFAULT '', at INTEGER, act TEXT DEFAULT '')`),
+		db.prepare(`CREATE TABLE IF NOT EXISTS lh_presence (uuid TEXT PRIMARY KEY, name TEXT DEFAULT '', at INTEGER, act TEXT DEFAULT '', ev TEXT DEFAULT '[]', share INTEGER DEFAULT 0)`),
 		db.prepare(`CREATE TABLE IF NOT EXISTS lh_mg (game TEXT, week INTEGER, uuid TEXT, name TEXT, score INTEGER DEFAULT 0,
 			at INTEGER DEFAULT 0, PRIMARY KEY (game, week, uuid))`),
 	]);
@@ -1574,7 +1576,7 @@ async function lhUsage(db, now) {
 	return { size, counts, days };
 }
 
-const LH_FRIEND_MAX = 100, LH_FRIEND_PENDING_MAX = 20, LH_ONLINE_MS = 3 * 60_000;
+const LH_FRIEND_MAX = 100, LH_FRIEND_PENDING_MAX = 20, LH_ONLINE_MS = 3 * 60_000, LH_FEED_MS = 2 * 86400_000;
 
 /**
  * Freundesystem. Freundschaft nur, wenn beide zustimmen; Online-Status und Tätigkeit sehen nur Freunde.
@@ -1625,18 +1627,41 @@ async function lhFriends(db, uuid, myName, p, now) {
 	} else if (p.op === "friends") {
 		// eigener Online-Stand; Tätigkeit nur, wenn der Spieler sie teilen möchte
 		const act = p.share && typeof p.act === "string" ? p.act.slice(0, 60) : "";
-		await db.prepare("UPDATE lh_presence SET act = ? WHERE uuid = ?").bind(act, uuid).run();
+		// Neuigkeiten für den Freundes-Feed (nur wenn geteilt): Level-ups, seltene Fische, Heldentaten
+		const fresh = [];
+		if (p.share && Array.isArray(p.ev)) {
+			for (const e of p.ev.slice(0, 10)) {
+				if (!e || !["lvl", "fish", "ach"].includes(e.k)) continue;
+				fresh.push({ k: e.k, a: String(e.a || "").slice(0, 40), b: String(e.b || "").slice(0, 30),
+					n: Number.isFinite(e.n) ? Math.trunc(e.n) : 0, t: now });
+			}
+		}
+		if (fresh.length) {
+			const cur = await db.prepare("SELECT ev FROM lh_presence WHERE uuid = ?").bind(uuid).first();
+			let list = [];
+			try { list = JSON.parse((cur && cur.ev) || "[]"); } catch { list = []; }
+			list = list.concat(fresh).filter((e) => now - e.t < LH_FEED_MS).slice(-15);
+			await db.prepare("UPDATE lh_presence SET act = ?, share = ?, ev = ? WHERE uuid = ?").bind(act, p.share ? 1 : 0, JSON.stringify(list), uuid).run();
+		} else {
+			await db.prepare("UPDATE lh_presence SET act = ?, share = ? WHERE uuid = ?").bind(act, p.share ? 1 : 0, uuid).run();
+		}
 	} else {
 		return { error: "bad op" };
 	}
-	const rows = ((await db.prepare(`SELECT f.a, f.b, f.status, COALESCE(NULLIF(pr.name, ''), pl.name) AS name, pr.at AS seen, pr.act
+	const rows = ((await db.prepare(`SELECT f.a, f.b, f.status, COALESCE(NULLIF(pr.name, ''), pl.name) AS name, pr.at AS seen, pr.act,
+		pr.ev, pr.share
 		FROM lh_friend f
 		LEFT JOIN lh_presence pr ON pr.uuid = (CASE WHEN f.a = ? THEN f.b ELSE f.a END)
 		LEFT JOIN lh_player pl ON pl.uuid = (CASE WHEN f.a = ? THEN f.b ELSE f.a END)
 		WHERE f.a = ? OR f.b = ?`).bind(uuid, uuid, uuid, uuid).all()).results) || [];
-	const friends = [], incoming = [], outgoing = [];
+	const friends = [], incoming = [], outgoing = [], feed = [];
 	for (const r of rows) {
 		const u = r.a === uuid ? r.b : r.a;
+		if (r.status === "ok" && r.share) {
+			let ev = [];
+			try { ev = JSON.parse(r.ev || "[]"); } catch { ev = []; }
+			for (const e of ev) if (now - e.t < LH_FEED_MS) feed.push({ ...e, u, name: r.name || "?" });
+		}
 		if (r.status === "ok") {
 			const online = !!r.seen && now - r.seen < LH_ONLINE_MS;
 			friends.push({ u, name: r.name || "?", online, seen: r.seen || 0, act: online ? (r.act || "") : "" });
@@ -1644,7 +1669,8 @@ async function lhFriends(db, uuid, myName, p, now) {
 		else outgoing.push({ u, name: r.name || "?" });
 	}
 	friends.sort((x, y) => (y.online - x.online) || x.name.localeCompare(y.name));
-	const out = { friends, incoming, outgoing, wv: WORKER_VERSION };
+	feed.sort((x, y) => y.t - x.t);
+	const out = { friends, incoming, outgoing, feed: feed.slice(0, 40), wv: WORKER_VERSION };
 	if (msg) out.msg = msg;
 	if (error) out.error = error;
 	return out;

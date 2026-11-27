@@ -82,6 +82,7 @@ public final class Emotes {
 	/** Eigener Job-Level-Up: alle eigenen Mini-Mes jubeln. */
 	public static void cheer() {
 		cheerAt = System.currentTimeMillis();
+		PetMood.joy();
 	}
 
 	/** Zurück vom AFK: nach dem Aufstehen freuen sich die Mini-Mes (jubeln, dann abklatschen). */

@@ -288,7 +288,7 @@ public final class Progress {
 
 	/** Ist man laut Server Admin (Taler ändern, Ranglisten zurücksetzen)? */
 	/** Worker-Stand, den diese Mod-Version braucht (muss zu WORKER_VERSION in cosmetics-worker.js passen). */
-	public static final int WORKER_NEEDED = 14;
+	public static final int WORKER_NEEDED = 15;
 
 	/** Admin: Läuft auf dem Server ein älterer Worker, als diese Mod braucht? (unbekannt = nein) */
 	public static boolean workerOutdated() {
@@ -832,6 +832,8 @@ public final class Progress {
 						max = s.getAsJsonObject("cat").getAsJsonObject("ach").getAsJsonArray(stat).size();
 					} catch (RuntimeException ignored) {
 					}
+					de.loothub.client.cosmetics.Emotes.cheer(); // Mini-Mes und Haustiere freuen sich mit
+					de.loothub.client.friends.Friends.post("ach", Texts.achName(stat).getString(), Texts.rank(tier, max).getString(), tier);
 					TOASTS.add(new Toast(Component.translatable("loothub.lh.toast.ach", Texts.achName(stat)).getString(),
 							Component.translatable("loothub.lh.toast.ach.sub", Texts.rank(tier, max), plus).getString(),
 							Texts.rankColor(tier, max) & 0xFFFFFF, true));

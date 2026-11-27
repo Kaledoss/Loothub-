@@ -245,6 +245,11 @@ public class CosmeticsScreen extends LoothubScreen {
 				sections.add(new Section(y, 42, "loothub.cosmetics.emotes", "loothub.cosmetics.emotes.desc"));
 				y += 42 + GAP;
 
+				// Haustier-Reaktionen
+				toggle(lx, y + 20, lw, () -> c.petReactions, v -> c.petReactions = v);
+				sections.add(new Section(y, 42, "loothub.cosmetics.pet_react", "loothub.cosmetics.pet_react.desc"));
+				y += 42 + GAP;
+
 				// Lebendigkeit
 				addRenderableWidget(new net.minecraft.client.gui.components.AbstractSliderButton(lx, y + 20, lw, 16,
 						Component.empty(), Math.max(0, Math.min(100, c.miniMeLife)) / 100.0) {

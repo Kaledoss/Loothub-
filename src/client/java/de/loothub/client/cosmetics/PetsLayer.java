@@ -239,6 +239,9 @@ public final class PetsLayer extends RenderLayer<AvatarRenderState, PlayerModel>
 			BodyPose.undo(poseStack, state, true);
 			poseStack.translate(p[0], p[1] + hopY, p[2]);
 			poseStack.mulPose(Axis.YP.rotationDegrees(p[3]));
+			if (!preview && Motion.local(state)) {
+				PetMood.apply(poseStack, slot, t); // freut sich / erschrickt
+			}
 			poseStack.scale(scale, scale, scale);
 			switch (type) {
 				case "slime" -> {

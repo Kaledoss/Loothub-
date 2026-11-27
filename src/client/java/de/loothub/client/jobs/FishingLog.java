@@ -240,6 +240,7 @@ public final class FishingLog {
 		// ab Legendär jubeln die Mini-Mes mit
 		if (rank(c.rarity) >= 5) {
 			de.loothub.client.cosmetics.Emotes.cheer();
+			de.loothub.client.friends.Friends.post("fish", c.fish, c.rarity, 0);
 		}
 	}
 

@@ -112,6 +112,7 @@ public final class JobTracker {
 		}
 		if (levelChanged && gain.level() > s.level) {
 			de.loothub.client.cosmetics.Emotes.cheer(); // Mini-Mes jubeln mit
+			de.loothub.client.friends.Friends.post("lvl", job, null, gain.level());
 		}
 		if (gain.level() >= 0) {
 			s.level = gain.level();

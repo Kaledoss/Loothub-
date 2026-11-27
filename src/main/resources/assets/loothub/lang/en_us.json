@@ -1746,7 +1746,7 @@
 	"loothub.friends.on": "Friends",
 	"loothub.friends.on.tip": "Turn on to add friends and see who is online. Only your friends can see your status.",
 	"loothub.friends.share": "Share activity",
-	"loothub.friends.share.tip": "Your friends see which job and level you are playing right now.",
+	"loothub.friends.share.tip": "Your friends see which job and level you are playing right now and get your level-ups, rare fish and feats as news.",
 	"loothub.friends.notify": "Notify when online",
 	"loothub.friends.name": "Player name",
 	"loothub.friends.add": "Add",
@@ -1789,5 +1789,14 @@
 	"loothub.friends.duo": "As duo",
 	"loothub.friends.duo.is": "Your duo",
 	"loothub.friends.duo.tip": "Set as duo partner for the weekly quest. It counts once they set you too.",
-	"loothub.friends.duo.done": "%s is set as your duo partner."
+	"loothub.friends.duo.done": "%s is set as your duo partner.",
+	"loothub.friends.feed": "News (%s)",
+	"loothub.friends.list": "Friends list",
+	"loothub.friends.feed.empty": "No news yet. Level-ups, rare fish and feats of your friends who share their activity show up here.",
+	"loothub.friends.feed.lvl": "%s reached %s level %s",
+	"loothub.friends.feed.fish": "%s made a rare catch: %s (%s)",
+	"loothub.friends.feed.ach": "%s completed the feat “%s” (%s)",
+	"loothub.friends.toast.news.title": "News from friends",
+	"loothub.cosmetics.pet_react": "Pet reactions",
+	"loothub.cosmetics.pet_react.desc": "Your pets celebrate with you (level-up, rare fish, feat) and get scared when you're hit on low health."
 }

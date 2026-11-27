@@ -26,6 +26,8 @@ public class FriendsScreen extends LoothubScreen {
 	private Component status = Component.empty();
 	private int scroll;
 	private int listTop;
+	/** true = Neuigkeiten der Freunde statt der Liste zeigen. */
+	private static boolean showFeed;
 
 	/** Eine Zeile der Liste: Anfrage, ausstehende eigene Anfrage oder Freund. */
 	private record Row(int kind, Friends.Person person, Friends.Friend friend) {
@@ -62,7 +64,7 @@ public class FriendsScreen extends LoothubScreen {
 			b.setMessage(onOff("loothub.friends.notify", c.friendsNotify));
 		}).bounds(cl + 288, y, Math.max(80, Math.min(140, cr - cl - 288)), 16).build()).active = c.friendsOn;
 
-		listTop = y + 46;
+		listTop = y + 56;
 		if (!c.friendsOn) {
 			rows = List.of();
 			return;
@@ -75,6 +77,20 @@ public class FriendsScreen extends LoothubScreen {
 		nameBox.setValue(old);
 		addRenderableWidget(Button.builder(Component.translatable("loothub.friends.add"), b -> addFriend()).bounds(cl + 144, y, 90, 16).build());
 		addRenderableWidget(Button.builder(Component.translatable("loothub.friends.reload"), b -> reload()).bounds(cl + 238, y, 80, 16).build());
+		Component ft = Component.translatable(showFeed ? "loothub.friends.list" : "loothub.friends.feed",
+				Friends.feed().size());
+		addRenderableWidget(Button.builder(ft, b -> {
+			showFeed = !showFeed;
+			scroll = 0;
+			rebuildWidgets();
+		}).bounds(cl + 322, y, Math.max(70, Math.min(110, cr - cl - 322)), 16).build());
+		if (showFeed) {
+			rows = List.of();
+			if (!Friends.loaded()) {
+				reload();
+			}
+			return;
+		}
 
 		// Zeilen: erst eingehende Anfragen, dann Freunde (online zuerst), dann eigene offene Anfragen
 		List<Row> r = new ArrayList<>();
@@ -204,9 +220,32 @@ public class FriendsScreen extends LoothubScreen {
 		}
 	}
 
+	private void renderFeed(GuiGraphics g) {
+		List<Friends.News> feed = Friends.feed();
+		if (feed.isEmpty()) {
+			int y = listTop + 6;
+			for (var line : font.split(Component.translatable("loothub.friends.feed.empty"), cw)) {
+				g.drawString(font, line, cl, y, MUTED);
+				y += 11;
+			}
+			return;
+		}
+		int lineH = 12, visible = Math.max(1, (cb - listTop) / lineH);
+		scroll = Math.max(0, Math.min(scroll, Math.max(0, feed.size() - visible)));
+		long now = System.currentTimeMillis();
+		for (int i = 0; i < visible && i + scroll < feed.size(); i++) {
+			Friends.News n = feed.get(i + scroll);
+			int y = listTop + i * lineH + 2;
+			String ago = Fmt.longDuration(Math.max(60_000, now - n.t()));
+			int aw = font.width(ago);
+			g.drawString(font, font.plainSubstrByWidth(n.text().getString(), cw - aw - 10), cl + 4, y, TEXT);
+			g.drawString(font, ago, cr - aw - 2, y, FAINT);
+		}
+	}
+
 	@Override
 	public boolean mouseScrolled(double mx, double my, double horizontal, double vertical) {
-		int max = Math.max(0, rows.size() - visibleRows());
+		int max = Math.max(0, (showFeed ? Friends.feed().size() : rows.size()) - visibleRows());
 		int ns = Math.max(0, Math.min(max, scroll - (int) Math.signum(vertical)));
 		if (ns != scroll) {
 			scroll = ns;
@@ -228,7 +267,11 @@ public class FriendsScreen extends LoothubScreen {
 			}
 			return;
 		}
-		g.drawString(font, status, cl + 324, ct + 26, TEXT);
+		g.drawString(font, status, cl, ct + 42, TEXT);
+		if (showFeed) {
+			renderFeed(g);
+			return;
+		}
 		if (rows.isEmpty()) {
 			Component m = Component.translatable(Friends.loaded() ? "loothub.friends.empty" : "loothub.friends.loading");
 			g.drawString(font, m, cl, listTop + 6, MUTED);

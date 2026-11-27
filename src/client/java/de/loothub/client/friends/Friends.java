@@ -30,6 +30,21 @@ public final class Friends {
 	public record Person(String uuid, String name) {
 	}
 
+	/** Neuigkeit eines Freundes: k = lvl (Job a, Level n), fish (Fisch a, Seltenheit b), ach (Heldentat a, Rang b). */
+	public record News(String name, String k, String a, String b, int n, long t) {
+		public Component text() {
+			return switch (k) {
+				case "lvl" -> Component.translatable("loothub.friends.feed.lvl", name, a, n);
+				case "fish" -> Component.translatable("loothub.friends.feed.fish", name, a, b);
+				default -> Component.translatable("loothub.friends.feed.ach", name, a, b);
+			};
+		}
+	}
+
+	private static final List<JsonObject> OUTBOX = new ArrayList<>();
+	private static List<News> feed = List.of();
+	private static long feedSeen = -1;
+
 	private static List<Friend> friends = List.of();
 	private static List<Person> incoming = List.of(), outgoing = List.of();
 	private static Set<String> wasOnline;
@@ -54,6 +69,28 @@ public final class Friends {
 
 	public static List<Friend> friends() {
 		return friends;
+	}
+
+	public static List<News> feed() {
+		return feed;
+	}
+
+	/** Eigene Neuigkeit für den Freundes-Feed vormerken (nur wenn Freunde an und Tätigkeit geteilt). */
+	public static synchronized void post(String k, String a, String b, int n) {
+		WidgetConfig c = WidgetConfig.get();
+		if (!c.friendsOn || !c.friendsShare) {
+			return;
+		}
+		JsonObject e = new JsonObject();
+		e.addProperty("k", k);
+		e.addProperty("a", a == null ? "" : a);
+		e.addProperty("b", b == null ? "" : b);
+		e.addProperty("n", n);
+		OUTBOX.add(e);
+		if (OUTBOX.size() > 10) {
+			OUTBOX.remove(0);
+		}
+		lastPoll = Math.min(lastPoll, System.currentTimeMillis() - POLL_MS + 5_000); // bald senden
 	}
 
 	public static List<Person> incoming() {
@@ -95,6 +132,14 @@ public final class Friends {
 		p.addProperty("share", c.friendsShare);
 		if (c.friendsShare) {
 			p.addProperty("act", activity());
+			synchronized (Friends.class) {
+				if (!OUTBOX.isEmpty()) {
+					JsonArray ev = new JsonArray();
+					OUTBOX.forEach(ev::add);
+					OUTBOX.clear();
+					p.add("ev", ev);
+				}
+			}
 		}
 		call(p, done);
 	}
@@ -166,6 +211,25 @@ public final class Friends {
 					Component.translatable("loothub.friends.toast.request", in.get(in.size() - 1).name()));
 		}
 		incomingSeen = in.size();
+		List<News> nf = new ArrayList<>();
+		long newest = 0;
+		int toasts = 0;
+		for (JsonElement e : arr(res, "feed")) {
+			JsonObject o = e.getAsJsonObject();
+			News nw = new News(str(o, "name"), str(o, "k"), str(o, "a"), str(o, "b"),
+					o.has("n") ? o.get("n").getAsInt() : 0, o.has("t") ? o.get("t").getAsLong() : 0);
+			nf.add(nw);
+			newest = Math.max(newest, nw.t());
+			if (feedSeen >= 0 && nw.t() > feedSeen && c.friendsNotify && toasts++ < 3) {
+				toast(Component.translatable("loothub.friends.toast.news.title"), nw.text());
+			}
+		}
+		if (newest > feedSeen) {
+			feedSeen = newest;
+		} else if (feedSeen < 0) {
+			feedSeen = 0;
+		}
+		feed = nf;
 		wasOnline = now;
 		friends = fl;
 		incoming = in;
