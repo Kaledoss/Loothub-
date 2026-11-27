@@ -101,6 +101,8 @@ public final class Itemdex {
 		public String text; // Name + Beschreibung als reiner Text (für die Suche)
 		public Category category;
 		public long firstSeen;
+		/** Zuletzt irgendwo gesehen (für die Sortierung „zuletzt gesehen“). */
+		public long lastSeen;
 		public String where;
 		public Source source;
 		public boolean hidden;
@@ -636,6 +638,9 @@ public final class Itemdex {
 				e = old;
 			}
 		}
+		if (e != null) {
+			e.lastSeen = System.currentTimeMillis(); // wird beim nächsten Speichern mitgeschrieben
+		}
 		// Bessere Quelle gewinnt – aber eine Version mit mehr Angaben (Werte, Verzauberungen, Beschreibung) ersetzt
 		// immer eine ärmere: Chat-Vorschauen kommen vom Server oft ohne die Werte des Items
 		if (e != null && e.source != null && e.source.priority >= source.priority && richness(s) <= richness(e.stack())) {
@@ -652,6 +657,7 @@ public final class Itemdex {
 			e.number = entries.size() + 1;
 			e.key = key;
 			e.firstSeen = System.currentTimeMillis();
+			e.lastSeen = e.firstSeen;
 			e.where = where;
 			entries.add(e);
 			byKey.put(key, e);
@@ -749,6 +755,7 @@ public final class Itemdex {
 				e.text = o.has("text") ? o.get("text").getAsString() : e.name.toLowerCase(Locale.ROOT);
 				e.category = parseEnum(Category.class, o, "category", Category.OTHER);
 				e.firstSeen = o.has("firstSeen") ? o.get("firstSeen").getAsLong() : 0;
+				e.lastSeen = o.has("lastSeen") ? o.get("lastSeen").getAsLong() : e.firstSeen;
 				e.where = o.has("where") ? o.get("where").getAsString() : "";
 				e.source = parseEnum(Source.class, o, "source", Source.CONTAINER);
 				e.hidden = o.has("hidden") && o.get("hidden").getAsBoolean();
@@ -785,6 +792,7 @@ public final class Itemdex {
 			o.addProperty("text", e.text);
 			o.addProperty("category", e.category.name());
 			o.addProperty("firstSeen", e.firstSeen);
+			o.addProperty("lastSeen", e.lastSeen);
 			o.addProperty("where", e.where);
 			o.addProperty("source", e.source.name());
 			if (e.hidden) {

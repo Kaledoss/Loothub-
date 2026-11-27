@@ -1828,5 +1828,12 @@
 	"loothub.lh.where.m": "Zählt, wenn du diesen Mob selbst besiegst, in allen Welten.",
 	"loothub.lh.where.i": "Zählt beim Aufsammeln dieses Items (auch direkt ins Inventar), in allen Welten.",
 	"loothub.lh.where.note": "Im HUD siehst du den Fortschritt sofort; gutgeschrieben wird er beim nächsten Abgleich (spätestens nach 10 Minuten).",
-	"loothub.more.button": "⋯ Mehr"
+	"loothub.more.button": "⋯ Mehr",
+	"loothub.itemdex.sort": "Sortieren: %s",
+	"loothub.itemdex.sort.az": "A–Z",
+	"loothub.itemdex.sort.offer": "Sofortkauf",
+	"loothub.itemdex.sort.avg7": "Schnitt 7 Tage",
+	"loothub.itemdex.sort.new": "Neu entdeckt",
+	"loothub.itemdex.sort.seen": "Zuletzt gesehen",
+	"loothub.itemdex.sort.tip": "Klicken wechselt die Sortierung. Preise kommen aus dem Auktionshaus (teuerste zuerst); Favoriten stehen immer oben."
 }

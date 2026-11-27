@@ -38,6 +38,9 @@ public class ItemdexScreen extends LoothubScreen {
 	private boolean dropdownOpen;
 	private static final int DD_ROW = 14;
 	private Button hiddenButton;
+	/** Sortierung: 0 A–Z, 1 Sofortkauf, 2 Schnitt 7 Tage, 3 neu entdeckt, 4 zuletzt gesehen. */
+	private static int sortMode;
+	private static final String[] SORTS = {"az", "offer", "avg7", "new", "seen"};
 	private List<Entry> rows = List.of();
 	private final Map<Entry, Integer> numbers = new IdentityHashMap<>();
 	private int seenVersion = -1;
@@ -52,8 +55,8 @@ public class ItemdexScreen extends LoothubScreen {
 	protected void initPage() {
 		Itemdex.prune();
 		int hiddenW = 110;
-		int catW = 120;
-		int boxW = Math.max(80, Math.min(260, cw - catW - hiddenW - 12));
+		int catW = 120, sortW = 130;
+		int boxW = Math.max(80, Math.min(260, cw - catW - hiddenW - sortW - 18));
 		EditBox box = new EditBox(font, cl, ct, boxW, 16, Component.translatable("loothub.screen.search"));
 		box.setHint(Component.translatable("loothub.itemdex.search").withStyle(ChatFormatting.DARK_GRAY));
 		box.setValue(search);
@@ -63,6 +66,13 @@ public class ItemdexScreen extends LoothubScreen {
 			refresh();
 		});
 		addRenderableWidget(box);
+		addRenderableWidget(Button.builder(sortLabel(), b -> {
+			sortMode = (sortMode + 1) % SORTS.length;
+			b.setMessage(sortLabel());
+			scroll = 0;
+			refresh();
+		}).bounds(cr - catW - hiddenW - sortW - 12, ct, sortW, 16)
+				.tooltip(net.minecraft.client.gui.components.Tooltip.create(Component.translatable("loothub.itemdex.sort.tip"))).build());
 		categoryButton = addRenderableWidget(Button.builder(categoryLabel(), b -> dropdownOpen = !dropdownOpen)
 				.bounds(cr - catW - hiddenW - 6, ct, catW, 16).build());
 		dropdownOpen = false;
@@ -81,6 +91,21 @@ public class ItemdexScreen extends LoothubScreen {
 				favOnly ? Component.translatable("loothub.itemdex.cat.fav")
 						: category == null ? Component.translatable("loothub.itemdex.cat.all") : Component.translatable(category.key))
 				.append(" ▾");
+	}
+
+	private static Component sortLabel() {
+		return Component.translatable("loothub.itemdex.sort", Component.translatable("loothub.itemdex.sort." + SORTS[sortMode]));
+	}
+
+	/** Wert für die Preis-Sortierung (fehlender Preis = ganz unten). */
+	private static double priceKey(Entry e) {
+		String k = AuctionNames.key(Itemdex.clean(e.name), e.itemId, AuctionNames.starsOf(e.stack()));
+		if (sortMode == 1) {
+			AuctionNames.Now n = AuctionNames.now(k);
+			return n == null || n.offers() <= 0 ? -1 : n.minPerUnit();
+		}
+		AuctionNames.Total t = AuctionNames.window(k, 7);
+		return t == null ? -1 : t.avg();
 	}
 
 	private static Component hiddenLabel() {
@@ -119,7 +144,19 @@ public class ItemdexScreen extends LoothubScreen {
 			}
 			out.add(e);
 		}
-		out.sort(Comparator.comparing((Entry e) -> !e.favorite)); // stabil: Favoriten zuerst, sonst A–Z
+		switch (sortMode) {
+			case 1, 2 -> {
+				Map<Entry, Double> pk = new IdentityHashMap<>();
+				for (Entry e : out) {
+					pk.put(e, priceKey(e));
+				}
+				out.sort(Comparator.comparingDouble((Entry e) -> pk.get(e)).reversed()); // teuerste zuerst
+			}
+			case 3 -> out.sort(Comparator.comparingLong((Entry e) -> e.firstSeen).reversed());
+			case 4 -> out.sort(Comparator.comparingLong((Entry e) -> e.lastSeen).reversed());
+			default -> { } // A–Z
+		}
+		out.sort(Comparator.comparing((Entry e) -> !e.favorite)); // stabil: Favoriten zuerst, sonst gewählte Sortierung
 		rows = out;
 	}
 
