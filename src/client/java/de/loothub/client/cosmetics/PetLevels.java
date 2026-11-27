@@ -112,6 +112,13 @@ public final class PetLevels {
 		return level < GROW ? 1F : 1F + (level - GROW + 1) * 0.03F;
 	}
 
+	/** Extra-Erfahrung (z. B. Treue-Kalender, Geschenk) für alle eigenen folgenden Haustiere. */
+	public static void bonus(int amount) {
+		if (amount > 0) {
+			add(amount);
+		}
+	}
+
 	/** Freude: Erfahrung für alle eigenen folgenden Haustiere. */
 	public static void joy() {
 		add(JOY_XP);
@@ -136,6 +143,7 @@ public final class PetLevels {
 			minuteAt = now;
 			if (now - movedAt < 120_000L) { // nur wer wirklich spielt, nicht AFK
 				add(1);
+				maybeGift(mc);
 			}
 		}
 		// Funkeln (Lv 7) bzw. Goldglanz (Lv 10): ab und zu ein paar Funken um dich
@@ -150,6 +158,29 @@ public final class PetLevels {
 			}
 		}
 	}
+
+	/** Ganz selten (im Schnitt nach gut einer aktiven Stunde, höchstens einmal am Tag) bringt das Haustier etwas mit. */
+	private static void maybeGift(Minecraft mc) {
+		WidgetConfig c = WidgetConfig.get();
+		String today = java.time.LocalDate.now().toString();
+		if (today.equals(c.petGiftDay) || Math.random() >= 1.0 / 75.0 || mc.level == null) {
+			return;
+		}
+		c.petGiftDay = today;
+		c.save();
+		PetMood.joyQuiet();
+		var r = mc.level.random;
+		for (int i = 0; i < 10; i++) {
+			mc.level.addParticle(ParticleTypes.HAPPY_VILLAGER, mc.player.getX() + (r.nextDouble() - 0.5) * 1.5,
+					mc.player.getY() + 0.2 + r.nextDouble(), mc.player.getZ() + (r.nextDouble() - 0.5) * 1.5, 0, 0.05, 0);
+		}
+		mc.getToastManager().addToast(new SystemToast(SystemToast.SystemToastId.PERIODIC_NOTIFICATION,
+				Component.translatable("loothub.petgift.title"), Component.translatable("loothub.petgift.xp", GIFT_XP)));
+		add(GIFT_XP);
+		de.loothub.client.progress.Progress.petGift(); // Taler gibt es vom Loothub-Server (einmal am Tag)
+	}
+
+	private static final int GIFT_XP = 15;
 
 	private static void add(int amount) {
 		WidgetConfig c = WidgetConfig.get();

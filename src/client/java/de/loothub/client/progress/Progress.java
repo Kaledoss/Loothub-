@@ -291,7 +291,7 @@ public final class Progress {
 
 	/** Ist man laut Server Admin (Taler ändern, Ranglisten zurücksetzen)? */
 	/** Worker-Stand, den diese Mod-Version braucht (muss zu WORKER_VERSION in cosmetics-worker.js passen). */
-	public static final int WORKER_NEEDED = 16;
+	public static final int WORKER_NEEDED = 17;
 
 	/** Admin: Läuft auf dem Server ein älterer Worker, als diese Mod braucht? (unbekannt = nein) */
 	public static boolean workerOutdated() {
@@ -564,6 +564,16 @@ public final class Progress {
 		p.addProperty("op", "buy");
 		p.addProperty("item", item);
 		send(p, done);
+	}
+
+	/** Überraschungsgeschenk des Haustiers abholen (der Server erlaubt eins am Tag). */
+	public static void petGift() {
+		if (!enabled()) {
+			return;
+		}
+		JsonObject p = new JsonObject();
+		p.addProperty("op", "petgift");
+		send(p, null);
 	}
 
 	/** Geheimnis gefunden melden. */
@@ -888,6 +898,11 @@ public final class Progress {
 						Component.translatable("loothub.lh.mg." + n.get("g").getAsString())).getString(), plus, 0xF2C14E));
 				case "login" -> TOASTS.add(new Toast(
 						Component.translatable("loothub.lh.toast.login", n.get("n").getAsInt()).getString(), plus, 0xFFB833));
+				case "petgift" -> TOASTS.add(new Toast(Component.translatable("loothub.petgift.toast").getString(), plus, 0xFF9AD2));
+				case "cal" -> {
+					TOASTS.add(new Toast(Component.translatable("loothub.cal.toast", n.get("n").getAsInt()).getString(), plus, 0xF2C14E));
+					de.loothub.client.cosmetics.PetLevels.bonus(n.get("n").getAsInt() * 5); // Haustiere bekommen Erfahrung
+				}
 				case "freeze" -> TOASTS.add(new Toast(Component.translatable("loothub.lh.toast.freeze").getString(),
 						Component.translatable("loothub.lh.toast.freeze.sub").getString(), 0x7FB3FF));
 				case "freeze_used" -> TOASTS.add(new Toast(Component.translatable("loothub.lh.toast.freeze_used").getString(),

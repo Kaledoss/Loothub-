@@ -144,6 +144,11 @@ public class ProgressScreen extends LoothubScreen {
 			boardButton = null;
 			periodButton = null;
 		}
+		if (tab == Tab.QUESTS) {
+			Component cl0 = Component.translatable("loothub.cal.button");
+			int w = font.width(cl0) + 14;
+			addRenderableWidget(Button.builder(cl0, b -> minecraft.setScreen(new CalendarScreen(this))).bounds(cr - w, ct, w, 16).build());
+		}
 		listTop = statsWarning(ct + 24);
 	}
 

@@ -683,6 +683,8 @@ function lhSecret(d, row, id, news) {
 // Minispiele: tägliches Quiz (Fragen und Antworten stehen in der Mod, hier nur die richtige Antwort) und Block-Raten
 const LH_QUIZ = [1, 2, 0, 3, 1, 2, 0, 1, 3, 2, 0, 3, 1, 0, 2, 3, 1, 2, 0, 3];
 const LH_QUIZ_REWARD = 30;
+// Treue-Kalender: [Tage im Monat online, Taler]
+const LH_CAL_TIERS = [[7, 100], [15, 250], [25, 500]];
 const LH_GUESS = ["stone", "cobblestone", "dirt", "sand", "gravel", "oak_log", "birch_log", "spruce_log", "coal_ore", "iron_ore",
 	"gold_ore", "diamond_ore", "emerald_ore", "lapis_ore", "redstone_ore", "copper_ore", "obsidian", "netherrack", "glowstone", "end_stone",
 	"clay", "deepslate", "tuff", "calcite", "granite", "diorite", "andesite", "bricks", "bookshelf", "ice", "packed_ice", "snow",
@@ -1072,7 +1074,7 @@ const LH_BOARDS = ["points", "ach", "login", "dquests", "wquests", "blocks", "pl
 const LH_DROP_MIN_PLAY = { d: 30, w: 180, m: 600, a: 1200 }; // Mindest-Spielminuten für „am wenigsten weggeworfen“
 const LH_PERIODS = ["d", "w", "m"]; // täglich, wöchentlich, monatlich (dazu „a“ = gesamt)
 /** Stand dieses Workers – die Mod zeigt Admins einen Hinweis, wenn er älter ist als sie erwartet. Bei jeder Änderung erhöhen. */
-const WORKER_VERSION = 16;
+const WORKER_VERSION = 17;
 
 let lhReady = false;
 async function lhInit(db) {
@@ -1342,6 +1344,18 @@ async function lhProgress(db, d, now) {
 		const bonus = 2 * Math.max(1, lhTier("login", d.login.cur));
 		earned += bonus;
 		news.push({ k: "login", n: d.login.cur, p: bonus });
+		// Treue-Kalender: Tage dieses Monats, an denen man online war; Belohnung beim ersten Login im neuen Monat
+		const mo = lhMonthId(now), dom = new Date(now + lhTz(now)).getUTCDate();
+		if (!d.cal || d.cal.m !== mo) {
+			if (d.cal && Array.isArray(d.cal.days) && d.cal.days.length) {
+				const n = d.cal.days.length;
+				const tier = LH_CAL_TIERS.filter(([need]) => n >= need).pop();
+				if (tier) earned += tier[1];
+				news.push({ k: "cal", n, p: tier ? tier[1] : 0 });
+			}
+			d.cal = { m: mo, days: [] };
+		}
+		if (!d.cal.days.includes(dom)) d.cal.days.push(dom);
 	}
 
 	// 4-Stunden-Quests
@@ -1504,6 +1518,13 @@ function lhView(row, d, extra, now) {
 		})(),
 		dquests: d.dq || 0, wquests: d.wq || 0, jobday: Math.floor((d.jd && d.jd.best) || 0),
 		login: { cur: (d.login || {}).cur || 0, best: (d.login || {}).best || 0, freeze: d.freeze || 0 },
+		cal: (() => {
+			const t = new Date(now + lhTz(now));
+			const dim = new Date(Date.UTC(t.getUTCFullYear(), t.getUTCMonth() + 1, 0)).getUTCDate();
+			const first = (new Date(Date.UTC(t.getUTCFullYear(), t.getUTCMonth(), 1)).getUTCDay() + 6) % 7; // 0 = Montag
+			const days = d.cal && d.cal.m === lhMonthId(now) ? d.cal.days : [];
+			return { y: t.getUTCFullYear(), mon: t.getUTCMonth() + 1, today: t.getUTCDate(), dim, first, days, tiers: LH_CAL_TIERS };
+		})(),
 		slot: { ends: lhSlotEnd(slot), list: q4 },
 		week: { ends: lhWeekEnd(week), list: qw },
 		comm: extra && extra.cq ? { stat: extra.cq.stat, goal: extra.cq.goal, sum: extra.commSum, mine: d.week.comm || 0,
@@ -1896,6 +1917,17 @@ async function lhHandle(request, env) {
 		} else if (p.op === "secret") {
 			extra = { news: [] };
 			if (!lhSecret(d, row, String(p.id || ""), extra.news)) error = "known";
+		} else if (p.op === "petgift") {
+			// Überraschungsgeschenk vom Haustier: höchstens einmal am Tag, 5–25 Taler
+			const day = lhDayId(now);
+			extra = { news: [] };
+			if (d.pg === day) error = "done";
+			else {
+				d.pg = day;
+				const amount = 5 + Math.floor(Math.random() * 21);
+				row.points = (row.points || 0) + amount;
+				extra.news.push({ k: "petgift", p: amount });
+			}
 		} else if (p.op === "quiz") {
 			const day = lhDayId(now), q = lhQuizDay(day), a = Math.trunc(Number(p.a));
 			extra = { news: [] };

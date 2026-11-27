@@ -206,6 +206,14 @@ public final class PetsLayer extends RenderLayer<AvatarRenderState, PlayerModel>
 				tz = c[1];
 				curious = null;
 			}
+			// Treffen mit den Haustieren eines Freundes in der Nähe: in der Mitte beschnuppern und Fangen spielen
+			float[] meet = lie < 0.5F && fly < 0.5F && !CosmeticsPreviewScreen.is(state) ? Meet.target(state, slot) : null;
+			if (meet != null) {
+				tx = meet[0];
+				tz = meet[2];
+				curious = null;
+				playing = true;
+			}
 			boolean preview = CosmeticsPreviewScreen.is(state);
 			if (curious == null && lie < 0.5F && !playing && !preview) {
 				// herumstreifen: alle paar Sekunden ein neuer Platz in der Nähe, dazwischen bleibt es stehen
