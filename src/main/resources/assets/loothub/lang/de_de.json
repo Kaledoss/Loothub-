@@ -1849,7 +1849,7 @@
 	"loothub.chatwin.src.privat": "Private Nachrichten (/msg), gesendet und empfangen.",
 	"loothub.chatwin.src.freunde_online": "„… ist nun online/offline“ deiner Server-Freunde.",
 	"loothub.chatwin.src.freunde": "Alles mit „FREUNDE »“ – auch online/offline, solange das keinen eigenen Tab hat.",
-	"loothub.cal.button": "📅 Treue-Kalender",
+	"loothub.cal.button": "Treue-Kalender",
 	"loothub.cal.title": "Treue-Kalender",
 	"loothub.cal.no_data": "Noch keine Daten – einmal mit dem Loothub-Server abgleichen.",
 	"loothub.cal.month": "%s %s",

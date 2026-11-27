@@ -1849,7 +1849,7 @@
 	"loothub.chatwin.src.privat": "Private messages (/msg), sent and received.",
 	"loothub.chatwin.src.freunde_online": "“… is now online/offline” from your server friends.",
 	"loothub.chatwin.src.freunde": "Everything with “FREUNDE »” – including online/offline, as long as that has no tab of its own.",
-	"loothub.cal.button": "📅 Loyalty calendar",
+	"loothub.cal.button": "Loyalty calendar",
 	"loothub.cal.title": "Loyalty calendar",
 	"loothub.cal.no_data": "No data yet – sync with the Loothub server once.",
 	"loothub.cal.month": "%s %s",
