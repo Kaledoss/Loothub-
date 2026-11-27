@@ -838,6 +838,9 @@ public final class CustomChat {
 			ScreenMouseEvents.allowMouseRelease(screen).register((s, e) -> {
 				if (tabDrag != null) {
 					boolean moved = tabMoved;
+					if (moved) {
+						dropTabOutside(e);
+					}
 					tabDrag = null;
 					tabDragWin = null;
 					if (moved) {
@@ -1112,6 +1115,41 @@ public final class CustomChat {
 		return true;
 	}
 
+	/** Gezogenen Tab in ein anderes Fenster setzen; ein leeres Fenster verschwindet. */
+	private static void moveTabTo(Window from, Window to, int pos) {
+		from.tabs.remove(tabDrag);
+		from.active = Mth.clamp(from.active, 0, Math.max(0, from.tabs.size() - 1));
+		pos = Mth.clamp(pos, 0, to.tabs.size());
+		to.tabs.add(pos, tabDrag);
+		to.active = pos;
+		if (from.tabs.isEmpty()) {
+			windows().remove(from);
+		}
+		tabDragWin = to;
+	}
+
+	/** Losgelassen neben allen Fenstern: der Tab bekommt ein eigenes neues Fenster an dieser Stelle. */
+	private static void dropTabOutside(MouseButtonEvent e) {
+		Window w = tabDragWin;
+		if (w == null || w.tabs.size() < 2 || windowAt(e.x(), e.y(), false) != null) {
+			return;
+		}
+		Window n = new Window();
+		n.w = Math.max(160, w.w * 2 / 3);
+		n.h = Math.max(60, w.h * 2 / 3);
+		n.bg = w.bg;
+		n.opacity = w.opacity;
+		n.accent = w.accent;
+		n.textScale = w.textScale;
+		n.fadeSec = w.fadeSec;
+		n.minBright = w.minBright;
+		n.left = (int) e.x() - 20;
+		n.bottom = sh() - ((int) e.y() + HEADER / 2) - n.h;
+		windows().add(n);
+		moveTabTo(w, n, 0);
+		box(n);
+	}
+
 	/** Tab verschieben: liegt die Maus über einem anderen Tab, rückt der gezogene an dessen Stelle. */
 	private static boolean dragTab(MouseButtonEvent e) {
 		Window w = tabDragWin;
@@ -1123,6 +1161,18 @@ public final class CustomChat {
 			return true; // erst ab ein paar Pixeln zählt es als Ziehen
 		}
 		tabMoved = true;
+		// über die Tab-Leiste eines anderen Fensters gezogen: Tab wandert dorthin
+		Window over = windowAt(e.x(), e.y(), true);
+		if (over != null && over != w) {
+			int pos = over.tabs.size();
+			for (Hit h : hits(over, box(over))) {
+				if (h.kind == Kind.TAB && e.x() >= h.x && e.x() < h.x + h.w) {
+					pos = h.index;
+				}
+			}
+			moveTabTo(w, over, pos);
+			return true;
+		}
 		int from = w.tabs.indexOf(tabDrag);
 		for (Hit h : hits(w, box(w))) {
 			if (h.kind == Kind.TAB && e.x() >= h.x && e.x() < h.x + h.w && h.index != from) {
