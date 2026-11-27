@@ -19,7 +19,6 @@ import net.minecraft.network.chat.Style;
 import net.minecraft.network.chat.TextColor;
 
 import net.fabricmc.fabric.api.client.message.v1.ClientReceiveMessageEvents;
-import net.fabricmc.loader.api.FabricLoader;
 
 import de.loothub.Loothub;
 
@@ -70,7 +69,7 @@ public final class FishingLog {
 	}
 
 	private static Path file() {
-		return FabricLoader.getInstance().getConfigDir().resolve("loothub-fishing.json");
+		return de.loothub.client.Accounts.file("loothub-fishing.json"); // je Minecraft-Konto
 	}
 
 	public static List<Catch> all() {

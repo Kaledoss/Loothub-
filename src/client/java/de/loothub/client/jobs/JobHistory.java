@@ -14,7 +14,6 @@ import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.reflect.TypeToken;
 
-import net.fabricmc.loader.api.FabricLoader;
 
 import de.loothub.Loothub;
 
@@ -92,7 +91,7 @@ public final class JobHistory {
 	}
 
 	private static Path path() {
-		return FabricLoader.getInstance().getConfigDir().resolve(Loothub.MOD_ID + "-jobs.json");
+		return de.loothub.client.Accounts.file(Loothub.MOD_ID + "-jobs.json"); // je Minecraft-Konto
 	}
 
 	private static void ensureLoaded() {

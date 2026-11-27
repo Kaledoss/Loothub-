@@ -23,7 +23,6 @@ import com.google.gson.JsonParser;
 
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
 import net.fabricmc.fabric.api.client.message.v1.ClientReceiveMessageEvents;
-import net.fabricmc.loader.api.FabricLoader;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen;
 import net.minecraft.core.component.DataComponents;
@@ -460,7 +459,7 @@ public final class BackpackValue {
 	// ------------------------------------------------------------------ Speichern
 
 	private static Path file() {
-		return FabricLoader.getInstance().getConfigDir().resolve("loothub-backpack.json");
+		return de.loothub.client.Accounts.file("loothub-backpack.json"); // je Minecraft-Konto
 	}
 
 	private static Data data() {
