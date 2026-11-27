@@ -34,6 +34,25 @@ final class DuoScreen extends Screen {
 				.bounds(cx + 2, cy + 20, 88, 18).build());
 		leave.active = !current.isEmpty();
 		addRenderableWidget(Button.builder(Component.translatable("gui.cancel"), b -> onClose()).bounds(cx - 45, cy + 42, 90, 18).build());
+		// Freunde direkt wählen (online zuerst): ein Klick trägt sie ein
+		if (de.loothub.client.jobs.WidgetConfig.get().friendsOn && !de.loothub.client.friends.Friends.loaded()) {
+			de.loothub.client.friends.Friends.refresh(e -> {
+				if (minecraft.screen == this) {
+					rebuildWidgets();
+				}
+			});
+		}
+		var friends = de.loothub.client.friends.Friends.friends();
+		int n = Math.min(friends.size(), 8), bw = 88;
+		for (int i = 0; i < n; i++) {
+			var f = friends.get(i);
+			int col = i % 4, row = i / 4;
+			int rowCount = Math.min(4, n - row * 4);
+			int x0 = cx - (rowCount * (bw + 4) - 4) / 2;
+			Component label = Component.literal((f.online() ? "● " : "") + f.name())
+					.withStyle(f.online() ? net.minecraft.ChatFormatting.GREEN : net.minecraft.ChatFormatting.GRAY);
+			addRenderableWidget(Button.builder(label, b -> send(f.name())).bounds(x0 + col * (bw + 4), cy + 92 + row * 22, bw, 18).build());
+		}
 	}
 
 	private void send(String target) {
@@ -68,6 +87,9 @@ final class DuoScreen extends Screen {
 		}
 		if (!message.isEmpty()) {
 			g.drawCenteredString(font, message, cx, cy + 66, 0xFFE23B3B);
+		}
+		if (!de.loothub.client.friends.Friends.friends().isEmpty()) {
+			g.drawCenteredString(font, Component.translatable("loothub.lh.duo.friends"), cx, cy + 80, 0xFFB9A9AB);
 		}
 	}
 

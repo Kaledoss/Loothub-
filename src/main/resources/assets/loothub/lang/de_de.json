@@ -1784,5 +1784,10 @@
 	"loothub.feat.friendsOn": "Freunde",
 	"loothub.feat.friendsShare": "Freunde: Tätigkeit teilen",
 	"loothub.feat.friendsNotify": "Freunde: Hinweis bei online",
-	"loothub.admin.usage": "Datenbank %s MB (frei bis 5 GB) · Anfragen heute ca. %s, 7 Tage ca. %s · Spieler %s · Meldungen %s · Freundschaften %s"
+	"loothub.admin.usage": "Datenbank %s MB (frei bis 5 GB) · Anfragen heute ca. %s, 7 Tage ca. %s · Spieler %s · Meldungen %s · Freundschaften %s",
+	"loothub.lh.duo.friends": "Oder einen Freund wählen:",
+	"loothub.friends.duo": "Als Duo",
+	"loothub.friends.duo.is": "Dein Duo",
+	"loothub.friends.duo.tip": "Als Duo-Partner für die Wochen-Quest eintragen. Es zählt, sobald er dich auch einträgt.",
+	"loothub.friends.duo.done": "%s ist als Duo-Partner eingetragen."
 }

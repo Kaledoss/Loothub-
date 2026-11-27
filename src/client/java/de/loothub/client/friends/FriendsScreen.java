@@ -101,6 +101,11 @@ public class FriendsScreen extends LoothubScreen {
 							b -> act("friend_decline", row.person().uuid())).bounds(cr - 76, ry, 74, 16).build());
 				}
 				case 1 -> {
+					boolean partner = row.friend().name().equalsIgnoreCase(duoPartner());
+					Button duo = addRenderableWidget(Button.builder(Component.translatable(partner ? "loothub.friends.duo.is" : "loothub.friends.duo"),
+							b -> setDuo(row.friend().name())).bounds(cr - 232, ry, 74, 16)
+							.tooltip(Tooltip.create(Component.translatable("loothub.friends.duo.tip"))).build());
+					duo.active = !partner;
 					if (row.friend().online()) {
 						addRenderableWidget(Button.builder(Component.translatable("loothub.friends.msg"), b -> {
 							minecraft.setScreen(null);
@@ -142,6 +147,28 @@ public class FriendsScreen extends LoothubScreen {
 				nameBox.setValue("");
 			}
 			result(err, n);
+		});
+	}
+
+	/** Aktueller Duo-Partner dieser Woche (Name) oder "". */
+	private static String duoPartner() {
+		com.google.gson.JsonObject st = de.loothub.client.progress.Progress.state();
+		if (st == null || !st.has("duo") || !st.get("duo").isJsonObject()) {
+			return "";
+		}
+		com.google.gson.JsonObject d = st.getAsJsonObject("duo");
+		return d.has("partner") && !d.get("partner").isJsonNull() ? d.get("partner").getAsString() : "";
+	}
+
+	private void setDuo(String name) {
+		status = Component.translatable("loothub.friends.wait");
+		de.loothub.client.progress.Progress.duo(name, err -> {
+			status = err == null
+					? Component.translatable("loothub.friends.duo.done", name).withStyle(ChatFormatting.GREEN)
+					: Component.translatable("loothub.lh.error." + err).withStyle(ChatFormatting.RED);
+			if (minecraft.screen == this) {
+				rebuildWidgets();
+			}
 		});
 	}
 
@@ -234,7 +261,7 @@ public class FriendsScreen extends LoothubScreen {
 					} else {
 						info = Component.translatable("loothub.friends.never").getString();
 					}
-					int maxW = cr - 160 - (cl + 140);
+					int maxW = cr - 238 - (cl + 140);
 					g.drawString(font, font.plainSubstrByWidth(info, Math.max(20, maxW)), cl + 140, ty, f.online() ? GREEN : FAINT);
 				}
 				default -> {

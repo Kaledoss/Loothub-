@@ -1784,5 +1784,10 @@
 	"loothub.feat.friendsOn": "Friends",
 	"loothub.feat.friendsShare": "Friends: share activity",
 	"loothub.feat.friendsNotify": "Friends: notify when online",
-	"loothub.admin.usage": "Database %s MB (free up to 5 GB) · requests today ~%s, 7 days ~%s · players %s · reports %s · friendships %s"
+	"loothub.admin.usage": "Database %s MB (free up to 5 GB) · requests today ~%s, 7 days ~%s · players %s · reports %s · friendships %s",
+	"loothub.lh.duo.friends": "Or pick a friend:",
+	"loothub.friends.duo": "As duo",
+	"loothub.friends.duo.is": "Your duo",
+	"loothub.friends.duo.tip": "Set as duo partner for the weekly quest. It counts once they set you too.",
+	"loothub.friends.duo.done": "%s is set as your duo partner."
 }
