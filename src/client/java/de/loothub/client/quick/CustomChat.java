@@ -209,8 +209,8 @@ public final class CustomChat {
 			return "Sonstiges";
 		}
 		String head = t.substring(0, arrow).strip();
-		if (head.startsWith("@")) {
-			return SRC_CLAN;
+		if (head.startsWith("@") || head.equalsIgnoreCase("CLANS")) {
+			return SRC_CLAN; // Clan-Chat und Clan-Meldungen (z. B. „CLANS » 545.000$ eingezahlt“)
 		}
 		if (head.contains("|") || head.contains("┃") || head.contains("❘")) {
 			String body = t.substring(arrow + 1).toLowerCase(Locale.ROOT);
@@ -230,12 +230,65 @@ public final class CustomChat {
 	}
 
 	/** Bisher gesehene Quellen (gespeichert), „Spieler-Chat“ und „Privat“ immer dabei. */
+	private static final String[] FIXED_SOURCES = {SRC_FRIENDS_ONLINE, SRC_TRADE, SRC_CLAN, SRC_PM, SRC_PLAYER};
+	private static final long SOURCE_KEEP_MS = 14L * 24 * 3600_000L;
+	private static final Map<String, Integer> SOURCE_HITS = new java.util.HashMap<>();
+	private static boolean sourcesPruned;
+
+	/**
+	 * Neue Quelle erst nach 3 Nachrichten als Schalter anbieten (einmalige Wörter wie „MCV-2021-001“ nicht);
+	 * zuletzt-gesehen merken, damit Quellen, die 14 Tage nicht mehr kamen, wieder verschwinden.
+	 */
+	private static void learnSource(String src) {
+		WidgetConfig c = WidgetConfig.get();
+		if (c.chatSourceSeen == null) {
+			c.chatSourceSeen = new java.util.HashMap<>();
+		}
+		long now = System.currentTimeMillis();
+		List<String> known = knownSources();
+		if (known.contains(src)) {
+			Long last = c.chatSourceSeen.get(src);
+			if (last == null || now - last > 3600_000L) {
+				c.chatSourceSeen.put(src, now); // höchstens stündlich speichern
+				c.save();
+			}
+			return;
+		}
+		if (SOURCE_HITS.merge(src, 1, Integer::sum) >= 3 && known.size() < 30) {
+			known.add(src);
+			c.chatSourceSeen.put(src, now);
+			c.save();
+		}
+	}
+
 	public static List<String> knownSources() {
 		WidgetConfig c = WidgetConfig.get();
 		if (c.chatSources == null) {
 			c.chatSources = new ArrayList<>();
 		}
-		for (String d : new String[]{SRC_FRIENDS_ONLINE, SRC_TRADE, SRC_CLAN, SRC_PM, SRC_PLAYER}) {
+		if (!sourcesPruned) {
+			// Aufräumen: Quellen ohne Treffer seit 14 Tagen (oder alte ohne Datum) weg – außer ein Tab nutzt sie
+			sourcesPruned = true;
+			if (c.chatSourceSeen == null) {
+				c.chatSourceSeen = new java.util.HashMap<>();
+			}
+			long now = System.currentTimeMillis();
+			java.util.Set<String> used = new java.util.HashSet<>();
+			for (Window w : c.chatWindows == null ? List.<Window>of() : c.chatWindows) {
+				for (Tab t : w.tabs) {
+					for (String x : t.sources == null ? new String[0] : t.sources.split(",")) {
+						used.add(x.strip().toLowerCase(Locale.ROOT));
+					}
+				}
+			}
+			java.util.Set<String> fixed = java.util.Set.of(FIXED_SOURCES);
+			boolean changed = c.chatSources.removeIf(x -> !fixed.contains(x) && !used.contains(x.toLowerCase(Locale.ROOT))
+					&& (x.equals("CLANS") || now - c.chatSourceSeen.getOrDefault(x, 0L) > SOURCE_KEEP_MS));
+			if (changed) {
+				c.save();
+			}
+		}
+		for (String d : FIXED_SOURCES) {
 			if (!c.chatSources.contains(d)) {
 				c.chatSources.add(0, d);
 			}
@@ -405,11 +458,7 @@ public final class CustomChat {
 		String plain = net.minecraft.ChatFormatting.stripFormatting(message.getString());
 		boolean pm = ChatLog.isPrivate(plain);
 		Msg m = new Msg(System.currentTimeMillis(), message, ChatLog.norm(plain), pm, source(plain, pm), isOwn(plain), null);
-		List<String> known = knownSources();
-		if (!known.contains(m.source()) && known.size() < 40) {
-			known.add(m.source());
-			WidgetConfig.get().save();
-		}
+		learnSource(m.source());
 		MESSAGES.add(m);
 		if (MESSAGES.size() > MAX) {
 			MESSAGES.remove(0);
