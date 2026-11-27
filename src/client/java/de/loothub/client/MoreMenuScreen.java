@@ -13,15 +13,23 @@ public class MoreMenuScreen extends Screen {
 	}
 
 	private final Screen parent;
-	private final int right, top;
+	private final int anchorX, top;
+	private final boolean fromLeft;
 	private final List<Entry> entries;
 
+	/** Menü, dessen rechte Kante bei {@code right} liegt (unter einem Knopf). */
 	public MoreMenuScreen(Screen parent, int right, int top, List<Entry> entries) {
+		this(parent, right, top, entries, false);
+	}
+
+	/** {@code fromLeft}: linke obere Ecke bei x/y (z. B. an der Maus). */
+	public MoreMenuScreen(Screen parent, int x, int top, List<Entry> entries, boolean fromLeft) {
 		super(Component.translatable("loothub.more.button"));
 		this.parent = parent;
-		this.right = right;
+		this.anchorX = x;
 		this.top = top;
 		this.entries = entries;
+		this.fromLeft = fromLeft;
 	}
 
 	@Override
@@ -30,7 +38,8 @@ public class MoreMenuScreen extends Screen {
 		for (Entry e : entries) {
 			w = Math.max(w, font.width(e.label()) + 16);
 		}
-		int x = Math.max(2, right - w), y = top;
+		int x = fromLeft ? Math.min(anchorX, width - w - 2) : Math.max(2, anchorX - w);
+		int y = Math.max(2, Math.min(top, height - entries.size() * 19 - 2));
 		for (Entry e : entries) {
 			addRenderableWidget(Button.builder(e.label(), b -> e.action().run()).bounds(x, y, w, 18).build());
 			y += 19;

@@ -111,6 +111,18 @@ public class ChatWindowScreen extends Screen {
 
 	private int tabsLabelY, nameY;
 
+	/** Neuen Tab anlegen; mit Quelle als „eigener Tab“ (nimmt seine Nachrichten den anderen Tabs weg). */
+	private void addTab(String name, String source, boolean exclusive) {
+		CustomChat.Tab t = new CustomChat.Tab();
+		t.name = name;
+		t.sources = source;
+		t.exclusive = exclusive;
+		win.tabs.add(t);
+		win.active = win.tabs.size() - 1;
+		changed();
+		minecraft.setScreen(this);
+	}
+
 	private void initTabs(int x, int y, int w) {
 		// Tab-Reiter
 		tabsLabelY = y;
@@ -132,14 +144,21 @@ public class ChatWindowScreen extends Screen {
 			b.active = i != win.active;
 			tx += bw + 2;
 		}
+		final int plusX = tx, plusY = y + 18;
 		addRenderableWidget(Button.builder(Component.literal("+").withStyle(ChatFormatting.GREEN), b -> {
-			CustomChat.Tab t = new CustomChat.Tab();
-			t.name = "Tab " + (tabs.size() + 1);
-			tabs.add(t);
-			win.active = tabs.size() - 1;
-			changed();
-			rebuildWidgets();
-		}).bounds(tx, y, 16, 16).build());
+			// Neuer Tab: leer oder fertig eingestellt (Clan, Privat, Handel …) – mit einem Klick
+			List<de.loothub.client.MoreMenuScreen.Entry> items = new java.util.ArrayList<>();
+			items.add(new de.loothub.client.MoreMenuScreen.Entry(Component.translatable("loothub.chatwin.preset.empty"),
+					() -> addTab("Tab " + (tabs.size() + 1), "", false)));
+			String[][] presets = {{"Clan", CustomChat.SRC_CLAN}, {"Privat", CustomChat.SRC_PM}, {"Handel", CustomChat.SRC_TRADE},
+					{"Freunde", "FREUNDE"}, {"Server", "OPSUCHT"}, {"Twitch", "TWITCH"}};
+			for (String[] pr : presets) {
+				items.add(new de.loothub.client.MoreMenuScreen.Entry(Component.translatable("loothub.chatwin.preset", pr[0]),
+						() -> addTab(pr[0], pr[1], true)));
+			}
+			minecraft.setScreen(new de.loothub.client.MoreMenuScreen(this, plusX, plusY, items, true));
+		}).bounds(tx, y, 16, 16).tooltip(net.minecraft.client.gui.components.Tooltip.create(
+				Component.translatable("loothub.chatwin.preset.tip"))).build());
 
 		// Gewählter Tab
 		y += 22;
@@ -178,19 +197,23 @@ public class ChatWindowScreen extends Screen {
 				sx = x;
 				y += 18;
 			}
-			if (y > sourcesY + 12 + 18) {
-				break; // höchstens zwei Reihen
+			if (y > sourcesY + 12 + 36) {
+				break; // höchstens drei Reihen
 			}
-			addRenderableWidget(Button.builder(sourceLabel(tab, src), b -> {
+			Button chip = addRenderableWidget(Button.builder(sourceLabel(tab, src), b -> {
 				tab.toggleSource(src);
 				b.setMessage(sourceLabel(tab, src));
 				changed();
 			}).bounds(sx, y, bw, 16).build());
+			String tipKey = "loothub.chatwin.src." + src.toLowerCase(java.util.Locale.ROOT).replace(' ', '_').replace("-", "_");
+			if (net.minecraft.client.resources.language.I18n.exists(tipKey)) {
+				chip.setTooltip(net.minecraft.client.gui.components.Tooltip.create(Component.translatable(tipKey)));
+			}
 			sx += bw + 3;
 		}
 
 		// Wortregeln: zwei Listen, jeder Eintrag sichtbar
-		y = Math.min(y, sourcesY + 30) + 22;
+		y = Math.min(y, sourcesY + 48) + 22;
 		listY = y;
 		int colW = (w - 6) / 2;
 		incBox = box(x, y + 10, colW - 20, "", 256, "loothub.chatwin.tab.include", v -> {

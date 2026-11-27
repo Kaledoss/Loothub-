@@ -1835,5 +1835,18 @@
 	"loothub.itemdex.sort.avg7": "7-day average",
 	"loothub.itemdex.sort.new": "Newly found",
 	"loothub.itemdex.sort.seen": "Last seen",
-	"loothub.itemdex.sort.tip": "Click to change the sorting. Prices come from the auction house (most expensive first); favourites always stay on top."
+	"loothub.itemdex.sort.tip": "Click to change the sorting. Prices come from the auction house (most expensive first); favourites always stay on top.",
+	"loothub.chat.menu.msg": "Message %s",
+	"loothub.chat.menu.tab": "Open own chat tab",
+	"loothub.chat.menu.friend": "Add as friend",
+	"loothub.chat.menu.assign": "Sort this message …",
+	"loothub.chatwin.preset.empty": "Empty tab",
+	"loothub.chatwin.preset": "Tab “%s”",
+	"loothub.chatwin.preset.tip": "New tab – empty or ready-made (clan, private, trade, friends, server, Twitch). Ready-made tabs take their messages away from the other tabs.",
+	"loothub.chatwin.src.spieler_chat": "Everything players write – including trade and clan, as long as those don't have their own tab.",
+	"loothub.chatwin.src.handel": "Player chat about trading: vk, sell, buy, trade, looking for, who has, offer, pay.",
+	"loothub.chatwin.src.clan": "Clan chat (“@CLAN | …”).",
+	"loothub.chatwin.src.privat": "Private messages (/msg), sent and received.",
+	"loothub.chatwin.src.freunde_online": "“… is now online/offline” from your server friends.",
+	"loothub.chatwin.src.freunde": "Everything with “FREUNDE »” – including online/offline, as long as that has no tab of its own."
 }

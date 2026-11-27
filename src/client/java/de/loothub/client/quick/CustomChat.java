@@ -76,6 +76,19 @@ public final class CustomChat {
 			return false;
 		}
 
+		/**
+		 * Passt die Quelle? Feinere Quellen gehören zu einer größeren: „Handel“ und „Clan“ zum „Spieler-Chat“,
+		 * „Freunde online“ zu „FREUNDE“. Ein Tab mit „Spieler-Chat“ zeigt sie also weiter – wer sie getrennt haben
+		 * will, macht einen eigenen Tab („nur hier anzeigen“).
+		 */
+		public boolean accepts(String src) {
+			if (hasSource(src)) {
+				return true;
+			}
+			String parent = parentSource(src);
+			return parent != null && hasSource(parent);
+		}
+
 		public void toggleSource(String src) {
 			List<String> list = new ArrayList<>();
 			boolean had = false;
@@ -99,7 +112,7 @@ public final class CustomChat {
 			if (privateOnly && !m.pm) {
 				return false;
 			}
-			if (sources != null && !sources.isBlank() && !hasSource(m.source)) {
+			if (sources != null && !sources.isBlank() && !accepts(m.source)) {
 				return false;
 			}
 			if (any(exclude, m.low)) {
@@ -164,19 +177,50 @@ public final class CustomChat {
 
 	private static final List<Row> ROWS = new ArrayList<>();
 
-	/** Herkunft einer Nachricht: Spieler-Chat („Rang | Name »“), Privat, oder das Wort vor „»“ (OPSUCHT, FREUNDE …). */
+	public static final String SRC_PLAYER = "Spieler-Chat", SRC_TRADE = "Handel", SRC_CLAN = "Clan", SRC_PM = "Privat",
+			SRC_FRIENDS_ONLINE = "Freunde online";
+
+	/** Größere Quelle, zu der eine feinere gehört (oder null). */
+	static String parentSource(String src) {
+		return switch (src) {
+			case SRC_TRADE, SRC_CLAN -> SRC_PLAYER;
+			case SRC_FRIENDS_ONLINE -> "FREUNDE";
+			default -> null;
+		};
+	}
+
+	/** Handel im Spieler-Chat: „vk“, „verkaufe“, „kaufe“, „tausche“, „suche“, „wer hat“ … */
+	private static final java.util.regex.Pattern TRADE = java.util.regex.Pattern.compile(
+			"(^|[^\\p{L}])(vk|verkauf\\p{L}*|kaufe|ankauf|tausch\\p{L}*|suche|wer hat|zu verkaufen|biete|zahle)([^\\p{L}]|$)");
+
+	/**
+	 * Herkunft einer Nachricht: Privat, Clan („@CLAN | …“), Handel (Spieler-Chat mit vk/kaufe/tausche …), Spieler-Chat
+	 * („Rang | Name »“), Freunde online („FREUNDE » X ist nun online!“), oder das Wort vor „»“ (OPSUCHT, TWITCH …).
+	 */
 	static String source(String plain, boolean pm) {
 		if (pm) {
-			return "Privat";
+			return SRC_PM;
 		}
-		String t = plain.replaceFirst("^[^\\p{L}\\[]*", "").replaceFirst("^\\[\\d{1,2}:\\d{2}(:\\d{2})?\\]\\s*", "").strip();
+		// Rahmen/Zeilen vorne weg (z. B. „▍“ oder hervorgehobene Nachrichten „»⏎ PLATIN | Name » …⏎»“)
+		String t = plain.replaceFirst("^[\\s»▍]*", "").replaceFirst("^[^\\p{L}\\[@]*", "")
+				.replaceFirst("^\\[\\d{1,2}:\\d{2}(:\\d{2})?\\]\\s*", "").strip();
 		int arrow = t.indexOf('»');
 		if (arrow <= 0) {
 			return "Sonstiges";
 		}
 		String head = t.substring(0, arrow).strip();
+		if (head.startsWith("@")) {
+			return SRC_CLAN;
+		}
 		if (head.contains("|") || head.contains("┃") || head.contains("❘")) {
-			return "Spieler-Chat";
+			String body = t.substring(arrow + 1).toLowerCase(Locale.ROOT);
+			return TRADE.matcher(body).find() ? SRC_TRADE : SRC_PLAYER;
+		}
+		if (head.equalsIgnoreCase("FREUNDE")) {
+			String body = t.substring(arrow + 1).toLowerCase(Locale.ROOT);
+			if (body.contains("ist nun online") || body.contains("ist nun offline")) {
+				return SRC_FRIENDS_ONLINE;
+			}
 		}
 		head = head.replaceAll("[^\\p{L}\\p{N} _-]", "").strip();
 		if (head.isEmpty() || head.length() > 20 || head.contains(" ")) {
@@ -191,7 +235,7 @@ public final class CustomChat {
 		if (c.chatSources == null) {
 			c.chatSources = new ArrayList<>();
 		}
-		for (String d : new String[]{"Spieler-Chat", "Privat"}) {
+		for (String d : new String[]{SRC_FRIENDS_ONLINE, SRC_TRADE, SRC_CLAN, SRC_PM, SRC_PLAYER}) {
 			if (!c.chatSources.contains(d)) {
 				c.chatSources.add(0, d);
 			}
@@ -227,7 +271,7 @@ public final class CustomChat {
 		if (tab.privateOnly && !m.pm) {
 			return Component.translatable("loothub.chat.why.private").getString();
 		}
-		if (tab.sources != null && !tab.sources.isBlank() && !tab.hasSource(m.source)) {
+		if (tab.sources != null && !tab.sources.isBlank() && !tab.accepts(m.source)) {
 			return Component.translatable("loothub.chat.why.source", m.source).getString();
 		}
 		String ex = Tab.first(tab.exclude, m.low);
@@ -251,7 +295,7 @@ public final class CustomChat {
 		}
 		// Eigene Nachrichten bleiben sichtbar – in jedem Tab, der ihre Quelle zeigt, auch wenn „Enthält“ oder andere
 		// Tabs sie sonst ausblenden würden. Nur „Enthält nicht“ dieses Tabs gilt auch für sie.
-		if (m.own && (tab.sources == null || tab.sources.isBlank() || tab.hasSource(m.source))
+		if (m.own && (tab.sources == null || tab.sources.isBlank() || tab.accepts(m.source))
 				&& Tab.first(tab.exclude, m.low) == null) {
 			return true;
 		}
@@ -789,6 +833,44 @@ public final class CustomChat {
 		return null;
 	}
 
+	private static void playerMenu(Screen screen, Row r, String player, int x, int y) {
+		Minecraft mc = Minecraft.getInstance();
+		List<de.loothub.client.MoreMenuScreen.Entry> items = new ArrayList<>();
+		items.add(new de.loothub.client.MoreMenuScreen.Entry(Component.translatable("loothub.chat.menu.msg", player),
+				() -> mc.setScreen(new net.minecraft.client.gui.screens.ChatScreen("/msg " + player + " ", false))));
+		items.add(new de.loothub.client.MoreMenuScreen.Entry(Component.translatable("loothub.chat.menu.tab"), () -> {
+			openPlayerTab(r.win(), player);
+			mc.setScreen(new net.minecraft.client.gui.screens.ChatScreen("", false));
+		}));
+		items.add(new de.loothub.client.MoreMenuScreen.Entry(Component.translatable("loothub.chat.menu.friend"), () -> {
+			if (mc.player != null) {
+				mc.player.connection.sendCommand("friend add " + player);
+			}
+			mc.setScreen(null);
+		}));
+		items.add(new de.loothub.client.MoreMenuScreen.Entry(Component.translatable("loothub.chat.menu.assign"),
+				() -> mc.setScreen(new ChatAssignScreen(r.win(), r.msg()))));
+		mc.setScreen(new de.loothub.client.MoreMenuScreen(screen, x, y, items, true));
+	}
+
+	/** Eigener Tab für einen Spieler: alles, was seinen Namen enthält (Chat, Privat, Clan); gibt es ihn schon, wird er gewählt. */
+	static void openPlayerTab(Window w, String player) {
+		for (int i = 0; i < w.tabs.size(); i++) {
+			Tab t = w.tabs.get(i);
+			if (t.name.equalsIgnoreCase(player)) {
+				w.active = i;
+				WidgetConfig.get().save();
+				return;
+			}
+		}
+		Tab t = new Tab();
+		t.name = player;
+		t.include = player;
+		w.tabs.add(t);
+		w.active = w.tabs.size() - 1;
+		WidgetConfig.get().save();
+	}
+
 	private static boolean isNameChar(char c) {
 		return Character.isLetterOrDigit(c) || c == '_';
 	}
@@ -805,10 +887,10 @@ public final class CustomChat {
 			if (e.button() == 1) {
 				for (Row r : new ArrayList<>(ROWS)) {
 					if (e.x() >= r.x0() && e.x() < r.x1() && e.y() >= r.y0() && e.y() < r.y1()) {
-						// Rechtsklick auf einen Spielernamen: Privatnachricht an ihn beginnen
+						// Rechtsklick auf einen Spielernamen: kleines Menü (Nachricht, eigener Tab, Freund, einsortieren)
 						String player = playerAt(r, e.x());
 						if (player != null) {
-							Minecraft.getInstance().setScreen(new net.minecraft.client.gui.screens.ChatScreen("/msg " + player + " ", false));
+							playerMenu(screen, r, player, (int) e.x(), (int) e.y());
 							return true;
 						}
 						Minecraft.getInstance().setScreen(new ChatAssignScreen(r.win(), r.msg()));
