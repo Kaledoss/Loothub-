@@ -740,6 +740,20 @@ public final class CustomChat {
 					text(a, h.x + 4, top + 2, 1F, 1F, label(tabLabel(t), sel ? 0xFFFFFF : 0xB9A9AB));
 				}
 				case ADD_TAB -> text(a, h.x + 3, top + 2, 1F, 1F, label("+", 0x55E06A));
+				case MORE_TABS -> {
+					// versteckte Tabs: Anzahl, rot wenn dort Ungelesenes liegt
+					boolean unread = false;
+					java.util.Set<Integer> vis = new java.util.HashSet<>();
+					for (Hit o : hits(w, b)) {
+						if (o.kind == Kind.TAB) {
+							vis.add(o.index);
+						}
+					}
+					for (int i = 0; i < w.tabs.size(); i++) {
+						unread |= !vis.contains(i) && UNREAD.containsKey(w.tabs.get(i));
+					}
+					text(a, h.x + 2, top + 2, 1F, 1F, label("▾" + h.index, unread ? 0xFF5555 : 0xD0D0D0));
+				}
 				case SETTINGS -> text(a, h.x + 2, top + 2, 1F, 1F, label("⚙", 0xD0D0D0));
 				case NEW_WINDOW -> text(a, h.x + 2, top + 2, 1F, 1F, label("❐", 0xD0D0D0));
 				case CLOSE -> text(a, h.x + 2, top + 2, 1F, 1F, label("✕", 0xFF6666));
@@ -770,8 +784,10 @@ public final class CustomChat {
 
 	// ------------------------------------------------------------------ Klickflächen
 
+	private static final int MORE_W = 18;
+
 	private enum Kind {
-		TAB, ADD_TAB, SETTINGS, NEW_WINDOW, CLOSE, MOVE, SEARCH, SEARCH_FIELD, SEARCH_CLOSE, DEBUG
+		TAB, ADD_TAB, MORE_TABS, SETTINGS, NEW_WINDOW, CLOSE, MOVE, SEARCH, SEARCH_FIELD, SEARCH_CLOSE, DEBUG
 	}
 
 	private record Hit(Kind kind, int index, int x, int w) {
@@ -800,15 +816,45 @@ public final class CustomChat {
 			out.add(new Hit(Kind.SEARCH_FIELD, 0, x, right - BTN - x));
 			return out;
 		}
+		int[] widths = new int[w.tabs.size()];
+		int total = 0;
 		for (int i = 0; i < w.tabs.size(); i++) {
-			int tw = font.width(tabLabel(w.tabs.get(i))) + 8;
-			if (x + tw > right - BTN) {
-				break; // passt nicht mehr – Fenster breiter ziehen
+			widths[i] = font.width(tabLabel(w.tabs.get(i))) + 8;
+			total += widths[i];
+		}
+		if (x + total <= right - BTN) {
+			for (int i = 0; i < w.tabs.size(); i++) {
+				out.add(new Hit(Kind.TAB, i, x, widths[i]));
+				x += widths[i];
 			}
+			out.add(new Hit(Kind.ADD_TAB, 0, x, BTN));
+			return out;
+		}
+		// Zu viele Tabs für die Breite: so viele wie passen (der gewählte immer), Rest hinter „▾“
+		int limit = right - BTN - MORE_W;
+		java.util.List<Integer> shown = new ArrayList<>();
+		int used = 0;
+		for (int i = 0; i < w.tabs.size(); i++) {
+			if (x + used + widths[i] > limit) {
+				break;
+			}
+			shown.add(i);
+			used += widths[i];
+		}
+		int act = Mth.clamp(w.active, 0, w.tabs.size() - 1);
+		if (!shown.contains(act)) {
+			while (!shown.isEmpty() && x + used + widths[act] > limit) {
+				used -= widths[shown.remove(shown.size() - 1)];
+			}
+			shown.add(act);
+		}
+		for (int i : shown) {
+			int tw = Math.min(widths[i], Math.max(BTN, limit - x));
 			out.add(new Hit(Kind.TAB, i, x, tw));
 			x += tw;
 		}
-		out.add(new Hit(Kind.ADD_TAB, 0, x, BTN));
+		out.add(new Hit(Kind.MORE_TABS, w.tabs.size() - shown.size(), x, MORE_W));
+		out.add(new Hit(Kind.ADD_TAB, 0, x + MORE_W, BTN));
 		return out;
 	}
 
@@ -1007,6 +1053,31 @@ public final class CustomChat {
 					tabGrabX = e.x();
 					tabMoved = false;
 				}
+			}
+			case MORE_TABS -> {
+				java.util.Set<Integer> vis = new java.util.HashSet<>();
+				for (Hit o : hits(w, box(w))) {
+					if (o.kind == Kind.TAB) {
+						vis.add(o.index);
+					}
+				}
+				List<de.loothub.client.MoreMenuScreen.Entry> items = new ArrayList<>();
+				for (int i = 0; i < w.tabs.size(); i++) {
+					if (vis.contains(i)) {
+						continue;
+					}
+					final int idx = i;
+					Tab t = w.tabs.get(i);
+					items.add(new de.loothub.client.MoreMenuScreen.Entry(Component.literal(tabLabel(t)), () -> {
+						w.active = idx;
+						UNREAD.remove(t);
+						SCROLL.put(w, 0);
+						WidgetConfig.get().save();
+						mc.setScreen(new net.minecraft.client.gui.screens.ChatScreen("", false));
+					}));
+				}
+				int[] bb = box(w);
+				mc.setScreen(new de.loothub.client.MoreMenuScreen(mc.screen, hit.x, bb[1], items, true));
 			}
 			case ADD_TAB -> {
 				Tab t = new Tab();
