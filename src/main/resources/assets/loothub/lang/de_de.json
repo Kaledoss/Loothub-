@@ -1887,6 +1887,5 @@
 	"loothub.adminp.missing": "Fehlende Geheimnisse zurückgeben (ohne Taler):",
 	"loothub.adminp.owned": "Shop-Artikel (%s):",
 	"loothub.admin.losses": "⚠ %s Warnungen – zuletzt %s: %s (bei %s, %s)",
-	"loothub.lh.error.busy": "Gerade beschäftigt – bitte gleich noch einmal.",
 	"loothub.lh.error.data": "Deine Daten auf dem Server sind beschädigt – bitte melde das."
 }

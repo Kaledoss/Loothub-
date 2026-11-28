@@ -1887,6 +1887,5 @@
 	"loothub.adminp.missing": "Give back missing secrets (no Taler):",
 	"loothub.adminp.owned": "Shop items (%s):",
 	"loothub.admin.losses": "⚠ %s warnings – latest %s: %s (on %s, %s)",
-	"loothub.lh.error.busy": "Busy right now – please try again in a moment.",
 	"loothub.lh.error.data": "Your data on the server is damaged – please report this."
 }
