@@ -291,7 +291,7 @@ public final class Progress {
 
 	/** Ist man laut Server Admin (Taler ändern, Ranglisten zurücksetzen)? */
 	/** Worker-Stand, den diese Mod-Version braucht (muss zu WORKER_VERSION in cosmetics-worker.js passen). */
-	public static final int WORKER_NEEDED = 17;
+	public static final int WORKER_NEEDED = 18;
 
 	/** Admin: Läuft auf dem Server ein älterer Worker, als diese Mod braucht? (unbekannt = nein) */
 	public static boolean workerOutdated() {
@@ -355,6 +355,15 @@ public final class Progress {
 		} catch (RuntimeException e) {
 			Loothub.LOGGER.debug("Quest-Zwischenspeicher nicht geschrieben", e);
 		}
+	}
+
+	/** Kontowechsel (z. B. LabyMod-Kontowechsel ohne Neustart): Stand des alten Kontos verwerfen. */
+	public static void resetForAccount() {
+		state = null;
+		atSync = null;
+		atSyncCol = null;
+		joinedAt = 0;
+		lastSync = 0;
 	}
 
 	private static void loadCache(Minecraft mc) {

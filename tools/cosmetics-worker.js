@@ -1074,7 +1074,7 @@ const LH_BOARDS = ["points", "ach", "login", "dquests", "wquests", "blocks", "pl
 const LH_DROP_MIN_PLAY = { d: 30, w: 180, m: 600, a: 1200 }; // Mindest-Spielminuten für „am wenigsten weggeworfen“
 const LH_PERIODS = ["d", "w", "m"]; // täglich, wöchentlich, monatlich (dazu „a“ = gesamt)
 /** Stand dieses Workers – die Mod zeigt Admins einen Hinweis, wenn er älter ist als sie erwartet. Bei jeder Änderung erhöhen. */
-const WORKER_VERSION = 17;
+const WORKER_VERSION = 18;
 
 let lhReady = false;
 async function lhInit(db) {
@@ -1542,7 +1542,28 @@ async function lhResets(db) {
 }
 
 /** Spieler-Zeile mit allen Ranglisten-Werten speichern. */
+let lhOp = "";
+
+/** Verdacht auf Datenverlust festhalten (Admin-Übersicht zeigt es): lh_meta „loss:<zeit>:<uuid>“. */
+async function lhLoss(db, uuid, name, what) {
+	try {
+		await db.prepare("INSERT OR REPLACE INTO lh_meta (k, v) VALUES (?, ?)")
+			.bind(`loss:${Date.now()}:${uuid}`, JSON.stringify({ name: name || "", what, op: lhOp })).run();
+	} catch { /* nur Protokoll */ }
+}
+
 async function lhSave(db, row, d, now, name, resets) {
+	// Schutz: Geheimnisse und Shop-Artikel gehen nie verloren – falls doch, alten Stand behalten und protokollieren
+	try {
+		const old = JSON.parse(row.data || "{}");
+		const lost = (old.secrets || []).filter((x) => !(d.secrets || []).includes(x));
+		const lostOwned = (old.owned || []).filter((x) => x !== "s_freeze" && !(d.owned || []).includes(x));
+		if (lost.length || lostOwned.length) {
+			d.secrets = [...new Set([...(d.secrets || []), ...lost])];
+			d.owned = [...new Set([...(d.owned || []), ...lostOwned])];
+			await lhLoss(db, row.uuid, name || row.name, `wiederhergestellt: ${[...lost, ...lostOwned].join(", ")}`);
+		}
+	} catch { /* alter Stand unlesbar */ }
 	const tot = d.tot || {};
 	const achCount = Object.values(d.ach || {}).reduce((a, n) => a + n, 0);
 	const bv = lhBoardValues(d, row, achCount, now, resets || await lhResets(db));
@@ -1764,6 +1785,33 @@ async function lhAdmin(db, env, p, now) {
 		]);
 		return { ok: true };
 	}
+	// Admin: Spieler ansehen (Guthaben, Geheimnisse, Shop-Artikel, Erfolge, letzter Abgleich)
+	if (p.op === "admin_player") {
+		const found = await target();
+		if (!found) return { error: "no player" };
+		const [t, td] = found;
+		const ach = Object.values(td.ach || {}).reduce((a, n) => a + n, 0);
+		return { ok: true, name: t.name, uuid: t.uuid, points: t.points || 0, spent: t.spent || 0, updated: t.updated || 0,
+			ver: td.ver || "", secrets: td.secrets || [], allSecrets: LH_SECRETS, owned: td.owned || [], ach, quests: td.quests || 0,
+			login: td.login || {}, title: t.title || "", badge: t.badge || "" };
+	}
+	// Admin: Geheimnis oder Shop-Artikel zurückgeben (ohne Taler-Belohnung, ohne Kosten)
+	if (p.op === "admin_grant") {
+		const found = await target();
+		if (!found) return { error: "no player" };
+		const [t, td] = found;
+		const id = String(p.id || "");
+		if (p.kind === "secret") {
+			if (!LH_SECRETS.includes(id)) return { error: "bad id" };
+			td.secrets = [...new Set([...(td.secrets || []), id])];
+		} else if (p.kind === "item") {
+			if (!LH_SHOP_MAP[id] && id !== "a_secrets") return { error: "bad id" };
+			td.owned = [...new Set([...(td.owned || []), id])];
+		} else return { error: "bad id" };
+		td.delta = {};
+		await lhSave(db, t, td, now, t.name);
+		return { ok: true, name: t.name };
+	}
 	// Admin-Übersicht: wer nutzt welche Version, welche Funktionen sind eingeschaltet (aktive Spieler)
 	if (p.op === "admin_overview") {
 		const rows = await db.prepare("SELECT name, data, updated FROM lh_player WHERE updated > ?").bind(now - 30 * 86400_000).all();
@@ -1789,7 +1837,12 @@ async function lhAdmin(db, env, p, now) {
 		const sorted = (o) => Object.entries(o).sort((a, b) => b[1] - a[1]);
 		let usage = null;
 		try { usage = await lhUsage(db, now); } catch { /* ohne Verbrauch */ }
-		return { ok: true, active7, active30, withFeat, versions: sorted(versions), features: sorted(features), recent: recent.slice(0, 50), usage };
+		let losses = [];
+		try {
+			losses = (((await db.prepare("SELECT k, v FROM lh_meta WHERE k LIKE 'loss:%' ORDER BY k DESC LIMIT 20").all()).results) || [])
+				.map((x) => ({ at: Number(x.k.split(":")[1]) || 0, ...JSON.parse(x.v) }));
+		} catch { /* keine */ }
+		return { ok: true, active7, active30, withFeat, versions: sorted(versions), features: sorted(features), recent: recent.slice(0, 50), usage, losses };
 	}
 	// Feedback-Liste (Admin): Übersicht, einzelne Meldung (mit Bild), Status ändern, löschen
 	if (p.op === "admin_fb_list") {
@@ -1834,8 +1887,13 @@ async function lhHandle(request, env) {
 	try { await lhCountRequest(db, now); } catch { /* nur Statistik */ }
 	let row = await db.prepare("SELECT * FROM lh_player WHERE uuid = ?").bind(uuid).first();
 	if (!row) row = { uuid, name, data: "{}", points: 0, spent: 0, title: "", badge: "" };
+	lhOp = String(p.op || "") + " v" + String(p.ver || "?");
 	let d;
-	try { d = JSON.parse(row.data || "{}"); } catch { d = {}; }
+	try { d = JSON.parse(row.data || "{}"); } catch (e) {
+		// kaputte Daten nie still durch leere ersetzen
+		await lhLoss(db, uuid, row.name, "unlesbare Daten: " + String(e).slice(0, 80));
+		return json({ error: "data" }, 500);
+	}
 	d.owned = Array.isArray(d.owned) ? d.owned : [];
 	let extra = null;
 	let error = null;
@@ -1896,7 +1954,7 @@ async function lhHandle(request, env) {
 			else if (price === null) error = item.extra.season ? "season" : "locked";
 			else if (typeof p.target !== "string" || !NAME.test(p.target)) error = "no player";
 			else {
-				const t = await db.prepare("SELECT uuid, data FROM lh_player WHERE lower(name) = lower(?) ORDER BY updated DESC LIMIT 1").bind(p.target).first();
+				const t = await db.prepare("SELECT uuid, data, updated FROM lh_player WHERE lower(name) = lower(?) ORDER BY updated DESC LIMIT 1").bind(p.target).first();
 				let td = null;
 				try { td = t ? JSON.parse(t.data || "{}") : null; } catch { td = null; }
 				if (!t || !td) error = "no player";
@@ -1907,11 +1965,17 @@ async function lhHandle(request, env) {
 					if (item.kind === "freeze") td.freeze = (td.freeze || 0) + 1;
 					else (td.owned = td.owned || []).push(p.item);
 					td.inbox = [...(td.inbox || []), { k: "gift", id: p.item, from: name || row.name || "?" }].slice(-20);
-					await db.prepare("UPDATE lh_player SET data = ? WHERE uuid = ?").bind(JSON.stringify(td), t.uuid).run();
-					row.spent += price;
-					extra = { news: [{ k: "gift_sent", id: p.item, to: p.target }] };
-					d.gifts = (d.gifts || 0) + 1;
-					if (d.gifts >= 3) lhSecret(d, row, "generous", extra.news);
+					// nur schreiben, wenn sich der Beschenkte seit dem Lesen nicht geändert hat – sonst würde man seinen
+					// neuesten Stand (z. B. ein gerade gefundenes Geheimnis) mit dem alten überschreiben
+					const w = await db.prepare("UPDATE lh_player SET data = ? WHERE uuid = ? AND updated = ?")
+						.bind(JSON.stringify(td), t.uuid, t.updated).run();
+					if (!w.meta || !w.meta.changes) error = "busy";
+					else {
+						row.spent += price;
+						extra = { news: [{ k: "gift_sent", id: p.item, to: p.target }] };
+						d.gifts = (d.gifts || 0) + 1;
+						if (d.gifts >= 3) lhSecret(d, row, "generous", extra.news);
+					}
 				}
 			}
 		} else if (p.op === "secret") {

@@ -162,6 +162,8 @@ public abstract class LoothubScreen extends Screen {
 				items.add(new MoreMenuScreen.Entry(al, () -> minecraft.setScreen(new de.loothub.client.feedback.FeedbackListScreen(this))));
 				items.add(new MoreMenuScreen.Entry(Component.translatable("loothub.admin.overview_button"),
 						() -> minecraft.setScreen(new de.loothub.client.feedback.AdminOverviewScreen(this))));
+				items.add(new MoreMenuScreen.Entry(Component.translatable("loothub.adminp.button"),
+						() -> minecraft.setScreen(new de.loothub.client.progress.AdminPlayerScreen(this))));
 			}
 			minecraft.setScreen(new MoreMenuScreen(this, menuRight, menuY, items));
 		}).bounds(fx, frameY + 2, mw, b.getHeight()).build());

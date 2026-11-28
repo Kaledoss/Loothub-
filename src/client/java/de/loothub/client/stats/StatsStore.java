@@ -38,6 +38,8 @@ public final class StatsStore {
 	private static boolean dirty;
 	private static long lastSave;
 	private static int version;
+	/** Datei des Kontos, für das gerade geladen ist (Speichern geht immer dorthin, auch nach einem Kontowechsel). */
+	private static Path loadedPath;
 
 	private StatsStore() {
 	}
@@ -135,9 +137,17 @@ public final class StatsStore {
 		if (!dirty || days == null || (!force && now - lastSave < SAVE_INTERVAL_MS)) {
 			return;
 		}
-		de.loothub.client.AsyncSave.write(path(), GSON.toJson(new TreeMap<>(days)));
+		de.loothub.client.AsyncSave.write(loadedPath != null ? loadedPath : path(), GSON.toJson(new TreeMap<>(days)));
 		dirty = false;
 		lastSave = now;
+	}
+
+	/** Kontowechsel: Ungespeichertes beim alten Konto ablegen, dann beim nächsten Zugriff das neue laden. */
+	public static synchronized void reloadForAccount() {
+		saveIfDirty(true);
+		days = null;
+		loadedPath = null;
+		version++;
 	}
 
 	private static Path path() {
@@ -151,6 +161,7 @@ public final class StatsStore {
 		days = new HashMap<>();
 		lastSave = System.currentTimeMillis();
 		Path p = path();
+		loadedPath = p;
 		if (!Files.exists(p)) {
 			return;
 		}

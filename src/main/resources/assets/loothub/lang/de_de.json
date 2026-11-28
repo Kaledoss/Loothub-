@@ -1873,5 +1873,20 @@
 	"loothub.cal.mon.10": "Oktober",
 	"loothub.cal.mon.11": "November",
 	"loothub.cal.mon.12": "Dezember",
-	"loothub.chatwin.tab.move": "Tab verschieben – im Chat auch einfach mit der Maus an eine andere Stelle ziehen."
+	"loothub.chatwin.tab.move": "Tab verschieben – im Chat auch einfach mit der Maus an eine andere Stelle ziehen.",
+	"loothub.adminp.button": "Spieler prüfen",
+	"loothub.adminp.title": "Spieler prüfen (Admin)",
+	"loothub.adminp.load": "Laden",
+	"loothub.adminp.item": "Artikel-ID (z. B. e_rainbow)",
+	"loothub.adminp.give": "Zurückgeben",
+	"loothub.adminp.given": "Zurückgegeben: %s",
+	"loothub.adminp.bad": "Unbekannte ID oder Fehler.",
+	"loothub.adminp.taler": "Guthaben %s Taler (verdient %s, ausgegeben %s)",
+	"loothub.adminp.info": "Erfolge %s · Quests %s · letzter Abgleich %s · Version %s",
+	"loothub.adminp.secrets": "Geheimnisse (%s von %s):",
+	"loothub.adminp.missing": "Fehlende Geheimnisse zurückgeben (ohne Taler):",
+	"loothub.adminp.owned": "Shop-Artikel (%s):",
+	"loothub.admin.losses": "⚠ %s Warnungen – zuletzt %s: %s (bei %s, %s)",
+	"loothub.lh.error.busy": "Gerade beschäftigt – bitte gleich noch einmal.",
+	"loothub.lh.error.data": "Deine Daten auf dem Server sind beschädigt – bitte melde das."
 }

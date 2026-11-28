@@ -90,6 +90,11 @@ public final class JobHistory {
 		save();
 	}
 
+	/** Kontowechsel: beim nächsten Zugriff die Datei des neuen Kontos laden (gespeichert wird sofort bei jeder Änderung). */
+	public static synchronized void reloadForAccount() {
+		sessions = null;
+	}
+
 	private static Path path() {
 		return de.loothub.client.Accounts.file(Loothub.MOD_ID + "-jobs.json"); // je Minecraft-Konto
 	}

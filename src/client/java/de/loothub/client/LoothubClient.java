@@ -51,6 +51,7 @@ public class LoothubClient implements ClientModInitializer {
 		// zuerst: fehlen im Spielordner alle Loothub-Daten, die letzte Sicherung einspielen (bevor etwas gelesen wird)
 		DataBackup.restoreIfEmpty();
 		DataBackup.register();
+		de.loothub.client.Accounts.register();
 		de.loothub.client.friends.Friends.register();
 		de.loothub.client.cosmetics.PetMood.register();
 		de.loothub.client.cosmetics.PetLevels.register();

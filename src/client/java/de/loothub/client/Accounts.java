@@ -23,6 +23,30 @@ public final class Accounts {
 	private Accounts() {
 	}
 
+	private static String lastId;
+
+	/**
+	 * Kontowechsel ohne Neustart (z. B. über LabyMod) erkennen: beim Betreten eines Servers prüfen, ob es noch dasselbe
+	 * Konto ist – sonst alle kontobezogenen Daten neu laden.
+	 */
+	public static void register() {
+		net.fabricmc.fabric.api.client.networking.v1.ClientPlayConnectionEvents.INIT.register((h, mc) -> check());
+		lastId = id();
+	}
+
+	public static synchronized void check() {
+		String now = id();
+		if (lastId != null && !lastId.equals(now)) {
+			Loothub.LOGGER.info("Loothub: Kontowechsel erkannt – lade Daten für {}", now);
+			de.loothub.client.stats.StatsStore.reloadForAccount();
+			de.loothub.client.jobs.JobHistory.reloadForAccount();
+			de.loothub.client.jobs.FishingLog.reloadForAccount();
+			de.loothub.client.jobs.BackpackValue.reloadForAccount();
+			de.loothub.client.progress.Progress.resetForAccount();
+		}
+		lastId = now;
+	}
+
 	/** Kennung des angemeldeten Kontos (UUID ohne Striche), oder "offline". */
 	public static String id() {
 		UUID u = Minecraft.getInstance().getUser().getProfileId();

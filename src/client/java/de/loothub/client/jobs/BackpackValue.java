@@ -462,6 +462,11 @@ public final class BackpackValue {
 		return de.loothub.client.Accounts.file("loothub-backpack.json"); // je Minecraft-Konto
 	}
 
+	/** Kontowechsel: beim nächsten Zugriff die Datei des neuen Kontos laden. */
+	public static void reloadForAccount() {
+		data = null;
+	}
+
 	private static Data data() {
 		if (data == null) {
 			data = new Data();

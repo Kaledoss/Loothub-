@@ -100,6 +100,16 @@ public class AdminOverviewScreen extends Screen {
 					cnt.getOrDefault("lh_player", 0L), cnt.getOrDefault("lh_feedback", 0L), cnt.getOrDefault("lh_friend", 0L));
 			g.drawString(font, line, width - 10 - font.width(line), 24, LoothubScreen.MUTED, false);
 		}
+		// Warnungen: der Server hat versucht, Geheimnisse/Shop-Artikel zu verlieren (und sie behalten) o. Ä.
+		if (data.has("losses") && data.get("losses").isJsonArray() && !data.getAsJsonArray("losses").isEmpty()) {
+			JsonArray ls = data.getAsJsonArray("losses");
+			JsonObject l0 = ls.get(0).getAsJsonObject();
+			String when = DATE.format(java.time.Instant.ofEpochMilli(l0.get("at").getAsLong()));
+			Component warn = Component.translatable("loothub.admin.losses", ls.size(), l0.get("name").getAsString(),
+					l0.get("what").getAsString(), l0.has("op") ? l0.get("op").getAsString() : "?", when)
+					.withStyle(net.minecraft.ChatFormatting.RED);
+			g.drawString(font, font.plainSubstrByWidth(warn.getString(), width - 20), 10, height - 40, 0xFFFF6666, false);
+		}
 		int colW = (width - 30) / 3;
 		// Versionen
 		int x = 10, y = 42;

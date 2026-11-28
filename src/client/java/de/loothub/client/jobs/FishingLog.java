@@ -68,6 +68,12 @@ public final class FishingLog {
 		});
 	}
 
+	/** Kontowechsel: beim nächsten Zugriff die Datei des neuen Kontos laden. */
+	public static void reloadForAccount() {
+		catches = null;
+		version++;
+	}
+
 	private static Path file() {
 		return de.loothub.client.Accounts.file("loothub-fishing.json"); // je Minecraft-Konto
 	}

@@ -1873,5 +1873,20 @@
 	"loothub.cal.mon.10": "October",
 	"loothub.cal.mon.11": "November",
 	"loothub.cal.mon.12": "December",
-	"loothub.chatwin.tab.move": "Move tab – in the chat you can also just drag it to another spot with the mouse."
+	"loothub.chatwin.tab.move": "Move tab – in the chat you can also just drag it to another spot with the mouse.",
+	"loothub.adminp.button": "Check player",
+	"loothub.adminp.title": "Check player (admin)",
+	"loothub.adminp.load": "Load",
+	"loothub.adminp.item": "Item ID (e.g. e_rainbow)",
+	"loothub.adminp.give": "Give back",
+	"loothub.adminp.given": "Given back: %s",
+	"loothub.adminp.bad": "Unknown ID or error.",
+	"loothub.adminp.taler": "Balance %s Taler (earned %s, spent %s)",
+	"loothub.adminp.info": "Achievements %s · quests %s · last sync %s · version %s",
+	"loothub.adminp.secrets": "Secrets (%s of %s):",
+	"loothub.adminp.missing": "Give back missing secrets (no Taler):",
+	"loothub.adminp.owned": "Shop items (%s):",
+	"loothub.admin.losses": "⚠ %s warnings – latest %s: %s (on %s, %s)",
+	"loothub.lh.error.busy": "Busy right now – please try again in a moment.",
+	"loothub.lh.error.data": "Your data on the server is damaged – please report this."
 }
