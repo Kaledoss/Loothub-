@@ -932,7 +932,7 @@
 	"loothub.backup.cancel_restore": "Cancel restore",
 	"loothub.backup.cancelled": "Restore cancelled.",
 	"loothub.backup.restore": "Restore",
-	"loothub.backup.restore.confirm": "Restore \"%s\" on the next game start? Your current data will be replaced (a copy goes to .loothub/backups/vor-import).",
+	"loothub.backup.restore.confirm": "Restore \"%s\" on the next game start? Your current data will be replaced (a copy goes to .loothub/backups/vor-import). Stats, jobs and catches then belong to the account you start with – other accounts' data stays untouched.",
 	"loothub.backup.scheduled": "Scheduled – restart Minecraft and the backup will be restored.",
 	"loothub.backup.pending": "A backup will be restored on the next game start.",
 	"loothub.backup.exported": "Exported: %s",

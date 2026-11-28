@@ -932,7 +932,7 @@
 	"loothub.backup.cancel_restore": "Einspielen abbrechen",
 	"loothub.backup.cancelled": "Einspielen abgebrochen.",
 	"loothub.backup.restore": "Einspielen",
-	"loothub.backup.restore.confirm": "„%s“ beim nächsten Spielstart einspielen? Deine aktuellen Daten werden dabei ersetzt (eine Kopie landet in .loothub/backups/vor-import).",
+	"loothub.backup.restore.confirm": "„%s“ beim nächsten Spielstart einspielen? Deine aktuellen Daten werden dabei ersetzt (eine Kopie landet in .loothub/backups/vor-import). Statistik, Jobs und Fänge gehören dann dem Konto, mit dem du startest – Daten anderer Konten bleiben unberührt.",
 	"loothub.backup.scheduled": "Vorgemerkt – starte Minecraft neu, dann wird die Sicherung eingespielt.",
 	"loothub.backup.pending": "Eine Sicherung wird beim nächsten Spielstart eingespielt.",
 	"loothub.backup.exported": "Exportiert: %s",

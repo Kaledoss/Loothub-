@@ -202,7 +202,9 @@ public final class DataBackup {
 					return false;
 				}
 				for (Path f : current) {
-					Files.deleteIfExists(f);
+					if (!otherAccount(f)) {
+						Files.deleteIfExists(f); // Dateien anderer Minecraft-Konten bleiben, wie sie sind
+					}
 				}
 				for (Path f : files) {
 					Files.copy(f, configDir().resolve(f.getFileName()), StandardCopyOption.REPLACE_EXISTING);
@@ -221,7 +223,9 @@ public final class DataBackup {
 					return false;
 				}
 				for (Path f : current) {
-					Files.deleteIfExists(f);
+					if (!otherAccount(f)) {
+						Files.deleteIfExists(f); // Dateien anderer Minecraft-Konten bleiben, wie sie sind
+					}
 				}
 				try (java.util.zip.ZipInputStream in = new java.util.zip.ZipInputStream(Files.newInputStream(src))) {
 					for (java.util.zip.ZipEntry e; (e = in.getNextEntry()) != null; ) {
@@ -232,12 +236,36 @@ public final class DataBackup {
 					}
 				}
 			}
+			// Sicherung aus der Zeit vor den Konto-Dateien: deren gemeinsame Statistik gehört dem Konto, das sie einspielt
+			for (String name : new String[]{"loothub-stats.json", "loothub-jobs.json", "loothub-fishing.json", "loothub-backpack.json"}) {
+				Path legacy = configDir().resolve(name);
+				if (Files.exists(legacy)) {
+					try {
+						int dot = name.lastIndexOf('.');
+						Path mine = configDir().resolve(name.substring(0, dot) + "." + Accounts.id() + name.substring(dot));
+						Files.move(legacy, mine, StandardCopyOption.REPLACE_EXISTING);
+					} catch (IOException | RuntimeException e) {
+						Loothub.LOGGER.warn("Loothub: {} aus der Sicherung nicht dem Konto zugeordnet", name, e);
+					}
+				}
+			}
 			restoredFrom = src.getFileName().toString();
 			Loothub.LOGGER.info("Loothub: Sicherung {} eingespielt ({} Dateien, vorheriger Stand in {})", restoredFrom, n, safety);
 			return true;
 		} catch (IOException | RuntimeException e) {
 			Loothub.LOGGER.warn("Loothub: vorgemerkte Sicherung konnte nicht eingespielt werden", e);
 			return false;
+		}
+	}
+
+	/** Kontobezogene Datei eines anderen Kontos (loothub-stats.&lt;uuid&gt;.json)? */
+	private static boolean otherAccount(Path f) {
+		String n = f.getFileName().toString();
+		java.util.regex.Matcher m = java.util.regex.Pattern.compile("\\.([0-9a-f]{32})\\.json$").matcher(n);
+		try {
+			return m.find() && !m.group(1).equals(Accounts.id());
+		} catch (RuntimeException e) {
+			return true; // im Zweifel nichts löschen
 		}
 	}
 
