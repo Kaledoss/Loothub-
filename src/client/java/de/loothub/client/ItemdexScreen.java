@@ -40,6 +40,9 @@ public class ItemdexScreen extends LoothubScreen {
 	private Button hiddenButton;
 	/** Sortierung: 0 A–Z, 1 Sofortkauf, 2 Schnitt 7 Tage, 3 neu entdeckt, 4 zuletzt gesehen. */
 	private static int sortMode;
+	private static final Map<Entry, Double> PRICE_CACHE = new IdentityHashMap<>();
+	private static int priceCacheMode = -1;
+	private static long priceCacheAt;
 	private static final String[] SORTS = {"az", "offer", "avg7", "new", "seen"};
 	private List<Entry> rows = List.of();
 	private final Map<Entry, Integer> numbers = new IdentityHashMap<>();
@@ -146,9 +149,16 @@ public class ItemdexScreen extends LoothubScreen {
 		}
 		switch (sortMode) {
 			case 1, 2 -> {
-				Map<Entry, Double> pk = new IdentityHashMap<>();
+				// Preise zwischenspeichern (30 s): sonst bei jedem Tastendruck für tausende Einträge neu nachschlagen
+				long now = System.currentTimeMillis();
+				if (sortMode != priceCacheMode || now - priceCacheAt > 30_000L) {
+					PRICE_CACHE.clear();
+					priceCacheMode = sortMode;
+					priceCacheAt = now;
+				}
+				Map<Entry, Double> pk = PRICE_CACHE;
 				for (Entry e : out) {
-					pk.put(e, priceKey(e));
+					pk.computeIfAbsent(e, ItemdexScreen::priceKey);
 				}
 				out.sort(Comparator.comparingDouble((Entry e) -> pk.get(e)).reversed()); // teuerste zuerst
 			}

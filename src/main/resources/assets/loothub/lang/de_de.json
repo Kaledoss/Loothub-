@@ -1887,5 +1887,13 @@
 	"loothub.adminp.missing": "Fehlende Geheimnisse zurückgeben (ohne Taler):",
 	"loothub.adminp.owned": "Shop-Artikel (%s):",
 	"loothub.admin.losses": "⚠ %s Warnungen – zuletzt %s: %s (bei %s, %s)",
-	"loothub.lh.error.data": "Deine Daten auf dem Server sind beschädigt – bitte melde das."
+	"loothub.lh.error.data": "Deine Daten auf dem Server sind beschädigt – bitte melde das.",
+	"loothub.perf.button": "Leistung",
+	"loothub.perf.title": "Leistung von Loothub+",
+	"loothub.perf.summary": "%s FPS · Loothub+ braucht %s ms je Sekunde (%s %% der Zeit)",
+	"loothub.perf.info": "Durchschnitt der letzten 10 Sekunden. Rot = teuer bzw. ein einzelner Aufruf länger als ein Bild.",
+	"loothub.perf.col.name": "Funktion",
+	"loothub.perf.col.sec": "je Sekunde",
+	"loothub.perf.col.max": "langsamster",
+	"loothub.perf.wait": "Wird gemessen … in ein paar Sekunden steht hier mehr."
 }

@@ -154,6 +154,8 @@ public abstract class LoothubScreen extends Screen {
 					() -> minecraft.setScreen(new de.loothub.client.feedback.FeedbackScreen(this))));
 			items.add(new MoreMenuScreen.Entry(Component.translatable("loothub.backup.button"),
 					() -> minecraft.setScreen(new BackupScreen(this))));
+			items.add(new MoreMenuScreen.Entry(Component.translatable("loothub.perf.button"),
+					() -> minecraft.setScreen(new PerfScreen(this))));
 			if (de.loothub.client.progress.Progress.isAdmin()) {
 				Component al = Component.translatable("loothub.feedback.list_button");
 				if (unread > 0) {

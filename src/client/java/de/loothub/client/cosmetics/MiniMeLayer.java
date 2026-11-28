@@ -348,6 +348,13 @@ public final class MiniMeLayer extends RenderLayer<AvatarRenderState, PlayerMode
 	@Override
 	public void submit(PoseStack poseStack, SubmitNodeCollector collector, int light, AvatarRenderState state,
 			float yRot, float xRot) {
+		long t0 = de.loothub.client.util.Perf.start();
+		submitInner(poseStack, collector, light, state, yRot, xRot);
+		de.loothub.client.util.Perf.end("Kosmetik: Mini-Mes", t0);
+	}
+
+	private void submitInner(PoseStack poseStack, SubmitNodeCollector collector, int light, AvatarRenderState state,
+			float yRot, float xRot) {
 		if (LayerGuard.off("Mini-Mes")) {
 			return;
 		}

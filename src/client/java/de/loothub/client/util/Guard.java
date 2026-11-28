@@ -26,29 +26,35 @@ public final class Guard {
 
 	/** Abgesicherter Tick-Handler. */
 	public static void tick(String name, ClientTickEvents.EndTick handler) {
+		final String label = "Tick: " + name;
 		ClientTickEvents.END_CLIENT_TICK.register(mc -> {
 			if (PAUSED.containsKey(name)) {
 				return;
 			}
+			long t0 = Perf.start();
 			try {
 				handler.onEndTick(mc);
 			} catch (Throwable t) {
 				failed(name, t);
 			}
+			Perf.end(label, t0);
 		});
 	}
 
 	/** Abgesichertes HUD-Element. */
 	public static HudElement hud(String name, HudElement element) {
+		final String label = "HUD: " + name;
 		return (g, delta) -> {
 			if (PAUSED.containsKey(name)) {
 				return;
 			}
+			long t0 = Perf.start();
 			try {
 				element.render(g, delta);
 			} catch (Throwable t) {
 				failed(name, t);
 			}
+			Perf.end(label, t0);
 		};
 	}
 

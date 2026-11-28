@@ -20,7 +20,9 @@ public abstract class CustomChatMixin {
 	@Inject(method = "addMessage(Lnet/minecraft/network/chat/Component;Lnet/minecraft/network/chat/MessageSignature;Lnet/minecraft/client/GuiMessageTag;)V",
 			at = @At("TAIL"))
 	private void loothub$collect(Component message, @Nullable MessageSignature signature, @Nullable GuiMessageTag tag, CallbackInfo ci) {
+		long t0 = de.loothub.client.util.Perf.start();
 		CustomChat.add(message);
+		de.loothub.client.util.Perf.end("Chat: neue Nachricht", t0);
 	}
 
 	/** Zeichnen, Hover und Klick-Erkennung laufen alle hier durch. */
@@ -34,7 +36,9 @@ public abstract class CustomChatMixin {
 			return;
 		}
 		if (CustomChat.active()) {
+			long t0 = de.loothub.client.util.Perf.start();
 			CustomChat.render(access, focused);
+			de.loothub.client.util.Perf.end("Chat: Zeichnen", t0);
 			ci.cancel();
 		}
 	}

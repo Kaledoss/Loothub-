@@ -707,7 +707,8 @@ public final class CustomChat {
 		int accent = 0xFF000000 | (w.accent & 0xFFFFFF);
 		a.fill(b[0], top, b[0] + b[2], b[1], 0xE0100A0C);
 		a.fill(b[0], b[1] - 1, b[0] + b[2], b[1], accent);
-		for (Hit h : hits(w, b)) {
+		List<Hit> headerHits = hits(w, b);
+		for (Hit h : headerHits) {
 			switch (h.kind) {
 				case SEARCH -> text(a, h.x + 2, top + 2, 1F, 1F, label("⌕", searchWin == w ? (w.accent & 0xFFFFFF) : 0xD0D0D0));
 				case DEBUG -> text(a, h.x + 2, top + 2, 1F, 1F, label("?", DEBUG.contains(w) ? 0xFF5555 : 0x9A9A9A));
@@ -744,7 +745,7 @@ public final class CustomChat {
 					// versteckte Tabs: Anzahl, rot wenn dort Ungelesenes liegt
 					boolean unread = false;
 					java.util.Set<Integer> vis = new java.util.HashSet<>();
-					for (Hit o : hits(w, b)) {
+					for (Hit o : headerHits) {
 						if (o.kind == Kind.TAB) {
 							vis.add(o.index);
 						}

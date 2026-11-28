@@ -93,18 +93,58 @@ public final class PetLevels {
 		return any ? sb.toString() : "";
 	}
 
+	/** Zerlegte Profilwerte („3,5“ → {3,5}) – jedes Bild wiederverwendet statt neu zerlegt. */
+	private static final java.util.Map<String, int[]> PARSED = new java.util.concurrent.ConcurrentHashMap<>();
+
 	/** Level eines Haustiers eines (beliebigen) Spielers aus dessen Profil; 1 wenn unbekannt. */
 	public static int level(Object playerState, int slot) {
 		String raw = Cosmetics.raw(playerState, Cosmetics.PET_LEVELS);
 		if (raw == null || raw.isBlank()) {
 			return 1;
 		}
-		String[] p = raw.split(",", -1);
-		try {
-			return slot < p.length && !p[slot].isBlank() ? Mth.clamp(Integer.parseInt(p[slot].strip()), 1, MAX) : 1;
-		} catch (NumberFormatException e) {
-			return 1;
+		if (PARSED.size() > 256) {
+			PARSED.clear();
 		}
+		int[] lv = PARSED.computeIfAbsent(raw, k -> {
+			String[] p = k.split(",", -1);
+			int[] out = new int[p.length];
+			for (int i = 0; i < p.length; i++) {
+				try {
+					out[i] = p[i].isBlank() ? 1 : Mth.clamp(Integer.parseInt(p[i].strip()), 1, MAX);
+				} catch (NumberFormatException e) {
+					out[i] = 1;
+				}
+			}
+			return out;
+		});
+		return slot < lv.length ? lv[slot] : 1;
+	}
+
+	/** Eigene Level je Platz, einmal je Tick berechnet (für die Darstellung in jedem Bild). */
+	private static volatile int[] ownLevels = new int[Cosmetics.MAX_PETS];
+	private static volatile int ownBest;
+
+	public static int ownLevel(int slot) {
+		int[] o = ownLevels;
+		return slot >= 0 && slot < o.length ? o[slot] : 1;
+	}
+
+	public static int ownBest() {
+		return ownBest;
+	}
+
+	private static void refreshOwn() {
+		int[] o = new int[Cosmetics.MAX_PETS];
+		int best = 0;
+		for (int s = 0; s < Cosmetics.MAX_PETS; s++) {
+			String t = type(s);
+			o[s] = t.isEmpty() ? 1 : level(xp(t));
+			if (!t.isEmpty()) {
+				best = Math.max(best, o[s]);
+			}
+		}
+		ownLevels = o;
+		ownBest = best;
 	}
 
 	/** Größe nach Level: ab Lv 3 je Level +3 % (Lv 10 = +24 %). */
@@ -125,6 +165,7 @@ public final class PetLevels {
 	}
 
 	private static void tick(Minecraft mc) {
+		refreshOwn();
 		if (mc.player == null || WidgetConfig.get().pets == null || WidgetConfig.get().pets.replace(",", "").isBlank()) {
 			return;
 		}
@@ -147,7 +188,7 @@ public final class PetLevels {
 			}
 		}
 		// Funkeln (Lv 7) bzw. Goldglanz (Lv 10): ab und zu ein paar Funken um dich
-		int best = bestOwnLevel();
+		int best = ownBest;
 		if (best >= SPARKLE && mc.level != null && now - sparkleAt > (best >= GOLD ? 1_500L : 3_000L)) {
 			sparkleAt = now;
 			var r = mc.level.random;

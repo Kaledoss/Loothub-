@@ -101,7 +101,7 @@ public final class Feedback {
 		p.addProperty("text", text);
 		p.addProperty("ver", de.loothub.client.Updater.currentVersion());
 		p.addProperty("set", settings());
-		p.addProperty("log", log());
+		p.addProperty("log", log() + "\n--- Leistung (letzte 10 s) ---\n" + de.loothub.client.util.Perf.summary());
 		if (withShot && shot != null) {
 			p.addProperty("shot", Base64.getEncoder().encodeToString(shot));
 		}

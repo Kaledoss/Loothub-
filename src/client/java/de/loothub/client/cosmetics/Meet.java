@@ -18,6 +18,8 @@ public final class Meet {
 	private static final double RANGE = 8.0;
 	private static Set<String> friendIds = Set.of();
 	private static int friendsVersion = -1;
+	private static long cacheTick = -1;
+	private static final java.util.Map<Integer, Integer> PARTNER = new java.util.HashMap<>();
 
 	private Meet() {
 	}
@@ -25,14 +27,25 @@ public final class Meet {
 	/** Zielplatz (Ebenen-Raum des Spielers {x, y, z}) für Haustier {@code slot}, oder null, wenn gerade kein Treffen ist. */
 	public static float[] target(AvatarRenderState s, int slot) {
 		Minecraft mc = Minecraft.getInstance();
-		if (mc.level == null || mc.player == null || !de.loothub.client.jobs.WidgetConfig.get().friendsOn) {
+		if (mc.level == null || mc.player == null || !de.loothub.client.jobs.WidgetConfig.get().friendsOn
+				|| de.loothub.client.friends.Friends.friends().isEmpty()) {
 			return null;
 		}
 		Entity self = mc.level.getEntity(s.id);
 		if (!(self instanceof Player p)) {
 			return null;
 		}
-		Player partner = partner(mc, p);
+		// Partner nur einmal je Tick suchen (sonst für jedes Haustier in jedem Bild)
+		long tick = mc.level.getGameTime();
+		if (tick != cacheTick) {
+			cacheTick = tick;
+			PARTNER.clear();
+		}
+		int pid = PARTNER.computeIfAbsent(p.getId(), k -> {
+			Player o = partner(mc, p);
+			return o == null ? -1 : o.getId();
+		});
+		Player partner = pid < 0 ? null : (mc.level.getEntity(pid) instanceof Player pp ? pp : null);
 		if (partner == null) {
 			return null;
 		}
