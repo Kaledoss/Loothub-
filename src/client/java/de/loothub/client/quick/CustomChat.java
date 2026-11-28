@@ -897,6 +897,20 @@ public final class CustomChat {
 				return info.getProfile().name();
 			}
 		}
+		// Nicht in der Tab-Liste (z. B. in der Farmwelt sieht man nur die Spieler dieser Welt, der Chat ist aber
+		// serverweit): Name an der typischen Stelle erkennen – vor „»“ („Rang | Name »“) oder in „[Name -> Mir]“
+		if (!word.matches("[A-Za-z0-9_]{3,16}")) {
+			return null;
+		}
+		String after = text.substring(b).stripLeading();
+		String before = text.substring(0, a).stripTrailing();
+		// Kopf einer Spieler- oder Clan-Nachricht: „Rang | Name »“, „@CLAN | (cb3) Rang Name »“
+		String headPart = before.contains("»") ? before.substring(before.lastIndexOf('»') + 1) : before;
+		boolean head = after.startsWith("»") && (headPart.contains("|") || headPart.contains("┃") || headPart.contains("❘"));
+		boolean pm = (after.startsWith("->") && before.endsWith("[")) || (before.endsWith("->") && after.startsWith("]"));
+		if (head || pm) {
+			return word.equalsIgnoreCase("Mir") ? null : word;
+		}
 		return null;
 	}
 
